@@ -1,0 +1,199 @@
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Rutinas de Entrenamiento</h2>
+        <a
+          href="/rutinas/crear"
+          class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-5 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Crear Nueva Rutina
+        </a>
+      </div>
+
+      <div v-for="(nivelData, nivelNombre) in rutinasAgrupadas" :key="nivelNombre" class="mb-10">
+        <div class="flex items-center mb-4">
+          <div :class="getNivelColor(nivelNombre)" class="w-3 h-8 rounded-full mr-3"></div>
+          <h3 class="text-2xl font-bold text-gray-800 dark:text-white">{{ nivelNombre }}</h3>
+        </div>
+
+        <div v-for="modalidad in nivelData.modalidades" :key="modalidad.nombre" class="mb-6">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <button
+              @click="toggleAcordeon(nivelNombre, modalidad.nombre)"
+              class="w-full px-6 py-5 text-left flex justify-between items-center bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 dark:from-gray-800 dark:to-gray-700 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200"
+            >
+              <div class="flex items-center">
+                <span class="text-xl font-bold text-gray-800 dark:text-white">{{ modalidad.nombre }}</span>
+                <span class="ml-3 px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-full">
+                  {{ modalidad.dias.length }} días
+                </span>
+              </div>
+              <svg :class="{'rotate-180': isAcordeonOpen(nivelNombre, modalidad.nombre)}" class="w-6 h-6 text-gray-600 dark:text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div v-if="isAcordeonOpen(nivelNombre, modalidad.nombre)" class="border-t border-gray-200 dark:border-gray-700">
+              <div v-for="dia in modalidad.dias" :key="dia.nombre" class="border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+                <button
+                  @click="toggleDia(nivelNombre, modalidad.nombre, dia.nombre)"
+                  class="w-full px-6 py-4 text-left flex justify-between items-center bg-blue-50 hover:bg-blue-100 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span class="font-semibold text-blue-800 dark:text-blue-300">{{ dia.nombre }}</span>
+                    <span class="ml-2 text-sm text-blue-600 dark:text-blue-400">({{ dia.ejercicios.length }} ejercicios)</span>
+                  </div>
+                  <svg :class="{'rotate-180': isDiaOpen(nivelNombre, modalidad.nombre, dia.nombre)}" class="w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div v-if="isDiaOpen(nivelNombre, modalidad.nombre, dia.nombre)" class="p-5 bg-gray-50 dark:bg-gray-900">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
+                        <th class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300">Ejercicio</th>
+                        <th class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">Series</th>
+                        <th class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">Reps</th>
+                        <th class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">Descanso</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300 hidden md:table-cell">Descripción</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                      <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ ejercicio.ejercicio_nombre }}</td>
+                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+                          <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded font-semibold">{{ ejercicio.series }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{{ ejercicio.reps_min }} - {{ ejercicio.reps_max }}</td>
+                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+                          <span class="text-orange-600 dark:text-orange-400 font-medium">{{ ejercicio.descanso_min }} min</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs max-w-xs hidden md:table-cell">{{ ejercicio.ejercicio?.descripcion || '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  @click="seleccionarRutina(nivelNombre, modalidad.nombre)"
+                  class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-4 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                >
+                  Seleccionar {{ nivelNombre }} - {{ modalidad.nombre }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRutinaStore } from '../stores/rutina';
+import axios from 'axios';
+
+const rutinaStore = useRutinaStore();
+
+const rutinasAgrupadas = ref({});
+const openItems = ref({});
+const isSelecting = ref(false);
+
+const getNivelColor = (nivel) => {
+  const colors = {
+    'Principiante': 'bg-green-500',
+    'Intermedio': 'bg-yellow-500',
+    'Avanzado': 'bg-red-500',
+  };
+  return colors[nivel] || 'bg-gray-500';
+};
+
+const toggleAcordeon = (nivel, modalidad) => {
+  const key = `acordeon-${nivel}-${modalidad}`;
+  openItems.value[key] = !openItems.value[key];
+};
+
+const isAcordeonOpen = (nivel, modalidad) => {
+  return openItems.value[`acordeon-${nivel}-${modalidad}`] || false;
+};
+
+const toggleDia = (nivel, modalidad, dia) => {
+  const key = `dia-${nivel}-${modalidad}-${dia}`;
+  openItems.value[key] = !openItems.value[key];
+};
+
+const isDiaOpen = (nivel, modalidad, dia) => {
+  return openItems.value[`dia-${nivel}-${modalidad}-${dia}`] || false;
+};
+
+const fetchRutinas = async () => {
+  try {
+    const response = await axios.get('/api/rutinas');
+    const rutinas = response.data;
+
+    const agrupadas = {};
+
+    rutinas.forEach(r => {
+      if (!agrupadas[r.nivel]) {
+        agrupadas[r.nivel] = { modalidades: {} };
+      }
+      if (!agrupadas[r.nivel].modalidades[r.modalidad]) {
+        agrupadas[r.nivel].modalidades[r.modalidad] = { nombre: r.modalidad, dias: {} };
+      }
+      if (!agrupadas[r.nivel].modalidades[r.modalidad].dias[r.dia]) {
+        agrupadas[r.nivel].modalidades[r.modalidad].dias[r.dia] = { nombre: r.dia, ejercicios: [] };
+      }
+      agrupadas[r.nivel].modalidades[r.modalidad].dias[r.dia].ejercicios.push(r);
+    });
+
+    Object.keys(agrupadas).forEach(nivel => {
+      Object.keys(agrupadas[nivel].modalidades).forEach(mod => {
+        agrupadas[nivel].modalidades[mod] = {
+          nombre: mod,
+          dias: Object.values(agrupadas[nivel].modalidades[mod].dias).sort((a, b) => a.nombre.localeCompare(b.nombre))
+        };
+      });
+    });
+
+    rutinasAgrupadas.value = agrupadas;
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+
+const seleccionarRutina = async (nivel, modalidad) => {
+  if (isSelecting.value) return;
+  isSelecting.value = true;
+
+  try {
+    await axios.post('/api/user-rutina', {
+      nivel,
+      modalidad,
+      dia_actual: 'Día 1',
+    });
+
+    rutinaStore.seleccionar(`${nivel} ${modalidad}`, 'Todos los días');
+    window.location.href = '/dashboard';
+  } catch (error) {
+    console.error('Error:', error);
+    alert('No se pudo guardar la rutina. Intenta de nuevo.');
+  } finally {
+    isSelecting.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchRutinas();
+});
+</script>

@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Rutina extends Model
+{
+    protected $fillable = [
+        'nivel',
+        'modalidad',
+        'dia',
+        'series',
+        'reps_min',
+        'reps_max',
+        'descanso_min',
+        'ejercicio_nombre',
+        'orden',
+    ];
+
+    protected $casts = [
+        'series' => 'integer',
+        'descanso_min' => 'decimal:2',
+    ];
+
+    public function ejercicio(): BelongsTo
+    {
+        return $this->belongsTo(Ejercicio::class, 'nombre', 'ejercicio_nombre');
+    }
+}
