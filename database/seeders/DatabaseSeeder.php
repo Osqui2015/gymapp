@@ -16,12 +16,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create specific example users
         User::factory()->create([
             'nick' => 'admin',
             'name' => 'Administrator',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
+            'role' => User::ROLE_ADMINISTRADOR,
+        ]);
+
+        $trainer = User::factory()->create([
+            'nick' => 'trainer1',
+            'name' => 'Trainer Principal',
+            'email' => 'trainer@example.com',
+            'password' => Hash::make('password'),
+            'role' => User::ROLE_TRAINER,
         ]);
 
         User::factory()->create([
@@ -29,6 +37,8 @@ class DatabaseSeeder extends Seeder
             'name' => 'John Doe',
             'email' => 'john.doe@example.com',
             'password' => Hash::make('password'),
+            'role' => User::ROLE_ALUMNO,
+            'trainer_id' => $trainer->id,
         ]);
 
         User::factory()->create([
@@ -36,9 +46,17 @@ class DatabaseSeeder extends Seeder
             'name' => 'María Pérez',
             'email' => 'maria.perez@example.com',
             'password' => Hash::make('password'),
+            'role' => User::ROLE_ALUMNO,
+            'trainer_id' => $trainer->id,
         ]);
 
-        // Create additional random users
-        User::factory(5)->create();
+        User::factory(4)->create([
+            'role' => User::ROLE_COMUN,
+        ]);
+
+        User::factory(2)->create([
+            'role' => User::ROLE_ALUMNO,
+            'trainer_id' => $trainer->id,
+        ]);
     }
 }

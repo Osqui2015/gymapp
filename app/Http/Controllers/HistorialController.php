@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Historial;
 use App\Models\Rutina;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -12,8 +13,22 @@ class HistorialController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $targetUserId = (int) $request->integer('user_id', $user->id);
 
-        $historial = Historial::where('user_id', $user->id)
+        if ($targetUserId !== $user->id) {
+            if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            if ($user->hasRole(User::ROLE_TRAINER)) {
+                $target = User::findOrFail($targetUserId);
+                if ($target->trainer_id !== $user->id) {
+                    return response()->json(['error' => 'No autorizado'], 403);
+                }
+            }
+        }
+
+        $historial = Historial::where('user_id', $targetUserId)
             ->when($request->filled('rutina_nombre'), function ($query) use ($request) {
                 $query->where('rutina_nombre', $request->rutina_nombre);
             })

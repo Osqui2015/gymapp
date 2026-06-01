@@ -24,12 +24,14 @@
                         </svg>
                         {{ __('Rutinas') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('ejercicios')" :active="request()->routeIs('ejercicios')" class="flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        {{ __('Ejercicios') }}
-                    </x-nav-link>
+                    @if (Auth::user()->hasRole(['trainer', 'administrador']))
+                        <x-nav-link :href="route('ejercicios')" :active="request()->routeIs('ejercicios')" class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            {{ __('Ejercicios') }}
+                        </x-nav-link>
+                    @endif
                     <x-nav-link :href="route('historial')" :active="request()->routeIs('historial')" class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -57,6 +59,7 @@
                         <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ Auth::user()->name }}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</p>
+                            <p class="text-xs text-indigo-600 dark:text-indigo-300 uppercase tracking-wide mt-1">{{ Auth::user()->normalizedRole() }}</p>
                         </div>
                         <x-dropdown-link :href="route('profile.edit')" class="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,12 +105,14 @@
                 </svg>
                 {{ __('Rutinas') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('ejercicios')" :active="request()->routeIs('ejercicios')" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                {{ __('Ejercicios') }}
-            </x-responsive-nav-link>
+            @if (Auth::user()->hasRole(['trainer', 'administrador']))
+                <x-responsive-nav-link :href="route('ejercicios')" :active="request()->routeIs('ejercicios')" class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    {{ __('Ejercicios') }}
+                </x-responsive-nav-link>
+            @endif
             <x-responsive-nav-link :href="route('historial')" :active="request()->routeIs('historial')" class="flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -124,6 +129,7 @@
                 <div>
                     <div class="font-medium text-base text-gray-800 dark:text-white">{{ Auth::user()->name }}</div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
+                    <div class="text-xs text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">{{ Auth::user()->normalizedRole() }}</div>
                 </div>
             </div>
 

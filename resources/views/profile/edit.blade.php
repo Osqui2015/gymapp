@@ -24,6 +24,14 @@
                     @include('profile.partials.delete-user-form')
                 </div>
             </div>
+
+            @if ($user->hasRole('administrador'))
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-5xl">
+                        @include('profile.partials.admin-user-management')
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,8 +17,28 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
+        $managedUsers = collect();
+        $trainers = collect();
+
+        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            $managedUsers = User::query()
+                ->with('trainer:id,name')
+                ->orderBy('role')
+                ->orderBy('name')
+                ->get(['id', 'nick', 'name', 'email', 'role', 'trainer_id', 'suspended']);
+
+            $trainers = User::query()
+                ->whereIn('role', [User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        }
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'managedUsers' => $managedUsers,
+            'trainers' => $trainers,
         ]);
     }
 
