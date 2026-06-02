@@ -11,6 +11,7 @@ class Rutina extends Model
         'nivel',
         'modalidad',
         'dia',
+        'created_by',
         'series',
         'reps_min',
         'reps_max',
@@ -20,6 +21,7 @@ class Rutina extends Model
     ];
 
     protected $casts = [
+        'created_by' => 'integer',
         'series' => 'integer',
         'descanso_min' => 'decimal:2',
     ];
@@ -27,5 +29,10 @@ class Rutina extends Model
     public function ejercicio(): BelongsTo
     {
         return $this->belongsTo(Ejercicio::class, 'nombre', 'ejercicio_nombre');
+    }
+
+    public function creador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

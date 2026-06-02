@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminUserApiController;
 use App\Http\Controllers\EjercicioController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\RutinaController;
@@ -32,5 +33,19 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::middleware('role:trainer,administrador')->group(function () {
         Route::get('/trainer/alumnos', [TrainerAlumnoController::class, 'index']);
         Route::post('/trainer/alumnos/{alumno}/rutina', [TrainerAlumnoController::class, 'asignarRutina']);
+    });
+
+    Route::middleware('role:administrador')->group(function () {
+        Route::get('/admin/users', [AdminUserApiController::class, 'index']);
+        Route::put('/admin/users/{id}', [AdminUserApiController::class, 'update']);
+        Route::patch('/admin/users/{id}/toggle-suspend', [AdminUserApiController::class, 'toggleSuspend']);
+    });
+});
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/user-info', function () {
+        return response()->json([
+            'role' => auth()->user()->normalizedRole(),
+        ]);
     });
 });

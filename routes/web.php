@@ -30,6 +30,14 @@ Route::get('/historial', function () {
     return view('historial');
 })->middleware(['auth'])->name('historial');
 
+Route::get('/trainer/alumnos', function () {
+    return view('trainer.alumnos');
+})->middleware(['auth', 'role:trainer,administrador'])->name('trainer.alumnos');
+
+Route::get('/admin/users', function () {
+    return view('admin.users');
+})->middleware(['auth', 'role:administrador'])->name('admin.users');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -38,6 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/users', [AdminUserController::class, 'store'])
         ->middleware('role:administrador')
         ->name('admin.users.store');
+
+    Route::get('/api/user-info', function () {
+        return response()->json([
+            'role' => auth()->user()->normalizedRole(),
+        ]);
+    })->name('user.info');
 });
 
 require __DIR__.'/auth.php';
