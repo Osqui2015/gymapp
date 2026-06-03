@@ -16,7 +16,7 @@ Route::get('/dashboard', function () {
 
 Route::get('/rutinas', function () {
     return view('rutinas');
-})->middleware(['auth'])->name('rutinas');
+})->middleware(['auth', 'role:comun,trainer,administrador'])->name('rutinas');
 
 Route::get('/rutinas/crear', function () {
     return view('crear-rutina');
@@ -24,7 +24,7 @@ Route::get('/rutinas/crear', function () {
 
 Route::get('/ejercicios', function () {
     return view('ejercicios');
-})->middleware(['auth', 'role:trainer,administrador'])->name('ejercicios');
+})->middleware(['auth'])->name('ejercicios');
 
 Route::get('/historial', function () {
     return view('historial');

@@ -4,6 +4,7 @@
       <div class="flex justify-between items-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Ejercicios</h2>
         <button
+          v-if="userRole === 'trainer' || userRole === 'administrador'"
           @click="mostrarModal = true"
           class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
         >
@@ -60,6 +61,7 @@
                 <td class="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs hidden md:table-cell">{{ ejercicio.descripcion?.substring(0, 80) || '-' }}{{ ejercicio.descripcion?.length > 80 ? '...' : '' }}</td>
                 <td class="px-4 py-4 text-center">
                   <button
+                    v-if="userRole === 'trainer' || userRole === 'administrador'"
                     @click="eliminar(ejercicio.id)"
                     class="text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded text-sm font-medium transition-all"
                   >
@@ -184,12 +186,22 @@ const mostrarModal = ref(false);
 const paginaActual = ref(1);
 const totalPages = ref(1);
 const total = ref(0);
+const userRole = ref('comun');
 const nuevo = ref({
   nombre: '',
   equipamiento: '',
   grupo_muscular: '',
   descripcion: '',
 });
+
+const fetchUserInfo = async () => {
+  try {
+    const response = await axios.get('/api/user-info');
+    userRole.value = response.data.role;
+  } catch (error) {
+    console.error('Error al obtener rol:', error);
+  }
+};
 
 const fetchEjercicios = async (page = 1) => {
   try {
@@ -262,6 +274,7 @@ const eliminar = async (id) => {
 };
 
 onMounted(() => {
+  fetchUserInfo();
   fetchEjercicios();
 });
 </script>
