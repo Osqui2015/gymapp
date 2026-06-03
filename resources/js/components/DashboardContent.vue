@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 pb-28 md:py-8 md:pb-8">
+    <ToastNotification ref="toastRef" />
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div v-if="rutinaStore.seleccionada" class="mb-8">
         <div class="rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 shadow-2xl p-4 md:p-8 mb-5 md:mb-6">
@@ -243,9 +244,9 @@
               </button>
               <button
                 @click="siguienteDia"
-                class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+                :class="['text-white px-8 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg', botonSiguienteClass]"
               >
-                {{ esUltimoDia ? '🎉 Finalizar Rutina' : 'Siguiente Día →' }}
+                {{ textoBotonSiguiente }}
               </button>
             </div>
           </div>
@@ -285,8 +286,11 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
+import ToastNotification from './ToastNotification.vue';
+import confetti from 'canvas-confetti';
 
 const rutinaStore = useRutinaStore();
+const toastRef = ref(null);
 const filasSerie = ref([]);
 const historialRutina = ref([]);
 const diaActual = ref('Día 1');
@@ -342,6 +346,67 @@ const pesoPromedio = computed(() => {
 });
 
 const getRutinaNombre = () => rutinaStore.seleccionada?.nivel || '';
+
+// Toast helpers
+const showToast = (message, type = 'info', duration = 3000) => {
+  toastRef.value?.addToast(message, type, duration);
+};
+
+const showSuccess = (message) => showToast(message, 'success');
+const showError = (message) => showToast(message, 'error');
+const showWarning = (message) => showToast(message, 'warning');
+
+// Texto dinámico del botón siguiente
+const textoBotonSiguiente = computed(() => {
+  if (esUltimoDia.value) {
+    return seriesCompletadas.value === seriesTotales.value 
+      ? '🎉 Finalizar Rutina' 
+      : '⚠️ Terminar e Iniciar';
+  }
+  if (seriesPendientes.value > 0) {
+    return `⚠️ Siguiente Día →`;
+  }
+  return 'Siguiente Día →';
+});
+
+const botonSiguienteClass = computed(() => {
+  if (esUltimoDia.value && seriesPendientes.value > 0) {
+    return 'bg-orange-500 hover:bg-orange-600';
+  }
+  if (!esUltimoDia.value && seriesPendientes.value > 0) {
+    return 'bg-yellow-500 hover:bg-yellow-600';
+  }
+  return 'bg-green-600 hover:bg-green-700';
+});
+
+// Confetti animation
+const triggerConfetti = () => {
+  const duration = 3000;
+  const end = Date.now() + duration;
+  
+  const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  
+  (function frame() {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+      colors: colors,
+    });
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+      colors: colors,
+    });
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
+    }
+  })();
+};
 
 const fetchUserRutina = async () => {
   try {
@@ -449,7 +514,7 @@ const guardarFila = async (fila, silencioso = false) => {
   } catch (error) {
     if (!silencioso) {
       console.error('Error:', error);
-      alert('No se pudo guardar la serie. Intenta de nuevo.');
+      showError('No se pudo guardar la serie. Intenta de nuevo.');
     }
 
     throw error;
@@ -475,6 +540,14 @@ const cambiarDia = async (dia) => {
 };
 
 const siguienteDia = async () => {
+  // Verificar si hay series incompletas
+  if (seriesPendientes.value > 0) {
+    const confirmar = confirm(
+      `Tienes ${seriesPendientes.value} series sin completar. ¿Quieres avanzar de todas formas?`
+    );
+    if (!confirmar) return;
+  }
+
   if (diaIndex.value < todosLosDias.value.length - 1) {
     diaActual.value = todosLosDias.value[diaIndex.value + 1];
     await guardarProgreso();
@@ -503,14 +576,17 @@ const cambiarRutina = () => {
 };
 
 const guardarSesion = async () => {
-  if (!filasSerie.value.length) return;
+  if (!filasSerie.value.length) {
+    showWarning('No hay ejercicios para guardar.');
+    return;
+  }
 
   try {
     await Promise.all(filasSerie.value.map((fila) => guardarFila(fila, true)));
-    alert('Sesión guardada.');
+    showSuccess('✓ Sesión guardada correctamente');
   } catch (error) {
     console.error('Error:', error);
-    alert('No se pudo guardar la sesión. Intenta de nuevo.');
+    showError('No se pudo guardar la sesión. Intenta de nuevo.');
   }
 };
 
@@ -531,10 +607,13 @@ const finalizarRutina = async () => {
     diaActual.value = response.data.dia_actual || 'Día 1';
     await guardarProgreso();
     await fetchRutinasDelDia();
-    alert('¡Felicidades! Has completado la rutina. Se reinició al primer día para que continúes mañana.');
+    
+    // Mostrar confetti y toast de éxito
+    triggerConfetti();
+    showSuccess('🎉 ¡Felicidades! Has completado la rutina. Se reinició al Día 1.');
   } catch (error) {
     console.error('Error:', error);
-    alert('No se pudo finalizar la rutina. Intenta de nuevo.');
+    showError('No se pudo finalizar la rutina. Intenta de nuevo.');
   }
 };
 
