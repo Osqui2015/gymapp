@@ -11,12 +11,29 @@ class AdminUserApiController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('trainer:id,name')
-            ->orderBy('name')
-            ->get(['id', 'nick', 'name', 'email', 'role', 'suspended', 'trainer_id']);
+        $search = $request->query('search');
+        $perPage = $request->query('per_page', 10);
+
+        $query = User::with('trainer:id,name')
+            ->orderBy('name');
+
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('nick', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('role', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->paginate($perPage, ['id', 'nick', 'name', 'email', 'role', 'suspended', 'trainer_id']);
 
         return response()->json([
-            'users' => $users,
+            'users' => $users->items(),
+            'total' => $users->total(),
+            'current_page' => $users->currentPage(),
+            'last_page' => $users->lastPage(),
+            'per_page' => $users->perPage(),
             'trainers' => User::where('role', User::ROLE_TRAINER)
                 ->orWhere('role', User::ROLE_ADMINISTRADOR)
                 ->orderBy('name')
@@ -47,6 +64,15 @@ class AdminUserApiController extends Controller
             $updateData['trainer_id'] = null;
         } else {
             $updateData['trainer_id'] = $data['trainer_id'] ?? null;
+            if (! empty($updateData['trainer_id'])) {
+                $trainer = User::findOrFail($updateData['trainer_id']);
+                if (! $trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                    return response()->json([
+                        'message' => 'El usuario seleccionado no es trainer.',
+                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']]
+                    ], 422);
+                }
+            }
         }
 
         if (! empty($data['password'])) {
@@ -69,5 +95,18 @@ class AdminUserApiController extends Controller
         $user->update(['suspended' => ! $user->suspended]);
 
         return response()->json(['success' => true, 'suspended' => $user->suspended]);
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->id === $request->user()->id) {
+            return response()->json(['error' => 'No puedes eliminar tu propia cuenta'], 403);
+        }
+
+        $user->delete();
+
+        return response()->json(['success' => true]);
     }
 }

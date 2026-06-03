@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminUserApiController;
 use App\Http\Controllers\EjercicioController;
 use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\ProgresoController;
 use App\Http\Controllers\RutinaController;
 use App\Http\Controllers\TrainerAlumnoController;
 use App\Http\Controllers\UserRutinaController;
@@ -30,6 +31,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/historial/progreso', [HistorialController::class, 'obtenerProgreso']);
     Route::post('/historial/finalizar-rutina', [HistorialController::class, 'finalizarRutina']);
 
+    Route::get('/progreso', [ProgresoController::class, 'obtener']);
+    Route::post('/progreso', [ProgresoController::class, 'guardar']);
+    Route::get('/progreso/detalle', [ProgresoController::class, 'obtenerDetalle']);
+
     Route::middleware('role:trainer,administrador')->group(function () {
         Route::get('/trainer/alumnos', [TrainerAlumnoController::class, 'index']);
         Route::post('/trainer/alumnos/{alumno}/rutina', [TrainerAlumnoController::class, 'asignarRutina']);
@@ -39,6 +44,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/admin/users', [AdminUserApiController::class, 'index']);
         Route::put('/admin/users/{id}', [AdminUserApiController::class, 'update']);
         Route::patch('/admin/users/{id}/toggle-suspend', [AdminUserApiController::class, 'toggleSuspend']);
+        Route::delete('/admin/users/{id}', [AdminUserApiController::class, 'destroy']);
     });
 });
 

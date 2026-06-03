@@ -49,6 +49,53 @@
       </div>
 
       <div v-else class="space-y-6">
+        <!-- Tabla de Progreso General con Pesos Máximos -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+          <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Resumen de Progreso y Pesos Máximos
+            </h2>
+          </div>
+          <div class="p-6">
+            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
+                  <tr>
+                    <th class="px-4 py-3 font-semibold">Fecha / Día</th>
+                    <th class="px-4 py-3 font-semibold">Ejercicio</th>
+                    <th class="px-4 py-3 font-semibold text-center">Series</th>
+                    <th class="px-4 py-3 font-semibold text-right">Peso Promedio</th>
+                    <th class="px-4 py-3 font-semibold text-right text-indigo-600 dark:text-indigo-400 font-bold">Peso Máximo Cargado</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <tr v-for="(fila, idx) in tablaProgreso" :key="idx" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
+                    <td class="px-4 py-3">
+                      <div class="font-medium text-gray-900 dark:text-white">{{ fila.fecha }}</div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ fila.dia }}</div>
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                      {{ fila.nombre }}
+                    </td>
+                    <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+                      {{ fila.seriesCount }} series
+                    </td>
+                    <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
+                      {{ fila.avgWeight }} kg
+                    </td>
+                    <td class="px-4 py-3 text-right font-black text-indigo-600 dark:text-indigo-400 text-base">
+                      {{ fila.maxWeight }} kg
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div
           v-for="ejercicio in resumenEjercicios"
           :key="ejercicio.nombre"
@@ -352,6 +399,35 @@ const resumenEjercicios = computed(() => {
       })),
     };
   });
+});
+
+const tablaProgreso = computed(() => {
+  const result = [];
+  resumenEjercicios.value.forEach(ejercicio => {
+    ejercicio.timeline.forEach(sesion => {
+      const dayRows = historial.value.filter(row => 
+        row.ejercicio_nombre === ejercicio.nombre && row.fecha === sesion.fecha
+      );
+      
+      const weights = dayRows
+        .map(row => Number(row.peso))
+        .filter(peso => Number.isFinite(peso) && peso > 0);
+        
+      const maxWeight = weights.length ? Math.max(...weights) : 0;
+      
+      result.push({
+        nombre: ejercicio.nombre,
+        fecha: sesion.fechaLabel,
+        dia: sesion.diaLabel,
+        rawFecha: new Date(sesion.fecha),
+        maxWeight: maxWeight.toFixed(1),
+        avgWeight: sesion.pesoPromedio,
+        seriesCount: dayRows.length
+      });
+    });
+  });
+  
+  return result.sort((a, b) => b.rawFecha - a.rawFecha);
 });
 
 const barX = (index, total) => {

@@ -27,6 +27,12 @@ class AdminUserController extends Controller
         if (! empty($data['trainer_id'])) {
             $trainer = User::findOrFail($data['trainer_id']);
             if (! $trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'message' => 'El usuario seleccionado no es trainer.',
+                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']]
+                    ], 422);
+                }
                 return redirect()->route('profile.edit')
                     ->withErrors(['trainer_id' => 'El usuario seleccionado no es trainer.'], 'adminUserCreation')
                     ->withInput();
@@ -41,6 +47,13 @@ class AdminUserController extends Controller
             'role' => $data['role'],
             'trainer_id' => $data['trainer_id'] ?? null,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado exitosamente',
+            ], 201);
+        }
 
         return redirect()->route('profile.edit')->with('status', 'admin-user-created');
     }

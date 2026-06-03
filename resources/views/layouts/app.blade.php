@@ -24,7 +24,7 @@
                 </header>
             @endisset
 
-            <main id="app">
+            <main id="app" x-ignore>
                 {{ $slot }}
             </main>
         </div>

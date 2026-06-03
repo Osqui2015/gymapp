@@ -30,13 +30,21 @@ Route::get('/historial', function () {
     return view('historial');
 })->middleware(['auth'])->name('historial');
 
+Route::get('/progreso', function () {
+    return view('progreso');
+})->middleware(['auth'])->name('progreso');
+
 Route::get('/trainer/alumnos', function () {
     return view('trainer.alumnos');
 })->middleware(['auth', 'role:trainer,administrador'])->name('trainer.alumnos');
 
 Route::get('/admin/users', function () {
-    return view('admin.users');
+    return redirect()->route('configuracion');
 })->middleware(['auth', 'role:administrador'])->name('admin.users');
+
+Route::get('/configuracion', function () {
+    return view('configuracion');
+})->middleware(['auth', 'role:administrador'])->name('configuracion');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

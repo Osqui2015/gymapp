@@ -14,7 +14,7 @@ $width = match ($width) {
 @endphp
 
 <div class="relative" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false">
-    <div @click="open = ! open">
+    <div @click="console.log('Dropdown clicked, open:', open); open = ! open; console.log('Dropdown open after click:', open)" class="cursor-pointer">
         {{ $trigger }}
     </div>
 
