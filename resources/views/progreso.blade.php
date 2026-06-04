@@ -42,7 +42,7 @@
 
         <div class="grid lg:grid-cols-2 gap-8">
             <!-- Formulario de Registro -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6">
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -54,7 +54,7 @@
                     <!-- Datos Personales -->
                     <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">Datos Personales</h3>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peso (kg)</label>
                                 <input type="number" step="0.01" name="peso" id="peso" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Ej: 75.5">
@@ -83,7 +83,7 @@
                         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">Medidas Corporales (Lado Derecho)</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 italic">Mide siempre del mismo lado para mantener la consistencia</p>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <!-- Cuello -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -172,7 +172,7 @@
             </div>
 
             <!-- Historial de Progreso -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6">
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -228,7 +228,7 @@
         </div>
 
         <!-- Tips de Medición -->
-        <div class="mt-8 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-800">
+        <div class="mt-8 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-4 sm:p-6 border border-indigo-100 dark:border-indigo-800">
             <h3 class="text-lg font-semibold text-indigo-900 dark:text-indigo-100 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -482,7 +482,7 @@ function mostrarModal(data) {
     if (progreso.peso || progreso.altura || progreso.edad || progreso.sexo) {
         html += '<div class="border-b border-gray-200 dark:border-gray-700 pb-4">';
         html += '<h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">📋 Datos Personales</h4>';
-        html += '<div class="grid grid-cols-2 gap-3">';
+        html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
         if (progreso.peso) html += crearItemDato('peso', labels.peso, progreso.peso + ' kg', comparacion.peso);
         if (progreso.altura) html += crearItemDato('altura', labels.altura, progreso.altura + ' cm', comparacion.altura);
         if (progreso.edad) html += crearItemDato('edad', 'Edad', progreso.edad + ' años', null);
@@ -493,7 +493,7 @@ function mostrarModal(data) {
     // Medidas corporales
     html += '<div>';
     html += '<h4 class="font-medium text-gray-700 dark:text-gray-300 mb-3">📏 Medidas Corporales</h4>';
-    html += '<div class="grid grid-cols-2 gap-3">';
+    html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
 
     ['cuello', 'hombros', 'pecho', 'brazos', 'cintura', 'cadera', 'muslos', 'pantorrillas'].forEach(campo => {
         if (comparacion[campo]) {
