@@ -26,7 +26,7 @@ class AdminUserApiController extends Controller
             });
         }
 
-        $users = $query->paginate($perPage, ['id', 'nick', 'name', 'email', 'role', 'suspended', 'trainer_id']);
+        $users = $query->paginate($perPage, ['id', 'nick', 'name', 'email', 'telefono', 'role', 'suspended', 'trainer_id']);
 
         return response()->json([
             'users' => $users->items(),
@@ -49,6 +49,7 @@ class AdminUserApiController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'telefono' => ['nullable', 'string', 'max:255'],
             'role' => ['required', 'string', 'in:comun,alumno,trainer,administrador'],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
             'password' => ['nullable', 'string', 'min:6'],
@@ -57,6 +58,7 @@ class AdminUserApiController extends Controller
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
+            'telefono' => $data['telefono'] ?? null,
             'role' => $data['role'],
         ];
 

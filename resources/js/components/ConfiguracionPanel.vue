@@ -42,6 +42,12 @@
                                 placeholder="correo@ejemplo.com">
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                            <input v-model="nuevoUsuario.telefono" type="text"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="11-1234-5678">
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña *</label>
                             <input v-model="nuevoUsuario.password" type="password" required minlength="6"
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -129,6 +135,7 @@
                                     <th class="px-4 py-3 font-semibold">Nick</th>
                                     <th class="px-4 py-3 font-semibold">Nombre</th>
                                     <th class="px-4 py-3 font-semibold">Email</th>
+                                    <th class="px-4 py-3 font-semibold">Teléfono</th>
                                     <th class="px-4 py-3 font-semibold">Rol</th>
                                     <th class="px-4 py-3 font-semibold">Trainer</th>
                                     <th class="px-4 py-3 font-semibold">Estado</th>
@@ -142,6 +149,7 @@
                                     <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ user.nick }}</td>
                                     <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ user.name }}</td>
                                     <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ user.email }}</td>
+                                    <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ user.telefono || '-' }}</td>
                                     <td class="px-4 py-3">
                                         <span :class="{
                                             'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300': user.role === 'administrador',
@@ -301,6 +309,13 @@
                     </div>
 
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                        <input v-model="formularioEdit.telefono" type="text"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                            placeholder="11-1234-5678">
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol *</label>
                         <select v-model="formularioEdit.role" required
                             class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500">
@@ -402,6 +417,7 @@ const nuevoUsuario = ref({
     nick: '',
     name: '',
     email: '',
+    telefono: '',
     password: '',
     role: '',
     trainer_id: null
@@ -412,6 +428,7 @@ const formularioEdit = ref({
     nick: '',
     name: '',
     email: '',
+    telefono: '',
     password: '',
     role: '',
     trainer_id: null
@@ -486,6 +503,7 @@ const crearUsuario = async () => {
             nick: '',
             name: '',
             email: '',
+            telefono: '',
             password: '',
             role: '',
             trainer_id: null
@@ -514,6 +532,7 @@ const abrirModalEditar = (user) => {
         nick: user.nick,
         name: user.name,
         email: user.email,
+        telefono: user.telefono || '',
         password: '',
         role: user.role,
         trainer_id: user.trainer_id
@@ -531,6 +550,7 @@ const guardarEdicion = async () => {
         const data = {
             name: formularioEdit.value.name,
             email: formularioEdit.value.email,
+            telefono: formularioEdit.value.telefono,
             role: formularioEdit.value.role,
             trainer_id: formularioEdit.value.role === 'alumno' ? formularioEdit.value.trainer_id : null,
         };

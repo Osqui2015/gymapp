@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'admin',
             'name' => 'Administrator',
             'email' => 'admin@example.com',
+            'telefono' => '11-1234-5678',
             'password' => Hash::make('password'),
             'role' => User::ROLE_ADMINISTRADOR,
         ]);
@@ -28,6 +29,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'trainer1',
             'name' => 'Trainer Principal',
             'email' => 'trainer@example.com',
+            'telefono' => '11-2345-6789',
             'password' => Hash::make('password'),
             'role' => User::ROLE_TRAINER,
         ]);
@@ -36,6 +38,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'jdoe',
             'name' => 'John Doe',
             'email' => 'john.doe@example.com',
+            'telefono' => '11-3456-7890',
             'password' => Hash::make('password'),
             'role' => User::ROLE_ALUMNO,
             'trainer_id' => $trainer->id,
@@ -45,6 +48,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'maria',
             'name' => 'María Pérez',
             'email' => 'maria.perez@example.com',
+            'telefono' => '11-4567-8901',
             'password' => Hash::make('password'),
             'role' => User::ROLE_ALUMNO,
             'trainer_id' => $trainer->id,
@@ -64,6 +68,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'pablog',
             'name' => 'Pablo Gramajo',
             'email' => 'pablo@example.com',
+            'telefono' => '11-5678-9012',
             'password' => Hash::make('pablo123'),
             'role' => User::ROLE_COMUN,
         ]);
@@ -72,6 +77,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'carlos.s',
             'name' => 'Carlos Santucho',
             'email' => 'carlos@example.com',
+            'telefono' => '11-6789-0123',
             'password' => Hash::make('carlos123'),
             'role' => User::ROLE_COMUN,
         ]);
@@ -80,6 +86,7 @@ class DatabaseSeeder extends Seeder
             'nick' => 'bruno.g',
             'name' => 'Bruno Gomez',
             'email' => 'bruno@example.com',
+            'telefono' => '11-7890-1234',
             'password' => Hash::make('bruno123'),
             'role' => User::ROLE_COMUN,
         ]);
