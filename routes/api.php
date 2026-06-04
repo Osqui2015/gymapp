@@ -25,6 +25,12 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);
 
+    Route::middleware('role:trainer,administrador')->group(function () {
+        Route::get('/trainer/mis-rutinas', [UserRutinaController::class, 'misRutinas']);
+        Route::get('/trainer/mis-alumnos', [UserRutinaController::class, 'misAlumnos']);
+        Route::post('/trainer/asignar-rutina', [UserRutinaController::class, 'asignarRutina']);
+    });
+
     Route::get('/historial', [HistorialController::class, 'index']);
     Route::post('/historial/guardar', [HistorialController::class, 'guardar']);
     Route::post('/historial/completar', [HistorialController::class, 'marcarCompletado']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Rutina;
 use App\Models\User;
 use App\Models\UserRutina;
 use Illuminate\Http\Request;
@@ -19,8 +20,9 @@ class UserRutinaController extends Controller
 
         $data = $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'nivel' => ['required', 'string', 'max:255'],
-            'modalidad' => ['required', 'string', 'max:255'],
+            'rutina_id' => ['nullable', 'integer', 'exists:rutinas,id'],
+            'nivel' => ['required_without:rutina_id', 'string', 'max:255'],
+            'modalidad' => ['required_without:rutina_id', 'string', 'max:255'],
             'dia_actual' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -41,11 +43,24 @@ class UserRutinaController extends Controller
             return response()->json(['error' => 'Los alumnos no pueden autoasignarse rutinas'], 403);
         }
 
+        // Si se proporciona rutina_id, obtener nivel y modalidad de la rutina
+        $nivel = $data['nivel'] ?? null;
+        $modalidad = $data['modalidad'] ?? null;
+        
+        if (! empty($data['rutina_id'])) {
+            $rutina = Rutina::find($data['rutina_id']);
+            if ($rutina) {
+                $nivel = $rutina->nivel;
+                $modalidad = $rutina->modalidad;
+            }
+        }
+
         $userRutina = UserRutina::updateOrCreate(
             ['user_id' => $targetUser->id],
             [
-                'nivel' => $data['nivel'],
-                'modalidad' => $data['modalidad'],
+                'rutina_id' => $data['rutina_id'] ?? null,
+                'nivel' => $nivel,
+                'modalidad' => $modalidad,
                 'dia_actual' => $data['dia_actual'] ?? 'Día 1',
                 'assigned_by' => $targetUser->id === $user->id ? null : $user->id,
             ]
@@ -77,7 +92,7 @@ class UserRutinaController extends Controller
             }
         }
 
-        $userRutina = UserRutina::where('user_id', $targetUserId)->first();
+        $userRutina = UserRutina::with('rutina')->where('user_id', $targetUserId)->first();
 
         return response()->json($userRutina);
     }
@@ -108,5 +123,100 @@ class UserRutinaController extends Controller
         $userRutina->save();
 
         return response()->json($userRutina);
+    }
+
+    /**
+     * Obtener alumnos del trainer con sus rutinas asignadas
+     */
+    public function misAlumnos(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $alumnos = User::where('trainer_id', $user->id)
+            ->with(['rutinaSeleccionada.rutina'])
+            ->get();
+
+        return response()->json($alumnos);
+    }
+
+    /**
+     * Obtener todas las rutinas creadas por el trainer para asignar
+     */
+    public function misRutinas(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $rutinas = Rutina::where('created_by', $user->id)
+            ->with('ejercicio')
+            ->orderBy('nivel')
+            ->orderBy('modalidad')
+            ->orderBy('dia')
+            ->get();
+
+        return response()->json($rutinas);
+    }
+
+    /**
+     * Asignar una rutina específica a un alumno
+     */
+    public function asignarRutina(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'alumno_id' => ['required', 'integer', 'exists:users,id'],
+            'rutina_id' => ['required', 'integer', 'exists:rutinas,id'],
+            'dia_actual' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $alumno = User::findOrFail($data['alumno_id']);
+
+        // Verificar que el trainer tiene permisos sobre el alumno
+        if ($user->hasRole(User::ROLE_TRAINER) && $alumno->trainer_id !== $user->id) {
+            return response()->json(['error' => 'Solo puedes asignar rutinas a tus alumnos'], 403);
+        }
+
+        // Verificar que la rutina pertenece al trainer o es una rutina por defecto
+        $rutina = Rutina::findOrFail($data['rutina_id']);
+        if ($rutina->created_by !== null && $rutina->created_by !== $user->id) {
+            return response()->json(['error' => 'No puedes asignar rutinas de otro trainer'], 403);
+        }
+
+        // Asignar la rutina al alumno
+        $userRutina = UserRutina::updateOrCreate(
+            ['user_id' => $alumno->id],
+            [
+                'rutina_id' => $rutina->id,
+                'nivel' => $rutina->nivel,
+                'modalidad' => $rutina->modalidad,
+                'dia_actual' => $data['dia_actual'] ?? 'Día 1',
+                'assigned_by' => $user->id,
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Rutina asignada correctamente',
+            'user_rutina' => $userRutina->load('rutina'),
+        ]);
     }
 }

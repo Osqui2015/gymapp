@@ -9,6 +9,7 @@ class UserRutina extends Model
 {
     protected $fillable = [
         'user_id',
+        'rutina_id',
         'assigned_by',
         'nivel',
         'modalidad',
@@ -17,8 +18,14 @@ class UserRutina extends Model
 
     protected $casts = [
         'user_id' => 'integer',
+        'rutina_id' => 'integer',
         'assigned_by' => 'integer',
     ];
+
+    public function rutina(): BelongsTo
+    {
+        return $this->belongsTo(Rutina::class);
+    }
 
     public function user(): BelongsTo
     {

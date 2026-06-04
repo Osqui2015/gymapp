@@ -134,39 +134,49 @@
       <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" @click="cerrarModal"></div>
 
-        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
           <div class="bg-white dark:bg-gray-800 px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Asignar Rutina a {{ alumnoSeleccionado?.name }}
             </h3>
 
             <div class="space-y-4">
+              <!-- Selector de Rutina -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nivel</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar Rutina</label>
                 <select
-                  v-model="rutinaForm.nivel"
+                  v-model="rutinaForm.rutina_id"
                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
+                  @change="onRutinaChange"
                 >
-                  <option value="">Seleccionar nivel</option>
-                  <option value="Principiante">Principiante</option>
-                  <option value="Intermedio">Intermedio</option>
-                  <option value="Avanzado">Avanzado</option>
+                  <option value="">-- Seleccionar una rutina --</option>
+                  <optgroup v-for="grupo in rutinasAgrupadas" :key="grupo.etiqueta" :label="grupo.etiqueta">
+                    <option v-for="rutina in grupo.rutinas" :key="rutina.id" :value="rutina.id">
+                      {{ rutina.dia }} - {{ rutina.ejercicios_count || 0 }} ejercicios
+                    </option>
+                  </optgroup>
                 </select>
+                <p v-if="rutinas.length === 0" class="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                  ⚠️ No tienes rutinas creadas. Crea rutinas primero para asignarlas.
+                </p>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Modalidad (días)</label>
-                <select
-                  v-model="rutinaForm.modalidad"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Seleccionar días</option>
-                  <option value="1 Día">1 Día</option>
-                  <option value="2 Días">2 Días</option>
-                  <option value="3 Días">3 Días</option>
-                  <option value="4 Días">4 Días</option>
-                  <option value="5 Días">5 Días</option>
-                </select>
+              <!-- Info de la rutina seleccionada -->
+              <div v-if="rutinaSeleccionada" class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <h4 class="font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Detalles de la Rutina:</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <p><span class="text-gray-500">Nivel:</span> <span class="font-medium">{{ rutinaSeleccionada.nivel }}</span></p>
+                  <p><span class="text-gray-500">Modalidad:</span> <span class="font-medium">{{ rutinaSeleccionada.modalidad }}</span></p>
+                  <p><span class="text-gray-500">Día:</span> <span class="font-medium">{{ rutinaSeleccionada.dia }}</span></p>
+                </div>
+                <div v-if="rutinaSeleccionada.ejercicios && rutinaSeleccionada.ejercicios.length > 0" class="mt-3">
+                  <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ejercicios incluidos:</p>
+                  <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li v-for="(ej, idx) in rutinaSeleccionada.ejercicios" :key="idx">
+                      • {{ ej.ejercicio_nombre }} ({{ ej.series }}x{{ ej.reps_min }}-{{ ej.reps_max }})
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               <div>
@@ -184,10 +194,10 @@
           <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 sm:flex sm:flex-row-reverse">
             <button
               @click="asignarRutina"
-              :disabled="!rutinaForm.nivel || !rutinaForm.modalidad || guardando"
+              :disabled="!rutinaForm.rutina_id || guardando"
               class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ guardando ? 'Guardando...' : 'Guardar' }}
+              {{ guardando ? 'Guardando...' : 'Asignar Rutina' }}
             </button>
             <button
               @click="cerrarModal"
@@ -199,6 +209,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast notifications -->
+    <transition name="fade">
+      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
+        {{ toast.message }}
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -207,14 +224,21 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 
 const alumnos = ref([]);
+const rutinas = ref([]);
 const cargando = ref(true);
 const mostrarModal = ref(false);
 const alumnoSeleccionado = ref(null);
 const guardando = ref(false);
+const rutinaSeleccionada = ref(null);
+
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'success'
+});
 
 const rutinaForm = ref({
-  nivel: '',
-  modalidad: '',
+  rutina_id: '',
   dia_actual: 'Día 1',
 });
 
@@ -226,11 +250,40 @@ const alumnosSinRutina = computed(() => {
   return alumnos.value.filter(a => !a.rutina_seleccionada).length;
 });
 
-const maxDias = computed(() => {
-  const modalidad = rutinaForm.value.modalidad;
-  if (!modalidad) return 1;
-  return parseInt(modalidad) || 1;
+// Agrupar rutinas por nivel y modalidad
+const rutinasAgrupadas = computed(() => {
+  const grupos = {};
+  
+  rutinas.value.forEach(rutina => {
+    const key = `${rutina.nivel} - ${rutina.modalidad}`;
+    if (!grupos[key]) {
+      grupos[key] = {
+        etiqueta: key,
+        rutinas: []
+      };
+    }
+    grupos[key].rutinas.push(rutina);
+  });
+  
+  return Object.values(grupos);
 });
+
+const maxDias = computed(() => {
+  if (rutinaSeleccionada.value) {
+    return parseInt(rutinaSeleccionada.value.modalidad) || 1;
+  }
+  return 1;
+});
+
+const onRutinaChange = () => {
+  if (rutinaForm.value.rutina_id) {
+    rutinaSeleccionada.value = rutinas.value.find(r => r.id === parseInt(rutinaForm.value.rutina_id));
+    // Actualizar día máximo según la modalidad de la rutina seleccionada
+    rutinaForm.value.dia_actual = 'Día 1';
+  } else {
+    rutinaSeleccionada.value = null;
+  }
+};
 
 const obtenerAlumnos = async () => {
   try {
@@ -238,52 +291,113 @@ const obtenerAlumnos = async () => {
     alumnos.value = response.data;
   } catch (error) {
     console.error('Error:', error);
-    alert('No se pudieron cargar los alumnos');
+    showToast('No se pudieron cargar los alumnos', 'error');
   } finally {
     cargando.value = false;
   }
 };
 
+const obtenerRutinas = async () => {
+  try {
+    const response = await axios.get('/api/trainer/mis-rutinas');
+    // Agrupar ejercicios por rutina
+    const rutinasData = response.data;
+    const grouped = {};
+    
+    rutinasData.forEach(r => {
+      if (!grouped[r.id]) {
+        grouped[r.id] = {
+          ...r,
+          ejercicios: []
+        };
+      }
+      if (r.ejercicio) {
+        grouped[r.id].ejercicios.push(r.ejercicio);
+      }
+    });
+    
+    rutinas.value = Object.values(grouped);
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('No se pudieron cargar las rutinas', 'error');
+  }
+};
+
 const abrirModalAsignar = (alumno) => {
   alumnoSeleccionado.value = alumno;
-  if (alumno.rutina_seleccionada) {
+  
+  // Si ya tiene rutina asignada, cargarla
+  if (alumno.rutina_seleccionada && alumno.rutina_seleccionada.rutina_id) {
     rutinaForm.value = {
-      nivel: alumno.rutina_seleccionada.nivel,
-      modalidad: alumno.rutina_seleccionada.modalidad,
+      rutina_id: alumno.rutina_seleccionada.rutina_id.toString(),
       dia_actual: alumno.rutina_seleccionada.dia_actual || 'Día 1',
     };
+    // Buscar la rutina completa
+    const rutinaExistente = rutinas.value.find(r => r.id === parseInt(alumno.rutina_seleccionada.rutina_id));
+    if (rutinaExistente) {
+      rutinaSeleccionada.value = rutinaExistente;
+    } else {
+      // Cargar la rutina si no está en la lista
+      cargarRutinaCompleta(alumno.rutina_seleccionada.rutina_id);
+    }
   } else {
     rutinaForm.value = {
-      nivel: '',
-      modalidad: '',
+      rutina_id: '',
       dia_actual: 'Día 1',
     };
+    rutinaSeleccionada.value = null;
   }
+  
   mostrarModal.value = true;
+};
+
+const cargarRutinaCompleta = async (rutinaId) => {
+  try {
+    // Obtener todas las rutinas del servidor
+    const response = await axios.get('/api/rutinas');
+    // Buscar la rutina específica
+    const rutina = response.data.find(r => r.id === rutinaId);
+    if (rutina) {
+      rutinaSeleccionada.value = {
+        ...rutina,
+        ejercicios: []
+      };
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
 };
 
 const cerrarModal = () => {
   mostrarModal.value = false;
   alumnoSeleccionado.value = null;
+  rutinaSeleccionada.value = null;
+};
+
+const showToast = (message, type = 'success') => {
+  toast.value = { show: true, message, type };
+  setTimeout(() => {
+    toast.value.show = false;
+  }, 3000);
 };
 
 const asignarRutina = async () => {
-  if (!alumnoSeleccionado.value) return;
+  if (!alumnoSeleccionado.value || !rutinaForm.value.rutina_id) return;
   
   guardando.value = true;
   try {
-    await axios.post(`/api/trainer/alumnos/${alumnoSeleccionado.value.id}/rutina`, {
-      nivel: rutinaForm.value.nivel,
-      modalidad: rutinaForm.value.modalidad,
+    await axios.post('/api/trainer/asignar-rutina', {
+      alumno_id: alumnoSeleccionado.value.id,
+      rutina_id: parseInt(rutinaForm.value.rutina_id),
       dia_actual: rutinaForm.value.dia_actual,
     });
     
     await obtenerAlumnos();
     cerrarModal();
-    alert('Rutina asignada correctamente');
+    showToast('Rutina asignada correctamente');
   } catch (error) {
     console.error('Error:', error);
-    alert(error.response?.data?.error || 'No se pudo asignar la rutina');
+    showToast(error.response?.data?.error || 'No se pudo asignar la rutina', 'error');
   } finally {
     guardando.value = false;
   }
@@ -291,5 +405,15 @@ const asignarRutina = async () => {
 
 onMounted(() => {
   obtenerAlumnos();
+  obtenerRutinas();
 });
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
