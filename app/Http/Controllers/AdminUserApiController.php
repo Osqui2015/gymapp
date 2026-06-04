@@ -183,7 +183,8 @@ class AdminUserApiController extends Controller
             }
         });
 
-        AuditLog::log('assigned_trainer', "Asignó {$alumnoIds ? count($alumnoIds) : 0} alumnos a {$trainer->name}", auth()->id(), User::class, $trainerId);
+        $count = !empty($alumnoIds) ? count($alumnoIds) : 0;
+        AuditLog::log('assigned_trainer', "Asignó {$count} alumnos a {$trainer->name}", auth()->id(), User::class, $trainerId);
 
         return response()->json([
             'success' => true,
