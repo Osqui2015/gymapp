@@ -13,7 +13,7 @@
       </div>
 
       <div class="mb-6">
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <input
             v-model="busqueda"
             type="text"
@@ -21,6 +21,14 @@
             class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             @keyup.enter="buscar"
           />
+          <select
+            v-model="grupoMuscularFiltro"
+            @change="buscar"
+            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[200px]"
+          >
+            <option value="">Todos los grupos musculares</option>
+            <option v-for="grupo in gruposMusculares" :key="grupo" :value="grupo">{{ grupo }}</option>
+          </select>
           <button
             @click="buscar"
             class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
@@ -28,7 +36,7 @@
             Buscar
           </button>
           <button
-            v-if="busqueda"
+            v-if="busqueda || grupoMuscularFiltro"
             @click="limpiarBusqueda"
             class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-lg text-sm font-medium transition-all"
           >
@@ -182,6 +190,8 @@ import axios from 'axios';
 
 const ejercicios = ref([]);
 const busqueda = ref('');
+const grupoMuscularFiltro = ref('');
+const gruposMusculares = ref([]);
 const mostrarModal = ref(false);
 const paginaActual = ref(1);
 const totalPages = ref(1);
@@ -203,9 +213,20 @@ const fetchUserInfo = async () => {
   }
 };
 
+const fetchGruposMusculares = async () => {
+  try {
+    const response = await axios.get('/api/ejercicios/grupos-musculares');
+    gruposMusculares.value = response.data;
+  } catch (error) {
+    console.error('Error al obtener grupos musculares:', error);
+  }
+};
+
 const fetchEjercicios = async (page = 1) => {
   try {
-    const params = { page, ...(busqueda.value ? { busqueda: busqueda.value } : {}) };
+    const params = { page };
+    if (busqueda.value) params.busqueda = busqueda.value;
+    if (grupoMuscularFiltro.value) params.grupo_muscular = grupoMuscularFiltro.value;
     const response = await axios.get('/api/ejercicios', { params });
     ejercicios.value = response.data.data || response.data;
     paginaActual.value = response.data.current_page || 1;
@@ -244,6 +265,7 @@ const buscar = () => {
 
 const limpiarBusqueda = () => {
   busqueda.value = '';
+  grupoMuscularFiltro.value = '';
   fetchEjercicios();
 };
 
@@ -275,6 +297,7 @@ const eliminar = async (id) => {
 
 onMounted(() => {
   fetchUserInfo();
+  fetchGruposMusculares();
   fetchEjercicios();
 });
 </script>

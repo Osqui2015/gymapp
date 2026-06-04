@@ -16,9 +16,24 @@ class EjercicioController extends Controller
                   ->orWhere('equipamiento', 'like', '%' . $request->busqueda . '%');
         }
 
+        if ($request->has('grupo_muscular') && $request->grupo_muscular) {
+            $query->where('grupo_muscular', $request->grupo_muscular);
+        }
+
         $ejercicios = $query->paginate(20);
 
         return response()->json($ejercicios);
+    }
+
+    public function gruposMusculares()
+    {
+        $grupos = Ejercicio::whereNotNull('grupo_muscular')
+            ->where('grupo_muscular', '!=', '')
+            ->distinct()
+            ->orderBy('grupo_muscular')
+            ->pluck('grupo_muscular');
+
+        return response()->json($grupos);
     }
 
     public function store(Request $request)
