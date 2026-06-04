@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Historial;
 use App\Models\Rutina;
 use App\Models\User;
+use App\Services\AchievementService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -70,7 +71,12 @@ class HistorialController extends Controller
             $data
         );
 
-        return response()->json(['message' => 'Guardado']);
+        $newMedals = AchievementService::checkWorkoutMilestones($user);
+
+        return response()->json([
+            'message' => 'Guardado',
+            'new_medals' => $newMedals,
+        ]);
     }
 
     public function marcarCompletado(Request $request)
@@ -88,7 +94,12 @@ class HistorialController extends Controller
             $historial->update(['completado' => true]);
         }
 
-        return response()->json(['message' => 'Completado']);
+        $newMedals = AchievementService::checkWorkoutMilestones($user);
+
+        return response()->json([
+            'message' => 'Completado',
+            'new_medals' => $newMedals,
+        ]);
     }
 
     public function obtenerProgreso(Request $request)
@@ -207,10 +218,13 @@ class HistorialController extends Controller
             'dia_actual' => $diaSiguiente,
         ]);
 
+        $newMedals = AchievementService::checkWorkoutMilestones($user);
+
         return response()->json([
             'message' => 'Rutina finalizada',
             'dia_actual' => $diaSiguiente,
             'rutina_nombre' => $rutinaNombre,
+            'new_medals' => $newMedals,
         ]);
     }
 }

@@ -21,6 +21,8 @@ class Historial extends Model
         'peso',
         'completado',
         'fecha',
+        'comentario_trainer',
+        'trainer_id',
     ];
 
     protected $casts = [
@@ -29,10 +31,16 @@ class Historial extends Model
         'peso' => 'decimal:2',
         'completado' => 'boolean',
         'fecha' => 'date',
+        'trainer_id' => 'integer',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function trainer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
     }
 }

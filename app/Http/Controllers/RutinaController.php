@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rutina;
+use App\Services\AchievementService;
 use Illuminate\Http\Request;
 
 class RutinaController extends Controller
@@ -12,13 +13,21 @@ class RutinaController extends Controller
         $user = $request->user();
         $query = Rutina::query();
 
-        // Only show default routines (created_by is null) OR custom routines created by this user
-        $query->where(function ($q) use ($user) {
-            $q->whereNull('created_by');
+        if ($request->boolean('comunitarias')) {
+            // Community routines: published by others
+            $query->where('publica', true);
             if ($user) {
-                $q->orWhere('created_by', $user->id);
+                $query->where('created_by', '!=', $user->id);
             }
-        });
+        } else {
+            // Standard user routines: default (null created_by) OR owned by user
+            $query->where(function ($q) use ($user) {
+                $q->whereNull('created_by');
+                if ($user) {
+                    $q->orWhere('created_by', $user->id);
+                }
+            });
+        }
 
         if ($request->has('nivel') && $request->nivel) {
             $query->where('nivel', $request->nivel);
@@ -30,7 +39,7 @@ class RutinaController extends Controller
             $query->where('dia', $request->dia);
         }
 
-        $query->with('ejercicio')->orderBy('orden');
+        $query->with(['ejercicio', 'creador'])->orderBy('orden');
 
         $rutinas = $query->get();
 
@@ -56,6 +65,90 @@ class RutinaController extends Controller
         $rutina = Rutina::create($data);
 
         return response()->json($rutina, 201);
+    }
+
+    public function compartir(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'nivel' => 'required|string|in:Personalizada',
+            'modalidad' => 'required|string',
+        ]);
+
+        $affected = Rutina::where('created_by', $user->id)
+            ->where('nivel', $data['nivel'])
+            ->where('modalidad', $data['modalidad'])
+            ->update(['publica' => true]);
+
+        if ($affected === 0) {
+            return response()->json(['error' => 'Rutina no encontrada o no pertenece a este usuario.'], 404);
+        }
+
+        // Check if creator achievements are unlocked
+        $newMedals = AchievementService::checkRoutineMilestones($user);
+
+        return response()->json([
+            'message' => 'Rutina compartida con la comunidad con éxito.',
+            'new_medals' => $newMedals,
+        ]);
+    }
+
+    public function importar(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'nivel' => 'required|string',
+            'modalidad' => 'required|string',
+            'created_by' => 'required|integer',
+        ]);
+
+        $rutinasToImport = Rutina::where('nivel', $data['nivel'])
+            ->where('modalidad', $data['modalidad'])
+            ->where('created_by', $data['created_by'])
+            ->where('publica', true)
+            ->get();
+
+        if ($rutinasToImport->isEmpty()) {
+            return response()->json(['error' => 'La rutina seleccionada no está disponible para importar.'], 404);
+        }
+
+        // Resolve name collision
+        $importedName = $data['modalidad'];
+        $exists = Rutina::where('created_by', $user->id)
+            ->where('nivel', 'Personalizada')
+            ->where('modalidad', $importedName)
+            ->exists();
+
+        if ($exists) {
+            $importedName = $data['modalidad'] . ' (Importada)';
+            $counter = 1;
+            while (Rutina::where('created_by', $user->id)->where('nivel', 'Personalizada')->where('modalidad', $importedName)->exists()) {
+                $importedName = $data['modalidad'] . ' (Importada) ' . $counter;
+                $counter++;
+            }
+        }
+
+        // Copy each exercise
+        foreach ($rutinasToImport as $rutina) {
+            Rutina::create([
+                'nivel' => 'Personalizada',
+                'modalidad' => $importedName,
+                'dia' => $rutina->dia,
+                'created_by' => $user->id,
+                'series' => $rutina->series,
+                'reps_min' => $rutina->reps_min,
+                'reps_max' => $rutina->reps_max,
+                'descanso_min' => $rutina->descanso_min,
+                'ejercicio_nombre' => $rutina->ejercicio_nombre,
+                'orden' => $rutina->orden,
+                'publica' => false, // imported copy is private
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Rutina importada con éxito.',
+            'modalidad' => $importedName,
+        ]);
     }
 
     public function destroy(Request $request)

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Membresia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -91,5 +93,50 @@ class User extends Authenticatable
     public function rutinasAsignadas(): HasMany
     {
         return $this->hasMany(UserRutina::class, 'assigned_by');
+    }
+
+    public function membresia(): HasOne
+    {
+        return $this->hasOne(Membresia::class);
+    }
+
+    public function membresias(): HasMany
+    {
+        return $this->hasMany(Membresia::class);
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    public function getMembresiaActiva(): ?Membresia
+    {
+        return $this->membresias()
+            ->whereIn('estado', ['activo', 'por_vencer'])
+            ->where('fecha_vencimiento', '>=', now()->toDateString())
+            ->first();
+    }
+
+    public function getEstaVencido(): bool
+    {
+        $membresia = $this->getMembresiaActiva();
+        return $membresia === null && $this->membresias()->exists();
+    }
+
+    public function getPuedoAcceder(): bool
+    {
+        // Administradores siempre pueden acceder
+        if ($this->hasRole([self::ROLE_ADMINISTRADOR])) {
+            return true;
+        }
+
+        // Trainers pueden acceder sin membresía formal
+        if ($this->hasRole([self::ROLE_TRAINER])) {
+            return true;
+        }
+
+        // Verificar membresía activa
+        return $this->getMembresiaActiva() !== null;
     }
 }

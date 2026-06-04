@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -45,6 +46,7 @@ class AdminUserApiController extends Controller
     public function update(Request $request, int $id)
     {
         $user = User::findOrFail($id);
+        $oldValues = $user->toArray();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -61,6 +63,11 @@ class AdminUserApiController extends Controller
             'telefono' => $data['telefono'] ?? null,
             'role' => $data['role'],
         ];
+
+        // Registrar cambio de rol
+        if ($oldValues['role'] !== $data['role']) {
+            AuditLog::log('role_changed', "Cambió rol de {$user->name} de {$oldValues['role']} a {$data['role']}", auth()->id(), User::class, $user->id, ['role' => $oldValues['role']], ['role' => $data['role']]);
+        }
 
         if ($data['role'] !== User::ROLE_ALUMNO) {
             $updateData['trainer_id'] = null;
@@ -83,6 +90,8 @@ class AdminUserApiController extends Controller
 
         $user->update($updateData);
 
+        AuditLog::forModel($user, 'updated', $oldValues, $user->toArray());
+
         return response()->json(['success' => true, 'user' => $user]);
     }
 
@@ -94,7 +103,11 @@ class AdminUserApiController extends Controller
             return response()->json(['error' => 'No puedes suspender tu propia cuenta'], 403);
         }
 
+        $oldSuspended = $user->suspended;
         $user->update(['suspended' => ! $user->suspended]);
+
+        $action = $user->suspended ? 'suspended' : 'unsuspended';
+        AuditLog::log($action, "{$action} al usuario {$user->name}", auth()->id(), User::class, $user->id, ['suspended' => $oldSuspended], ['suspended' => $user->suspended]);
 
         return response()->json(['success' => true, 'suspended' => $user->suspended]);
     }
@@ -107,7 +120,11 @@ class AdminUserApiController extends Controller
             return response()->json(['error' => 'No puedes eliminar tu propia cuenta'], 403);
         }
 
+        $userName = $user->name;
+        $userData = $user->toArray();
         $user->delete();
+
+        AuditLog::log('deleted', "Eliminó al usuario {$userName}", auth()->id(), User::class, $id, $userData, null);
 
         return response()->json(['success' => true]);
     }
@@ -155,7 +172,7 @@ class AdminUserApiController extends Controller
             }
         }
 
-        \DB::transaction(function () use ($trainerId, $alumnoIds) {
+        \DB::transaction(function () use ($trainerId, $alumnoIds, $trainer) {
             User::where('trainer_id', $trainerId)
                 ->whereNotIn('id', $alumnoIds)
                 ->update(['trainer_id' => null]);
@@ -165,6 +182,8 @@ class AdminUserApiController extends Controller
                     ->update(['trainer_id' => $trainerId]);
             }
         });
+
+        AuditLog::log('assigned_trainer', "Asignó {$alumnoIds ? count($alumnoIds) : 0} alumnos a {$trainer->name}", auth()->id(), User::class, $trainerId);
 
         return response()->json([
             'success' => true,

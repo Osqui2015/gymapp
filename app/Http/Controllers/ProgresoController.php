@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Progreso;
+use App\Services\AchievementService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -92,9 +93,12 @@ class ProgresoController extends Controller
             'pantorrillas' => $data['pantorrillas'] ?? null,
         ]);
 
+        $newMedals = AchievementService::checkProgressMilestones($user);
+
         return response()->json([
             'message' => 'Progreso guardado correctamente',
             'progreso' => $progreso,
+            'new_medals' => $newMedals,
         ]);
     }
 

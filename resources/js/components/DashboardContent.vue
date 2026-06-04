@@ -279,11 +279,90 @@
         </div>
       </div>
     </div>
+
+    <!-- Floating Rest Timer Panel -->
+    <transition name="slide-fade">
+      <div
+        v-if="timer.activo"
+        class="fixed bottom-20 md:bottom-6 right-6 z-50 w-80 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-800 p-4 transform transition-all duration-300"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-semibold">Descanso Activo</p>
+            <h4 class="text-xs font-bold truncate max-w-[180px]">{{ timer.ejercicioNombre }}</h4>
+          </div>
+          <button @click="saltarTemporizador" class="text-slate-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="relative flex items-center justify-center w-14 h-14">
+              <svg class="absolute w-full h-full transform -rotate-90">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="#1e293b"
+                  stroke-width="3.5"
+                  fill="transparent"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="#6366f1"
+                  stroke-width="3.5"
+                  fill="transparent"
+                  :stroke-dasharray="150.796"
+                  :stroke-dashoffset="dashOffset"
+                  stroke-linecap="round"
+                  class="transition-all duration-300"
+                />
+              </svg>
+              <span class="text-xs font-mono font-bold">{{ formattedRemainingTime }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 flex-1 justify-end">
+            <button
+              @click="pausarReanudarTemporizador"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+              :title="timer.pausado ? 'Reanudar' : 'Pausar'"
+            >
+              <svg v-if="timer.pausado" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <svg v-else class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <button
+              @click="agregarTiempoTemporizador"
+              class="px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+              title="Añadir 30s"
+            >
+              <span>+30s</span>
+            </button>
+            <button
+              @click="saltarTemporizador"
+              class="px-2.5 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              title="Saltar"
+            >
+              <span>Saltar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
 import ToastNotification from './ToastNotification.vue';
@@ -511,6 +590,10 @@ const guardarFila = async (fila, silencioso = false) => {
       peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
       completado: fila.completado,
     });
+
+    if (!silencioso && fila.completado) {
+      iniciarTemporizador(fila);
+    }
   } catch (error) {
     if (!silencioso) {
       console.error('Error:', error);
@@ -631,4 +714,133 @@ watch(() => rutinaStore.seleccionada, (newVal) => {
     fetchRutinasDelDia();
   }
 });
+
+// Lógica del Temporizador de Descanso
+const timer = ref({
+  activo: false,
+  totalSegundos: 0,
+  segundosRestantes: 0,
+  ejercicioNombre: '',
+  timerId: null,
+  pausado: false,
+});
+
+const formattedRemainingTime = computed(() => {
+  const mins = Math.floor(timer.value.segundosRestantes / 60);
+  const secs = timer.value.segundosRestantes % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+});
+
+const dashOffset = computed(() => {
+  if (timer.value.totalSegundos === 0) return 0;
+  const circumference = 150.796;
+  const ratio = timer.value.segundosRestantes / timer.value.totalSegundos;
+  return circumference - (ratio * circumference);
+});
+
+const iniciarTemporizador = (fila) => {
+  if (timer.value.timerId) {
+    clearInterval(timer.value.timerId);
+  }
+
+  const descansoMinutos = parseFloat(fila.descanso_min) || 1.5;
+  const totalSegundos = Math.round(descansoMinutos * 60);
+
+  timer.value = {
+    activo: true,
+    totalSegundos,
+    segundosRestantes: totalSegundos,
+    ejercicioNombre: fila.ejercicio_nombre,
+    pausado: false,
+    timerId: null,
+  };
+
+  runTimer();
+};
+
+const runTimer = () => {
+  timer.value.timerId = setInterval(() => {
+    if (!timer.value.pausado) {
+      if (timer.value.segundosRestantes > 0) {
+        timer.value.segundosRestantes--;
+      } else {
+        finalizarTemporizador();
+      }
+    }
+  }, 1000);
+};
+
+const pausarReanudarTemporizador = () => {
+  timer.value.pausado = !timer.value.pausado;
+};
+
+const agregarTiempoTemporizador = () => {
+  timer.value.segundosRestantes += 30;
+  timer.value.totalSegundos += 30;
+};
+
+const saltarTemporizador = () => {
+  if (timer.value.timerId) {
+    clearInterval(timer.value.timerId);
+  }
+  timer.value.activo = false;
+};
+
+const finalizarTemporizador = () => {
+  if (timer.value.timerId) {
+    clearInterval(timer.value.timerId);
+  }
+  timer.value.activo = false;
+  reproducirBeep();
+};
+
+const reproducirBeep = () => {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const playBeep = (time, frequency, duration) => {
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.value = frequency;
+      
+      gainNode.gain.setValueAtTime(0, time);
+      gainNode.gain.linearRampToValueAtTime(0.3, time + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+
+    const now = audioCtx.currentTime;
+    playBeep(now, 880, 0.4);
+    playBeep(now + 0.5, 880, 0.4);
+  } catch (e) {
+    console.error('AudioContext no soportado o bloqueado:', e);
+  }
+};
+
+onUnmounted(() => {
+  if (timer.value.timerId) {
+    clearInterval(timer.value.timerId);
+  }
+});
 </script>
+
+<style scoped>
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+}
+</style>

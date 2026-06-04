@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ejercicio;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
 class EjercicioController extends Controller
@@ -50,13 +51,18 @@ class EjercicioController extends Controller
 
         $ejercicio = Ejercicio::create($data);
 
+        AuditLog::forModel($ejercicio, 'created', null, $data);
+
         return response()->json($ejercicio, 201);
     }
 
     public function destroy($id)
     {
         $ejercicio = Ejercicio::findOrFail($id);
+        $ejercicioData = $ejercicio->toArray();
         $ejercicio->delete();
+
+        AuditLog::log('deleted', "Eliminó ejercicio {$ejercicioData['nombre']}", auth()->id(), Ejercicio::class, $id, $ejercicioData, null);
 
         return response()->json(['message' => 'Eliminado']);
     }

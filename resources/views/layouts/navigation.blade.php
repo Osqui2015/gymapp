@@ -44,13 +44,81 @@
                         </svg>
                         {{ __('Progreso') }}
                     </x-nav-link>
+                    {{-- Oculto por ahora:
+                    <x-nav-link :href="route('nutricion')" :active="request()->routeIs('nutricion')" class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        {{ __('Nutrición') }}
+                    </x-nav-link>
+                    --}}
                     @if (Auth::user()->hasRole(['trainer', 'administrador']))
-                        <x-nav-link :href="route('trainer.alumnos')" :active="request()->routeIs('trainer.alumnos')" class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            Trainer
-                        </x-nav-link>
+                        <div x-data="{ trainerOpen: false }" class="relative">
+                            <button @click="trainerOpen = !trainerOpen" @click.away="trainerOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all" :class="request()->routeIs('trainer.*') ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                Trainer
+                                <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': trainerOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="trainerOpen" x-transition class="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50" style="display: none;">
+                                <div class="py-2">
+                                    <a href="{{ route('trainer.dashboard') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('trainer.dashboard') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">📊</span>
+                                        <span class="font-medium">Dashboard</span>
+                                    </a>
+                                    <a href="{{ route('trainer.alumnos') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('trainer.alumnos') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">👥</span>
+                                        <span class="font-medium">Alumnos</span>
+                                    </a>
+                                    <a href="{{ route('trainer.ejercicios') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('trainer.ejercicios') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">🏋️</span>
+                                        <span class="font-medium">Ejercicios Privados</span>
+                                    </a>
+                                    <a href="{{ route('trainer.duplicar') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('trainer.duplicar') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">📋</span>
+                                        <span class="font-medium">Duplicar Rutinas</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if (Auth::user()->hasRole('administrador'))
+                        <div x-data="{ adminOpen: false }" class="relative">
+                            <button @click="adminOpen = !adminOpen" @click.away="adminOpen = false" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all" :class="request()->routeIs('admin.*') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Admin
+                                <svg class="w-4 h-4 transition-transform" :class="{'rotate-180': adminOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="adminOpen" x-transition class="absolute left-0 mt-2 w-60 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50" style="display: none;">
+                                <div class="py-2">
+                                    <a href="{{ route('admin.estadisticas') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('admin.estadisticas') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">📊</span>
+                                        <span class="font-medium">Estadísticas</span>
+                                    </a>
+                                    <a href="{{ route('admin.membresias') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('admin.membresias') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">💳</span>
+                                        <span class="font-medium">Membresías</span>
+                                    </a>
+                                    <a href="{{ route('admin.audit-logs') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('admin.audit-logs') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">📋</span>
+                                        <span class="font-medium">Audit Logs</span>
+                                    </a>
+                                    <a href="{{ route('admin.import-export') }}" class="flex items-center gap-3 px-4 py-3 text-sm {{ request()->routeIs('admin.import-export') ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }} transition-colors">
+                                        <span class="text-lg">📂</span>
+                                        <span class="font-medium">Importar/Exportar</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -171,13 +239,56 @@
                 </svg>
                 {{ __('Progreso') }}
             </x-responsive-nav-link>
+            {{-- Oculto por ahora:
+            <x-responsive-nav-link :href="route('nutricion')" :active="request()->routeIs('nutricion')" class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {{ __('Nutrición') }}
+            </x-responsive-nav-link>
+            --}}
             @if (Auth::user()->hasRole(['trainer', 'administrador']))
-                <x-responsive-nav-link :href="route('trainer.alumnos')" :active="request()->routeIs('trainer.alumnos')" class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    {{ __('Trainer') }}
-                </x-responsive-nav-link>
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Panel Trainer</p>
+                    <x-responsive-nav-link :href="route('trainer.dashboard')" :active="request()->routeIs('trainer.dashboard')" class="flex items-center gap-2">
+                        <span>📊</span>
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('trainer.alumnos')" :active="request()->routeIs('trainer.alumnos')" class="flex items-center gap-2">
+                        <span>👥</span>
+                        {{ __('Alumnos') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('trainer.ejercicios')" :active="request()->routeIs('trainer.ejercicios')" class="flex items-center gap-2">
+                        <span>🏋️</span>
+                        {{ __('Ejercicios Privados') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('trainer.duplicar')" :active="request()->routeIs('trainer.duplicar')" class="flex items-center gap-2">
+                        <span>📋</span>
+                        {{ __('Duplicar Rutinas') }}
+                    </x-responsive-nav-link>
+                </div>
+            @endif
+
+            @if (Auth::user()->hasRole('administrador'))
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p class="px-4 text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Panel Admin</p>
+                    <x-responsive-nav-link :href="route('admin.estadisticas')" :active="request()->routeIs('admin.estadisticas')" class="flex items-center gap-2">
+                        <span>📊</span>
+                        {{ __('Estadísticas') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.membresias')" :active="request()->routeIs('admin.membresias')" class="flex items-center gap-2">
+                        <span>💳</span>
+                        {{ __('Membresías') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.audit-logs')" :active="request()->routeIs('admin.audit-logs')" class="flex items-center gap-2">
+                        <span>📋</span>
+                        {{ __('Audit Logs') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.import-export')" :active="request()->routeIs('admin.import-export')" class="flex items-center gap-2">
+                        <span>📂</span>
+                        {{ __('Importar/Exportar') }}
+                    </x-responsive-nav-link>
+                </div>
             @endif
         </div>
 
