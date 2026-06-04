@@ -234,10 +234,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import axios from 'axios';
-
-const router = useRouter();
 
 const rutina = ref({
   nivel: '',
@@ -368,7 +365,7 @@ const guardarRutina = async () => {
     }
 
     alert('Rutina guardada correctamente');
-    router.push('/rutinas');
+    window.location.href = '/rutinas';
   } catch (error) {
     console.error('Error:', error);
     alert('No se pudo guardar la rutina');
