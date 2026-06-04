@@ -9,6 +9,26 @@
             <p class="mt-3 text-sm md:text-base text-slate-300 max-w-2xl">
               Revisa la evolución de tus ejercicios, el promedio de peso utilizado y cómo cambia el rendimiento por día.
             </p>
+            
+            <!-- Selector de alumno para entrenadores/admins -->
+            <div v-if="isTrainerOrAdmin && alumnos.length" class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-4 max-w-xl">
+              <div class="flex items-center gap-2 text-indigo-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span class="text-sm font-semibold">Ver historial de:</span>
+              </div>
+              <select
+                id="alumno-select"
+                v-model="selectedAlumnoId"
+                @change="onAlumnoChange"
+                class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto min-w-[200px]"
+              >
+                <option v-for="alumno in alumnos" :key="alumno.id" :value="alumno.id">
+                  {{ alumno.name }} ({{ alumno.nick }})
+                </option>
+              </select>
+            </div>
           </div>
           <div class="flex items-center gap-3">
             <a
@@ -41,15 +61,105 @@
       </div>
 
       <div v-if="loading" class="text-center py-16 text-gray-500 dark:text-gray-400">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
         Cargando historial...
       </div>
 
+      <div v-else-if="isTrainerOrAdmin && alumnos.length === 0" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No tienes alumnos asignados a tu cargo.</p>
+      </div>
+
+      <div v-else-if="isTrainerOrAdmin && !selectedAlumnoId" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-lg">Por favor, selecciona un alumno para ver su historial.</p>
+      </div>
+
       <div v-else-if="!resumenEjercicios.length" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-lg">Aún no hay historial para mostrar.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-lg">Aún no hay historial registrado para mostrar.</p>
       </div>
 
       <div v-else class="space-y-6">
-        <!-- Tabla de Progreso General con Pesos Máximos -->
+        <!-- Pestañas de Navegación -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6 gap-6">
+          <button
+            @click="activeTab = 'matrix'"
+            :class="activeTab === 'matrix' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+            class="pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Matriz de Progreso
+          </button>
+          <button
+            @click="activeTab = 'evolution'"
+            :class="activeTab === 'evolution' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+            class="pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Evolución Detallada
+          </button>
+        </div>
+
+        <!-- Vista: Matriz de Progreso -->
+        <div v-if="activeTab === 'matrix'" class="space-y-6">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Matriz de Cargas por Fecha
+              </h2>
+              <button 
+                @click="toggleDateSort" 
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-colors"
+              >
+                <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+                Orden: {{ dateSortAsc ? 'Cronológico' : 'Últimos primero' }}
+              </button>
+            </div>
+            
+            <div class="p-6">
+              <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                <table class="w-full text-sm text-left border-collapse">
+                  <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
+                    <tr>
+                      <th class="sticky left-0 z-20 bg-gray-100 dark:bg-gray-600 px-4 py-3.5 font-bold border-r border-gray-200 dark:border-gray-700 min-w-[200px]">
+                        Ejercicio
+                      </th>
+                      <th v-for="date in pivotData.dates" :key="date.raw" class="px-4 py-3.5 font-bold text-center border-r border-gray-200 dark:border-gray-700 min-w-[100px]">
+                        {{ date.formatted }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr v-for="row in pivotData.rows" :key="row.name" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
+                      <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3.5 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        {{ row.name }}
+                      </td>
+                      <td v-for="date in pivotData.dates" :key="date.raw" class="px-4 py-3.5 text-center border-r border-gray-200 dark:border-gray-700 font-medium">
+                        <span v-if="row.weights[date.raw] !== '-'" class="inline-flex items-center justify-center rounded-md bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ row.weights[date.raw] }}
+                        </span>
+                        <span v-else class="text-gray-400 dark:text-gray-600 font-normal">
+                          -
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista: Evolución Detallada -->
+        <div v-if="activeTab === 'evolution'" class="space-y-6">
+          <!-- Tabla de Progreso General con Pesos Máximos -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
           <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -242,6 +352,7 @@
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <script setup>
@@ -255,6 +366,91 @@ const chartHeight = 260;
 const marginLeft = 50;
 const marginRight = 20;
 const marginBottom = 36;
+
+const isTrainerOrAdmin = ref(false);
+const alumnos = ref([]);
+const selectedAlumnoId = ref(null);
+const userRole = ref('');
+const activeTab = ref('matrix');
+const dateSortAsc = ref(true);
+
+const toggleDateSort = () => {
+  dateSortAsc.value = !dateSortAsc.value;
+};
+
+const fetchUserInfo = async () => {
+  try {
+    const res = await axios.get('/api/user-info');
+    userRole.value = res.data.role;
+    isTrainerOrAdmin.value = ['trainer', 'administrador'].includes(res.data.role);
+    if (isTrainerOrAdmin.value) {
+      await fetchAlumnos();
+    }
+  } catch (err) {
+    console.error('Error fetching user info:', err);
+  }
+};
+
+const fetchAlumnos = async () => {
+  try {
+    const res = await axios.get('/api/trainer/alumnos');
+    alumnos.value = res.data;
+    if (alumnos.value.length > 0) {
+      selectedAlumnoId.value = alumnos.value[0].id;
+    }
+  } catch (err) {
+    console.error('Error fetching alumnos:', err);
+  }
+};
+
+const onAlumnoChange = async () => {
+  await loadHistorial();
+};
+
+const pivotData = computed(() => {
+  if (!historial.value || !historial.value.length) return { dates: [], rows: [] };
+
+  const dateMap = new Map();
+  historial.value.forEach(row => {
+    if (!dateMap.has(row.fecha)) {
+      dateMap.set(row.fecha, formatDate(row.fecha));
+    }
+  });
+
+  const sortedDates = [...dateMap.keys()].sort((a, b) => {
+    const dateA = new Date(a);
+    const dateB = new Date(b);
+    return dateSortAsc.value ? dateA - dateB : dateB - dateA;
+  });
+
+  const exercises = [...new Set(historial.value.map(row => row.ejercicio_nombre))].sort();
+
+  const rows = exercises.map(exerciseName => {
+    const exerciseRows = historial.value.filter(row => row.ejercicio_nombre === exerciseName);
+
+    const dateWeights = {};
+    sortedDates.forEach(date => {
+      const dayRows = exerciseRows.filter(row => row.fecha === date && row.peso !== null);
+      if (dayRows.length > 0) {
+        const weights = dayRows.map(row => Number(row.peso));
+        const maxWeight = Math.max(...weights);
+        dateWeights[date] = maxWeight > 0 ? `${maxWeight} kg` : '-';
+      } else {
+        dateWeights[date] = '-';
+      }
+    });
+
+    return {
+      name: exerciseName,
+      weights: dateWeights
+    };
+  });
+
+  return {
+    dates: sortedDates.map(d => ({ raw: d, formatted: dateMap.get(d) })),
+    rows
+  };
+});
 
 const globalMaxWeight = computed(() => {
   const values = historial.value
@@ -469,7 +665,11 @@ const barHeight = (value) => {
 const loadHistorial = async () => {
   loading.value = true;
   try {
-    const response = await axios.get('/api/historial');
+    const params = {};
+    if (isTrainerOrAdmin.value && selectedAlumnoId.value) {
+      params.user_id = selectedAlumnoId.value;
+    }
+    const response = await axios.get('/api/historial', { params });
     historial.value = Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error cargando historial:', error);
@@ -479,7 +679,14 @@ const loadHistorial = async () => {
   }
 };
 
-onMounted(() => {
-  loadHistorial();
+onMounted(async () => {
+  await fetchUserInfo();
+  if (!isTrainerOrAdmin.value) {
+    await loadHistorial();
+  } else if (selectedAlumnoId.value) {
+    await loadHistorial();
+  } else {
+    loading.value = false;
+  }
 });
 </script>
