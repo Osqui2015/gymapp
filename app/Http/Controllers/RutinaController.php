@@ -57,4 +57,37 @@ class RutinaController extends Controller
 
         return response()->json($rutina, 201);
     }
+
+    public function destroy(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'nivel' => 'required|string',
+            'modalidad' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($data, $user) {
+            $query = Rutina::query()
+                ->where('nivel', $data['nivel'])
+                ->where('modalidad', $data['modalidad']);
+
+            if ($user && !$user->hasRole(\App\Models\User::ROLE_ADMINISTRADOR)) {
+                $query->where('created_by', $user->id);
+            }
+
+            $routineIds = $query->pluck('id');
+
+            if ($routineIds->isNotEmpty()) {
+                \App\Models\UserRutina::whereIn('rutina_id', $routineIds)->delete();
+            }
+
+            $query->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rutina eliminada correctamente.',
+        ]);
+    }
 }

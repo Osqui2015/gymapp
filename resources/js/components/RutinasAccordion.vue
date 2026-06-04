@@ -145,12 +145,21 @@
                   </div>
                 </div>
 
-                <div class="p-5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-t border-gray-200 dark:border-gray-700">
+                <div class="p-5 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900/20 dark:to-gray-800/20 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
                   <button
                     @click="seleccionarRutina('Personalizada', modalidad.nombre)"
-                    class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-4 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-4 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   >
                     Seleccionar {{ modalidad.nombre }}
+                  </button>
+                  <button
+                    @click="eliminarRutina('Personalizada', modalidad.nombre)"
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-4 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Eliminar Rutina
                   </button>
                 </div>
               </div>
@@ -369,6 +378,30 @@ const seleccionarRutina = async (nivel, modalidad) => {
     alert('No se pudo guardar la rutina. Intenta de nuevo.');
   } finally {
     isSelecting.value = false;
+  }
+};
+
+const eliminarRutina = async (nivel, modalidad) => {
+  const confirmed = confirm(
+    `¿Estás seguro de que deseas eliminar la rutina "${modalidad}"? Se mantendrá el historial de entrenamiento de los alumnos, pero no podrán volver a seleccionarla.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await axios.delete('/api/rutinas', {
+      data: { nivel, modalidad }
+    });
+    alert('Rutina eliminada correctamente.');
+    
+    if (userRutina.value && userRutina.value.nivel === nivel && userRutina.value.modalidad === modalidad) {
+      userRutina.value = null;
+      rutinaStore.limpiar();
+    }
+    
+    await fetchRutinas();
+  } catch (error) {
+    console.error('Error al eliminar la rutina:', error);
+    alert(error.response?.data?.message || 'No se pudo eliminar la rutina.');
   }
 };
 

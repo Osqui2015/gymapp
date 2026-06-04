@@ -21,6 +21,7 @@ Route::middleware(['web', 'auth', 'role:comun,trainer,administrador'])->group(fu
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/rutinas', [RutinaController::class, 'index']);
+    Route::delete('/rutinas', [RutinaController::class, 'destroy']);
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);
