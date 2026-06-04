@@ -111,4 +111,64 @@ class AdminUserApiController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    public function getTrainersAndAlumnos(Request $request)
+    {
+        $trainers = User::query()
+            ->whereIn('role', [User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])
+            ->orderBy('name')
+            ->get(['id', 'name', 'nick', 'role']);
+
+        $alumnos = User::query()
+            ->where('role', User::ROLE_ALUMNO)
+            ->with('trainer:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'nick', 'email', 'trainer_id']);
+
+        return response()->json([
+            'trainers' => $trainers,
+            'alumnos' => $alumnos,
+        ]);
+    }
+
+    public function assignAlumnosToTrainer(Request $request, int $trainerId)
+    {
+        $trainer = User::findOrFail($trainerId);
+
+        if (!$trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'El usuario seleccionado no es un entrenador válido'], 422);
+        }
+
+        $data = $request->validate([
+            'alumno_ids' => ['nullable', 'array'],
+            'alumno_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $alumnoIds = $data['alumno_ids'] ?? [];
+
+        if (!empty($alumnoIds)) {
+            $invalidCount = User::whereIn('id', $alumnoIds)
+                ->where('role', '!=', User::ROLE_ALUMNO)
+                ->count();
+            if ($invalidCount > 0) {
+                return response()->json(['error' => 'Uno o más usuarios seleccionados no son alumnos válidos'], 422);
+            }
+        }
+
+        \DB::transaction(function () use ($trainerId, $alumnoIds) {
+            User::where('trainer_id', $trainerId)
+                ->whereNotIn('id', $alumnoIds)
+                ->update(['trainer_id' => null]);
+
+            if (!empty($alumnoIds)) {
+                User::whereIn('id', $alumnoIds)
+                    ->update(['trainer_id' => $trainerId]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Alumnos asignados correctamente al entrenador.',
+        ]);
+    }
 }

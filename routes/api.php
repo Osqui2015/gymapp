@@ -51,6 +51,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::put('/admin/users/{id}', [AdminUserApiController::class, 'update']);
         Route::patch('/admin/users/{id}/toggle-suspend', [AdminUserApiController::class, 'toggleSuspend']);
         Route::delete('/admin/users/{id}', [AdminUserApiController::class, 'destroy']);
+        Route::get('/admin/trainers-alumnos', [AdminUserApiController::class, 'getTrainersAndAlumnos']);
+        Route::post('/admin/trainers/{trainerId}/assign-alumnos', [AdminUserApiController::class, 'assignAlumnosToTrainer']);
     });
 });
 

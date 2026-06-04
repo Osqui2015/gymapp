@@ -3,8 +3,32 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Configuración</h1>
 
+            <!-- Pestañas de Navegación -->
+            <div class="flex border-b border-gray-200 dark:border-gray-700 mb-8">
+                <button @click="activeTab = 'usuarios'"
+                    :class="[
+                        'pb-4 px-6 text-sm font-semibold border-b-2 transition-all duration-200',
+                        activeTab === 'usuarios'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ]"
+                >
+                    Gestión de Usuarios
+                </button>
+                <button @click="activeTab = 'trainer_assignment'"
+                    :class="[
+                        'pb-4 px-6 text-sm font-semibold border-b-2 transition-all duration-200',
+                        activeTab === 'trainer_assignment'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ]"
+                >
+                    Asignar Alumnos a Trainers
+                </button>
+            </div>
+
             <!-- Gestión de Usuarios (solo administradores) -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+            <div v-show="activeTab === 'usuarios'" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
                 <div class="px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,6 +303,148 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Asignación de Alumnos a Trainers -->
+            <div v-show="activeTab === 'trainer_assignment'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Columna Izquierda: Lista de Entrenadores -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden lg:col-span-1">
+                    <div class="px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Entrenadores
+                        </h2>
+                    </div>
+                    <div class="p-4 space-y-2 max-h-[550px] overflow-y-auto bg-gray-50/50 dark:bg-gray-900/10">
+                        <div v-for="t in trainerList" :key="t.id"
+                            @click="selectTrainerForAssignment(t)"
+                            :class="[
+                                'p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between',
+                                selectedTrainer?.id === t.id
+                                    ? 'bg-indigo-50 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-500 text-indigo-900 dark:text-indigo-100 shadow-sm'
+                                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
+                            ]">
+                            <div>
+                                <p class="font-bold text-sm">{{ t.name }}</p>
+                                <p class="text-xs text-gray-400">@{{ t.nick }} • <span class="capitalize">{{ t.role }}</span></p>
+                            </div>
+                            <svg v-if="selectedTrainer?.id === t.id" class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Alumnos con Checkbox -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden lg:col-span-2">
+                    <div class="px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            Alumnos Asignados
+                        </h2>
+                        <span v-if="selectedTrainer" class="px-3 py-1 bg-white/20 text-white rounded-full text-xs font-semibold">
+                            {{ selectedTrainerAlumnosCount }} alumnos
+                        </span>
+                    </div>
+
+                    <!-- Si no hay entrenador seleccionado -->
+                    <div v-if="!selectedTrainer" class="p-12 text-center text-gray-500 dark:text-gray-400">
+                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <p class="text-lg font-semibold">Selecciona un entrenador a la izquierda</p>
+                        <p class="text-sm text-gray-400 mt-1">Para gestionar, activar o modificar su listado de alumnos.</p>
+                    </div>
+
+                    <!-- Con entrenador seleccionado -->
+                    <div v-else class="p-6 space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Alumnos de: {{ selectedTrainer.name }}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Marca los alumnos que entrenarán bajo el cargo de este entrenador.</p>
+                            </div>
+                            <!-- Botón guardar -->
+                            <button @click="guardarAsignacionMasiva" :disabled="guardandoAsignacion"
+                                class="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-5 py-2.5 rounded-lg font-semibold transition-all shadow-md text-sm gap-2">
+                                <svg v-if="guardandoAsignacion" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                {{ guardandoAsignacion ? 'Guardando...' : 'Guardar Cambios' }}
+                            </button>
+                        </div>
+
+                        <!-- Filtro de Alumnos y Botones de selección rápida -->
+                        <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                            <div class="relative w-full sm:w-72">
+                                <input v-model="searchFilterAlumno" type="text"
+                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    placeholder="Buscar alumno...">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="seleccionarTodosAlumnos" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-xs font-semibold transition-colors">
+                                    Seleccionar Todos
+                                </button>
+                                <button @click="desmarcarTodosAlumnos" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-xs font-semibold transition-colors">
+                                    Desmarcar Todos
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Lista con checkboxes -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-200 dark:divide-gray-700 max-h-[450px] overflow-y-auto bg-gray-50 dark:bg-gray-900/40">
+                            <label v-for="a in filteredAlumnosForAssignment" :key="a.id"
+                                :class="[
+                                    'p-4 flex items-center gap-4 cursor-pointer transition-colors',
+                                    isAlumnoChecked(a.id)
+                                        ? 'bg-indigo-50/40 dark:bg-indigo-950/20'
+                                        : 'hover:bg-white dark:hover:bg-gray-800'
+                                ]">
+                                <input type="checkbox"
+                                    :value="a.id"
+                                    v-model="checkedAlumnos"
+                                    class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                <div class="flex-1 flex items-center justify-between gap-4">
+                                    <div>
+                                        <p class="font-semibold text-sm text-gray-900 dark:text-white">{{ a.name }}</p>
+                                        <p class="text-xs text-gray-400">@{{ a.nick }} • {{ a.email }}</p>
+                                    </div>
+                                    <!-- Si está asignado a otro trainer, mostrar aviso -->
+                                    <div v-if="a.trainer_id && a.trainer_id !== selectedTrainer.id" class="text-right">
+                                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900/40">
+                                            Asignado a: {{ a.trainer?.name }}
+                                        </span>
+                                    </div>
+                                    <div v-else-if="a.trainer_id === selectedTrainer.id" class="text-right">
+                                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-900/40">
+                                            Activo
+                                        </span>
+                                    </div>
+                                    <div v-else class="text-right">
+                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                            Sin Asignar
+                                        </span>
+                                    </div>
+                                </div>
+                            </label>
+                            <div v-if="filteredAlumnosForAssignment.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                                No se encontraron alumnos.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Modal Editar Usuario -->
@@ -401,8 +567,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
+
+const activeTab = ref('usuarios');
+const trainerList = ref([]);
+const alumnoList = ref([]);
+const selectedTrainer = ref(null);
+const checkedAlumnos = ref([]);
+const searchFilterAlumno = ref('');
+const guardandoAsignacion = ref(false);
 
 const users = ref([]);
 const trainers = ref([]);
@@ -600,6 +774,88 @@ const eliminarUsuario = async (user) => {
 
 const cargarUsuarios = () => {
     cargarDatos();
+};
+
+const cargarDatosAsignacion = async () => {
+    try {
+        const response = await axios.get('/api/admin/trainers-alumnos');
+        trainerList.value = response.data.trainers || [];
+        alumnoList.value = response.data.alumnos || [];
+        
+        if (selectedTrainer.value) {
+            const updatedTrainer = trainerList.value.find(t => t.id === selectedTrainer.value.id);
+            if (updatedTrainer) {
+                selectTrainerForAssignment(updatedTrainer);
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar datos de asignación:', error);
+    }
+};
+
+watch(activeTab, (newTab) => {
+    if (newTab === 'trainer_assignment') {
+        cargarDatosAsignacion();
+    }
+});
+
+const selectTrainerForAssignment = (trainer) => {
+    selectedTrainer.value = trainer;
+    checkedAlumnos.value = alumnoList.value
+        .filter(a => a.trainer_id === trainer.id)
+        .map(a => a.id);
+};
+
+const selectedTrainerAlumnosCount = computed(() => {
+    if (!selectedTrainer.value) return 0;
+    return checkedAlumnos.value.length;
+});
+
+const filteredAlumnosForAssignment = computed(() => {
+    if (!searchFilterAlumno.value) {
+        return alumnoList.value;
+    }
+    const search = searchFilterAlumno.value.toLowerCase();
+    return alumnoList.value.filter(a => 
+        a.name.toLowerCase().includes(search) || 
+        a.nick.toLowerCase().includes(search) || 
+        a.email.toLowerCase().includes(search)
+    );
+});
+
+const isAlumnoChecked = (id) => {
+    return checkedAlumnos.value.includes(id);
+};
+
+const seleccionarTodosAlumnos = () => {
+    filteredAlumnosForAssignment.value.forEach(a => {
+        if (!checkedAlumnos.value.includes(a.id)) {
+            checkedAlumnos.value.push(a.id);
+        }
+    });
+};
+
+const desmarcarTodosAlumnos = () => {
+    const filteredIds = filteredAlumnosForAssignment.value.map(a => a.id);
+    checkedAlumnos.value = checkedAlumnos.value.filter(id => !filteredIds.includes(id));
+};
+
+const guardarAsignacionMasiva = async () => {
+    if (!selectedTrainer.value) return;
+    
+    guardandoAsignacion.value = true;
+    try {
+        await axios.post(`/api/admin/trainers/${selectedTrainer.value.id}/assign-alumnos`, {
+            alumno_ids: checkedAlumnos.value
+        });
+        showToast('Asignación guardada correctamente', 'success');
+        await cargarDatosAsignacion();
+    } catch (error) {
+        const msg = error.response?.data?.error || 'Error al guardar asignaciones';
+        showToast(msg, 'error');
+    } finally {
+        guardandoAsignacion.value = false;
+    }
 };
 
 onMounted(() => {
