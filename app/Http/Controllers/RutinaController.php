@@ -9,7 +9,16 @@ class RutinaController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Rutina::query();
+
+        // Only show default routines (created_by is null) OR custom routines created by this user
+        $query->where(function ($q) use ($user) {
+            $q->whereNull('created_by');
+            if ($user) {
+                $q->orWhere('created_by', $user->id);
+            }
+        });
 
         if ($request->has('nivel') && $request->nivel) {
             $query->where('nivel', $request->nivel);
@@ -41,6 +50,8 @@ class RutinaController extends Controller
             'descanso_min' => 'required|numeric',
             'orden' => 'required|integer',
         ]);
+
+        $data['created_by'] = $request->user()->id;
 
         $rutina = Rutina::create($data);
 

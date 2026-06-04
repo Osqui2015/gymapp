@@ -28,20 +28,18 @@
             
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nivel</label>
-                <select
-                  v-model="rutina.nivel"
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre de la Rutina</label>
+                <input
+                  v-model="rutina.nombre"
+                  type="text"
+                  placeholder="Ej. Mi Rutina de Fuerza"
                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Seleccionar nivel</option>
-                  <option value="Principiante">Principiante</option>
-                  <option value="Intermedio">Intermedio</option>
-                  <option value="Avanzado">Avanzado</option>
-                </select>
+                  required
+                />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Modalidad (días)</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cantidad de Días</label>
                 <select
                   v-model="rutina.modalidad"
                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
@@ -237,7 +235,7 @@ import { ref, computed, watch } from 'vue';
 import axios from 'axios';
 
 const rutina = ref({
-  nivel: '',
+  nombre: '',
   modalidad: '',
 });
 
@@ -246,7 +244,7 @@ const busqueda = ref('');
 const resultados = ref([]);
 
 const esValida = computed(() => {
-  return rutina.value.nivel && 
+  return rutina.value.nombre && 
          rutina.value.modalidad && 
          diasConfigurados.value.length > 0 &&
          diasConfigurados.value.some(d => d.ejercicios.length > 0);
@@ -347,8 +345,8 @@ const guardarRutina = async () => {
     diasConfigurados.value.forEach((dia, diaIndex) => {
       dia.ejercicios.forEach((ej, ejIndex) => {
         ejerciciosParaGuardar.push({
-          nivel: rutina.value.nivel,
-          modalidad: rutina.value.modalidad,
+          nivel: 'Personalizada',
+          modalidad: rutina.value.nombre,
           dia: dia.nombre,
           ejercicio_nombre: ej.ejercicio_nombre,
           series: ej.series,

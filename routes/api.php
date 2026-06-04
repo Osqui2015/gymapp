@@ -15,12 +15,12 @@ Route::middleware(['web', 'auth', 'role:administrador'])->group(function () {
     Route::delete('/ejercicios/{id}', [EjercicioController::class, 'destroy']);
 });
 
-Route::get('/rutinas', [RutinaController::class, 'index']);
 Route::middleware(['web', 'auth', 'role:comun,trainer,administrador'])->group(function () {
     Route::post('/rutinas', [RutinaController::class, 'store']);
 });
 
 Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/rutinas', [RutinaController::class, 'index']);
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);

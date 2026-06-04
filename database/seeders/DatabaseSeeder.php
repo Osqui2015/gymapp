@@ -58,5 +58,30 @@ class DatabaseSeeder extends Seeder
             'role' => User::ROLE_ALUMNO,
             'trainer_id' => $trainer->id,
         ]);
+
+        // Usuarios adicionales
+        User::factory()->create([
+            'nick' => 'pablog',
+            'name' => 'Pablo Gramajo',
+            'email' => 'pablo@example.com',
+            'password' => Hash::make('pablo123'),
+            'role' => User::ROLE_COMUN,
+        ]);
+
+        User::factory()->create([
+            'nick' => 'carlos.s',
+            'name' => 'Carlos Santucho',
+            'email' => 'carlos@example.com',
+            'password' => Hash::make('carlos123'),
+            'role' => User::ROLE_COMUN,
+        ]);
+
+        User::factory()->create([
+            'nick' => 'bruno.g',
+            'name' => 'Bruno Gomez',
+            'email' => 'bruno@example.com',
+            'password' => Hash::make('bruno123'),
+            'role' => User::ROLE_COMUN,
+        ]);
     }
 }
