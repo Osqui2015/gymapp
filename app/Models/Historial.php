@@ -23,6 +23,7 @@ class Historial extends Model
         'fecha',
         'comentario_trainer',
         'trainer_id',
+        'superserie_grupo',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class Historial extends Model
         'completado' => 'boolean',
         'fecha' => 'date',
         'trainer_id' => 'integer',
+        'superserie_grupo' => 'integer',
     ];
 
     public function user(): BelongsTo

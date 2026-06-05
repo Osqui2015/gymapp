@@ -111,6 +111,7 @@
                     <thead>
                       <tr class="border-b border-gray-200 dark:border-gray-700">
                         <th class="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Ejercicio</th>
+                        <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Superserie</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Series</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Reps Min</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Reps Max</th>
@@ -120,8 +121,20 @@
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                      <tr v-for="(ej, ejIndex) in dia.ejercicios" :key="ejIndex" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <tr v-for="(ej, ejIndex) in dia.ejercicios" :key="ejIndex" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" :class="getSuperserieRowClass(ej.superserie_grupo)">
                         <td class="px-4 py-2 font-medium text-gray-800 dark:text-white">{{ ej.ejercicio_nombre }}</td>
+                        <td class="px-4 py-2 text-center">
+                          <select
+                            v-model="ej.superserie_grupo"
+                            class="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-gray-200 focus:ring-1 focus:ring-indigo-500"
+                          >
+                            <option :value="null">Ninguna</option>
+                            <option :value="1">Grupo 1</option>
+                            <option :value="2">Grupo 2</option>
+                            <option :value="3">Grupo 3</option>
+                            <option :value="4">Grupo 4</option>
+                          </select>
+                        </td>
                         <td class="px-4 py-2">
                           <input
                             v-model.number="ej.series"
@@ -239,6 +252,17 @@ const rutina = ref({
   modalidad: '',
 });
 
+const getSuperserieRowClass = (grupo) => {
+  if (!grupo) return '';
+  switch (grupo) {
+    case 1: return 'border-l-4 border-indigo-500 dark:border-indigo-400 bg-indigo-50/10 dark:bg-indigo-950/20';
+    case 2: return 'border-l-4 border-emerald-500 dark:border-emerald-400 bg-emerald-50/10 dark:bg-emerald-950/20';
+    case 3: return 'border-l-4 border-pink-500 dark:border-pink-400 bg-pink-50/10 dark:bg-pink-950/20';
+    case 4: return 'border-l-4 border-amber-500 dark:border-amber-400 bg-amber-50/10 dark:bg-amber-950/20';
+    default: return 'border-l-4 border-gray-500 dark:border-gray-400 bg-gray-50/10 dark:bg-gray-950/20';
+  }
+};
+
 const diasConfigurados = ref([]);
 const busqueda = ref('');
 const resultados = ref([]);
@@ -315,6 +339,7 @@ const agregarEjercicioADia = (diaIndex, ejercicio) => {
     reps_max: '12',
     descanso_min: 1.5,
     orden: diasConfigurados.value[diaIndex].ejercicios.length,
+    superserie_grupo: null,
   });
   diasConfigurados.value[diaIndex].busquedaEjercicio = '';
   diasConfigurados.value[diaIndex].resultadosBusqueda = [];
@@ -354,6 +379,7 @@ const guardarRutina = async () => {
           reps_max: ej.reps_max,
           descanso_min: ej.descanso_min,
           orden: ejIndex,
+          superserie_grupo: ej.superserie_grupo,
         });
       });
     });

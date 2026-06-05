@@ -96,12 +96,17 @@
             <div
               v-for="fila in filasSerie"
               :key="`${fila.uid}-mobile`"
-              class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 shadow-sm"
-              :class="{'ring-2 ring-green-500/30 bg-green-50 dark:bg-green-900/20': fila.completado}"
+              class="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all"
+              :class="getSuperserieBgClass(fila.superserie_grupo, fila.completado)"
             >
               <div class="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <h3 class="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">{{ fila.ejercicio_nombre }}</h3>
+                  <h3 class="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
+                    {{ fila.ejercicio_nombre }}
+                    <span v-if="fila.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ring-indigo-500/30">
+                      Superserie {{ fila.superserie_grupo }}
+                    </span>
+                  </h3>
                   <p class="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">Serie {{ fila.series_numero }}</p>
                 </div>
                 <span class="inline-flex items-center rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap">
@@ -176,10 +181,15 @@
                   <tr
                     v-for="fila in filasSerie"
                     :key="fila.uid"
-                    class="transition-colors"
-                    :class="{'bg-green-50 dark:bg-green-900/20': fila.completado}"
+                    class="transition-all"
+                    :class="getSuperserieRowBgClass(fila)"
                   >
-                    <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">{{ fila.ejercicio_nombre }}</td>
+                    <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">
+                      {{ fila.ejercicio_nombre }}
+                      <span v-if="fila.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400 px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ring-indigo-500/20">
+                        Superserie {{ fila.superserie_grupo }}
+                      </span>
+                    </td>
                     <td class="px-4 py-4 text-center">
                       <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded font-semibold">{{ fila.series_numero }}</span>
                     </td>
@@ -527,16 +537,42 @@ const construirFilasSerie = (rutinasDelDia) => {
       .map((registro) => [`${registro.ejercicio_nombre}-${registro.series_numero}`, registro])
   );
 
-  filasSerie.value = rutinasDelDia
-    .filter((rutina) => rutina.dia === diaActual.value)
-    .flatMap((rutina) => {
-      const totalSeries = Number(rutina.series) || 1;
+  const filteredRutinas = rutinasDelDia.filter((rutina) => rutina.dia === diaActual.value);
 
-      return Array.from({ length: totalSeries }, (_, index) => {
+  const blocks = [];
+  const processedSuperseries = new Set();
+
+  filteredRutinas.forEach((rutina) => {
+    if (rutina.superserie_grupo) {
+      if (!processedSuperseries.has(rutina.superserie_grupo)) {
+        processedSuperseries.add(rutina.superserie_grupo);
+        const supersetExercises = filteredRutinas.filter(
+          (r) => r.superserie_grupo === rutina.superserie_grupo
+        );
+        blocks.push({
+          isSuperset: true,
+          grupo: rutina.superserie_grupo,
+          exercises: supersetExercises,
+        });
+      }
+    } else {
+      blocks.push({
+        isSuperset: false,
+        exercise: rutina,
+      });
+    }
+  });
+
+  const allSets = [];
+
+  blocks.forEach((block) => {
+    if (!block.isSuperset) {
+      const rutina = block.exercise;
+      const totalSeries = Number(rutina.series) || 1;
+      for (let index = 0; index < totalSeries; index++) {
         const serieNumero = index + 1;
         const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
-
-        return {
+        allSets.push({
           uid: `${rutina.id}-${diaActual.value}-${serieNumero}`,
           rutina_nombre: getRutinaNombre(),
           dia: diaActual.value,
@@ -549,9 +585,41 @@ const construirFilasSerie = (rutinasDelDia) => {
           descanso_min: rutina.descanso_min,
           peso: registro?.peso ?? null,
           completado: registro?.completado ?? false,
-        };
-      });
-    });
+          superserie_grupo: null,
+        });
+      }
+    } else {
+      const exercises = block.exercises;
+      const maxSeries = Math.max(...exercises.map((r) => Number(r.series) || 1));
+
+      for (let index = 0; index < maxSeries; index++) {
+        const serieNumero = index + 1;
+        exercises.forEach((rutina) => {
+          const totalSeries = Number(rutina.series) || 1;
+          if (serieNumero <= totalSeries) {
+            const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
+            allSets.push({
+              uid: `${rutina.id}-${diaActual.value}-${serieNumero}`,
+              rutina_nombre: getRutinaNombre(),
+              dia: diaActual.value,
+              ejercicio_nombre: rutina.ejercicio_nombre,
+              series_numero: serieNumero,
+              series_completadas: registro?.series_completadas ?? (registro?.completado ? 1 : 0),
+              reps_min: rutina.reps_min,
+              reps_max: rutina.reps_max,
+              reps_realizadas: registro?.reps_realizadas ?? null,
+              descanso_min: rutina.descanso_min,
+              peso: registro?.peso ?? null,
+              completado: registro?.completado ?? false,
+              superserie_grupo: block.grupo,
+            });
+          }
+        });
+      }
+    }
+  });
+
+  filasSerie.value = allSets;
 };
 
 const fetchRutinasDelDia = async () => {
@@ -589,9 +657,10 @@ const guardarFila = async (fila, silencioso = false) => {
       descanso_min: fila.descanso_min,
       peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
       completado: fila.completado,
+      superserie_grupo: fila.superserie_grupo,
     });
 
-    if (!silencioso && fila.completado) {
+    if (!silencioso && fila.completado && deberiaIniciarTemporizador(fila)) {
       iniciarTemporizador(fila);
     }
   } catch (error) {
@@ -738,6 +807,45 @@ const dashOffset = computed(() => {
   return circumference - (ratio * circumference);
 });
 
+const deberiaIniciarTemporizador = (fila) => {
+  if (!fila.superserie_grupo) {
+    return true;
+  }
+  const setsEnRonda = filasSerie.value.filter(
+    (f) => f.superserie_grupo === fila.superserie_grupo && f.series_numero === fila.series_numero
+  );
+  return setsEnRonda.every((f) => f.completado);
+};
+
+const getSuperserieBgClass = (grupo, completado) => {
+  if (completado) {
+    return 'ring-2 ring-green-500/30 bg-green-50 dark:bg-green-900/20';
+  }
+  if (!grupo) return 'bg-gray-50 dark:bg-gray-900';
+  switch (grupo) {
+    case 1: return 'border-l-4 border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20';
+    case 2: return 'border-l-4 border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20';
+    case 3: return 'border-l-4 border-pink-500 bg-pink-50/20 dark:bg-pink-950/20';
+    case 4: return 'border-l-4 border-amber-500 bg-amber-50/20 dark:bg-amber-950/20';
+    default: return 'border-l-4 border-gray-500 bg-gray-50/20 dark:bg-gray-950/20';
+  }
+};
+
+const getSuperserieRowBgClass = (fila) => {
+  if (fila.completado) {
+    return 'bg-green-50 dark:bg-green-900/20';
+  }
+  const grupo = fila.superserie_grupo;
+  if (!grupo) return 'bg-white dark:bg-gray-800';
+  switch (grupo) {
+    case 1: return 'border-l-2 border-indigo-500 bg-indigo-50/10 dark:bg-indigo-950/20';
+    case 2: return 'border-l-2 border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/20';
+    case 3: return 'border-l-2 border-pink-500 bg-pink-50/10 dark:bg-pink-950/20';
+    case 4: return 'border-l-2 border-amber-500 bg-amber-50/10 dark:bg-indigo-950/20';
+    default: return 'border-l-2 border-gray-500 bg-gray-50/10 dark:bg-gray-950/20';
+  }
+};
+
 const iniciarTemporizador = (fila) => {
   if (timer.value.timerId) {
     clearInterval(timer.value.timerId);
@@ -746,11 +854,15 @@ const iniciarTemporizador = (fila) => {
   const descansoMinutos = parseFloat(fila.descanso_min) || 1.5;
   const totalSegundos = Math.round(descansoMinutos * 60);
 
+  const nombreLabel = fila.superserie_grupo 
+    ? `Descanso Superserie ${fila.superserie_grupo}` 
+    : fila.ejercicio_nombre;
+
   timer.value = {
     activo: true,
     totalSegundos,
     segundosRestantes: totalSegundos,
-    ejercicioNombre: fila.ejercicio_nombre,
+    ejercicioNombre: nombreLabel,
     pausado: false,
     timerId: null,
   };

@@ -158,6 +158,9 @@
                     <tr v-for="row in pivotData.rows" :key="row.name" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
                       <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3.5 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                         {{ row.name }}
+                        <span v-if="row.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
+                          Superserie {{ row.superserie_grupo }}
+                        </span>
                       </td>
                       <td v-for="date in pivotData.dates" :key="date.raw" class="px-4 py-3.5 text-center border-r border-gray-200 dark:border-gray-700 font-medium">
                         <span v-if="row.weights[date.raw] !== '-'" class="inline-flex items-center justify-center rounded-md bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 text-sm font-bold text-indigo-600 dark:text-indigo-400">
@@ -207,6 +210,9 @@
                       </td>
                       <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">
                         {{ fila.nombre }}
+                        <span v-if="fila.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
+                          Superserie {{ fila.superserie_grupo }}
+                        </span>
                       </td>
                       <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                         {{ fila.seriesCount }} series
@@ -837,9 +843,12 @@ const pivotData = computed(() => {
       }
     });
 
+    const superserie_grupo = exerciseRows.find(row => row.superserie_grupo !== null)?.superserie_grupo || null;
+
     return {
       name: exerciseName,
-      weights: dateWeights
+      weights: dateWeights,
+      superserie_grupo
     };
   });
 
@@ -1008,6 +1017,8 @@ const tablaProgreso = computed(() => {
         
       const maxWeight = weights.length ? Math.max(...weights) : 0;
       
+      const superserie_grupo = dayRows.find(row => row.superserie_grupo !== null)?.superserie_grupo || null;
+
       result.push({
         nombre: ejercicio.nombre,
         fecha: sesion.fechaLabel,
@@ -1015,7 +1026,8 @@ const tablaProgreso = computed(() => {
         rawFecha: new Date(sesion.fecha),
         maxWeight: maxWeight.toFixed(1),
         avgWeight: sesion.pesoPromedio,
-        seriesCount: dayRows.length
+        seriesCount: dayRows.length,
+        superserie_grupo: superserie_grupo
       });
     });
   });

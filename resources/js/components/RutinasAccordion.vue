@@ -196,8 +196,13 @@
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
-                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ ejercicio.ejercicio_nombre }}</td>
+                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all" :class="getSuperserieClass(ejercicio)">
+                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                              {{ ejercicio.ejercicio_nombre }}
+                              <span v-if="ejercicio.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
+                                Superserie {{ ejercicio.superserie_grupo }}
+                              </span>
+                            </td>
                             <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                               <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 rounded font-semibold">{{ ejercicio.series }}</span>
                             </td>
@@ -290,8 +295,13 @@
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
-                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ ejercicio.ejercicio_nombre }}</td>
+                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all" :class="getSuperserieClass(ejercicio)">
+                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                              {{ ejercicio.ejercicio_nombre }}
+                              <span v-if="ejercicio.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
+                                Superserie {{ ejercicio.superserie_grupo }}
+                              </span>
+                            </td>
                             <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                               <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 rounded font-semibold">{{ ejercicio.series }}</span>
                             </td>
@@ -395,8 +405,13 @@
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
-                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ ejercicio.ejercicio_nombre }}</td>
+                          <tr v-for="ejercicio in dia.ejercicios" :key="ejercicio.id" class="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-all" :class="getSuperserieClass(ejercicio)">
+                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                              {{ ejercicio.ejercicio_nombre }}
+                              <span v-if="ejercicio.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
+                                Superserie {{ ejercicio.superserie_grupo }}
+                              </span>
+                            </td>
                             <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                               <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 rounded font-semibold">{{ ejercicio.series }}</span>
                             </td>
@@ -433,6 +448,18 @@ import { ref, computed, onMounted } from 'vue';
 import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
+
+const getSuperserieClass = (ejercicio) => {
+  const grupo = ejercicio.superserie_grupo;
+  if (!grupo) return '';
+  switch (grupo) {
+    case 1: return 'border-l-4 border-indigo-500 dark:border-indigo-400 bg-indigo-50/10 dark:bg-indigo-950/20';
+    case 2: return 'border-l-4 border-emerald-500 dark:border-emerald-400 bg-emerald-50/10 dark:bg-emerald-950/20';
+    case 3: return 'border-l-4 border-pink-500 dark:border-pink-400 bg-pink-50/10 dark:bg-pink-950/20';
+    case 4: return 'border-l-4 border-amber-500 dark:border-amber-400 bg-amber-50/10 dark:bg-amber-950/20';
+    default: return 'border-l-4 border-gray-500 dark:border-gray-400 bg-gray-50/10 dark:bg-gray-950/20';
+  }
+};
 
 const rutinaStore = useRutinaStore();
 

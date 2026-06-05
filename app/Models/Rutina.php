@@ -18,12 +18,14 @@ class Rutina extends Model
         'descanso_min',
         'ejercicio_nombre',
         'orden',
+        'superserie_grupo',
     ];
 
     protected $casts = [
         'created_by' => 'integer',
         'series' => 'integer',
         'descanso_min' => 'decimal:2',
+        'superserie_grupo' => 'integer',
     ];
 
     public function ejercicio(): BelongsTo

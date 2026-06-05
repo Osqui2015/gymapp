@@ -55,6 +55,7 @@ class HistorialController extends Controller
             'descanso_min' => ['required', 'numeric'],
             'peso' => ['nullable', 'numeric', 'min:0'],
             'completado' => ['nullable', 'boolean'],
+            'superserie_grupo' => ['nullable', 'integer'],
         ]);
 
         $data['user_id'] = $user->id;
@@ -194,6 +195,7 @@ class HistorialController extends Controller
                     'descanso_min' => $rutina->descanso_min,
                     'completado' => true,
                     'fecha' => Carbon::now()->toDateString(),
+                    'superserie_grupo' => $rutina->superserie_grupo,
                 ]);
 
                 $historial->save();

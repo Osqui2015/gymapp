@@ -58,6 +58,7 @@ class RutinaController extends Controller
             'reps_max' => 'required|string',
             'descanso_min' => 'required|numeric',
             'orden' => 'required|integer',
+            'superserie_grupo' => 'nullable|integer',
         ]);
 
         $data['created_by'] = $request->user()->id;
@@ -141,6 +142,7 @@ class RutinaController extends Controller
                 'descanso_min' => $rutina->descanso_min,
                 'ejercicio_nombre' => $rutina->ejercicio_nombre,
                 'orden' => $rutina->orden,
+                'superserie_grupo' => $rutina->superserie_grupo,
                 'publica' => false, // imported copy is private
             ]);
         }
