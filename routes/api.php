@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/ejercicios', [EjercicioController::class, 'index']);
 Route::get('/ejercicios/grupos-musculares', [EjercicioController::class, 'gruposMusculares']);
+Route::get('/ejercicios/equipamientos', [EjercicioController::class, 'equipamientos']);
 Route::middleware(['web', 'auth', 'role:administrador'])->group(function () {
     Route::post('/ejercicios', [EjercicioController::class, 'store']);
     Route::delete('/ejercicios/{id}', [EjercicioController::class, 'destroy']);

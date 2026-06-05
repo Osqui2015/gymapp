@@ -13,12 +13,19 @@ class EjercicioController extends Controller
         $query = Ejercicio::query();
 
         if ($request->has('busqueda') && $request->busqueda) {
-            $query->where('nombre', 'like', '%' . $request->busqueda . '%')
-                  ->orWhere('equipamiento', 'like', '%' . $request->busqueda . '%');
+            $busqueda = $request->busqueda;
+            $query->where(function($q) use ($busqueda) {
+                $q->where('nombre', 'like', '%' . $busqueda . '%')
+                  ->orWhere('equipamiento', 'like', '%' . $busqueda . '%');
+            });
         }
 
         if ($request->has('grupo_muscular') && $request->grupo_muscular) {
             $query->where('grupo_muscular', $request->grupo_muscular);
+        }
+
+        if ($request->has('equipamiento') && $request->equipamiento) {
+            $query->where('equipamiento', $request->equipamiento);
         }
 
         $ejercicios = $query->paginate(20);
@@ -35,6 +42,17 @@ class EjercicioController extends Controller
             ->pluck('grupo_muscular');
 
         return response()->json($grupos);
+    }
+
+    public function equipamientos()
+    {
+        $equipamientos = Ejercicio::whereNotNull('equipamiento')
+            ->where('equipamiento', '!=', '')
+            ->distinct()
+            ->orderBy('equipamiento')
+            ->pluck('equipamiento');
+
+        return response()->json($equipamientos);
     }
 
     public function store(Request $request)

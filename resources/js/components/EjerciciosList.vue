@@ -29,6 +29,14 @@
             <option value="">Todos los grupos musculares</option>
             <option v-for="grupo in gruposMusculares" :key="grupo" :value="grupo">{{ grupo }}</option>
           </select>
+          <select
+            v-model="equipamientoFiltro"
+            @change="buscar"
+            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[200px]"
+          >
+            <option value="">Todos los equipamientos</option>
+            <option v-for="eq in equipamientos" :key="eq" :value="eq">{{ eq }}</option>
+          </select>
           <button
             @click="buscar"
             class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
@@ -36,7 +44,7 @@
             Buscar
           </button>
           <button
-            v-if="busqueda || grupoMuscularFiltro"
+            v-if="busqueda || grupoMuscularFiltro || equipamientoFiltro"
             @click="limpiarBusqueda"
             class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-lg text-sm font-medium transition-all"
           >
@@ -192,6 +200,8 @@ const ejercicios = ref([]);
 const busqueda = ref('');
 const grupoMuscularFiltro = ref('');
 const gruposMusculares = ref([]);
+const equipamientoFiltro = ref('');
+const equipamientos = ref([]);
 const mostrarModal = ref(false);
 const paginaActual = ref(1);
 const totalPages = ref(1);
@@ -222,11 +232,21 @@ const fetchGruposMusculares = async () => {
   }
 };
 
+const fetchEquipamientos = async () => {
+  try {
+    const response = await axios.get('/api/ejercicios/equipamientos');
+    equipamientos.value = response.data;
+  } catch (error) {
+    console.error('Error al obtener equipamientos:', error);
+  }
+};
+
 const fetchEjercicios = async (page = 1) => {
   try {
     const params = { page };
     if (busqueda.value) params.busqueda = busqueda.value;
     if (grupoMuscularFiltro.value) params.grupo_muscular = grupoMuscularFiltro.value;
+    if (equipamientoFiltro.value) params.equipamiento = equipamientoFiltro.value;
     const response = await axios.get('/api/ejercicios', { params });
     ejercicios.value = response.data.data || response.data;
     paginaActual.value = response.data.current_page || 1;
@@ -266,6 +286,7 @@ const buscar = () => {
 const limpiarBusqueda = () => {
   busqueda.value = '';
   grupoMuscularFiltro.value = '';
+  equipamientoFiltro.value = '';
   fetchEjercicios();
 };
 
@@ -298,6 +319,7 @@ const eliminar = async (id) => {
 onMounted(() => {
   fetchUserInfo();
   fetchGruposMusculares();
+  fetchEquipamientos();
   fetchEjercicios();
 });
 </script>
