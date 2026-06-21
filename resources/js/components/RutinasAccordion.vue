@@ -180,6 +180,8 @@
               :open-dias="getOpenDias('Personalizada', modalidad.nombre)"
               title-class="text-indigo-600 dark:text-indigo-400"
               show-quick-input
+              @toggle="toggleAcordeon('Personalizada', modalidad.nombre)"
+              @toggle-dia="(d) => toggleDia('Personalizada', modalidad.nombre, d)"
               @quick-input="openQuickInput"
               class="mb-6"
             >
@@ -234,6 +236,8 @@
               :open="isAcordeonOpen('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
               :open-dias="getOpenDias('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
               show-quick-input
+              @toggle="toggleAcordeon('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
+              @toggle-dia="(d) => toggleDia('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`, d)"
               @quick-input="openQuickInput"
               class="mb-6"
             >
