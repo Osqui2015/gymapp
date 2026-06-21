@@ -112,19 +112,18 @@ class GenerateVapidKeys extends Command
     }
 
     /**
-     * Normaliza un número grande (hex con/sin 0x, o decimal) a hex puro (sin 0x).
-     * Usa aritmética de strings pura para no depender de GMP ni BCMath.
+     * Normaliza un número grande (hex con/sin 0x, decimal, o binario crudo)
+     * a hex puro (sin 0x). Usa aritmética de strings pura para no depender
+     * de GMP ni BCMath.
      */
     protected function normalizeToHex(string $value): string
     {
-        $value = trim($value);
-
         // 1. Hex con prefijo 0x / 0X
-        if (strlen($value) >= 2 && ($value[0] === '0') && in_array($value[1], ['x', 'X'], true)) {
+        if (strlen($value) >= 2 && $value[0] === '0' && in_array($value[1], ['x', 'X'], true)) {
             return strtolower(substr($value, 2));
         }
 
-        // 2. Hex "crudo" (sólo chars hex, longitud par razonable)
+        // 2. Hex "crudo" (sólo chars hex, longitud par)
         if (preg_match('/^[0-9a-fA-F]+$/', $value) && strlen($value) >= 2 && strlen($value) % 2 === 0) {
             return strtolower($value);
         }
@@ -134,9 +133,10 @@ class GenerateVapidKeys extends Command
             return $this->decToHexPure($value);
         }
 
-        throw new \RuntimeException(
-            'No se pudo interpretar el valor como hex ni decimal: ' . substr($value, 0, 60)
-        );
+        // 4. Binario crudo (lo que pasa en algunas versiones de OpenSSL):
+        //    las coordenadas EC vienen como bytes sin formato. bin2hex() los
+        //    convierte directo a hex.
+        return bin2hex($value);
     }
 
     /**
