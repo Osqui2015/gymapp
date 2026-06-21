@@ -99,23 +99,81 @@ class GenerateVapidKeys extends Command
         return $this->base64UrlEncode($this->bigIntTo32Bytes($details['ec']['d']));
     }
 
-    protected function bigIntTo32Bytes(string $hexOrDec): string
+    protected function bigIntTo32Bytes(string $value): string
     {
-        // Puede venir como hex (con prefijo 0x) o decimal (gmp)
-        $hex = str_starts_with($hexOrDec, '0x') ? substr($hexOrDec, 2) : $hexOrDec;
-
-        // Si parece decimal, convertir
-        if (function_exists('gmp_init') && ctype_digit($hex)) {
-            $hex = gmp_strval(gmp_init($hex, 10), 16);
-        }
+        $hex = $this->normalizeToHex($value);
 
         // Pad a 32 bytes (64 hex chars)
-        $hex = str_pad($hex, 64, '0', STR_PAD_LEFT);
-        if (strlen($hex) !== 64) {
-            // truncar si es más largo (no debería en P-256)
+        if (strlen($hex) > 64) {
             $hex = substr($hex, -64);
         }
+        $hex = str_pad($hex, 64, '0', STR_PAD_LEFT);
         return hex2bin($hex);
+    }
+
+    /**
+     * Normaliza un número grande (hex con/sin 0x, o decimal) a hex puro (sin 0x).
+     * Usa aritmética de strings pura para no depender de GMP ni BCMath.
+     */
+    protected function normalizeToHex(string $value): string
+    {
+        $value = trim($value);
+
+        // 1. Hex con prefijo 0x / 0X
+        if (strlen($value) >= 2 && ($value[0] === '0') && in_array($value[1], ['x', 'X'], true)) {
+            return strtolower(substr($value, 2));
+        }
+
+        // 2. Hex "crudo" (sólo chars hex, longitud par razonable)
+        if (preg_match('/^[0-9a-fA-F]+$/', $value) && strlen($value) >= 2 && strlen($value) % 2 === 0) {
+            return strtolower($value);
+        }
+
+        // 3. Decimal → convertir manualmente
+        if (preg_match('/^[0-9]+$/', $value)) {
+            return $this->decToHexPure($value);
+        }
+
+        throw new \RuntimeException(
+            'No se pudo interpretar el valor como hex ni decimal: ' . substr($value, 0, 60)
+        );
+    }
+
+    /**
+     * Convierte un entero decimal en string a hex en string, usando aritmética
+     * de strings pura. Funciona con números arbitrariamente grandes.
+     *
+     *   decToHexPure("123456789012345678901234567890") -> "4d839eb7f7d29a44a09fd99..."
+     */
+    protected function decToHexPure(string $dec): string
+    {
+        // Strip leading zeros (mantenemos uno si todo es 0)
+        $dec = ltrim($dec, '0');
+        if ($dec === '') {
+            return '0';
+        }
+
+        // División por 16 repetida, acumulando restos
+        $hex = '';
+        while ($dec !== '' && $dec !== '0') {
+            $carry = 0;
+            $quotient = '';
+            $len = strlen($dec);
+            for ($i = 0; $i < $len; $i++) {
+                $cur = $carry * 10 + (int) $dec[$i];
+                $q = intdiv($cur, 16);
+                $carry = $cur % 16;
+                if ($quotient !== '' || $q > 0) {
+                    $quotient .= (string) $q;
+                }
+            }
+            $hex = dechex($carry) . $hex;
+            $dec = $quotient;
+            if ($dec === '') {
+                $dec = '0';
+            }
+        }
+        return $hex === '' ? '0' : $hex;
     }
 
     protected function base64UrlEncode(string $bin): string
