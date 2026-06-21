@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Duplicar Rutina' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -19,8 +19,9 @@
         </a>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-4">
+        <BaseSkeleton variant="card" :count="1" />
+        <BaseSkeleton variant="table" :count="4" />
       </div>
 
       <div v-else>
@@ -126,33 +127,34 @@
             </div>
           </div>
 
-          <div v-else class="p-12 text-center">
-            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p class="text-gray-500 dark:text-gray-400">No has creado rutinas aún</p>
+          <div v-else>
+            <EmptyState
+              emoji="📋"
+              title="Todavía no creaste rutinas"
+              description="Cuando crees rutinas van a aparecer acá para que puedas duplicarlas como base para nuevas."
+              cta-text="Crear mi primera rutina"
+              cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              @cta="$event && (window.location.href = '/rutinas/crear')"
+              variant="compact"
+            />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Toast notifications -->
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
+import EmptyState from './EmptyState.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const guardando = ref(false);
 const rutinas = ref([]);
@@ -162,19 +164,10 @@ const form = ref({
   nombre_nuevo: '',
 });
 
-const toast = ref({ show: false, message: '', type: 'success' });
-
 const rutinaSeleccionada = computed(() => {
   if (!form.value.rutina_id) return null;
   return rutinas.value.find(r => r.id === parseInt(form.value.rutina_id));
 });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3000);
-};
 
 const fetchRutinas = async () => {
   try {

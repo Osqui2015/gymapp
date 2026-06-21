@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Auth\Exceptions\AuthenticationException;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\CheckMembership;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo('/login');
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+            'membership' => CheckMembership::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

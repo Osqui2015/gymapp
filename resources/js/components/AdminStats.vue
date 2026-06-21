@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Estadísticas' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -19,8 +19,13 @@
         </a>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <BaseSkeleton variant="stat-card" :count="6" />
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <BaseSkeleton variant="text" :count="8" />
+        </div>
       </div>
 
       <div v-else>
@@ -94,7 +99,7 @@
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">🏋️ Ejercicios Más Populares</h3>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto hidden md:block">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gray-50 dark:bg-gray-900">
@@ -118,27 +123,47 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Mobile: ranking list -->
+          <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+            <div
+              v-for="(ej, index) in stats.ejercicios_populares"
+              :key="ej.ejercicio"
+              class="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              <span class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                {{ index + 1 }}
+              </span>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-gray-900 dark:text-white truncate">{{ ej.ejercicio }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ ej.veces_usado }} usos · {{ formatNumber(ej.reps_totales) }} reps
+                </p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p class="text-sm font-bold text-gray-900 dark:text-white">{{ ej.peso_promedio }} kg</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">peso prom.</p>
+              </div>
+            </div>
+          </div>
           <div v-if="stats.ejercicios_populares.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
             No hay datos de ejercicios populares aún
           </div>
         </div>
       </div>
     </div>
-
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const stats = ref({
   usuarios_por_mes: [],
@@ -155,8 +180,6 @@ const stats = ref({
   },
 });
 
-const toast = ref({ show: false, message: '', type: 'success' });
-
 const maxUsuarios = computed(() => {
   return Math.max(...stats.value.usuarios_por_mes.map(m => m.total), 1);
 });
@@ -164,13 +187,6 @@ const maxUsuarios = computed(() => {
 const maxHorasPico = computed(() => {
   return Math.max(...stats.value.horas_pico.map(h => h.total), 1);
 });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3000);
-};
 
 const formatNumber = (num) => {
   return num?.toLocaleString() || '0';

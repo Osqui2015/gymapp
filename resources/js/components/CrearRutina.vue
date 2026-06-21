@@ -1,6 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Rutinas', href: '/rutinas' }, { label: 'Crear nueva' }]" />
       <div class="flex justify-between items-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Crear Nueva Rutina</h2>
         <div class="flex gap-3">
@@ -13,7 +14,7 @@
           <button
             @click="guardarRutina"
             :disabled="!esValida"
-            class="px-6 py-3 rounded-lg font-semibold transition-all shadow-md"
+            class="ripple px-6 py-3 rounded-lg font-semibold transition-all shadow-md"
             :class="esValida ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
           >
             Guardar Rutina
@@ -91,9 +92,15 @@
             <div
               v-for="(dia, index) in diasConfigurados"
               :key="index"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border-2 transition-colors overflow-hidden"
+              :class="dragOverIndex[`${index}-end`] ? 'border-indigo-500 dark:border-indigo-400' : 'border-gray-200 dark:border-gray-700'"
             >
-              <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 flex justify-between items-center">
+              <div
+                class="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 flex justify-between items-center"
+                @dragover="onDragOver(index, null, $event)"
+                @dragleave="onDragLeave(index, null)"
+                @drop="onDrop(index, null, $event)"
+              >
                 <h3 class="text-lg font-bold text-white">{{ dia.nombre }}</h3>
                 <button
                   @click="quitarDia(index)"
@@ -106,26 +113,64 @@
               </div>
 
               <div class="p-4">
+                <EmptyState
+                  v-if="dia.ejercicios.length === 0"
+                  emoji="💪"
+                  title="Este día todavía no tiene ejercicios"
+                  description="Buscá ejercicios abajo y agregalos a este día. Podés configurar series, repeticiones y descanso para cada uno."
+                  variant="compact"
+                />
+
                 <div v-if="dia.ejercicios.length > 0" class="overflow-x-auto mb-4">
                   <table class="w-full text-sm">
                     <thead>
                       <tr class="border-b border-gray-200 dark:border-gray-700">
+                        <th class="px-2 py-2 w-8"></th>
                         <th class="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">Ejercicio</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Superserie</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Series</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Reps Min</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Reps Max</th>
                         <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Descanso</th>
-                        <th class="px-4 py-2 text-center font-semibold text-gray-600 dark:text-gray-400">Orden</th>
                         <th class="px-4 py-2"></th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                      <tr v-for="(ej, ejIndex) in dia.ejercicios" :key="ejIndex" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" :class="getSuperserieRowClass(ej.superserie_grupo)">
-                        <td class="px-4 py-2 font-medium text-gray-800 dark:text-white">{{ ej.ejercicio_nombre }}</td>
+                      <tr
+                        v-for="(ej, ejIndex) in dia.ejercicios"
+                        :key="`${index}-${ejIndex}-${ej.ejercicio_nombre}`"
+                        :draggable="true"
+                        @dragstart="onDragStart(index, ejIndex, $event)"
+                        @dragover="onDragOver(index, ejIndex, $event)"
+                        @dragleave="onDragLeave(index, ejIndex)"
+                        @drop="onDrop(index, ejIndex, $event)"
+                        @dragend="onDragEnd"
+                        :class="[
+                          getSuperserieRowClass(ej.superserie_grupo),
+                          'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-grab active:cursor-grabbing',
+                          dragOverIndex[`${index}-${ejIndex}`] ? 'ring-2 ring-indigo-500 ring-inset' : '',
+                          draggingFromIndex === `${index}-${ejIndex}` ? 'opacity-40' : '',
+                        ]"
+                      >
+                        <td class="px-2 py-2 text-center text-gray-400 cursor-grab select-none" aria-label="Arrastrar para reordenar">
+                          <svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20">
+                            <circle cx="7" cy="5" r="1.5" />
+                            <circle cx="13" cy="5" r="1.5" />
+                            <circle cx="7" cy="10" r="1.5" />
+                            <circle cx="13" cy="10" r="1.5" />
+                            <circle cx="7" cy="15" r="1.5" />
+                            <circle cx="13" cy="15" r="1.5" />
+                          </svg>
+                        </td>
+                        <td class="px-4 py-2 font-medium text-gray-800 dark:text-white">
+                          <span class="inline-block w-6 text-xs text-gray-400 font-mono">{{ ejIndex + 1 }}.</span>
+                          {{ ej.ejercicio_nombre }}
+                        </td>
                         <td class="px-4 py-2 text-center">
                           <select
                             v-model="ej.superserie_grupo"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-gray-200 focus:ring-1 focus:ring-indigo-500"
                           >
                             <option :value="null">Ninguna</option>
@@ -140,6 +185,8 @@
                             v-model.number="ej.series"
                             type="number"
                             min="1"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
                           />
                         </td>
@@ -147,6 +194,8 @@
                           <input
                             v-model="ej.reps_min"
                             type="text"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
                           />
                         </td>
@@ -154,6 +203,8 @@
                           <input
                             v-model="ej.reps_max"
                             type="text"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
                           />
                         </td>
@@ -163,21 +214,19 @@
                             type="number"
                             step="0.5"
                             min="0"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
-                          />
-                        </td>
-                        <td class="px-4 py-2">
-                          <input
-                            v-model.number="ej.orden"
-                            type="number"
-                            min="0"
-                            class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
                           />
                         </td>
                         <td class="px-4 py-2 text-center">
                           <button
                             @click="quitarEjercicio(index, ejIndex)"
+                            @mousedown.stop
+                            @dragstart.stop
                             class="text-red-600 hover:text-red-800 p-1"
+                            :aria-label="`Quitar ${ej.ejercicio_nombre} de ${dia.nombre}`"
+                            title="Quitar ejercicio"
                           >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -185,8 +234,28 @@
                           </button>
                         </td>
                       </tr>
+                      <!-- Drop zone al final del día (también recibe drops desde otros días) -->
+                      <tr
+                        @dragover="onDragOver(index, null, $event)"
+                        @dragleave="onDragLeave(index, null)"
+                        @drop="onDrop(index, null, $event)"
+                        :class="[
+                          'transition-colors',
+                          dragOverIndex[`${index}-end`]
+                            ? 'bg-indigo-50 dark:bg-indigo-950/30 ring-2 ring-indigo-500 ring-inset'
+                            : 'opacity-0 hover:opacity-100',
+                        ]"
+                      >
+                        <td colspan="8" class="px-2 py-3 text-center text-xs text-indigo-600 dark:text-indigo-400 italic">
+                          <span v-if="dragOverIndex[`${index}-end`]">⬇ Soltá acá para mover a {{ dia.nombre }}</span>
+                          <span v-else>&nbsp;</span>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
+                  <p class="mt-1 text-xs text-gray-400 dark:text-gray-500 italic px-1">
+                    💡 Arrastrá las filas (≡) para reordenar — también podés mover ejercicios entre días arrastrándolos al final de otra lista o soltándolos sobre la cabecera del día.
+                  </p>
                 </div>
 
                 <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -230,12 +299,12 @@
             </button>
           </div>
 
-          <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 border border-gray-200 dark:border-gray-700 text-center">
-            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            <p class="text-gray-500 dark:text-gray-400 mb-4">Selecciona el nivel y días para comenzar</p>
-            <p class="text-sm text-gray-400 dark:text-gray-500">Luego podrás agregar ejercicios a cada día</p>
+          <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <EmptyState
+              emoji="📋"
+              title="Empezá tu rutina"
+              description="Seleccioná el nombre y la cantidad de días en el panel de la izquierda. Después vas a poder agregar ejercicios a cada día con sus series, repeticiones y descanso."
+            />
           </div>
         </div>
       </div>
@@ -246,6 +315,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import axios from 'axios';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
+import EmptyState from './EmptyState.vue';
+
+const toast = useToast();
 
 const rutina = ref({
   nombre: '',
@@ -346,11 +420,34 @@ const agregarEjercicioADia = (diaIndex, ejercicio) => {
 };
 
 const quitarEjercicio = (diaIndex, ejIndex) => {
-  diasConfigurados.value[diaIndex].ejercicios.splice(ejIndex, 1);
+  const removed = diasConfigurados.value[diaIndex].ejercicios.splice(ejIndex, 1)[0];
+  toast.info(`Ejercicio "${removed.ejercicio_nombre}" quitado`, {
+    duration: 5000,
+    action: {
+      label: 'Deshacer',
+      onClick: () => {
+        diasConfigurados.value[diaIndex].ejercicios.splice(ejIndex, 0, removed);
+      },
+    },
+  });
 };
 
-const quitarDia = (diaIndex) => {
-  diasConfigurados.value.splice(diaIndex, 1);
+const quitarDia = async (diaIndex) => {
+  const confirmed = await toast.confirm(
+    `¿Eliminar "${diasConfigurados.value[diaIndex].nombre}" y todos sus ejercicios?`,
+    { title: 'Eliminar día', confirmLabel: 'Sí, eliminar', type: 'error' }
+  );
+  if (!confirmed) return;
+  const removed = diasConfigurados.value.splice(diaIndex, 1)[0];
+  toast.info(`"${removed.nombre}" eliminado`, {
+    duration: 5000,
+    action: {
+      label: 'Deshacer',
+      onClick: () => {
+        diasConfigurados.value.splice(diaIndex, 0, removed);
+      },
+    },
+  });
 };
 
 const agregarDia = () => {
@@ -394,5 +491,72 @@ const guardarRutina = async () => {
     console.error('Error:', error);
     alert('No se pudo guardar la rutina');
   }
+};
+
+// === Drag & drop para reordenar ejercicios (dentro del día O entre días) ===
+// Estructura de la clave: "diaIndex-ejIndex" (ejIndex es null para dropear al final del día).
+const draggingFromIndex = ref(null);
+const dragOverIndex = ref({});
+
+const onDragStart = (diaIndex, ejIndex, event) => {
+  draggingFromIndex.value = `${diaIndex}-${ejIndex}`;
+  event.dataTransfer.effectAllowed = 'move';
+  // Necesario para que Firefox dispare el drop
+  event.dataTransfer.setData('text/plain', `${diaIndex}-${ejIndex}`);
+};
+
+const onDragOver = (diaIndex, ejIndex, event) => {
+  event.dataTransfer.dropEffect = 'move';
+  const key = ejIndex === null ? `${diaIndex}-end` : `${diaIndex}-${ejIndex}`;
+  if (draggingFromIndex.value === `${diaIndex}-${ejIndex}`) return;
+  if (!dragOverIndex.value[key]) {
+    dragOverIndex.value = { ...dragOverIndex.value, [key]: true };
+  }
+};
+
+const onDragLeave = (diaIndex, ejIndex) => {
+  const key = ejIndex === null ? `${diaIndex}-end` : `${diaIndex}-${ejIndex}`;
+  if (dragOverIndex.value[key]) {
+    const copy = { ...dragOverIndex.value };
+    delete copy[key];
+    dragOverIndex.value = copy;
+  }
+};
+
+const onDrop = (diaIndex, targetEjIndex, event) => {
+  event.preventDefault();
+  const fromKey = event.dataTransfer.getData('text/plain') || draggingFromIndex.value;
+  if (!fromKey) return;
+  const [fromDiaStr, fromEjStr] = fromKey.split('-');
+  const fromDia = parseInt(fromDiaStr, 10);
+  const fromEj = parseInt(fromEjStr, 10);
+  if (Number.isNaN(fromDia) || Number.isNaN(fromEj)) return;
+
+  const sourceEjercicios = diasConfigurados.value[fromDia]?.ejercicios;
+  const targetEjercicios = diasConfigurados.value[diaIndex]?.ejercicios;
+  if (!sourceEjercicios || !targetEjercicios) return;
+
+  // targetEjIndex=null significa "agregar al final"
+  const insertIndex = targetEjIndex === null
+    ? targetEjercicios.length
+    : Math.max(0, Math.min(targetEjIndex, targetEjercicios.length));
+
+  // Mismo lugar: no hacer nada
+  if (fromDia === diaIndex && (targetEjIndex === null ? fromEj === targetEjercicios.length - 1 : fromEj === targetEjIndex)) {
+    draggingFromIndex.value = null;
+    dragOverIndex.value = {};
+    return;
+  }
+
+  const [moved] = sourceEjercicios.splice(fromEj, 1);
+  targetEjercicios.splice(insertIndex, 0, moved);
+
+  draggingFromIndex.value = null;
+  dragOverIndex.value = {};
+};
+
+const onDragEnd = () => {
+  draggingFromIndex.value = null;
+  dragOverIndex.value = {};
 };
 </script>

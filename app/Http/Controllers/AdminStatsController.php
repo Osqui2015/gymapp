@@ -8,35 +8,47 @@ use App\Models\User;
 use App\Models\Ejercicio;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AdminStatsController extends Controller
 {
+    // TTL del cache de stats (5 minutos)
+    private const CACHE_TTL = 300;
+
     public function estadisticas()
     {
-        $usuariosPorMes = $this->getUsuariosPorMes();
-        $horasPicoEntrenamiento = $this->getHorasPicoEntrenamiento();
-        $ejerciciosPopulares = $this->getEjerciciosPopulares();
-        $resumen = $this->getResumenGeneral();
+        $payload = Cache::remember('admin.stats', self::CACHE_TTL, function () {
+            return [
+                'usuarios_por_mes' => $this->getUsuariosPorMes(),
+                'horas_pico' => $this->getHorasPicoEntrenamiento(),
+                'ejercicios_populares' => $this->getEjerciciosPopulares(),
+                'resumen' => $this->getResumenGeneral(),
+                'cached_at' => now()->toIso8601String(),
+            ];
+        });
 
-        return response()->json([
-            'usuarios_por_mes' => $usuariosPorMes,
-            'horas_pico' => $horasPicoEntrenamiento,
-            'ejercicios_populares' => $ejerciciosPopulares,
-            'resumen' => $resumen,
-        ]);
+        return response()->json($payload);
     }
 
     private function getUsuariosPorMes()
     {
         $seisMesesAtras = Carbon::now()->subMonths(6)->startOfMonth();
 
+        // Cross-DB: usar strftime en SQLite, DATE_FORMAT en MySQL
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $dateExpr = "strftime('%Y-%m', created_at)";
+        } else {
+            $dateExpr = "DATE_FORMAT(created_at, '%Y-%m')";
+        }
+
         $usuarios = User::select(
-            DB::raw("DATE_FORMAT(created_at, '%Y-%m') as mes"),
+            DB::raw("$dateExpr as mes"),
             DB::raw("COUNT(*) as total")
         )
         ->where('created_at', '>=', $seisMesesAtras)
-        ->groupBy(DB::raw("DATE_FORMAT(created_at, '%Y-%m')"))
+        ->groupBy(DB::raw($dateExpr))
         ->orderBy('mes')
         ->get();
 
@@ -63,30 +75,38 @@ class AdminStatsController extends Controller
 
     private function getHorasPicoEntrenamiento()
     {
-        // Entrenamientos por hora del día
         $ultimoMes = Carbon::now()->subMonth();
 
+        // Cross-DB: usar strftime en SQLite, HOUR en MySQL
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $hourExpr = "strftime('%H', fecha)";
+        } else {
+            $hourExpr = "HOUR(fecha)";
+        }
+
         $horas = Historial::select(
-            DB::raw("HOUR(fecha) as hora"),
+            DB::raw("$hourExpr as hora"),
             DB::raw("COUNT(*) as total")
         )
         ->where('fecha', '>=', $ultimoMes)
         ->whereNotNull('fecha')
-        ->groupBy(DB::raw("HOUR(fecha)"))
+        ->groupBy(DB::raw($hourExpr))
         ->orderBy('hora')
         ->get();
 
-        // Inicializar todas las horas
         $todasHoras = [];
         for ($i = 5; $i <= 23; $i++) {
             $todasHoras[$i] = ['hora' => $i, 'total' => 0, 'label' => sprintf('%02d:00', $i)];
         }
 
         foreach ($horas as $h) {
-            $todasHoras[$h->hora]['total'] = $h->total;
+            $hHora = (int) $h->hora;
+            if (isset($todasHoras[$hHora])) {
+                $todasHoras[$hHora]['total'] = $h->total;
+            }
         }
 
-        // Ordenar por hora
         ksort($todasHoras);
 
         return array_values($todasHoras);
@@ -133,7 +153,6 @@ class AdminStatsController extends Controller
 
     public function miembrosActivos()
     {
-        // Alumnos que entrenaron en la última semana
         $haceUnaSemana = Carbon::now()->subWeek();
 
         $activos = Historial::where('completado', true)
@@ -148,5 +167,14 @@ class AdminStatsController extends Controller
             'total_alumnos' => $totalAlumnos,
             'porcentaje_activos' => $totalAlumnos > 0 ? round(($activos / $totalAlumnos) * 100, 1) : 0,
         ]);
+    }
+
+    /**
+     * Endpoint para invalidar el cache (útil después de importar/crear muchos datos)
+     */
+    public function invalidateCache()
+    {
+        Cache::forget('admin.stats');
+        return response()->json(['success' => true]);
     }
 }

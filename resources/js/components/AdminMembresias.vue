@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Membresías' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -74,14 +74,18 @@
         </div>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <BaseSkeleton variant="stat-card" :count="4" />
+        </div>
+        <BaseSkeleton variant="card" :count="5" />
       </div>
 
       <div v-else>
-        <!-- Tabla de Membresías -->
+        <!-- Tabla de Membresías (responsive: tabla en md+, cards en mobile) -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div class="overflow-x-auto">
+          <!-- Desktop: tabla tradicional -->
+          <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gray-50 dark:bg-gray-900">
@@ -123,12 +127,12 @@
                   </td>
                   <td class="px-4 py-3 text-center">
                     <div class="flex justify-center gap-2">
-                      <button @click="editarMembresia(m)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title="Editar">
+                      <button @click="editarMembresia(m)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title="Editar" aria-label="Editar membresía">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button @click="renovarMembresia(m)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg" title="Renovar">
+                      <button @click="renovarMembresia(m)" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg" title="Renovar" aria-label="Renovar membresía">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
@@ -140,9 +144,79 @@
             </table>
           </div>
 
-          <div v-if="membresias.length === 0" class="p-12 text-center text-gray-500 dark:text-gray-400">
-            No hay membresías registradas
+          <!-- Mobile: cards -->
+          <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+            <div
+              v-for="m in membresias"
+              :key="m.id"
+              class="p-4 space-y-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              <!-- Header: avatar + nombre + badge estado -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div :class="['w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0', getEstadoColor(m.estado)]">
+                    {{ m.user?.name?.charAt(0) || '?' }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-gray-900 dark:text-white truncate">{{ m.user?.name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.user?.email }}</p>
+                  </div>
+                </div>
+                <span :class="['px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap', getEstadoBadge(m.estado)]">
+                  {{ m.estado.replace('_', ' ') }}
+                </span>
+              </div>
+
+              <!-- Detalle: plan + precio -->
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Plan</span>
+                <span class="font-medium text-gray-900 dark:text-white capitalize">{{ m.tipo_plan }} · <span class="font-bold">${{ m.precio }}</span></span>
+              </div>
+
+              <!-- Fechas -->
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Inicio</span>
+                <span class="text-gray-700 dark:text-gray-300">{{ formatDate(m.fecha_inicio) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Vencimiento</span>
+                <span :class="getDiasClass(m)" class="text-right">
+                  {{ formatDate(m.fecha_vencimiento) }}
+                  <span v-if="m.estado !== 'cancelado'" class="text-xs block">{{ getDiasRestantes(m) }} días restantes</span>
+                </span>
+              </div>
+
+              <!-- Acciones -->
+              <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  @click="editarMembresia(m)"
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Editar
+                </button>
+                <button
+                  @click="renovarMembresia(m)"
+                  class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Renovar
+                </button>
+              </div>
+            </div>
           </div>
+
+          <EmptyState
+            v-if="membresias.length === 0"
+            emoji="💳"
+            title="No hay membresías registradas"
+            description="Cuando un usuario compre una membresía, va a aparecer acá para su gestión."
+            variant="compact"
+          />
         </div>
 
         <!-- Paginación -->
@@ -171,7 +245,7 @@
       <div v-if="mostrarModalCrear" class="fixed inset-0 z-50 overflow-y-auto" @click.self="mostrarModalCrear = false">
         <div class="flex items-center justify-center min-h-screen px-4">
           <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" @click="mostrarModalCrear = false"></div>
-          <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform sm:align-middle sm:max-w-lg w-full">
+          <div ref="modalRef" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform sm:align-middle sm:max-w-lg w-full" role="dialog" aria-modal="true">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
               <h3 class="text-xl font-bold text-white">{{ editingId ? 'Editar' : 'Nueva' }} Membresía</h3>
               <button @click="mostrarModalCrear = false" class="text-white/80 hover:text-white">
@@ -238,26 +312,29 @@
         </div>
       </div>
     </transition>
-
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import EmptyState from './EmptyState.vue';
+import { useToast } from '../composables/useToast';
+import { useDebounce } from '../composables/useDebounce';
+import { cachedAxiosGet, invalidateApiCache } from '../composables/useApiCache';
+import Breadcrumbs from './Breadcrumbs.vue';
+import { useFocusTrap } from '../composables/useFocusTrap';
+import BaseSkeleton from './BaseSkeleton.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const guardando = ref(false);
 const membresias = ref([]);
 const usuariosSinMembresia = ref([]);
 const mostrarModalCrear = ref(false);
+const modalRef = ref(null);
+useFocusTrap(modalRef, { when: mostrarModalCrear });
 const editingId = ref(null);
 const pagination = ref({ current_page: 1, last_page: 1 });
 
@@ -274,13 +351,6 @@ const form = ref({
   metodo_pago: '',
   notas: '',
 });
-
-const toast = ref({ show: false, message: '', type: 'success' });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => { toast.value.show = false; }, 3000);
-};
 
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -307,10 +377,14 @@ const getEstadoBadge = (estado) => {
   return { activo: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', por_vencer: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', vencido: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', cancelado: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300' }[estado] || '';
 };
 
+// Debounce para la búsqueda (no triggear request en cada keystroke)
+const debouncedSearch = useDebounce(() => fetchMembresias(1), 300);
+watch(() => filtros.value.buscar, () => debouncedSearch());
+
 const fetchMembresias = async (page = 1) => {
   try {
     const params = new URLSearchParams({ page, estado: filtros.value.estado, buscar: filtros.value.buscar });
-    const response = await axios.get(`/api/admin/membresias?${params}`);
+    const response = await cachedAxiosGet(`/api/admin/membresias?${params}`, {}, { ttl: 30_000 });
     membresias.value = response.data.membresias.data;
     stats.value = response.data.stats;
     pagination.value = { current_page: response.data.membresias.current_page, last_page: response.data.membresias.last_page };
@@ -324,7 +398,7 @@ const fetchMembresias = async (page = 1) => {
 
 const fetchUsuariosSinMembresia = async () => {
   try {
-    const response = await axios.get('/api/admin/usuarios-sin-membresia');
+    const response = await cachedAxiosGet('/api/admin/usuarios-sin-membresia', {}, { ttl: 60_000 });
     usuariosSinMembresia.value = response.data;
   } catch (error) {
     console.error('Error:', error);
@@ -341,6 +415,7 @@ const guardarMembresia = async () => {
       await axios.post('/api/admin/membresias', form.value);
       showToast('Membresía creada');
     }
+    invalidateApiCache('/api/admin/membresias');
     mostrarModalCrear.value = false;
     editingId.value = null;
     form.value = { user_id: '', tipo_plan: 'mensual', precio: 0, fecha_inicio: '', fecha_vencimiento: '', metodo_pago: '', notas: '' };
@@ -364,6 +439,7 @@ const renovarMembresia = async (m) => {
   if (!confirm('¿Renovar esta membresía?')) return;
   try {
     await axios.post(`/api/admin/membresias/${m.id}/renew`);
+    invalidateApiCache('/api/admin/membresias');
     showToast('Membresía renovada');
     fetchMembresias();
   } catch (error) {

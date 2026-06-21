@@ -11,6 +11,10 @@
                     </a>
                 </div>
 
+                <div class="hidden lg:flex lg:items-center lg:ms-4">
+                    <global-search />
+                </div>
+
                 <div class="hidden space-x-6 sm:ms-8 sm:flex sm:items-center">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +128,10 @@
             </div>
 
             <!-- Menú usuario desktop -->
-            <div class="hidden sm:flex sm:items-center relative">
+            <div class="hidden sm:flex sm:items-center sm:gap-2 relative">
+                {{-- Toggle dark mode (Alpine.js) --}}
+                <x-dark-mode-toggle />
+
                 <button @click="open = !open" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
                         <span class="text-white text-sm font-semibold">{{ substr(Auth::user()->name, 0, 1) }}</span>
@@ -192,142 +199,8 @@
                 </div>
             </div>
 
-            <!-- Menú hamburguesa móvil -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+            <!-- Menú hamburguesa móvil eliminado: lo reemplaza el bottom nav (resources/views/components/mobile-bottom-nav.blade.php) -->
         </div>
     </div>
 
-    <!-- Menú móvil completo -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden border-t border-gray-100 dark:border-gray-700">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            @if (!Auth::user()->hasRole('alumno'))
-                <x-responsive-nav-link :href="route('rutinas')" :active="request()->routeIs('rutinas')" class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    {{ __('Rutinas') }}
-                </x-responsive-nav-link>
-            @endif
-            <x-responsive-nav-link :href="route('ejercicios')" :active="request()->routeIs('ejercicios')" class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    {{ __('Ejercicios') }}
-                </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('historial')" :active="request()->routeIs('historial')" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ __('Historial') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('progreso')" :active="request()->routeIs('progreso')" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                {{ __('Progreso') }}
-            </x-responsive-nav-link>
-            {{-- Oculto por ahora:
-            <x-responsive-nav-link :href="route('nutricion')" :active="request()->routeIs('nutricion')" class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {{ __('Nutrición') }}
-            </x-responsive-nav-link>
-            --}}
-            @if (Auth::user()->hasRole(['trainer', 'administrador']))
-                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Panel Trainer</p>
-                    <x-responsive-nav-link :href="route('trainer.dashboard')" :active="request()->routeIs('trainer.dashboard')" class="flex items-center gap-2">
-                        <span>📊</span>
-                        {{ __('Dashboard') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('trainer.alumnos')" :active="request()->routeIs('trainer.alumnos')" class="flex items-center gap-2">
-                        <span>👥</span>
-                        {{ __('Alumnos') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('trainer.ejercicios')" :active="request()->routeIs('trainer.ejercicios')" class="flex items-center gap-2">
-                        <span>🏋️</span>
-                        {{ __('Ejercicios Privados') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('trainer.duplicar')" :active="request()->routeIs('trainer.duplicar')" class="flex items-center gap-2">
-                        <span>📋</span>
-                        {{ __('Duplicar Rutinas') }}
-                    </x-responsive-nav-link>
-                </div>
-            @endif
-
-            @if (Auth::user()->hasRole('administrador'))
-                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p class="px-4 text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">Panel Admin</p>
-                    <x-responsive-nav-link :href="route('admin.estadisticas')" :active="request()->routeIs('admin.estadisticas')" class="flex items-center gap-2">
-                        <span>📊</span>
-                        {{ __('Estadísticas') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('admin.membresias')" :active="request()->routeIs('admin.membresias')" class="flex items-center gap-2">
-                        <span>💳</span>
-                        {{ __('Membresías') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('admin.audit-logs')" :active="request()->routeIs('admin.audit-logs')" class="flex items-center gap-2">
-                        <span>📋</span>
-                        {{ __('Audit Logs') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('admin.import-export')" :active="request()->routeIs('admin.import-export')" class="flex items-center gap-2">
-                        <span>📂</span>
-                        {{ __('Importar/Exportar') }}
-                    </x-responsive-nav-link>
-                </div>
-            @endif
-        </div>
-
-        <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-700">
-            <div class="px-4 flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <span class="text-white font-semibold">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                </div>
-                <div>
-                    <div class="font-medium text-base text-gray-800 dark:text-white">{{ Auth::user()->name }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
-                    <div class="text-xs text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">{{ Auth::user()->normalizedRole() }}</div>
-                </div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="Auth::user()->hasRole('administrador') ? route('configuracion') : route('profile.edit')" class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {{ __('Configuración') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('profile.edit')" class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    {{ __('Perfil') }}
-                </x-responsive-nav-link>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="flex items-center gap-2 text-red-600 dark:text-red-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        {{ __('Cerrar Sesión') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
-    </div>
 </nav>

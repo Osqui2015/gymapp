@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rutina;
+use App\Models\User;
 use App\Services\AchievementService;
 use Illuminate\Http\Request;
 
@@ -14,13 +15,11 @@ class RutinaController extends Controller
         $query = Rutina::query();
 
         if ($request->boolean('comunitarias')) {
-            // Community routines: published by others
             $query->where('publica', true);
             if ($user) {
                 $query->where('created_by', '!=', $user->id);
             }
         } else {
-            // Standard user routines: default (null created_by) OR owned by user
             $query->where(function ($q) use ($user) {
                 $q->whereNull('created_by');
                 if ($user) {
@@ -41,6 +40,13 @@ class RutinaController extends Controller
 
         $query->with(['ejercicio', 'creador'])->orderBy('orden');
 
+        // Soporte de paginación: si el cliente lo pide, devolver paginado
+        if ($request->boolean('paginated') || $request->has('page')) {
+            $perPage = min((int) $request->input('per_page', 50), 200);
+            return response()->json($query->paginate($perPage));
+        }
+
+        // Si no, devolver todo (compatibilidad con clientes actuales)
         $rutinas = $query->get();
 
         return response()->json($rutinas);
@@ -76,10 +82,13 @@ class RutinaController extends Controller
             'modalidad' => 'required|string',
         ]);
 
+        // Generar token público único para esta rutina (si no existe)
+        $shareToken = bin2hex(random_bytes(8)); // 16 caracteres hex
+
         $affected = Rutina::where('created_by', $user->id)
             ->where('nivel', $data['nivel'])
             ->where('modalidad', $data['modalidad'])
-            ->update(['publica' => true]);
+            ->update(['publica' => true, 'share_token' => $shareToken]);
 
         if ($affected === 0) {
             return response()->json(['error' => 'Rutina no encontrada o no pertenece a este usuario.'], 404);
@@ -91,6 +100,50 @@ class RutinaController extends Controller
         return response()->json([
             'message' => 'Rutina compartida con la comunidad con éxito.',
             'new_medals' => $newMedals,
+            'public_url' => route('rutina.publica', ['token' => $shareToken]),
+            'share_token' => $shareToken,
+        ]);
+    }
+
+    /**
+     * Vista pública de una rutina compartida (sin auth).
+     * Devuelve JSON para que la cargue el componente Vue de la vista rutina-publica.
+     */
+    public function verPublica($token)
+    {
+        $rutinas = Rutina::where('share_token', $token)
+            ->where('publica', true)
+            ->orderBy('dia')
+            ->orderBy('orden')
+            ->get();
+
+        if ($rutinas->isEmpty()) {
+            return response()->json(['error' => 'Rutina no encontrada o no es pública.'], 404);
+        }
+
+        $creador = User::find($rutinas->first()->created_by);
+        $meta = $rutinas->first();
+
+        // Agrupar por día
+        $porDia = $rutinas->groupBy('dia')->map(function ($rows) {
+            return $rows->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'ejercicio_nombre' => $r->ejercicio_nombre,
+                    'series' => $r->series,
+                    'reps_min' => $r->reps_min,
+                    'reps_max' => $r->reps_max,
+                    'descanso_min' => $r->descanso_min,
+                    'superserie_grupo' => $r->superserie_grupo,
+                ];
+            })->values();
+        });
+
+        return response()->json([
+            'nivel' => $meta->nivel,
+            'modalidad' => $meta->modalidad,
+            'creador' => $creador ? ['name' => $creador->name, 'nick' => $creador->nick] : null,
+            'dias' => $porDia,
         ]);
     }
 

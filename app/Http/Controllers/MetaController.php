@@ -22,7 +22,7 @@ class MetaController extends Controller
         $data = $request->validate([
             'tipo' => 'required|string|in:entrenamiento_semanal,peso_corporal,cintura_corporal,brazos_corporal,pecho_corporal,otro',
             'descripcion' => 'required|string|max:255',
-            'valor_objetivo' => 'required|numeric|min:0',
+            'valor_objetivo' => 'required|numeric|min:0|max:9999',
         ]);
 
         $data['user_id'] = $request->user()->id;

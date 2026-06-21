@@ -1,33 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/40 py-8">
-    <!-- Notification Toast floating -->
-    <div
-      v-if="toast.show"
-      class="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 pointer-events-auto overflow-hidden transition-all duration-300"
-    >
-      <div class="p-4 flex items-center gap-3">
-        <div class="shrink-0">
-          <svg v-if="toast.type === 'success'" class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <svg v-else class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div class="flex-1">
-          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
-            {{ toast.message }}
-          </p>
-        </div>
-        <button @click="toast.show = false" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Nutrición' }]" />
       <!-- Header -->
       <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -232,6 +206,8 @@
                   class="w-12 h-16 rounded-b-xl border-2 border-t-0 border-blue-400/80 dark:border-blue-500 relative overflow-hidden transition-all transform active:scale-95 flex items-end shadow-inner"
                   :class="[index <= diario.agua_vasos ? 'bg-blue-100 dark:bg-blue-950/30' : 'bg-transparent']"
                   :title="index <= diario.agua_vasos ? 'Haga clic para quitar vaso' : 'Haga clic para agregar vaso'"
+                  :aria-label="`Vaso ${index} de 10. ${index <= diario.agua_vasos ? 'Lleno, clic para quitar.' : 'Vacío, clic para llenar.'}`"
+                  :aria-pressed="index <= diario.agua_vasos"
                 >
                   <!-- Glass rim top border -->
                   <div class="absolute top-0 left-0 right-0 h-1 border-t-2 border-blue-400/80 dark:border-blue-500"></div>
@@ -273,6 +249,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
+
+const toast = useToast();
+const showNotification = (message, type = 'success') => toast.add(message, type);
 
 const fechaSeleccionada = ref(new Date().toISOString().split('T')[0]);
 const dailyCalorieGoal = ref(2000); // Default daily goal
@@ -292,19 +273,6 @@ const form = ref({
   carbohidratos: '',
   grasas: ''
 });
-
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success'
-});
-
-const showNotification = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 4000);
-};
 
 // SVG Dash offset representation
 const dashOffset = computed(() => {

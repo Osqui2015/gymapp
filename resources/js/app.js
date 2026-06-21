@@ -4,47 +4,77 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 Alpine.start();
 
-import { createApp } from 'vue';
+import { createApp, defineAsyncComponent } from 'vue';
 import { createPinia } from 'pinia';
-import DashboardContent from './components/DashboardContent.vue';
-import RutinasAccordion from './components/RutinasAccordion.vue';
-import EjerciciosList from './components/EjerciciosList.vue';
-import CrearRutina from './components/CrearRutina.vue';
-import ConfiguracionPanel from './components/ConfiguracionPanel.vue';
-import TrainerAlumnos from './components/TrainerAlumnos.vue';
-import HistorialContent from './components/HistorialContent.vue';
-import ProgresoContent from './components/ProgresoContent.vue';
-import DiarioNutricion from './components/DiarioNutricion.vue';
-import TrainerDashboard from './components/TrainerDashboard.vue';
-import TrainerEjercicios from './components/TrainerEjercicios.vue';
-import TrainerDuplicar from './components/TrainerDuplicar.vue';
-import AdminStats from './components/AdminStats.vue';
-import AdminMembresias from './components/AdminMembresias.vue';
-import AdminAuditLogs from './components/AdminAuditLogs.vue';
-import AdminImportExport from './components/AdminImportExport.vue';
+import DarkModeToggle from './components/DarkModeToggle.vue';
+import GlobalSearch from './components/GlobalSearch.vue';
+import RutinaPublica from './components/RutinaPublica.vue';
+import { setupGlobalToastListeners } from './composables/useToast';
+import { setupKeyboardShortcuts } from './composables/useKeyboardShortcuts';
 
+// Pinia se crea una sola vez y se共享 entre las dos apps Vue.
 const pinia = createPinia();
-const app = createApp({});
 
+// === App principal ===
+// Todos los componentes se cargan lazy (code splitting). Cada Blade view
+// renderiza su propio componente, así que solo se descarga el necesario.
+const app = createApp({});
 app.use(pinia);
-app.component('dashboard-content', DashboardContent);
-app.component('rutinas-accordion', RutinasAccordion);
-app.component('ejercicios-list', EjerciciosList);
-app.component('crear-rutina', CrearRutina);
-app.component('configuracion-panel', ConfiguracionPanel);
-app.component('trainer-alumnos', TrainerAlumnos);
-app.component('historial-content', HistorialContent);
-app.component('progreso-content', ProgresoContent);
-app.component('diario-nutricion', DiarioNutricion);
-app.component('trainer-dashboard', TrainerDashboard);
-app.component('trainer-ejercicios', TrainerEjercicios);
-app.component('trainer-duplicar', TrainerDuplicar);
-app.component('admin-stats', AdminStats);
-app.component('admin-membresias', AdminMembresias);
-app.component('admin-audit-logs', AdminAuditLogs);
-app.component('admin-import-export', AdminImportExport);
+
+// Componentes globales (siempre en el bundle inicial, son pequeños y/o globales)
+app.component('dark-mode-toggle', DarkModeToggle);
+app.component('global-search', GlobalSearch);
+app.component('rutina-publica', RutinaPublica);
+
+const components = {
+    'dashboard-content':   () => import('./components/DashboardContent.vue'),
+    'rutinas-accordion':   () => import('./components/RutinasAccordion.vue'),
+    'ejercicios-list':     () => import('./components/EjerciciosList.vue'),
+    'crear-rutina':        () => import('./components/CrearRutina.vue'),
+    'configuracion-panel': () => import('./components/ConfiguracionPanel.vue'),
+    'trainer-alumnos':     () => import('./components/TrainerAlumnos.vue'),
+    'historial-content':   () => import('./components/HistorialContent.vue'),
+    'progreso-content':    () => import('./components/ProgresoContent.vue'),
+    'diario-nutricion':    () => import('./components/DiarioNutricion.vue'),
+    'trainer-dashboard':   () => import('./components/TrainerDashboard.vue'),
+    'trainer-ejercicios':  () => import('./components/TrainerEjercicios.vue'),
+    'trainer-duplicar':    () => import('./components/TrainerDuplicar.vue'),
+    'admin-stats':         () => import('./components/AdminStats.vue'),
+    'admin-membresias':    () => import('./components/AdminMembresias.vue'),
+    'admin-audit-logs':    () => import('./components/AdminAuditLogs.vue'),
+    'admin-import-export': () => import('./components/AdminImportExport.vue'),
+};
+
+for (const [name, loader] of Object.entries(components)) {
+    app.component(name, defineAsyncComponent(loader));
+}
 
 const mountEl = document.getElementById('app');
 if (mountEl) {
-    app.mount(mountEl);
+    // Si el contenedor tiene atributo data-component, montamos ese componente específico
+    const componentName = mountEl.dataset.component;
+    if (componentName && app._context.components[componentName]) {
+        const Component = app._context.components[componentName];
+        const soloApp = createApp(Component);
+        soloApp.use(pinia);
+        soloApp.mount(mountEl);
+    } else {
+        app.mount(mountEl);
+    }
 }
+
+// === App de toasts (siempre montada, es el shell global) ===
+// Como la usamos en TODAS las páginas, se incluye en el bundle inicial.
+import ToastContainer from './components/ToastContainer.vue';
+const toastRoot = document.getElementById('toast-root');
+if (toastRoot) {
+    const toastApp = createApp(ToastContainer);
+    toastApp.use(pinia);
+    toastApp.mount(toastRoot);
+}
+
+// Listeners globales: errores HTTP -> toasts automáticos (403, 500, 422, etc.)
+setupGlobalToastListeners();
+
+// Keyboard shortcuts (g+r = rutinas, g+d = dashboard, ? = ayuda)
+setupKeyboardShortcuts();

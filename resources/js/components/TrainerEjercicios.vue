@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Mis Ejercicios' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -30,8 +30,8 @@
         </div>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <BaseSkeleton variant="card" :count="6" />
       </div>
 
       <div v-else>
@@ -64,6 +64,7 @@
                   @click="eliminarEjercicio(ejercicio)"
                   class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   title="Eliminar ejercicio"
+                  :aria-label="`Eliminar ejercicio ${ejercicio.nombre}`"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -75,23 +76,16 @@
         </div>
 
         <!-- Estado vacío -->
-        <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700">
-          <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No tienes ejercicios privados</h3>
-          <p class="text-gray-500 dark:text-gray-400 mb-6">Crea ejercicios personalizados para usar en tus rutinas</p>
-          <button
-            @click="mostrarModalCrear = true"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Crear mi primer ejercicio
-          </button>
+        <div v-else>
+          <EmptyState
+            emoji="🏋️"
+            title="No tenés ejercicios privados"
+            description="Creá ejercicios personalizados para usar en tus rutinas. Van a ser privados para vos y tus alumnos."
+            cta-text="Crear mi primer ejercicio"
+            cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            @cta="mostrarModalCrear = true"
+            variant="large"
+          />
         </div>
       </div>
     </div>
@@ -102,7 +96,7 @@
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
           <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" @click="mostrarModalCrear = false"></div>
 
-          <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div ref="modalRef" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
               <h3 class="text-xl font-bold text-white">Nuevo Ejercicio Privado</h3>
               <button @click="mostrarModalCrear = false" class="text-white/80 hover:text-white transition-colors">
@@ -178,24 +172,26 @@
       </div>
     </transition>
 
-    <!-- Toast notifications -->
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import { useToast } from '../composables/useToast';
+import { useUndoable } from '../composables/useUndoable';
+import { useFocusTrap } from '../composables/useFocusTrap';
+import Breadcrumbs from './Breadcrumbs.vue';
+import EmptyState from './EmptyState.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const ejercicios = ref([]);
 const mostrarModalCrear = ref(false);
+const modalRef = ref(null);
+useFocusTrap(modalRef, { when: mostrarModalCrear });
 const guardando = ref(false);
 
 const form = ref({
@@ -204,8 +200,6 @@ const form = ref({
   equipamiento: '',
   descripcion: '',
 });
-
-const toast = ref({ show: false, message: '', type: 'success' });
 
 const gruposMusculares = [
   'Pecho',
@@ -255,13 +249,6 @@ const ejerciciosAgrupados = computed(() => {
   return Object.values(grupos);
 });
 
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3000);
-};
-
 const fetchEjercicios = async () => {
   try {
     const response = await axios.get('/api/trainer/ejercicios-privados');
@@ -290,16 +277,37 @@ const crearEjercicio = async () => {
 };
 
 const eliminarEjercicio = async (ejercicio) => {
-  if (!confirm(`¿Eliminar el ejercicio "${ejercicio.nombre}"?`)) return;
+  // 1) Confirmación visual moderna
+  const confirmed = await toast.confirm(
+    `¿Eliminar el ejercicio "${ejercicio.nombre}"?`,
+    { title: 'Eliminar ejercicio', confirmLabel: 'Sí, eliminar', type: 'error' }
+  );
+  if (!confirmed) return;
 
-  try {
-    await axios.delete(`/api/trainer/ejercicios-privados/${ejercicio.id}`);
-    ejercicios.value = ejercicios.value.filter(e => e.id !== ejercicio.id);
-    showToast('Ejercicio eliminado');
-  } catch (error) {
-    console.error('Error al eliminar:', error);
-    showToast('No se pudo eliminar el ejercicio', 'error');
-  }
+  // 2) Snapshot para posible undo (guardamos posición original para
+  //    restaurar en el mismo lugar de la lista, no al final)
+  const snapshot = { ...ejercicio };
+  const originalIndex = ejercicios.value.findIndex(e => e.id === ejercicio.id);
+
+  // 3) Patrón undo: optimistic + commit diferido + cancel
+  await useUndoable({
+    message: `Ejercicio "${ejercicio.nombre}" eliminado`,
+    apply: () => {
+      ejercicios.value = ejercicios.value.filter(e => e.id !== ejercicio.id);
+    },
+    undo: () => {
+      // Restauramos en la posición original
+      if (originalIndex >= 0 && originalIndex <= ejercicios.value.length) {
+        ejercicios.value.splice(originalIndex, 0, snapshot);
+      } else {
+        ejercicios.value.push(snapshot);
+      }
+    },
+    commit: () => axios.delete(`/api/trainer/ejercicios-privados/${ejercicio.id}`),
+    onError: (err) => {
+      console.error('Error al eliminar:', err);
+    },
+  });
 };
 
 onMounted(() => {

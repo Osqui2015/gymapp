@@ -25,31 +25,50 @@ class TrainerDashboardController extends Controller
 
         $alumnoIds = $alumnos->pluck('id')->toArray();
 
-        // === MÉTRICAS CLAVE ===
-        
-        // Alumnos activos vs inactivos esta semana
+        if (empty($alumnoIds)) {
+            return response()->json([
+                'alumnos_activos' => 0,
+                'alumnos_inactivos' => 0,
+                'alumnos_inactivos_7dias' => [],
+                'ultimos_entrenamientos' => [],
+                'total_alumnos' => 0,
+                'alumnos' => [],
+            ]);
+        }
+
         $inicioSemana = Carbon::now()->startOfWeek();
         $finSemana = Carbon::now()->endOfWeek();
 
-        $alumnosActivos = Historial::whereIn('user_id', $alumnoIds)
-            ->whereBetween('fecha', [$inicioSemana, $finSemana])
-            ->distinct('user_id')
-            ->count('user_id');
+        // === FIX N+1: Una sola query para obtener el último entrenamiento por alumno ===
+        $ultimosPorAlumno = Historial::whereIn('user_id', $alumnoIds)
+            ->where('completado', true)
+            ->select('user_id', 'fecha')
+            ->orderBy('fecha', 'desc')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn($items) => $items->first());
 
+        // === FIX N+1: Una sola query para alumnos activos esta semana ===
+        $alumnosActivosIds = Historial::whereIn('user_id', $alumnoIds)
+            ->whereBetween('fecha', [$inicioSemana, $finSemana])
+            ->distinct()
+            ->pluck('user_id')
+            ->flip()
+            ->toArray(); // flip para usar isset() más rápido
+
+        $alumnosActivos = count($alumnosActivosIds);
         $alumnosInactivos = count($alumnoIds) - $alumnosActivos;
 
-        // Alertas de inactividad (más de 7 días sin entrenar)
+        // Alertas de inactividad (más de 7 días sin entrenar) - ahora sin N+1
         $alumnosInactivos7Dias = [];
+        $hoy = Carbon::now();
         foreach ($alumnos as $alumno) {
-            $ultimoEntrenamiento = Historial::where('user_id', $alumno->id)
-                ->where('completado', true)
-                ->orderBy('fecha', 'desc')
-                ->first();
+            $ultimo = $ultimosPorAlumno->get($alumno->id);
 
-            if (!$ultimoEntrenamiento) {
-                $diasSinEntrenar = 999;
+            if (!$ultimo) {
+                $diasSinEntrenar = 999; // nunca entrenó
             } else {
-                $diasSinEntrenar = Carbon::now()->diffInDays($ultimoEntrenamiento->fecha);
+                $diasSinEntrenar = $hoy->diffInDays($ultimo->fecha);
             }
 
             if ($diasSinEntrenar >= 7) {
@@ -58,7 +77,7 @@ class TrainerDashboardController extends Controller
                     'name' => $alumno->name,
                     'nick' => $alumno->nick,
                     'dias_inactividad' => $diasSinEntrenar,
-                    'ultimo_entrenamiento' => $ultimoEntrenamiento?->fecha?->format('d/m/Y'),
+                    'ultimo_entrenamiento' => $ultimo?->fecha?->format('d/m/Y'),
                 ];
             }
         }
@@ -82,21 +101,20 @@ class TrainerDashboardController extends Controller
                 ];
             });
 
-        // Alumnos con info básica y rutina
-        $alumnosConInfo = collect($alumnoIds)->map(function ($id) use ($alumnos, $inicioSemana, $finSemana) {
-            $alumno = $alumnos->firstWhere('id', $id);
-            $tieneActividadSemana = Historial::where('user_id', $id)
-                ->whereBetween('fecha', [$inicioSemana, $finSemana])
-                ->exists();
+        // === FIX N+1: Traer todas las user_rutinas de una ===
+        $rutinasPorAlumno = UserRutina::whereIn('user_id', $alumnoIds)
+            ->get()
+            ->keyBy('user_id');
 
-            $rutina = UserRutina::where('user_id', $id)->first();
+        $alumnosConInfo = $alumnos->map(function ($alumno) use ($alumnosActivosIds, $rutinasPorAlumno) {
+            $rutina = $rutinasPorAlumno->get($alumno->id);
 
             return [
-                'id' => $id,
-                'name' => $alumno->name ?? '',
-                'nick' => $alumno->nick ?? '',
-                'email' => $alumno->email ?? '',
-                'activo_semana' => $tieneActividadSemana,
+                'id' => $alumno->id,
+                'name' => $alumno->name,
+                'nick' => $alumno->nick,
+                'email' => $alumno->email,
+                'activo_semana' => isset($alumnosActivosIds[$alumno->id]),
                 'rutina' => $rutina ? "{$rutina->nivel} {$rutina->modalidad}" : null,
                 'dia_actual' => $rutina?->dia_actual,
             ];

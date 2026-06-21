@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Auditoría' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -32,63 +32,74 @@
         </div>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-4">
+        <BaseSkeleton variant="text" :count="4" class="max-w-2xl" />
+        <BaseSkeleton variant="card" :count="3" />
       </div>
 
       <div v-else>
-        <!-- Lista de Logs -->
-        <div class="space-y-3">
-          <div v-for="log in logs" :key="log.id" class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex items-start gap-3">
-                <div :class="['w-10 h-10 rounded-full flex items-center justify-center', getActionColor(log.action)]">
-                  <span class="text-lg">{{ getActionIcon(log.action) }}</span>
-                </div>
-                <div>
-                  <p class="font-medium text-gray-900 dark:text-white">{{ log.description }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    <span v-if="log.user">Por {{ log.user.name }}</span>
-                    <span v-else class="text-gray-400">Sistema</span>
-                    • {{ formatDate(log.created_at) }}
-                  </p>
-                  <p v-if="log.model_type" class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    Modelo: {{ getModelName(log.model_type) }} #{{ log.model_id }}
-                  </p>
-                </div>
-              </div>
+        <!-- Lista de Logs (con virtual scrolling para manejar miles de registros) -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <VirtualList
+            v-if="logs.length > 0"
+            :items="logs"
+            :item-height="96"
+            :height="640"
+            key-field="id"
+          >
+            <template #default="{ item: log }">
+              <div class="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex items-start gap-3 flex-1 min-w-0">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0', getActionColor(log.action)]">
+                      <span class="text-lg">{{ getActionIcon(log.action) }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-gray-900 dark:text-white truncate">{{ log.description }}</p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <span v-if="log.user">Por {{ log.user.name }}</span>
+                        <span v-else class="text-gray-400">Sistema</span>
+                        • {{ formatDate(log.created_at) }}
+                      </p>
+                      <p v-if="log.model_type" class="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
+                        Modelo: {{ getModelName(log.model_type) }} #{{ log.model_id }}
+                      </p>
+                    </div>
+                  </div>
 
-              <button @click="verDetalle(log)" class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                Ver detalles
-              </button>
-            </div>
+                  <button @click="verDetalle(log)" class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0">
+                    Ver detalles
+                  </button>
+                </div>
 
-            <!-- Detalle expandido -->
-            <div v-if="selectedLog?.id === log.id" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div v-if="log.old_values || log.new_values" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-if="log.old_values">
-                  <h4 class="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">Valores Anteriores</h4>
-                  <pre class="text-xs bg-red-50 dark:bg-red-900/20 p-3 rounded-lg overflow-x-auto">{{ JSON.stringify(log.old_values, null, 2) }}</pre>
-                </div>
-                <div v-if="log.new_values">
-                  <h4 class="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">Nuevos Valores</h4>
-                  <pre class="text-xs bg-green-50 dark:bg-green-900/20 p-3 rounded-lg overflow-x-auto">{{ JSON.stringify(log.new_values, null, 2) }}</pre>
+                <!-- Detalle expandido -->
+                <div v-if="selectedLog?.id === log.id" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div v-if="log.old_values || log.new_values" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-if="log.old_values">
+                      <h4 class="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">Valores Anteriores</h4>
+                      <pre class="text-xs bg-red-50 dark:bg-red-900/20 p-3 rounded-lg overflow-x-auto">{{ JSON.stringify(log.old_values, null, 2) }}</pre>
+                    </div>
+                    <div v-if="log.new_values">
+                      <h4 class="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">Nuevos Valores</h4>
+                      <pre class="text-xs bg-green-50 dark:bg-green-900/20 p-3 rounded-lg overflow-x-auto">{{ JSON.stringify(log.new_values, null, 2) }}</pre>
+                    </div>
+                  </div>
+                  <div class="mt-3 text-xs text-gray-400">
+                    IP: {{ log.ip_address || 'N/A' }} | User Agent: {{ log.user_agent || 'N/A' }}
+                  </div>
                 </div>
               </div>
-              <div class="mt-3 text-xs text-gray-400">
-                IP: {{ log.ip_address || 'N/A' }} | User Agent: {{ log.user_agent || 'N/A' }}
-              </div>
-            </div>
-          </div>
+            </template>
+          </VirtualList>
         </div>
 
-        <div v-if="logs.length === 0" class="bg-white dark:bg-gray-800 rounded-xl shadow p-12 text-center border border-gray-200 dark:border-gray-700">
-          <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <p class="text-gray-500 dark:text-gray-400">No hay registros de auditoría</p>
+        <div v-if="logs.length === 0">
+          <EmptyState
+            emoji="📋"
+            title="No hay registros de auditoría"
+            :description="Object.values(filtros).some(v => v) ? 'Probá limpiando los filtros para ver todos los registros.' : 'Cuando alguien haga cambios importantes en el sistema, van a quedar registrados acá.'"
+            variant="compact"
+          />
         </div>
 
         <!-- Paginación -->
@@ -99,21 +110,20 @@
         </div>
       </div>
     </div>
-
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
+import EmptyState from './EmptyState.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
+import VirtualList from './VirtualList.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const logs = ref([]);
 const acciones = ref([]);
@@ -121,12 +131,6 @@ const selectedLog = ref(null);
 const pagination = ref({ current_page: 1, last_page: 1 });
 
 const filtros = ref({ usuario: '', accion: '', modelo: '', fecha_desde: '', fecha_hasta: '' });
-const toast = ref({ show: false, message: '', type: 'success' });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => { toast.value.show = false; }, 3000);
-};
 
 const formatDate = (date) => new Date(date).toLocaleString('es-ES');
 

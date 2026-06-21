@@ -29,15 +29,20 @@ class HistorialController extends Controller
             }
         }
 
-        $historial = Historial::where('user_id', $targetUserId)
+        $query = Historial::where('user_id', $targetUserId)
             ->when($request->filled('rutina_nombre'), function ($query) use ($request) {
                 $query->where('rutina_nombre', $request->rutina_nombre);
             })
             ->orderBy('fecha', 'desc')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
 
-        return response()->json($historial);
+        // Paginación opcional
+        if ($request->boolean('paginated') || $request->has('page')) {
+            $perPage = min((int) $request->input('per_page', 50), 200);
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     public function guardar(Request $request)
@@ -47,15 +52,15 @@ class HistorialController extends Controller
             'rutina_nombre' => ['required', 'string', 'max:255'],
             'dia' => ['required', 'string', 'max:255'],
             'ejercicio_nombre' => ['required', 'string', 'max:255'],
-            'series_numero' => ['required', 'integer', 'min:1'],
-            'series_completadas' => ['nullable', 'integer', 'min:0'],
+            'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
+            'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
             'reps_min' => ['required', 'string', 'max:255'],
             'reps_max' => ['required', 'string', 'max:255'],
-            'reps_realizadas' => ['nullable', 'integer', 'min:0'],
-            'descanso_min' => ['required', 'numeric'],
-            'peso' => ['nullable', 'numeric', 'min:0'],
+            'reps_realizadas' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'descanso_min' => ['required', 'numeric', 'min:0', 'max:30'],
+            'peso' => ['nullable', 'numeric', 'min:0', 'max:1000'],
             'completado' => ['nullable', 'boolean'],
-            'superserie_grupo' => ['nullable', 'integer'],
+            'superserie_grupo' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $data['user_id'] = $user->id;
@@ -107,8 +112,12 @@ class HistorialController extends Controller
     {
         $user = $request->user();
 
+        $data = $request->validate([
+            'rutina_nombre' => ['required', 'string', 'max:255'],
+        ]);
+
         $ultimo = Historial::where('user_id', $user->id)
-            ->where('rutina_nombre', $request->rutina_nombre)
+            ->where('rutina_nombre', $data['rutina_nombre'])
             ->where('completado', true)
             ->orderBy('fecha', 'desc')
             ->first();
@@ -118,22 +127,31 @@ class HistorialController extends Controller
         }
 
         $diasCompletados = Historial::where('user_id', $user->id)
-            ->where('rutina_nombre', $request->rutina_nombre)
+            ->where('rutina_nombre', $data['rutina_nombre'])
             ->where('completado', true)
             ->selectRaw('DISTINCT dia')
             ->get()
             ->pluck('dia')
             ->toArray();
 
-        $todosLosDias = Rutina::where('nivel', explode(' ', $request->rutina_nombre)[0])
-            ->where('modalidad', substr($request->rutina_nombre, strlen(explode(' ', $request->rutina_nombre)[0]) + 1))
+        // Resolver nivel y modalidad desde la relación del usuario (mucho más robusto que parsear strings)
+        $userRutina = $user->rutinaSeleccionada;
+        $nivel = $userRutina?->nivel ?? Rutina::query()->value('nivel');
+        $modalidad = $userRutina?->modalidad ?? Rutina::query()->value('modalidad');
+
+        if (! $nivel || ! $modalidad) {
+            return response()->json(['dia_actual' => 'Día 1']);
+        }
+
+        $todosLosDias = Rutina::where('nivel', $nivel)
+            ->where('modalidad', $modalidad)
             ->selectRaw('DISTINCT dia')
             ->orderBy('dia')
             ->get()
             ->pluck('dia')
             ->toArray();
 
-        $diaActual = 'Día 1';
+        $diaActual = $todosLosDias[0] ?? 'Día 1';
         foreach ($todosLosDias as $index => $dia) {
             if (!in_array($dia, $diasCompletados)) {
                 $diaActual = $dia;

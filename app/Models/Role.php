@@ -17,14 +17,29 @@ class Role extends Model
         'permissions' => 'array',
     ];
 
+    public const COMUN = 'comun';
     public const ADMINISTRADOR = 'administrador';
     public const TRAINER = 'trainer';
     public const RECEPCIONISTA = 'recepcionista';
-    public const COORDINADOR = 'coordinador_trainers';
+    public const COORDINADOR = 'coordinador';
 
     public static function defaultRoles(): array
     {
         return [
+            self::COMUN => [
+                'description' => 'Usuario regular con acceso libre',
+                'permissions' => [
+                    'ver_dashboard',
+                    'ver_rutinas',
+                    'crear_rutinas',
+                    'compartir_rutinas',
+                    'importar_rutinas',
+                    'ver_ejercicios',
+                    'ver_historial',
+                    'ver_progreso',
+                    'ver_nutricion',
+                ],
+            ],
             self::ADMINISTRADOR => [
                 'description' => 'Administrador del sistema',
                 'permissions' => ['*'],

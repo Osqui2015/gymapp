@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Importar / Exportar' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -78,6 +78,16 @@
                 </button>
               </div>
               <p v-if="userFile" class="mt-2 text-sm text-indigo-600 dark:text-indigo-400">📄 {{ userFile.name }}</p>
+              <!-- Progress bar animada -->
+              <div v-if="importingUsers" class="mt-3">
+                <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                  <span>Subiendo...</span>
+                  <span class="font-mono">{{ userProgress }}%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-200" :style="{ width: `${userProgress}%` }"></div>
+                </div>
+              </div>
             </div>
 
             <!-- Importar Ejercicios -->
@@ -99,6 +109,16 @@
                 </button>
               </div>
               <p v-if="ejercicioFile" class="mt-2 text-sm text-green-600 dark:text-green-400">📄 {{ ejercicioFile.name }}</p>
+              <!-- Progress bar animada -->
+              <div v-if="importingEjercicios" class="mt-3">
+                <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                  <span>Subiendo...</span>
+                  <span class="font-mono">{{ ejercicioProgress }}%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-200" :style="{ width: `${ejercicioProgress}%` }"></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -141,35 +161,26 @@ Sentadilla,Cuádriceps,Sin peso, Sí,Poids corporal para piernas</pre>
         </div>
       </div>
     </div>
-
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const userFile = ref(null);
 const ejercicioFile = ref(null);
 const importingUsers = ref(false);
 const importingEjercicios = ref(false);
+const userProgress = ref(0);
+const ejercicioProgress = ref(0);
 const importResult = ref(null);
 const totalUsuarios = ref(0);
 const totalEjercicios = ref(0);
-
-const toast = ref({ show: false, message: '', type: 'success' });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => { toast.value.show = false; }, 4000);
-};
 
 const handleUserFile = (e) => { userFile.value = e.target.files[0]; importResult.value = null; };
 const handleEjercicioFile = (e) => { ejercicioFile.value = e.target.files[0]; importResult.value = null; };
@@ -177,34 +188,75 @@ const handleEjercicioFile = (e) => { ejercicioFile.value = e.target.files[0]; im
 const exportarUsuarios = () => { window.location.href = '/api/admin/export/users'; showToast('Descargando usuarios...'); };
 const exportarEjercicios = () => { window.location.href = '/api/admin/export/ejercicios'; showToast('Descargando ejercicios...'); };
 
+/**
+ * Sube un archivo con XHR para poder mostrar progreso real de upload.
+ */
+const uploadWithProgress = (url, file, onProgress) => {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('archivo', file);
+
+        const token = document.head.querySelector('meta[name="csrf-token"]')?.content;
+        xhr.open('POST', url);
+        if (token) xhr.setRequestHeader('X-CSRF-TOKEN', token);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpToken');
+        xhr.setRequestHeader('Accept', 'application/json');
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable && onProgress) {
+                onProgress(Math.round((e.loaded / e.total) * 100));
+            }
+        });
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try { resolve(JSON.parse(xhr.responseText)); }
+                catch { resolve(xhr.responseText); }
+            } else {
+                let msg = 'Error en la importación';
+                try { msg = JSON.parse(xhr.responseText).message || msg; } catch {}
+                reject(new Error(msg));
+            }
+        });
+        xhr.addEventListener('error', () => reject(new Error('Error de red')));
+        xhr.send(formData);
+    });
+};
+
 const importarUsuarios = async () => {
   if (!userFile.value) return;
   importingUsers.value = true;
-  const formData = new FormData();
-  formData.append('archivo', userFile.value);
+  userProgress.value = 0;
   try {
-    const response = await axios.post('/api/admin/import/users', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    importResult.value = response.data;
-    showToast(`Importados ${response.data.created} usuarios`, 'success');
+    const data = await uploadWithProgress('/api/admin/import/users', userFile.value, (p) => userProgress.value = p);
+    userProgress.value = 100;
+    importResult.value = data;
+    showToast(`Importados ${data.created} usuarios`, 'success');
   } catch (error) {
     console.error(error);
-    showToast('Error al importar usuarios', 'error');
-  } finally { importingUsers.value = false; }
+    showToast(error.message || 'Error al importar usuarios', 'error');
+  } finally {
+    importingUsers.value = false;
+    setTimeout(() => { userProgress.value = 0; }, 1500);
+  }
 };
 
 const importarEjercicios = async () => {
   if (!ejercicioFile.value) return;
   importingEjercicios.value = true;
-  const formData = new FormData();
-  formData.append('archivo', ejercicioFile.value);
+  ejercicioProgress.value = 0;
   try {
-    const response = await axios.post('/api/admin/import/ejercicios', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    importResult.value = response.data;
-    showToast(`Importados ${response.data.created} ejercicios`, 'success');
+    const data = await uploadWithProgress('/api/admin/import/ejercicios', ejercicioFile.value, (p) => ejercicioProgress.value = p);
+    ejercicioProgress.value = 100;
+    importResult.value = data;
+    showToast(`Importados ${data.created} ejercicios`, 'success');
   } catch (error) {
     console.error(error);
-    showToast('Error al importar ejercicios', 'error');
-  } finally { importingEjercicios.value = false; }
+    showToast(error.message || 'Error al importar ejercicios', 'error');
+  } finally {
+    importingEjercicios.value = false;
+    setTimeout(() => { ejercicioProgress.value = 0; }, 1500);
+  }
 };
 
 onMounted(async () => {

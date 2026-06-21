@@ -1,12 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Ejercicios' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Ejercicios</h2>
         <button
           v-if="userRole === 'trainer' || userRole === 'administrador'"
           @click="mostrarModal = true"
-          class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
+          class="hidden md:inline-flex bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
         >
           + Agregar Ejercicio
         </button>
@@ -54,14 +55,15 @@
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="overflow-x-auto">
+        <!-- Desktop: tabla tradicional -->
+        <div class="overflow-x-auto hidden md:block">
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Equipamiento</th>
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Grupo Muscular</th>
-                <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Descripción</th>
+                <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Descripción</th>
                 <th class="px-4 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -74,7 +76,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-4 text-gray-700 dark:text-gray-300">{{ ejercicio.grupo_muscular || '-' }}</td>
-                <td class="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs hidden md:table-cell">{{ ejercicio.descripcion?.substring(0, 80) || '-' }}{{ ejercicio.descripcion?.length > 80 ? '...' : '' }}</td>
+                <td class="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs">{{ ejercicio.descripcion?.substring(0, 80) || '-' }}{{ ejercicio.descripcion?.length > 80 ? '...' : '' }}</td>
                 <td class="px-4 py-4 text-center">
                   <button
                     v-if="userRole === 'trainer' || userRole === 'administrador'"
@@ -86,15 +88,63 @@
                 </td>
               </tr>
               <tr v-if="ejercicios.length === 0">
-                <td colspan="5" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                  <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  No hay ejercicios
+                <td colspan="5">
+                  <EmptyState
+                    emoji="🏋️"
+                    title="No hay ejercicios"
+                    :description="busqueda || grupoMuscularFiltro || equipamientoFiltro ? 'No se encontraron ejercicios con esos filtros. Probá con otros criterios.' : 'Cuando crees rutinas o agregues ejercicios, van a aparecer acá.'"
+                    :cta-text="(userRole === 'trainer' || userRole === 'administrador') && !busqueda ? 'Agregar el primero' : null"
+                    cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    @cta="mostrarModal = true"
+                    variant="compact"
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile: cards -->
+        <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+          <div
+            v-for="ejercicio in ejercicios"
+            :key="ejercicio.id"
+            class="p-4 space-y-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-semibold text-gray-900 dark:text-white flex-1">{{ ejercicio.nombre }}</p>
+              <button
+                v-if="userRole === 'trainer' || userRole === 'administrador'"
+                @click="eliminar(ejercicio.id)"
+                class="flex-shrink-0 px-2.5 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-xs font-medium transition-all"
+              >
+                Eliminar
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded text-xs font-medium">
+                {{ ejercicio.equipamiento }}
+              </span>
+              <span v-if="ejercicio.grupo_muscular" class="px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 rounded text-xs font-medium">
+                {{ ejercicio.grupo_muscular }}
+              </span>
+            </div>
+            <p v-if="ejercicio.descripcion" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+              {{ ejercicio.descripcion }}
+            </p>
+          </div>
+
+          <div v-if="ejercicios.length === 0">
+            <EmptyState
+              emoji="🏋️"
+              title="No hay ejercicios"
+              :description="busqueda || grupoMuscularFiltro || equipamientoFiltro ? 'No se encontraron ejercicios con esos filtros. Probá con otros criterios.' : 'Cuando crees rutinas o agregues ejercicios, van a aparecer acá.'"
+              :cta-text="(userRole === 'trainer' || userRole === 'administrador') && !busqueda ? 'Agregar el primero' : null"
+              cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              @cta="mostrarModal = true"
+              variant="compact"
+            />
+          </div>
         </div>
       </div>
 
@@ -131,7 +181,7 @@
       </div>
 
       <div v-if="mostrarModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div ref="modalRef" class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg shadow-2xl border border-gray-200 dark:border-gray-700" role="dialog" aria-modal="true">
           <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Agregar Ejercicio</h3>
 
           <div class="space-y-4">
@@ -189,12 +239,36 @@
         </div>
       </div>
     </div>
+
+    <!-- FAB (mobile only): agregar nuevo ejercicio -->
+    <button
+      v-if="userRole === 'trainer' || userRole === 'administrador'"
+      @click="mostrarModal = true"
+      class="md:hidden fixed bottom-20 right-4 z-30 inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 active:scale-95 transition-transform"
+      aria-label="Agregar nuevo ejercicio"
+      title="Agregar ejercicio"
+    >
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+    </button>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { useToast } from '../composables/useToast';
+import { useUndoable } from '../composables/useUndoable';
+import { useFocusTrap } from '../composables/useFocusTrap';
+import { useAuth } from '../composables/useAuth';
+import { cachedAxiosGet } from '../composables/useApiCache';
+import EmptyState from './EmptyState.vue';
+import Breadcrumbs from './Breadcrumbs.vue';
+
+const { role: userRole, fetchUser } = useAuth();
+
+const toast = useToast();
 
 const ejercicios = ref([]);
 const busqueda = ref('');
@@ -203,10 +277,11 @@ const gruposMusculares = ref([]);
 const equipamientoFiltro = ref('');
 const equipamientos = ref([]);
 const mostrarModal = ref(false);
+const modalRef = ref(null);
+useFocusTrap(modalRef, { when: mostrarModal });
 const paginaActual = ref(1);
 const totalPages = ref(1);
 const total = ref(0);
-const userRole = ref('comun');
 const nuevo = ref({
   nombre: '',
   equipamiento: '',
@@ -216,8 +291,7 @@ const nuevo = ref({
 
 const fetchUserInfo = async () => {
   try {
-    const response = await axios.get('/api/user-info');
-    userRole.value = response.data.role;
+    await fetchUser();
   } catch (error) {
     console.error('Error al obtener rol:', error);
   }
@@ -225,7 +299,7 @@ const fetchUserInfo = async () => {
 
 const fetchGruposMusculares = async () => {
   try {
-    const response = await axios.get('/api/ejercicios/grupos-musculares');
+    const response = await cachedAxiosGet('/api/ejercicios/grupos-musculares', {}, { ttl: 5 * 60_000 });
     gruposMusculares.value = response.data;
   } catch (error) {
     console.error('Error al obtener grupos musculares:', error);
@@ -234,7 +308,7 @@ const fetchGruposMusculares = async () => {
 
 const fetchEquipamientos = async () => {
   try {
-    const response = await axios.get('/api/ejercicios/equipamientos');
+    const response = await cachedAxiosGet('/api/ejercicios/equipamientos', {}, { ttl: 5 * 60_000 });
     equipamientos.value = response.data;
   } catch (error) {
     console.error('Error al obtener equipamientos:', error);
@@ -306,14 +380,34 @@ const agregar = async () => {
 };
 
 const eliminar = async (id) => {
-  if (confirm('¿Eliminar este ejercicio?')) {
-    try {
-      await axios.delete(`/api/ejercicios/${id}`);
-      fetchEjercicios();
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  }
+  // 1) Confirmación visual moderna
+  const confirmed = await toast.confirm(
+    '¿Eliminar este ejercicio?',
+    { title: 'Eliminar ejercicio', confirmLabel: 'Sí, eliminar', type: 'error' }
+  );
+  if (!confirmed) return;
+
+  // 2) Snapshot + posición original para restaurar en el mismo lugar
+  const idx = ejercicios.value.findIndex(e => e.id === id);
+  const snapshot = idx >= 0 ? { ...ejercicios.value[idx] } : null;
+
+  // 3) Undo real: optimistic + commit diferido + cancel
+  await useUndoable({
+    message: 'Ejercicio eliminado',
+    apply: () => {
+      ejercicios.value = ejercicios.value.filter(e => e.id !== id);
+    },
+    undo: () => {
+      if (!snapshot) return;
+      if (idx >= 0 && idx <= ejercicios.value.length) {
+        ejercicios.value.splice(idx, 0, snapshot);
+      } else {
+        ejercicios.value.push(snapshot);
+      }
+    },
+    commit: () => axios.delete(`/api/ejercicios/${id}`),
+    onError: (err) => console.error('Error al eliminar:', err),
+  });
 };
 
 onMounted(() => {

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Progreso extends Model
 {
+    public $timestamps = false; // La tabla no tiene created_at/updated_at
+
     protected $fillable = [
         'user_id',
         'fecha',

@@ -101,8 +101,8 @@ class AdminImportExportController extends Controller
                         $data['nick'] = strtolower(str_replace(' ', '.', $data['name'])) . $rowCount;
                     }
 
-                    // Generar password temporal
-                    $data['password'] = bcrypt('GymApp' . date('Y'));
+                    // Generar password aleatorio seguro (12 chars) - debe resetearse en primer login
+                    $data['password'] = bcrypt(\Illuminate\Support\Str::random(12));
 
                     User::create($data);
                     $created++;

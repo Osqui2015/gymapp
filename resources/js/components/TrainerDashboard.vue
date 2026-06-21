@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <ToastNotification ref="toastRef" />
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Panel del Trainer' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="flex justify-between items-center mb-8">
@@ -19,77 +19,16 @@
         </a>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <BaseSkeleton variant="stat-card" :count="3" />
+        </div>
+        <BaseSkeleton variant="table" :count="5" />
       </div>
 
       <div v-else>
         <!-- Métricas Clave -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <!-- Alumnos Activos -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Alumnos Activos</p>
-                <p class="mt-2 text-4xl font-bold text-green-600 dark:text-green-400">{{ metricas.alumnos_activos }}</p>
-                <p class="text-xs text-gray-400 mt-1">esta semana</p>
-              </div>
-              <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-full">
-                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Alumnos Inactivos -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Alumnos Inactivos</p>
-                <p class="mt-2 text-4xl font-bold text-red-600 dark:text-red-400">{{ metricas.alumnos_inactivos }}</p>
-                <p class="text-xs text-gray-400 mt-1">sin actividad</p>
-              </div>
-              <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-full">
-                <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Alertas de Inactividad -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Alertas 7+ días</p>
-                <p class="mt-2 text-4xl font-bold text-orange-600 dark:text-orange-400">{{ metricas.alumnos_inactivos_7dias?.length || 0 }}</p>
-                <p class="text-xs text-gray-400 mt-1">sin entrenar</p>
-              </div>
-              <div class="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-full">
-                <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Total Alumnos -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Total Alumnos</p>
-                <p class="mt-2 text-4xl font-bold text-indigo-600 dark:text-indigo-400">{{ metricas.total_alumnos }}</p>
-                <p class="text-xs text-gray-400 mt-1">asignados</p>
-              </div>
-              <div class="bg-indigo-100 dark:bg-indigo-900/30 p-4 rounded-full">
-                <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrainerMetrics :metricas="metricas" />
 
         <!-- Lista de Alumnos -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-8">
@@ -105,102 +44,119 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
-                  <th class="px-4 py-4 text-left font-bold text-gray-700 dark:text-gray-300">Alumno</th>
-                  <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Rutina</th>
-                  <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Día Actual</th>
-                  <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Estado</th>
-                  <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                <tr v-for="alumno in alumnosFiltrados" :key="alumno.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <td class="px-4 py-4">
-                    <div class="flex items-center gap-3">
-                      <div :class="['w-10 h-10 rounded-full flex items-center justify-center', alumno.activo_semana ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700']">
-                        <span :class="['font-bold', alumno.activo_semana ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400']">
-                          {{ alumno.name.charAt(0).toUpperCase() }}
-                        </span>
-                      </div>
-                      <div>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ alumno.name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">@{{ alumno.nick }}</p>
-                      </div>
+          <ResponsiveTable
+            :rows="alumnosFiltrados"
+            :columns="[
+              { key: 'alumno', label: 'Alumno', thClass: 'text-left', tdClass: '' },
+              { key: 'rutina', label: 'Rutina', thClass: 'text-center', tdClass: '' },
+              { key: 'dia_actual', label: 'Día Actual', thClass: 'text-center', tdClass: '' },
+              { key: 'estado', label: 'Estado', thClass: 'text-center', tdClass: '' },
+              { key: 'acciones', label: 'Acciones', thClass: 'text-center', tdClass: '' },
+            ]"
+            thead-class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700"
+          >
+            <template #rows="{ row: alumno }">
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <td class="px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <div :class="['w-10 h-10 rounded-full flex items-center justify-center', alumno.activo_semana ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700']">
+                      <span :class="['font-bold', alumno.activo_semana ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400']">
+                        {{ alumno.name.charAt(0).toUpperCase() }}
+                      </span>
                     </div>
-                  </td>
-                  <td class="px-4 py-4 text-center">
-                    <span v-if="alumno.rutina" class="px-3 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-semibold">
-                      {{ alumno.rutina }}
-                    </span>
-                    <span v-else class="text-gray-400 dark:text-gray-500">Sin asignar</span>
-                  </td>
-                  <td class="px-4 py-4 text-center">
-                    <span class="text-gray-700 dark:text-gray-300">{{ alumno.dia_actual || 'Día 1' }}</span>
-                  </td>
-                  <td class="px-4 py-4 text-center">
-                    <span :class="['px-3 py-1 rounded-full text-xs font-semibold', alumno.activo_semana ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300']">
-                      {{ alumno.activo_semana ? 'Activo ✓' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-4 text-center">
-                    <button
-                      @click="verDetalleAlumno(alumno)"
-                      class="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Ver Progreso
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                    <div>
+                      <p class="font-medium text-gray-900 dark:text-white">{{ alumno.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">@{{ alumno.nick }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span v-if="alumno.rutina" class="px-3 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-semibold">
+                    {{ alumno.rutina }}
+                  </span>
+                  <span v-else class="text-gray-400 dark:text-gray-500">Sin asignar</span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class="text-gray-700 dark:text-gray-300">{{ alumno.dia_actual || 'Día 1' }}</span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span :class="['px-3 py-1 rounded-full text-xs font-semibold', alumno.activo_semana ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300']">
+                    {{ alumno.activo_semana ? 'Activo ✓' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <button
+                    @click="verDetalleAlumno(alumno)"
+                    class="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Ver Progreso
+                  </button>
+                </td>
+              </tr>
+            </template>
 
-          <div v-if="alumnosFiltrados.length === 0" class="p-12 text-center">
-            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <p class="text-gray-500 dark:text-gray-400">No tienes alumnos asignados</p>
+            <template #cards="{ row: alumno }">
+              <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+                <!-- Header: avatar + nombre + estado -->
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div :class="['w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0', alumno.activo_semana ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500']">
+                      {{ alumno.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-gray-900 dark:text-white truncate">{{ alumno.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ alumno.nick }}</p>
+                    </div>
+                  </div>
+                  <span :class="['px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap', alumno.activo_semana ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300']">
+                    {{ alumno.activo_semana ? 'Activo ✓' : 'Inactivo' }}
+                  </span>
+                </div>
+
+                <!-- Rutina + día -->
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rutina</span>
+                  <span v-if="alumno.rutina" class="px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 rounded-full text-xs font-semibold">
+                    {{ alumno.rutina }}
+                  </span>
+                  <span v-else class="text-gray-400 dark:text-gray-500">Sin asignar</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Día actual</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">{{ alumno.dia_actual || 'Día 1' }}</span>
+                </div>
+
+                <!-- Acción -->
+                <button
+                  @click="verDetalleAlumno(alumno)"
+                  class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Ver Progreso
+                </button>
+              </div>
+            </template>
+          </ResponsiveTable>
+
+          <div v-if="alumnosFiltrados.length === 0">
+            <EmptyState
+              emoji="🎓"
+              title="No tenés alumnos asignados"
+              :description="busqueda ? 'No se encontraron alumnos con ese criterio.' : 'Cuando un admin te asigne alumnos van a aparecer acá.'"
+              variant="compact"
+            />
           </div>
         </div>
 
         <!-- Últimos Entrenamientos -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Últimos Entrenamientos</h3>
-          </div>
-
-          <div v-if="metricas.ultimos_entrenamientos?.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
-            <div v-for="(entreno, index) in metricas.ultimos_entrenamientos" :key="index" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="bg-blue-100 dark:bg-blue-900/30 w-10 h-10 rounded-full flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p class="font-medium text-gray-900 dark:text-white">{{ entreno.user_name }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ entreno.rutina }} - {{ entreno.dia }}
-                    </p>
-                  </div>
-                </div>
-                <span class="text-sm text-gray-400 dark:text-gray-500">{{ entreno.fecha }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="p-8 text-center text-gray-500 dark:text-gray-400">
-            No hay entrenamientos registrados
-          </div>
-        </div>
+        <RecentWorkouts :entrenos="metricas.ultimos_entrenamientos" />
       </div>
     </div>
 
@@ -210,7 +166,7 @@
         <div class="flex items-start justify-center min-h-screen px-4 pt-8 pb-20 text-center sm:block sm:p-0">
           <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" @click="cerrarModalAlumno"></div>
 
-          <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
+          <div ref="modalRef" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full" role="dialog" aria-modal="true">
             <!-- Header del Modal -->
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
               <div class="flex items-center gap-4">
@@ -231,8 +187,11 @@
 
             <!-- Contenido del Modal -->
             <div class="p-6 max-h-[70vh] overflow-y-auto">
-              <div v-if="cargandoDetalle" class="flex justify-center py-8">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+              <div v-if="cargandoDetalle" class="space-y-4">
+                <div class="flex gap-2 mb-4">
+                  <BaseSkeleton variant="text" :count="4" class="w-32" />
+                </div>
+                <BaseSkeleton variant="card" :count="3" />
               </div>
 
               <div v-else>
@@ -251,6 +210,11 @@
                   >
                     {{ tab.nombre }}
                   </button>
+                </div>
+
+                <!-- Tab: Timeline -->
+                <div v-if="tabActivo === 'timeline'">
+                  <TrainerAlumnoTimeline :alumno="alumnoSeleccionado" />
                 </div>
 
                 <!-- Tab: Historial de Pesos -->
@@ -288,29 +252,61 @@
                 <!-- Tab: Medidas -->
                 <div v-if="tabActivo === 'medidas'">
                   <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Medidas Corporales</h4>
-                  <div v-if="detalleAlumno.medidas_corporales?.length > 0" class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                      <thead>
-                        <tr class="bg-gray-100 dark:bg-gray-900">
-                          <th class="px-3 py-2 text-left font-semibold">Fecha</th>
-                          <th class="px-3 py-2 text-center font-semibold">Peso</th>
-                          <th class="px-3 py-2 text-center font-semibold">Pecho</th>
-                          <th class="px-3 py-2 text-center font-semibold">Cintura</th>
-                          <th class="px-3 py-2 text-center font-semibold">Brazos</th>
-                          <th class="px-3 py-2 text-center font-semibold">Muslos</th>
+                  <div v-if="detalleAlumno.medidas_corporales?.length > 0">
+                    <ResponsiveTable
+                      :rows="detalleAlumno.medidas_corporales.slice(-10).reverse()"
+                      :columns="[
+                        { key: 'fecha', label: 'Fecha', thClass: 'text-left', tdClass: '' },
+                        { key: 'peso', label: 'Peso', thClass: 'text-center', tdClass: '' },
+                        { key: 'pecho', label: 'Pecho', thClass: 'text-center', tdClass: '' },
+                        { key: 'cintura', label: 'Cintura', thClass: 'text-center', tdClass: '' },
+                        { key: 'brazos', label: 'Brazos', thClass: 'text-center', tdClass: '' },
+                        { key: 'muslos', label: 'Muslos', thClass: 'text-center', tdClass: '' },
+                      ]"
+                      thead-class="bg-gray-100 dark:bg-gray-900"
+                    >
+                      <template #rows="{ row: medida }">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                          <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ medida.fecha }}</td>
+                          <td class="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{{ medida.peso || '-' }} kg</td>
+                          <td class="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{{ medida.pecho || '-' }}</td>
+                          <td class="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{{ medida.cintura || '-' }}</td>
+                          <td class="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{{ medida.brazos || '-' }}</td>
+                          <td class="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{{ medida.muslos || '-' }}</td>
                         </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="medida in detalleAlumno.medidas_corporales.slice(-10).reverse()" :key="medida.fecha">
-                          <td class="px-3 py-2">{{ medida.fecha }}</td>
-                          <td class="px-3 py-2 text-center">{{ medida.peso || '-' }} kg</td>
-                          <td class="px-3 py-2 text-center">{{ medida.pecho || '-' }}</td>
-                          <td class="px-3 py-2 text-center">{{ medida.cintura || '-' }}</td>
-                          <td class="px-3 py-2 text-center">{{ medida.brazos || '-' }}</td>
-                          <td class="px-3 py-2 text-center">{{ medida.muslos || '-' }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                      </template>
+
+                      <template #cards="{ row: medida }">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-2">
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</span>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ medida.fecha }}</span>
+                          </div>
+                          <div class="pt-2 border-t border-gray-100 dark:border-gray-700 grid grid-cols-5 gap-2 text-center">
+                            <div>
+                              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Peso</p>
+                              <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{{ medida.peso || '-' }}<span v-if="medida.peso" class="text-[10px] ml-0.5">kg</span></p>
+                            </div>
+                            <div>
+                              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Pecho</p>
+                              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{{ medida.pecho || '-' }}</p>
+                            </div>
+                            <div>
+                              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Cintura</p>
+                              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{{ medida.cintura || '-' }}</p>
+                            </div>
+                            <div>
+                              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Brazos</p>
+                              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{{ medida.brazos || '-' }}</p>
+                            </div>
+                            <div>
+                              <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Muslos</p>
+                              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{{ medida.muslos || '-' }}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </ResponsiveTable>
                   </div>
                   <p v-else class="text-gray-500 dark:text-gray-400">No hay registro de medidas aún.</p>
                 </div>
@@ -385,24 +381,29 @@
       </div>
     </transition>
 
-    <!-- Toast notifications -->
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import ToastNotification from './ToastNotification.vue';
+import { useToast } from '../composables/useToast';
+import Breadcrumbs from './Breadcrumbs.vue';
+import { useFocusTrap } from '../composables/useFocusTrap';
+import ResponsiveTable from './ResponsiveTable.vue';
+import EmptyState from './EmptyState.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
+import TrainerMetrics from './trainer/TrainerMetrics.vue';
+import RecentWorkouts from './trainer/RecentWorkouts.vue';
+import TrainerAlumnoTimeline from './trainer/TrainerAlumnoTimeline.vue';
 
-const toastRef = ref(null);
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
 const cargando = ref(true);
 const cargandoDetalle = ref(false);
 const mostrarModalAlumno = ref(false);
+const modalRef = ref(null);
+useFocusTrap(modalRef, { when: mostrarModalAlumno });
 const metricas = ref({
   alumnos_activos: 0,
   alumnos_inactivos: 0,
@@ -416,6 +417,7 @@ const tabActivo = ref('pesos');
 const comentariosForm = ref({});
 
 const tabs = [
+  { id: 'timeline', nombre: '⏱️ Timeline' },
   { id: 'pesos', nombre: '📊 Historial de Pesos' },
   { id: 'tonelaje', nombre: '🏋️ Tonelaje' },
   { id: 'medidas', nombre: '📏 Medidas Corporales' },
@@ -440,15 +442,6 @@ const alumnosFiltrados = computed(() => {
     (a.nick && a.nick.toLowerCase().includes(search))
   );
 });
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3000);
-};
-
-const toast = ref({ show: false, message: '', type: 'success' });
 
 const fetchDashboard = async () => {
   try {

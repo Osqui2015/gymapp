@@ -53,24 +53,24 @@ class ProgresoController extends Controller
             ->get();
 
         $rules = [
-            'peso' => ['nullable', 'numeric', 'min:0'],
-            'altura' => ['nullable', 'numeric', 'min:0'],
-            'edad' => ['nullable', 'integer', 'min:1'],
+            'peso' => ['nullable', 'numeric', 'min:20', 'max:400'],
+            'altura' => ['nullable', 'numeric', 'min:0.5', 'max:3.0'],
+            'edad' => ['nullable', 'integer', 'min:10', 'max:120'],
             'sexo' => ['nullable', 'in:masculino,femenino'],
-            'cuello' => ['nullable', 'numeric', 'min:0'],
-            'hombros' => ['nullable', 'numeric', 'min:0'],
-            'pecho' => ['nullable', 'numeric', 'min:0'],
-            'brazos' => ['nullable', 'numeric', 'min:0'],
-            'cintura' => ['nullable', 'numeric', 'min:0'],
-            'cadera' => ['nullable', 'numeric', 'min:0'],
-            'muslos' => ['nullable', 'numeric', 'min:0'],
-            'pantorrillas' => ['nullable', 'numeric', 'min:0'],
+            'cuello' => ['nullable', 'numeric', 'min:10', 'max:80'],
+            'hombros' => ['nullable', 'numeric', 'min:20', 'max:200'],
+            'pecho' => ['nullable', 'numeric', 'min:30', 'max:200'],
+            'brazos' => ['nullable', 'numeric', 'min:10', 'max:80'],
+            'cintura' => ['nullable', 'numeric', 'min:30', 'max:200'],
+            'cadera' => ['nullable', 'numeric', 'min:30', 'max:200'],
+            'muslos' => ['nullable', 'numeric', 'min:15', 'max:100'],
+            'pantorrillas' => ['nullable', 'numeric', 'min:15', 'max:80'],
         ];
 
         if ($progresos->isEmpty()) {
-            $rules['peso'] = ['required', 'numeric', 'min:0'];
-            $rules['altura'] = ['required', 'numeric', 'min:0'];
-            $rules['edad'] = ['required', 'integer', 'min:1'];
+            $rules['peso'] = ['required', 'numeric', 'min:20', 'max:400'];
+            $rules['altura'] = ['required', 'numeric', 'min:0.5', 'max:3.0'];
+            $rules['edad'] = ['required', 'integer', 'min:10', 'max:120'];
             $rules['sexo'] = ['required', 'in:masculino,femenino'];
         }
 

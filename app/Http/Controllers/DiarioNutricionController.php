@@ -13,19 +13,22 @@ class DiarioNutricionController extends Controller
         $user = $request->user();
         $fechaStr = $request->input('fecha', Carbon::now()->toDateString());
 
-        $diario = DiarioNutricion::firstOrCreate(
-            [
+        // Buscar por fecha truncada (no por timestamp completo) para evitar mismatches
+        $diario = DiarioNutricion::where('user_id', $user->id)
+            ->whereDate('fecha', $fechaStr)
+            ->first();
+
+        if (!$diario) {
+            $diario = DiarioNutricion::create([
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
-            ],
-            [
                 'calorias' => 0,
                 'proteinas' => 0,
                 'carbohidratos' => 0,
                 'grasas' => 0,
                 'agua_vasos' => 0,
-            ]
-        );
+            ]);
+        }
 
         return response()->json($diario);
     }
@@ -42,13 +45,18 @@ class DiarioNutricionController extends Controller
             'grasas' => 'required|integer|min:0',
         ]);
 
-        $diario = DiarioNutricion::updateOrCreate(
-            [
+        $diario = DiarioNutricion::where('user_id', $user->id)
+            ->whereDate('fecha', $fechaStr)
+            ->first();
+
+        if ($diario) {
+            $diario->update($data);
+        } else {
+            $diario = DiarioNutricion::create(array_merge($data, [
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
-            ],
-            $data
-        );
+            ]));
+        }
 
         return response()->json([
             'message' => 'Diario nutricional actualizado',
@@ -65,19 +73,24 @@ class DiarioNutricionController extends Controller
             'accion' => 'required|string|in:incrementar,decrementar',
         ]);
 
-        $diario = DiarioNutricion::firstOrCreate(
-            [
+        $defaults = [
+            'calorias' => 0,
+            'proteinas' => 0,
+            'carbohidratos' => 0,
+            'grasas' => 0,
+            'agua_vasos' => 0,
+        ];
+
+        $diario = DiarioNutricion::where('user_id', $user->id)
+            ->whereDate('fecha', $fechaStr)
+            ->first();
+
+        if (!$diario) {
+            $diario = DiarioNutricion::create(array_merge($defaults, [
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
-            ],
-            [
-                'calorias' => 0,
-                'proteinas' => 0,
-                'carbohidratos' => 0,
-                'grasas' => 0,
-                'agua_vasos' => 0,
-            ]
-        );
+            ]));
+        }
 
         if ($data['accion'] === 'incrementar') {
             $diario->increment('agua_vasos');

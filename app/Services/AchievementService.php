@@ -90,69 +90,69 @@ class AchievementService
     /**
      * Checks workout achievements (Series count, consecutive days, total days).
      * Returns array of newly unlocked medals.
+     * OPTIMIZADO: calcula todas las stats en una sola pasada por los datos.
      */
     public static function checkWorkoutMilestones(User $user): array
     {
+        // Una sola query trae todos los datos que necesitamos
+        $historial = Historial::where('user_id', $user->id)
+            ->where('completado', true)
+            ->select('fecha')
+            ->orderBy('fecha')
+            ->get();
+
+        if ($historial->isEmpty()) {
+            return [];
+        }
+
         $newlyUnlocked = [];
 
-        // 1. Total series completed
-        $totalCompletedSeries = Historial::where('user_id', $user->id)
-            ->where('completado', true)
-            ->count();
-
+        // 1. Total series
+        $totalCompletedSeries = $historial->count();
         if ($totalCompletedSeries >= 1) {
             $medal = self::unlock($user, 'primer_entrenamiento');
             if ($medal) $newlyUnlocked[] = $medal;
         }
-
         if ($totalCompletedSeries >= 100) {
             $medal = self::unlock($user, '100_series');
             if ($medal) $newlyUnlocked[] = $medal;
         }
 
-        // 2. Streaks and unique days
-        $dates = Historial::where('user_id', $user->id)
-            ->where('completado', true)
-            ->selectRaw('DISTINCT fecha')
-            ->orderBy('fecha', 'desc')
-            ->pluck('fecha')
+        // 2. Fechas únicas ordenadas ascendente
+        $sortedDates = $historial->pluck('fecha')
+            ->unique()
+            ->sort()
+            ->values()
             ->map(fn($d) => Carbon::parse($d));
 
-        $uniqueDaysCount = $dates->count();
+        $uniqueDaysCount = $sortedDates->count();
         if ($uniqueDaysCount >= 10) {
             $medal = self::unlock($user, '10_entrenamientos');
             if ($medal) $newlyUnlocked[] = $medal;
         }
 
-        // Calculate consecutive day streak
-        if ($dates->isNotEmpty()) {
-            // Check if user has a streak of 3 or 5 days
-            // We order dates ascending to find streaks
-            $sortedDates = $dates->reverse()->values();
-            $maxStreak = 1;
-            $currentStreak = 1;
-
-            for ($i = 0; $i < count($sortedDates) - 1; $i++) {
-                $diff = $sortedDates[$i]->diffInDays($sortedDates[$i+1]);
-                if ($diff === 1) {
-                    $currentStreak++;
-                    if ($currentStreak > $maxStreak) {
-                        $maxStreak = $currentStreak;
-                    }
-                } elseif ($diff > 1) {
-                    $currentStreak = 1;
+        // 3. Calcular racha máxima (single-pass, sin allocs intermedios)
+        $maxStreak = 1;
+        $currentStreak = 1;
+        for ($i = 0; $i < $sortedDates->count() - 1; $i++) {
+            $diff = $sortedDates[$i]->diffInDays($sortedDates[$i + 1]);
+            if ($diff === 1) {
+                $currentStreak++;
+                if ($currentStreak > $maxStreak) {
+                    $maxStreak = $currentStreak;
                 }
+            } elseif ($diff > 1) {
+                $currentStreak = 1;
             }
+        }
 
-            if ($maxStreak >= 3) {
-                $medal = self::unlock($user, 'racha_3_dias');
-                if ($medal) $newlyUnlocked[] = $medal;
-            }
-
-            if ($maxStreak >= 5) {
-                $medal = self::unlock($user, 'racha_5_dias');
-                if ($medal) $newlyUnlocked[] = $medal;
-            }
+        if ($maxStreak >= 3) {
+            $medal = self::unlock($user, 'racha_3_dias');
+            if ($medal) $newlyUnlocked[] = $medal;
+        }
+        if ($maxStreak >= 5) {
+            $medal = self::unlock($user, 'racha_5_dias');
+            if ($medal) $newlyUnlocked[] = $medal;
         }
 
         return $newlyUnlocked;

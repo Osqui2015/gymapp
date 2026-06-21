@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <Breadcrumbs :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Mis Alumnos' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Gestión de Trainer-Alumnos</h2>
@@ -14,8 +15,9 @@
         </a>
       </div>
 
-      <div v-if="cargando" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div v-if="cargando" class="space-y-4">
+        <BaseSkeleton variant="stat-card" :count="2" />
+        <BaseSkeleton variant="table" :count="6" />
       </div>
 
       <div v-else>
@@ -70,7 +72,7 @@
             </label>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto hidden md:block">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
@@ -90,6 +92,7 @@
                       type="checkbox"
                       :value="alumno.id"
                       v-model="alumnosSeleccionados"
+                      :aria-label="`Seleccionar alumno ${alumno.name}`"
                       class="w-5 h-5 text-indigo-600 rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500"
                     />
                   </td>
@@ -130,44 +133,65 @@
             </table>
           </div>
 
-          <div v-if="alumnosFiltrados.length === 0" class="p-12 text-center">
-            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <p class="text-gray-500 dark:text-gray-400">No hay alumnos disponibles</p>
+          <!-- Mobile: cards -->
+          <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+            <label
+              v-for="alumno in alumnosFiltrados"
+              :key="alumno.id"
+              class="flex items-start gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              :class="{ 'bg-indigo-50/50 dark:bg-indigo-900/10': alumnosSeleccionados.includes(alumno.id) }"
+            >
+              <input
+                type="checkbox"
+                :value="alumno.id"
+                v-model="alumnosSeleccionados"
+                :aria-label="`Seleccionar alumno ${alumno.name}`"
+                class="w-5 h-5 mt-1 text-indigo-600 rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="bg-indigo-100 dark:bg-indigo-900/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold text-sm">{{ alumno.name.charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ alumno.name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ alumno.nick }}</p>
+                  </div>
+                  <span
+                    v-if="esAlumnoDelTrainer(alumno)"
+                    class="px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full text-[10px] font-semibold whitespace-nowrap"
+                  >
+                    Asignado ✓
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-full text-[10px] font-semibold whitespace-nowrap"
+                  >
+                    Sin asignar
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ alumno.email }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <span class="text-gray-500">Trainer:</span>
+                  <span v-if="alumno.trainer">{{ alumno.trainer.name }}</span>
+                  <span v-else class="text-gray-400">Sin asignar</span>
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div v-if="alumnosFiltrados.length === 0">
+            <EmptyState
+              emoji="👥"
+              title="No hay alumnos disponibles"
+              description="No tenés alumnos para asignarle a este trainer. Cuando se registren alumnos van a aparecer acá para que los puedas gestionar."
+            />
           </div>
         </div>
 
         <!-- Vista de trainer (no admin) -->
         <div v-if="userRole !== 'administrador'">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Total Alumnos</p>
-                  <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ alumnos.length }}</p>
-                </div>
-                <div class="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full">
-                  <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Con Rutina</p>
-                  <p class="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{{ alumnosConRutina }}</p>
-                </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
-                  <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TrainerAlumnosStats :total-alumnos="alumnos.length" :alumnos-con-rutina="alumnosConRutina" class="mb-8" />
 
           <!-- Buscador -->
           <div class="mb-4">
@@ -180,7 +204,7 @@
           </div>
 
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto hidden md:block">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
@@ -235,11 +259,60 @@
               </table>
             </div>
 
-            <div v-if="alumnosFiltrados.length === 0" class="p-12 text-center">
-              <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <p class="text-gray-500 dark:text-gray-400">{{ busquedaAlumnos ? 'No se encontraron alumnos' : 'No tienes alumnos asignados' }}</p>
+            <!-- Mobile: cards -->
+            <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+              <div
+                v-for="alumno in alumnosFiltrados"
+                :key="alumno.id"
+                class="p-4 space-y-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="bg-indigo-100 dark:bg-indigo-900/30 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ alumno.name.charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium text-gray-900 dark:text-white truncate">{{ alumno.name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ alumno.nick }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Email</span>
+                  <span class="text-gray-700 dark:text-gray-300 truncate ml-2">{{ alumno.email }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Rutina</span>
+                  <span v-if="alumno.rutina_seleccionada" class="px-2.5 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full text-xs font-semibold">
+                    {{ alumno.rutina_seleccionada.nivel }} {{ alumno.rutina_seleccionada.modalidad }}
+                  </span>
+                  <span v-else class="px-2.5 py-1 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-full text-xs font-semibold">
+                    Sin asignar
+                  </span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-500 dark:text-gray-400">Día actual</span>
+                  <span v-if="alumno.rutina_seleccionada" class="font-medium text-gray-700 dark:text-gray-300">
+                    {{ alumno.rutina_seleccionada.dia_actual || 'Día 1' }}
+                  </span>
+                  <span v-else class="text-gray-400 dark:text-gray-500">-</span>
+                </div>
+                <button
+                  @click="abrirModalAsignar(alumno)"
+                  class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  {{ alumno.rutina_seleccionada ? 'Cambiar rutina' : 'Asignar rutina' }}
+                </button>
+              </div>
+            </div>
+
+            <div v-if="alumnosFiltrados.length === 0">
+              <EmptyState
+                emoji="🎓"
+                :title="busquedaAlumnos ? 'No se encontraron alumnos' : 'No tenés alumnos asignados'"
+                :description="busquedaAlumnos ? 'Probá con otro nombre, nick o email.' : 'Cuando un admin te asigne alumnos van a aparecer acá para que puedas gestionar sus rutinas.'"
+              />
             </div>
           </div>
         </div>
@@ -251,7 +324,7 @@
       <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" @click="cerrarModal"></div>
 
-        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+        <div ref="modalRef" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full" role="dialog" aria-modal="true">
           <div class="bg-white dark:bg-gray-800 px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Asignar Rutina a {{ alumnoSeleccionado?.name }}
@@ -317,20 +390,35 @@
       </div>
     </div>
 
-    <!-- Toast notifications -->
-    <transition name="fade">
-      <div v-if="toast.show" :class="['fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white', toast.type === 'success' ? 'bg-green-600' : 'bg-red-600']">
-        {{ toast.message }}
-      </div>
-    </transition>
+    <!-- FAB (mobile only): asignar rutina a alumnos -->
+    <button
+      v-if="userRole === 'trainer' || userRole === 'administrador'"
+      @click="abrirModalAsignar"
+      class="md:hidden fixed bottom-20 right-4 z-30 inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform"
+      aria-label="Asignar rutina a alumnos"
+      title="Asignar rutina"
+    >
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    </button>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { useToast } from '../composables/useToast';
+import { useAuth } from '../composables/useAuth';
+import Breadcrumbs from './Breadcrumbs.vue';
+import { useFocusTrap } from '../composables/useFocusTrap';
+import EmptyState from './EmptyState.vue';
+import TrainerAlumnosStats from './trainer/TrainerAlumnosStats.vue';
+import BaseSkeleton from './BaseSkeleton.vue';
 
-const userRole = ref('comun');
+const toast = useToast();
+const showToast = (message, type = 'success') => toast.add(message, type);
+const { role: userRole, fetchUser } = useAuth();
 const trainers = ref([]);
 const trainerSeleccionado = ref('');
 const trainerNombre = ref('');
@@ -341,15 +429,11 @@ const busquedaAlumnos = ref('');
 const rutinas = ref([]);
 const cargando = ref(true);
 const mostrarModal = ref(false);
+const modalRef = ref(null);
+useFocusTrap(modalRef, { when: mostrarModal });
 const alumnoSeleccionado = ref(null);
 const guardando = ref(false);
 const rutinaSeleccionada = ref(null);
-
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success'
-});
 
 const rutinaForm = ref({
   rutina_id: '',
@@ -358,8 +442,7 @@ const rutinaForm = ref({
 
 const fetchUserInfo = async () => {
   try {
-    const response = await axios.get('/api/user-info');
-    userRole.value = response.data.role;
+    await fetchUser();
   } catch (error) {
     console.error('Error al obtener rol:', error);
   }
@@ -527,13 +610,6 @@ const cerrarModal = () => {
   mostrarModal.value = false;
   alumnoSeleccionado.value = null;
   rutinaSeleccionada.value = null;
-};
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3000);
 };
 
 const asignarRutina = async () => {

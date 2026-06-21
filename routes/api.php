@@ -16,6 +16,9 @@ use App\Http\Controllers\MembresiaController;
 use App\Http\Controllers\AdminStatsController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AdminImportExportController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Api\PushSubscriptionController;
+use App\Http\Controllers\Api\TrainerCommentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ejercicios', [EjercicioController::class, 'index']);
@@ -37,7 +40,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);
 
-    Route::middleware('role:trainer,administrador')->group(function () {
+    Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/mis-rutinas', [UserRutinaController::class, 'misRutinas']);
         Route::get('/trainer/mis-alumnos', [UserRutinaController::class, 'misAlumnos']);
         Route::post('/trainer/asignar-rutina', [UserRutinaController::class, 'asignarRutina']);
@@ -74,16 +77,17 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/ejercicios-clave', [EjercicioClaveController::class, 'store']);
     Route::delete('/ejercicios-clave/{id}', [EjercicioClaveController::class, 'destroy']);
 
-    Route::middleware('role:trainer,administrador')->group(function () {
+    Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/alumnos', [TrainerAlumnoController::class, 'index']);
         Route::post('/trainer/alumnos/{alumno}/rutina', [TrainerAlumnoController::class, 'asignarRutina']);
     });
 
     // Rutas del Dashboard del Trainer
-    Route::middleware('role:trainer,administrador')->group(function () {
+    Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/dashboard', [TrainerDashboardController::class, 'index']);
         Route::get('/trainer/alumno/{alumno}', [TrainerDashboardController::class, 'verAlumno']);
         Route::post('/trainer/alumno/{alumno}/comentario', [TrainerDashboardController::class, 'agregarComentario']);
+        Route::get('/trainer/alumnos/{alumno}/timeline', [\App\Http\Controllers\TrainerTimelineController::class, 'show']);
         Route::post('/trainer/duplicar-rutina', [TrainerDashboardController::class, 'duplicarRutina']);
         Route::get('/trainer/ejercicios-privados', [TrainerDashboardController::class, 'ejerciciosPrivados']);
         Route::post('/trainer/ejercicios-privados', [TrainerDashboardController::class, 'crearEjercicioPrivado']);
@@ -113,6 +117,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     // Rutas de Estadísticas (Administrador)
     Route::middleware('role:administrador')->group(function () {
         Route::get('/admin/estadisticas', [AdminStatsController::class, 'estadisticas']);
+        Route::post('/admin/estadisticas/invalidate', [AdminStatsController::class, 'invalidateCache']);
         Route::get('/admin/miembros-activos', [AdminStatsController::class, 'miembrosActivos']);
     });
 
@@ -130,7 +135,28 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/admin/import/users', [AdminImportExportController::class, 'importUsers']);
         Route::post('/admin/import/ejercicios', [AdminImportExportController::class, 'importEjercicios']);
     });
+
+    // Búsqueda global
+    Route::get('/search', [SearchController::class, 'index']);
+
+    // === Mejora 8.7: Web Push subscriptions ===
+    Route::post('/push/subscription', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push/subscription', [PushSubscriptionController::class, 'destroy']);
+
+    // === Mejora 8.1: Comentarios realtime trainer↔alumno ===
+    Route::get('/trainer-comments', [TrainerCommentController::class, 'index']);
+    Route::post('/trainer-comments', [TrainerCommentController::class, 'store']);
+    Route::post('/trainer-comments/{comment}/read', [TrainerCommentController::class, 'markRead']);
 });
+
+// VAPID public key (pública)
+Route::get('/push/vapid-public-key', [PushSubscriptionController::class, 'publicKey']);
+
+// Vista pública de rutina compartida (sin auth)
+Route::get('/rutinas/publica/{token}', [RutinaController::class, 'verPublica']);
+
+// Stats de comunidad (sin auth, cacheadas)
+Route::get('/comunidad/stats', [SearchController::class, 'comunidadStats']);
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/user-info', function () {

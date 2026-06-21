@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Sembrar roles por defecto (idempotente)
+        \App\Models\Role::seedDefaults();
+
         User::factory()->create([
             'nick' => 'admin',
             'name' => 'Administrator',
