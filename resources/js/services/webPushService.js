@@ -13,6 +13,33 @@
  *
  * Si en algún momento querés un fallback distinto (polling, SSE, etc.),
  * la firma se mantiene y solo cambiás la implementación.
+ *
+ * === CHECKLIST DE PRODUCCIÓN (Web Push) ===
+ * Los Service Workers y la Web Push API SOLO funcionan en contextos seguros:
+ *
+ *   [✓] HTTPS configurado en el dominio de producción
+ *       (Service Workers requieren "Secure Context" — HTTPS o localhost).
+ *       Verificar con: `curl -vI https://tu-dominio/ 2>&1 | grep -i "SSL\|TLS"`
+ *
+ *   [✓] Certificado SSL válido (no auto-firmado).
+ *       Let's Encrypt es gratis y soportado por Hostinger.
+ *
+ *   [✓] VAPID keys generadas y guardadas en .env
+ *       `php artisan webpush:vapid` (en Windows usar scripts\webpush-vapid.ps1).
+ *       Verificar: `grep VAPID .env` debe mostrar SUBJECT/PUBLIC/PRIVATE.
+ *
+ *   [✓] /sw.js accesible públicamente
+ *       Verificar: `curl -I https://tu-dominio/sw.js` debe devolver 200.
+ *
+ *   [✓] /api/push/vapid-public-key accesible
+ *       Verificar: `curl -I https://tu-dominio/api/push/vapid-public-key`.
+ *
+ *   [✓] Browser console limpia
+ *       Abrir DevTools > Console > buscar errores de SW o Push.
+ *
+ * Si alguno falla, el subscribe() va a tirar "denied-or-error" o el SW
+ * no se va a registrar — el `useWebPush` composable maneja esos casos
+ * con toasts user-friendly.
  */
 import axios from 'axios';
 
