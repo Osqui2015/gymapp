@@ -32,9 +32,33 @@ class GenerateVapidKeys extends Command
             'curve_name' => 'prime256v1', // P-256 (requerido por VAPID)
         ];
 
+        // PHP's openssl extension requires a config file. On many systems
+        // (including Laragon on Windows) the default path
+        // (C:\Program Files\Common Files\SSL\openssl.cnf) is missing.
+        // As a fallback, look for a bundled copy under Git/usr/ssl/ which
+        // ships with Laragon's Git for Windows.
+        if (!getenv('OPENSSL_CONF')) {
+            $candidates = [
+                'C:\\Program Files\\Git\\usr\\ssl\\openssl.cnf',
+                'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\openssl.cnf',
+                '/etc/ssl/openssl.cnf',
+                '/usr/local/etc/openssl@1.1/openssl.cnf',
+            ];
+            foreach ($candidates as $candidate) {
+                if (file_exists($candidate)) {
+                    putenv("OPENSSL_CONF={$candidate}");
+                    break;
+                }
+            }
+        }
+
         $res = openssl_pkey_new($config);
         if (!$res) {
             $this->error('No se pudo generar el par de claves EC P-256. ¿OpenSSL disponible?');
+            $this->error('Si el error es de config, seteá la env var OPENSSL_CONF apuntando a un openssl.cnf válido.');
+            while ($msg = openssl_error_string()) {
+                $this->line('  - ' . $msg);
+            }
             return self::FAILURE;
         }
 
