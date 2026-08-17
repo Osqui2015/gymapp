@@ -9,6 +9,10 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 
 **Estado:** ✅ = hecho · ⚠️ = hecho parcialmente · ❌ = pendiente
 
+> **Última actualización:** 2026-08-17. El sprint `cc56bf7` (2026-06-21) implementó
+> 1.9, 2.2, 2.5, 3.5, 3.6, 8.1, 8.6, 8.7 — este doc quedó desactualizado entre jun y
+> ago. Ahora refleja el estado real.
+
 ---
 
 ## 🎯 1. UX / Interacción del usuario (lo que más se nota)
@@ -23,17 +27,17 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 | 1.6 | **Toggle de dark mode** | ⭐⭐ | ✅ `DarkModeToggle.vue` + anti-FOUC + localStorage |
 | 1.7 | **Breadcrumbs** | ⭐ | ✅ En 16 páginas Vue + profile |
 | 1.8 | **Keyboard shortcuts** | ☆ | ✅ `useKeyboardShortcuts.js` estilo Gmail (g+d/r/e/h/p/a/s, ?=ayuda). Se desactivan en inputs |
-| 1.9 | **Pull-to-refresh** en mobile | ✦ | ❌ PENDIENTE |
+| 1.9 | **Pull-to-refresh** en mobile | ✦ | ✅ `HistorialPullRefresh.vue` + `usePullToRefresh.js`. Montado en `HistorialContent.vue`. Extensible a otros listados |
 
 ## 📱 2. Mobile & Responsive
 
 | # | Mejora | ⭐ | Estado |
 |---|--------|-----|--------|
 | 2.1 | **Bottom navigation bar** | ⭐⭐⭐ | ✅ `mobile-bottom-nav.blade.php` con sheet "Menú" |
-| 2.2 | **Gestos swipe** | ⭐⭐ | ❌ PENDIENTE |
+| 2.2 | **Gestos swipe** | ⭐⭐ | ✅ `useSwipe.js` usado en `RutinasAccordion.vue` |
 | 2.3 | **FAB** en vistas de lista | ⭐⭐ | ✅ En `RutinasAccordion`, `EjerciciosList`, `TrainerAlumnos` |
 | 2.4 | **Mejorar tablas en mobile** | ⭐⭐ | ✅ `ResponsiveTable.vue` en 4+ lugares |
-| 2.5 | **Vista mobile dedicada** quick input | ⭐⭐ | ❌ PENDIENTE |
+| 2.5 | **Vista mobile dedicada quick input** | ⭐⭐ | ✅ `MobileQuickSeriesInput.vue` (295 líneas) usado en `RutinasAccordion.vue` |
 
 ## 🧩 3. Componentización & arquitectura
 
@@ -42,9 +46,9 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 | 3.1 | **Refactorizar componentes grandes** | ⭐⭐⭐ | ✅ DashboardContent -50%, RutinasAccordion -45%, TrainerDashboard -16%. 10+ sub-componentes extraídos |
 | 3.2 | **Biblioteca de componentes compartidos** | ⭐⭐⭐ | ✅ BaseButton, BaseCard, BaseInput, BaseSkeleton, EmptyState |
 | 3.3 | **Composition API** | ⭐⭐ | ✅ 100% `<script setup>` |
-| 3.4 | **Composables** | ⭐⭐ | ✅ useAuth, useToast, useFocusTrap, useUndoable, useDebounce, useConfetti, useApiCache, useKeyboardShortcuts |
-| 3.5 | **TypeScript** | ⭐⭐ | ❌ PENDIENTE |
-| 3.6 | **DataTable con sort/filter** | ⭐ | ⚠️ `ResponsiveTable` sin sort/filter, `Paginador` separado |
+| 3.4 | **Composables** | ⭐⭐ | ✅ useAuth, useToast, useFocusTrap, useUndoable, useDebounce, useConfetti, useApiCache, useKeyboardShortcuts, usePullToRefresh, useSwipe, useRealtimeComments, useWebPush, useUrlFilters |
+| 3.5 | **TypeScript** | ⭐⭐ | ⚠️ **Parcial**: `useDebounce.ts` (único archivo migrado). Migración masiva pendiente, decisión del equipo |
+| 3.6 | **DataTable con sort/filter** | ⭐ | ⚠️ **Parcial**: `ResponsiveTable.vue` responsive pero sin sort/filter; `Paginador.vue` separado. Sort/filter pendiente |
 
 ## 🎨 4. Visualizaciones & data display
 
@@ -92,14 +96,13 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 
 | # | Mejora | ⭐ | Estado |
 |---|--------|-----|--------|
-| 8.1 | **Comentarios trainer en tiempo real** | ⭐⭐ | ❌ PENDIENTE (requiere WebSockets) |
+| 8.1 | **Comentarios trainer en tiempo real** | ⭐⭐ | ✅ `useRealtimeComments.js` + `TrainerCommentController` + Laravel Echo/Pusher. Bootstrap.js lo registra. **Requiere WebSocket server externo** (Pusher/Soketi) en producción |
 | 8.2 | **Drag & drop** reordenar ejercicios | ⭐⭐ | ✅ Dentro Y entre días |
 | 8.3 | **Vista comparación pesos** | ⭐⭐ | ✅ Tab Comparación con Chart.js dual axis + comparación comunidad |
 | 8.4 | **Filtros AdminMembresias** | ⭐ | ✅ Estado + búsqueda debounced |
 | 8.5 | **Print-friendly** | ⭐ | ✅ `@media print` en `app.css`: oculta nav/FAB/modales, fondo blanco, URLs en links, sin page-break |
-| 8.6 | **Exportar historial** | ⭐⭐ | ⚠️ CSV ✅ (con BOM), PDF ❌ |
-| 8.7 | **Push notifications** | ☆ | ❌ PENDIENTE |
-| 8.8 | **Compartir rutina link público** | ☆ | ✅ Al compartir se genera `share_token`. Vista `/r/{token}` con `RutinaPublica.vue` (sin auth). Link se copia al portapapeles auto |
+| 8.6 | **Exportar historial** | ⭐⭐ | ✅ CSV + PDF (`exportarPDF()` con jspdf 4 + autoTable 5, lazy loaded) |
+| 8.7 | **Push notifications** | ☆ | ✅ `PushService` con `minish/web-push`, VAPID keys generadas (`webpush:vapid`), `PushSubscriptionController` completo. Listo para enviar |
 
 ## 🔧 9. Limpieza de código muerto
 
@@ -109,6 +112,9 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 | `VirtualList.vue` (no se usaba) | ✅ APLICADO en AdminAuditLogs |
 | `confirm()` nativos en DashboardContent | ✅ MIGRADO a `toast.confirm()` |
 | `confirm()` en RutinasAccordion.compartirRutina | ✅ MIGRADO a `toast.confirm()` |
+| `composables/useAuth.deprecated.js` | ✅ ELIMINADO (2026-08-17) |
+| `stores/user.deprecated.js` | ✅ ELIMINADO (2026-08-17) |
+| `sw-register.js` | ✅ ELIMINADO (2026-08-17) |
 
 ## 🔧 10. Refactor de archivos grandes
 
@@ -121,21 +127,21 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 **Sub-componentes extraídos (15+):**
 - `dashboard/`: RutinaHeader, Stats, SeriesList, Heatmap, RestTimer, WeeklyChart
 - `trainer/`: Metrics, RecentWorkouts, AlumnosStats, AlumnoTimeline
-- `rutinas/`: AlumnoView, RutinaAcordeon, Publica
-- `historial/`: Header, Matrix, Calendar, Evolution, RmCalculator, KeyExercises, Comparison
+- `rutinas/`: AlumnoView, RutinaAcordeon, Publica, MobileQuickSeriesInput
+- `historial/`: Header, Matrix, Calendar, Evolution, RmCalculator, KeyExercises, Comparison, PullRefresh
 - `progreso/`: MedidasTab, MetasTab, LogrosTab, MedidaInput, DetalleMedidaModal
 - `config/`: UserManagement, TrainerAssignment, CampoForm, Paginador
 
-## 🆕 11. Nuevos componentes
+## 🆕 11. Nuevos componentes (sprint 2026-06-21)
 
 | Componente | Propósito |
 |---|---|
-| `GlobalSearch.vue` | Búsqueda global con `⌘K`, dropdown categorizado, navegación por teclado |
-| `RutinaPublica.vue` | Vista pública de rutina compartida (`/r/{token}`) sin auth |
-| `TrainerAlumnoTimeline.vue` | Timeline cronológico del alumno para trainer |
-| `DashboardWeeklyChart.vue` | Gráfico PR diario últimos 30 días con Chart.js |
-| `useApiCache.js` | Cache LRU en memoria para axios con TTL + invalidación |
-| `useKeyboardShortcuts.js` | Atajos Gmail-style (g+x) con modal de ayuda |
+| `HistorialPullRefresh.vue` | Indicador de pull-to-refresh en mobile para historial |
+| `MobileQuickSeriesInput.vue` | Input rápido de series en mobile (295 líneas) |
+| `useDebounce.ts` | Útil para búsquedas/filtros; único .ts del proyecto |
+| `usePullToRefresh.js` | Composable para detectar gesto de pull-to-refresh |
+| `useSwipe.js` | Detector de gestos swipe (izq/der/arriba/abajo) |
+| `useRealtimeComments.js` | Suscripción a eventos realtime de comentarios trainer |
 
 ## 🆕 12. Backend additions
 
@@ -146,8 +152,25 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 | `GET /api/rutinas/publica/{token}` | Ver rutina compartida sin auth |
 | `GET /api/trainer/alumnos/{id}/timeline` | Timeline de eventos del alumno |
 | `POST /api/rutinas/compartir` | Genera `share_token` y devuelve `public_url` |
+| `POST /api/push/subscription` | Registra suscripción Web Push del usuario |
+| `DELETE /api/push/subscription` | Elimina suscripción |
+| `GET /api/push/vapid-public-key` | Devuelve la public key (público, sin auth) |
+| `GET /api/trainer-comments` | Lista comentarios del usuario (auth) |
+| `POST /api/trainer-comments` | Crear comentario trainer→alumno |
+| `POST /api/trainer-comments/{id}/read` | Marcar como leído |
+| `GET /api/notifications` | Lista notificaciones in-app del usuario |
+| `POST /api/notifications/{id}/read` | Marcar como leída |
+| `POST /api/notifications/read-all` | Marcar todas como leídas |
+| `GET /api/messages/conversations` | Lista de conversaciones |
+| `GET /api/messages/with/{user}` | Mensajes con un usuario |
+| `POST /api/messages` | Enviar mensaje 1-a-1 |
 
-**Migración:** `2026_06_07_000000_add_share_token_to_rutinas_table.php` (columna `share_token` string 32 unique nullable)
+**Migraciones clave del sprint:**
+- `2026_06_07_000000_add_share_token_to_rutinas_table.php` — columna `share_token` string 32 unique nullable
+- `2026_06_08_000000_create_push_subscriptions_table.php` — suscripciones Web Push
+- `2026_06_08_000001_create_trainer_comments_table.php` — comentarios trainer↔alumno
+- `2026_08_16_000000_add_ejercicio_id_to_rutinas_table.php` — FK a `ejercicios`
+- `2026_08_16_000001_backfill_ejercicio_id_on_rutinas.php` — backfill idempotente
 
 ---
 
@@ -155,40 +178,49 @@ Listado completo de mejoras sugeridas, organizadas por categoría con prioridad 
 
 | Categoría | Total | ✅ | ⚠️ | ❌ |
 |---|---|---|---|---|
-| UX/Interacción | 9 | 8 | 0 | 1 (pull-to-refresh) |
-| Mobile | 5 | 3 | 0 | 2 (swipe, quick input) |
-| Componentización | 6 | 5 | 1 | 0 (TS) |
+| UX/Interacción | 9 | 9 | 0 | 0 |
+| Mobile | 5 | 5 | 0 | 0 |
+| Componentización | 6 | 4 | 2 | 0 |
 | Visualizaciones | 7 | 7 | 0 | 0 |
 | Animaciones | 5 | 5 | 0 | 0 |
 | Accesibilidad | 5 | 5 | 0 | 0 |
 | Performance | 5 | 4 | 0 | 0 (1 N/A) |
-| Features | 8 | 6 | 1 | 1 (push) |
-| **Total** | **50** | **43 (86%)** | **2 (4%)** | **5 (10%)** |
+| Features | 8 | 8 | 0 | 0 |
+| **Total** | **50** | **47 (94%)** | **2 (4%)** | **0 (0%)** |
+
+> **Diferencia vs el reporte viejo (43/50):** el sprint de 2026-06-21 implementó
+> 6 features que figuraban como pendientes (1.9, 2.2, 2.5, 8.1, 8.6, 8.7). Las 2
+> que quedan parciales son 3.5 (TS masivo) y 3.6 (sort/filter en DataTable).
 
 ---
 
-# 🎯 Top 5 (todos hechos)
+# 🎯 Top 10 (todos hechos)
 
 1. ✅ Sistema de toasts centralizado
 2. ✅ Refactorizar componentes grandes
 3. ✅ Bottom navigation en mobile
 4. ✅ Drag & drop en CrearRutina (entre días también)
 5. ✅ Code splitting
+6. ✅ Push notifications reales (Web Push + VAPID)
+7. ✅ PDF export de historial
+8. ✅ Comentarios trainer realtime (Echo/Pusher)
+9. ✅ Pull-to-refresh mobile
+10. ✅ Mobile quick input
 
 ---
 
-# ❓ Lo único que queda pendiente
+# ❓ Lo único parcial
 
-## 🟡 Impacto medio, esfuerzo variable
-- **3.5 TypeScript** (refactor masivo, decisión del equipo)
-- **2.5 Vista mobile dedicada para series** (rediseñar UX mobile)
-- **2.2 Gestos swipe** (librería + handlers)
-- **8.6 PDF export** (jspdf)
-- **1.9 Pull-to-refresh**
+## ⚠️ Pendiente menor
+- **3.5 TypeScript** — solo `useDebounce.ts` migrado. Migración masiva de
+  stores/composables a `.ts` es decisión del equipo (costo/beneficio).
+- **3.6 DataTable con sort/filter** — `ResponsiveTable.vue` es responsive
+  pero sin sort/filter. `Paginador.vue` está separado. Pendiente.
 
-## 🔴 Requieren infra adicional
-- **8.1 Comentarios trainer realtime** (WebSockets, Laravel Echo + Pusher/Soketi)
-- **8.7 Push notifications** (Service Worker + Web Push API + VAPID keys)
-
-## ✦ Nice-to-have
-- **1.9 Pull-to-refresh**
+## 🔴 Requieren infra externa (no son bugs)
+- **8.1 Comentarios trainer realtime** — código completo y listo, pero
+  requiere WebSocket server (Pusher/Soketi) configurado en `BROADCAST_DRIVER`.
+  Sin eso, los comentarios funcionan pero sin push en vivo (hay que refrescar).
+- **8.7 Push notifications** — código completo y VAPID keys generadas,
+  pero requiere HTTPS en producción (los Service Workers solo funcionan en
+  contextos seguros).
