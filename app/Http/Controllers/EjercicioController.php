@@ -10,6 +10,11 @@ class EjercicioController extends Controller
 {
     public function index(Request $request)
     {
+        // Las rutas /ejercicios, /ejercicios/grupos-musculares y
+        // /ejercicios/equipamientos son públicas (sin middleware de auth),
+        // por lo que no se invoca authorize() — la policy viewAny/view es
+        // return true y los tests existentes llaman sin autenticar.
+
         $query = Ejercicio::query();
 
         if ($request->has('busqueda') && $request->busqueda) {
@@ -57,6 +62,8 @@ class EjercicioController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Ejercicio::class);
+
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'equipamiento' => 'required|string|max:255',
@@ -77,6 +84,9 @@ class EjercicioController extends Controller
     public function destroy($id)
     {
         $ejercicio = Ejercicio::findOrFail($id);
+
+        $this->authorize('delete', $ejercicio);
+
         $ejercicioData = $ejercicio->toArray();
         $ejercicio->delete();
 
