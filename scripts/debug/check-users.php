@@ -1,0 +1,22 @@
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+$app = require __DIR__ . '/../bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+echo "Total usuarios: " . App\Models\User::count() . PHP_EOL;
+echo "Total ejercicios: " . App\Models\Ejercicio::count() . PHP_EOL;
+echo "Total rutinas: " . App\Models\Rutina::count() . PHP_EOL;
+echo "Total historial: " . App\Models\Historial::count() . PHP_EOL;
+echo "Total user_rutinas: " . App\Models\UserRutina::count() . PHP_EOL;
+echo "Total membresias: " . App\Models\Membresia::count() . PHP_EOL;
+echo "Total metas: " . App\Models\Meta::count() . PHP_EOL;
+echo PHP_EOL;
+echo "=== Usuarios ===" . PHP_EOL;
+foreach (App\Models\User::orderBy('role')->orderBy('id')->get(['id', 'role', 'nick', 'name']) as $u) {
+    echo sprintf('[%d] %-13s %-12s %s', $u->id, $u->role, $u->nick, $u->name) . PHP_EOL;
+}
+echo PHP_EOL;
+echo "=== Historial (5 primeros) ===" . PHP_EOL;
+foreach (App\Models\Historial::take(5)->get() as $h) {
+    echo sprintf('[%d] user=%d rutina=%s dia=%s ejercicio=%s peso=%s', $h->id, $h->user_id, $h->rutina_nombre, $h->dia, $h->ejercicio_nombre, $h->peso) . PHP_EOL;
+}

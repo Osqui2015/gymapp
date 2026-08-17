@@ -1,0 +1,18 @@
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+$app = require __DIR__ . '/../bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+echo "=== Rutinas sin ejercicio_id ===" . PHP_EOL;
+foreach (App\Models\Rutina::whereNull('ejercicio_id')->with('creador')->get() as $r) {
+    echo sprintf("  [%d] %s/%s dia=%s ejercicio_nombre='%s'",
+        $r->id, $r->nivel, $r->modalidad, $r->dia, $r->ejercicio_nombre
+    ) . PHP_EOL;
+}
+
+echo PHP_EOL . "=== Historiales CON FK (eager load) ===" . PHP_EOL;
+foreach (App\Models\Historial::with('ejercicioRef')->take(5)->get() as $h) {
+    echo sprintf("  [%d] %s -> FK=%s (%s)",
+        $h->id, $h->ejercicio_nombre, $h->ejercicio_id, $h->ejercicioRef?->nombre ?? 'null'
+    ) . PHP_EOL;
+}
