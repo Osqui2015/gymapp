@@ -34,7 +34,7 @@ class AdminImportExportController extends Controller
         ]);
 
         return response()->streamDownload(
-            () => print($csv),
+            fn () => print($csv),
             'usuarios_export_' . now()->format('Y-m-d') . '.csv',
             ['Content-Type' => 'text/csv']
         );
@@ -60,7 +60,7 @@ class AdminImportExportController extends Controller
         ]);
 
         return response()->streamDownload(
-            () => print($csv),
+            fn () => print($csv),
             'ejercicios_export_' . now()->format('Y-m-d') . '.csv',
             ['Content-Type' => 'text/csv']
         );
