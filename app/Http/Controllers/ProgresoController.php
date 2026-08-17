@@ -18,6 +18,8 @@ class ProgresoController extends Controller
     {
         $user = $request->user();
 
+        $this->authorize('viewAny', Progreso::class);
+
         $progresos = Progreso::where('user_id', $user->id)
             ->orderBy('fecha', 'asc')
             ->get();
@@ -47,6 +49,8 @@ class ProgresoController extends Controller
     public function guardar(Request $request)
     {
         $user = $request->user();
+
+        $this->authorize('create', Progreso::class);
 
         $progresos = Progreso::where('user_id', $user->id)
             ->orderBy('fecha', 'asc')
@@ -114,6 +118,8 @@ class ProgresoController extends Controller
         if (!$progreso) {
             return response()->json(['error' => 'No encontrado'], 404);
         }
+
+        $this->authorize('view', $progreso);
 
         $progresosAnteriores = Progreso::where('user_id', $user->id)
             ->where('fecha', '<', $progreso->fecha)
