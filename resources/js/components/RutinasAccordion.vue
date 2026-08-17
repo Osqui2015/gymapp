@@ -282,9 +282,10 @@ import confetti from 'canvas-confetti';
 import EmptyState from './EmptyState.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
-import { useAuth } from '../composables/useAuth';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
 import { useSwipe } from '../composables/useSwipe';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '../stores/auth';
 import Breadcrumbs from './Breadcrumbs.vue';
 import RutinasAlumnoView from './rutinas/RutinasAlumnoView.vue';
 import RutinaAcordeon from './rutinas/RutinaAcordeon.vue';
@@ -292,9 +293,11 @@ import MobileQuickSeriesInput from './rutinas/MobileQuickSeriesInput.vue';
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
-const { fetchUser } = useAuth();
 
 const rutinaStore = useRutinaStore();
+
+const auth = useAuthStore();
+const { role: userRole, isAlumno } = storeToRefs(auth);
 
 const catalogoTab = ref('predeterminadas');
 const rutinasAgrupadas = ref({});
@@ -302,7 +305,6 @@ const comunitariasList = ref([]);
 const openItems = ref({});
 const isSelecting = ref(false);
 const userRutina = ref(null);
-const { role: userRole, isAlumno } = useAuth();
 
 const triggerSuccessConfetti = () => {
   confetti({
@@ -365,7 +367,7 @@ const isRoutineShared = (modalidad) => {
 
 const fetchUserInfo = async () => {
   try {
-    await fetchUser();
+    await auth.fetchUser();
     if (isAlumno.value) {
       const rutinaResponse = await axios.get('/api/user-rutina');
       userRutina.value = rutinaResponse.data || null;
@@ -600,6 +602,7 @@ const eliminarRutina = async (nivel, modalidad) => {
 };
 
 onMounted(() => {
+  rutinaStore.hidratar();
   fetchUserInfo();
   fetchRutinas();
   fetchComunitarias();

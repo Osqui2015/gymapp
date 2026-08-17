@@ -1,0 +1,57 @@
+{
+    "common": {
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "loading": "Cargando…",
+        "error": "Ocurrió un error",
+        "retry": "Reintentar",
+        "yes": "Sí",
+        "no": "No",
+        "back": "Volver"
+    },
+    "dashboard": {
+        "welcome": "Bienvenido, {name}",
+        "today": "Hoy",
+        "no_data": "Aún no hay datos para mostrar",
+        "stats_exercises": "Ejercicios",
+        "stats_series": "Series",
+        "stats_weight": "Peso promedio"
+    },
+    "auth": {
+        "login": "Iniciar sesión",
+        "logout": "Cerrar sesión",
+        "register": "Registrarse",
+        "forgot_password": "¿Olvidaste tu contraseña?",
+        "nick_or_email": "Usuario",
+        "password": "Contraseña"
+    },
+    "rutinas": {
+        "title": "Mis rutinas",
+        "select_routine": "Seleccionar rutina",
+        "clear_routine": "Quitar rutina",
+        "day": "Día"
+    },
+    "historial": {
+        "title": "Historial de entrenamiento",
+        "export_csv": "Exportar CSV",
+        "export_pdf": "Exportar PDF"
+    },
+    "errors": {
+        "network": "Error de red. Por favor intenta de nuevo.",
+        "unauthorized": "No tenés permisos para esta acción",
+        "session_expired": "Tu sesión expiró",
+        "validation": "Algunos datos son inválidos",
+        "server": "Error del servidor. Por favor intenta de nuevo."
+    },
+    "days": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+    }
+}

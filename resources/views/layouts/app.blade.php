@@ -7,6 +7,14 @@
 
         <title>{{ config('app.name', 'GymApp') }}</title>
 
+        {{-- PWA (Progressive Web App) --}}
+        <link rel="manifest" href="/manifest.webmanifest">
+        <meta name="theme-color" content="#4f46e5">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="GymApp">
+        <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
@@ -14,9 +22,10 @@
         <script>
             (function () {
                 try {
-                    var stored = localStorage.getItem('theme');
+                    // Soporta ambas keys para retrocompat: 'theme' (vieja) y 'theme_mode' (nueva)
+                    var mode = localStorage.getItem('theme_mode') || localStorage.getItem('theme') || 'auto';
                     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    var dark = stored ? stored === 'dark' : prefersDark;
+                    var dark = mode === 'dark' || (mode === 'auto' && prefersDark);
                     if (dark) document.documentElement.classList.add('dark');
                 } catch (e) {}
             })();
@@ -72,19 +81,39 @@
         {{-- Dark mode manager (debe ir DESPUÉS de Alpine.js para exponer window.darkMode) --}}
         <script>
             (function () {
-                const STORAGE_KEY = 'theme';
+                const STORAGE_KEY = 'theme_mode'; // nueva key: 'auto' | 'light' | 'dark'
+                const LEGACY_KEY = 'theme';      // vieja key: 'light' | 'dark'
                 const root = document.documentElement;
                 function setStored(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch (e) {} }
-                function apply(dark) { dark ? root.classList.add('dark') : root.classList.remove('dark'); }
+                function prefersDark() { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+                function effectiveDark() {
+                    var mode = localStorage.getItem(STORAGE_KEY);
+                    if (!mode) {
+                        // retrocompat: si la vieja key está, usarla
+                        var legacy = localStorage.getItem(LEGACY_KEY);
+                        if (legacy === 'dark') return true;
+                        if (legacy === 'light') return false;
+                        return prefersDark();
+                    }
+                    return mode === 'dark' || (mode === 'auto' && prefersDark());
+                }
+                function apply() {
+                    if (effectiveDark()) root.classList.add('dark');
+                    else root.classList.remove('dark');
+                }
                 window.darkMode = {
                     isDark: () => root.classList.contains('dark'),
                     toggle() {
                         const next = !root.classList.contains('dark');
-                        apply(next);
+                        apply();
                         setStored(next ? 'dark' : 'light');
                         window.dispatchEvent(new CustomEvent('theme:changed', { detail: { dark: next } }));
                     },
                 };
+                // Reaccionar a cambios del sistema cuando el user eligió 'auto'
+                if (window.matchMedia) {
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+                }
             })();
         </script>
     </body>

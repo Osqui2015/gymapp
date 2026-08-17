@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -61,6 +62,11 @@ class User extends Authenticatable
         return false;
     }
 
+    public function hasAnyRole(string|array $roles): bool
+    {
+        return $this->hasRole($roles);
+    }
+
     public function normalizedRole(): string
     {
         return $this->normalizeRoleName($this->role ?? self::ROLE_COMUN);
@@ -93,6 +99,21 @@ class User extends Authenticatable
     public function rutinasAsignadas(): HasMany
     {
         return $this->hasMany(UserRutina::class, 'assigned_by');
+    }
+
+    public function historials(): HasMany
+    {
+        return $this->hasMany(Historial::class);
+    }
+
+    /**
+     * Relación polimórfica al sistema de notificaciones in-app.
+     * Permite `$user->notifications` y helpers como `notifiedToday()`.
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(\App\Models\Notification::class, 'notifiable')
+            ->latest('created_at');
     }
 
     public function membresia(): HasOne

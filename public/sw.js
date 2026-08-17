@@ -4,19 +4,25 @@
  *
  * Responsabilidades:
  *   - Push notifications (Web Push API)
+ *   - Offline support: cache de assets estáticos + página /offline
  *   - Background sync opcional (futuro)
  *
- * Activación: skipWaiting + clientsClaim para que el SW tome control
- * de las pestañas abiertas sin recargar manualmente.
+ * Estrategias de caching:
+ *   - GET /assets/*, /build/*, /icons/*, /favicon.ico: CacheFirst (1 año)
+ *   - GET /api/*: NetworkFirst con fallback a cache (5 min)
+ *   - Navegación (HTML): NetworkFirst con fallback a /offline
+ *   - POST/PUT/DELETE: siempre van a la red, sin cache
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
+const API_CACHE = `gymapp-api-${VERSION}`;
 
 const PRECACHE_URLS = [
     '/',
     '/offline',
+    '/favicon.ico',
 ];
 
 // === Lifecycle ===
@@ -37,12 +43,95 @@ self.addEventListener('activate', (event) => {
             const keys = await caches.keys();
             await Promise.all(
                 keys
-                    .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE)
+                    .filter((k) => ![STATIC_CACHE, RUNTIME_CACHE, API_CACHE].includes(k))
                     .map((k) => caches.delete(k)),
             );
             await self.clients.claim();
         })(),
     );
+});
+
+// === Helpers ===
+const isStaticAsset = (url) => {
+    return /\.(css|js|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif)$/i.test(url.pathname) ||
+           url.pathname.startsWith('/build/') ||
+           url.pathname.startsWith('/icons/');
+};
+
+const isApiRequest = (url) => url.pathname.startsWith('/api/');
+
+const isNavigation = (request) =>
+    request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+
+// === Fetch handler ===
+self.addEventListener('fetch', (event) => {
+    const request = event.request;
+    const url = new URL(request.url);
+
+    // Solo GET se cachea
+    if (request.method !== 'GET') return;
+
+    // Ignorar requests de otros orígenes
+    if (url.origin !== self.location.origin) return;
+
+    // Estrategia 1: Assets estáticos → CacheFirst
+    if (isStaticAsset(url)) {
+        event.respondWith(
+            caches.match(request).then((cached) => {
+                if (cached) return cached;
+                return fetch(request).then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+                    }
+                    return response;
+                });
+            }),
+        );
+        return;
+    }
+
+    // Estrategia 2: API → NetworkFirst (5 min de fallback a cache)
+    if (isApiRequest(url)) {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(API_CACHE).then((cache) =>
+                            cache.put(request, clone),
+                        );
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(request).then((cached) => {
+                    if (cached) return cached;
+                    return new Response(
+                        JSON.stringify({ error: 'offline', message: 'Sin conexión' }),
+                        { status: 503, headers: { 'Content-Type': 'application/json' } },
+                    );
+                })),
+        );
+        return;
+    }
+
+    // Estrategia 3: Navegación HTML → NetworkFirst con fallback a /offline
+    if (isNavigation(request)) {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, clone));
+                    }
+                    return response;
+                })
+                .catch(() =>
+                    caches.match(request).then((cached) => cached || caches.match('/offline')),
+                ),
+        );
+        return;
+    }
 });
 
 // === Push ===
@@ -59,7 +148,7 @@ self.addEventListener('push', (event) => {
     const title = payload.title || 'GymApp';
     const options = {
         body: payload.body || '',
-        icon: payload.icon || '/favicon.ico',
+        icon: payload.icon || '/icons/icon-192.png',
         badge: payload.badge || '/favicon.ico',
         image: payload.image,
         data: payload.data || {},
@@ -81,7 +170,6 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
         (async () => {
             const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-            // si ya hay una pestaña abierta, enfocar y navegar
             for (const client of allClients) {
                 if ('focus' in client) {
                     await client.focus();
@@ -91,7 +179,6 @@ self.addEventListener('notificationclick', (event) => {
                     return;
                 }
             }
-            // si no hay pestaña, abrir una nueva
             if (self.clients.openWindow) {
                 await self.clients.openWindow(url);
             }
@@ -99,14 +186,12 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-// === Push subscription change (renovar endpoint si expira) ===
 self.addEventListener('pushsubscriptionchange', (event) => {
     event.waitUntil(
         (async () => {
             if (!self.registration.pushManager) return;
             try {
                 const newSub = await self.registration.pushManager.subscribe(event.oldSubscription?.options);
-                // notificar al backend
                 await fetch('/api/push/subscription', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -120,7 +205,6 @@ self.addEventListener('pushsubscriptionchange', (event) => {
     );
 });
 
-// === Mensaje desde la app (skipWaiting forzado, etc.) ===
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });

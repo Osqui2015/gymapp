@@ -31,6 +31,161 @@ class AdminStatsController extends Controller
         return response()->json($payload);
     }
 
+    /**
+     * Reportes avanzados: retención, churn, y frecuencia.
+     * Cacheados 5 min.
+     */
+    public function reportes()
+    {
+        $payload = Cache::remember('admin.reportes', self::CACHE_TTL, function () {
+            return [
+                'retencion' => $this->getRetencion(),
+                'churn' => $this->getChurnRate(),
+                'frecuencia' => $this->getFrecuenciaEntrenamiento(),
+                'top_alumnos' => $this->getTopAlumnos(),
+                'cached_at' => now()->toIso8601String(),
+            ];
+        });
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Retención: % de usuarios que entrenaron en el mes actual vs mes anterior.
+     * - Nuevos este mes: users con primera sesión en este mes
+     * - Retenidos: de los que entrenaron el mes pasado, cuántos también este mes
+     * - Churn: de los que entrenaron el mes pasado, cuántos NO entrenaron este mes
+     */
+    private function getRetencion(): array
+    {
+        $mesActual = Carbon::now()->startOfMonth();
+        $mesAnterior = Carbon::now()->subMonth()->startOfMonth();
+        $finMesAnterior = $mesAnterior->copy()->endOfMonth();
+
+        $usersActivosMesPasado = DB::table('historials')
+            ->whereBetween('fecha', [$mesAnterior->toDateString(), $finMesAnterior->toDateString()])
+            ->distinct()
+            ->pluck('user_id');
+
+        $usersActivosMesActual = DB::table('historials')
+            ->where('fecha', '>=', $mesActual->toDateString())
+            ->distinct()
+            ->pluck('user_id');
+
+        $retenidos = $usersActivosMesPasado->intersect($usersActivosMesActual)->count();
+        $churned = $usersActivosMesPasado->diff($usersActivosMesActual)->count();
+        $nuevos = $usersActivosMesActual->diff($usersActivosMesPasado)->count();
+        $totalMesPasado = $usersActivosMesPasado->count();
+
+        return [
+            'mes_actual' => $mesActual->format('Y-m'),
+            'mes_anterior' => $mesAnterior->format('Y-m'),
+            'activos_mes_pasado' => $totalMesPasado,
+            'activos_mes_actual' => $usersActivosMesActual->count(),
+            'retenidos' => $retenidos,
+            'churned' => $churned,
+            'nuevos' => $nuevos,
+            'tasa_retencion' => $totalMesPasado > 0 ? round(($retenidos / $totalMesPasado) * 100, 1) : 0,
+            'tasa_churn' => $totalMesPasado > 0 ? round(($churned / $totalMesPasado) * 100, 1) : 0,
+        ];
+    }
+
+    /**
+     * Churn rate: % de usuarios que abandonaron en los últimos 30 días.
+     * "Abandonaron" = membresía activa pero sin entrenar hace 14+ días.
+     */
+    private function getChurnRate(): array
+    {
+        $hace14Dias = Carbon::now()->subDays(14)->toDateString();
+        $hace30Dias = Carbon::now()->subDays(30)->toDateString();
+
+        $enRiesgo = User::whereHas('membresias', function ($q) {
+                $q->whereIn('estado', ['activo', 'por_vencer']);
+            })
+            ->whereDoesntHave('historials', function ($q) use ($hace14Dias) {
+                $q->where('fecha', '>=', $hace14Dias);
+            })
+            ->whereHas('historials', function ($q) use ($hace30Dias, $hace14Dias) {
+                // tuvo actividad reciente en el pasado (entre 30 y 14 días atrás)
+                $q->whereBetween('fecha', [$hace30Dias, $hace14Dias]);
+            })
+            ->count();
+
+        $totalActivos = User::whereHas('membresias', function ($q) {
+            $q->whereIn('estado', ['activo', 'por_vencer']);
+        })->count();
+
+        return [
+            'en_riesgo' => $enRiesgo,
+            'total_activos' => $totalActivos,
+            'tasa' => $totalActivos > 0 ? round(($enRiesgo / $totalActivos) * 100, 1) : 0,
+        ];
+    }
+
+    /**
+     * Frecuencia promedio de entrenamiento por usuario activo.
+     */
+    private function getFrecuenciaEntrenamiento(): array
+    {
+        $hace30 = Carbon::now()->subDays(30)->toDateString();
+
+        $sesionesPorUser = DB::table('historials')
+            ->where('fecha', '>=', $hace30)
+            ->selectRaw('user_id, COUNT(DISTINCT fecha) as dias')
+            ->groupBy('user_id')
+            ->get();
+
+        $distribucion = [
+            'diario' => 0,        // 20-30 días
+            'frecuente' => 0,     // 12-19 días
+            'regular' => 0,       // 6-11 días
+            'ocasional' => 0,     // 1-5 días
+            'inactivo' => 0,      // 0 días
+        ];
+
+        $suma = 0;
+        $count = 0;
+        foreach ($sesionesPorUser as $row) {
+            $suma += $row->dias;
+            $count++;
+            if ($row->dias >= 20) $distribucion['diario']++;
+            elseif ($row->dias >= 12) $distribucion['frecuente']++;
+            elseif ($row->dias >= 6) $distribucion['regular']++;
+            else $distribucion['ocasional']++;
+        }
+
+        // Sumar los que no entrenaron al grupo "inactivo"
+        $totalUsers = User::whereHas('membresias', function ($q) {
+            $q->whereIn('estado', ['activo', 'por_vencer']);
+        })->count();
+        $distribucion['inactivo'] = max(0, $totalUsers - $count);
+
+        return [
+            'promedio_dias_por_mes' => $count > 0 ? round($suma / $count, 1) : 0,
+            'distribucion' => $distribucion,
+        ];
+    }
+
+    /**
+     * Top 10 usuarios con más sesiones en los últimos 30 días.
+     */
+    private function getTopAlumnos(): array
+    {
+        $hace30 = Carbon::now()->subDays(30)->toDateString();
+
+        return DB::table('historials')
+            ->join('users', 'users.id', '=', 'historials.user_id')
+            ->where('historials.fecha', '>=', $hace30)
+            ->select('users.id', 'users.name', 'users.nick',
+                     DB::raw('COUNT(DISTINCT historials.fecha) as dias_entrenados'),
+                     DB::raw('COUNT(*) as series_totales'))
+            ->groupBy('users.id', 'users.name', 'users.nick')
+            ->orderByDesc('dias_entrenados')
+            ->limit(10)
+            ->get()
+            ->toArray();
+    }
+
     private function getUsuariosPorMes()
     {
         $seisMesesAtras = Carbon::now()->subMonths(6)->startOfMonth();

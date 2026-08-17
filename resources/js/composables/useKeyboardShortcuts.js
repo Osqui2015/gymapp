@@ -6,6 +6,9 @@
  *   g + h = Historial
  *   g + p = Progreso
  *   g + a = Alumnos (trainer/admin)
+ *   g + s = Configuración
+ *   /     = Focus en la búsqueda global
+ *   n     = Nueva rutina (si está en /rutinas o /crear-rutina)
  *   ?     = Mostrar ayuda de shortcuts
  *   esc   = Cerrar modales/dropdowns
  *
@@ -22,10 +25,26 @@ const SHORTCUTS = {
     gs: { route: 'configuracion', label: 'Ir a Configuración' },
 };
 
+const SINGLE_KEY_SHORTCUTS = {
+    '/': { label: 'Buscar', handler: () => focusSearch() },
+};
+
 const isTypingTarget = (el) => {
     if (!el) return false;
     const tag = el.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+};
+
+const focusSearch = () => {
+    // Busca el input de GlobalSearch (es el primero con placeholder que contiene "Buscar")
+    const input = document.querySelector('input[placeholder*="Buscar"]');
+    if (input) {
+        input.focus();
+        input.select?.();
+    } else {
+        // Si no hay search visible, navega a una página con search
+        window.location.href = '/dashboard';
+    }
 };
 
 export function setupKeyboardShortcuts() {
@@ -43,6 +62,13 @@ export function setupKeyboardShortcuts() {
         if (key === '?' && !pendingG) {
             e.preventDefault();
             mostrarAyuda();
+            return;
+        }
+
+        // Shortcuts de una sola tecla (/, esc, etc.)
+        if (SINGLE_KEY_SHORTCUTS[key]) {
+            e.preventDefault();
+            SINGLE_KEY_SHORTCUTS[key].handler();
             return;
         }
 
@@ -127,6 +153,12 @@ const mostrarAyuda = () => {
                     <li class="flex items-center justify-between gap-3">
                         <span class="text-gray-700 dark:text-gray-300">${label}</span>
                         <span><kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">g</kbd> <kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">${key[1]}</kbd></span>
+                    </li>
+                `).join('')}
+                ${Object.entries(SINGLE_KEY_SHORTCUTS).map(([key, { label }]) => `
+                    <li class="flex items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-700 dark:text-gray-300">${label}</span>
+                        <kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">${key}</kbd>
                     </li>
                 `).join('')}
                 <li class="flex items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">

@@ -1,0 +1,22 @@
+parameters:
+    level: 5
+    paths:
+        - app
+    excludePaths:
+        - app/Console/Kernel.php
+    bootstrapFiles:
+        - vendor/autoload.php
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: false
+    reportUnmatchedIgnoredErrors: false
+includes:
+    - vendor/nuovo/spreadsheet-client/extension.neon
+
+# Errores a ignorar (que son false positives o no críticos)
+ignoreErrors:
+    # Laravel magic: fillable, hidden, casts, etc.
+    - '#Access to an undefined property App\\Models\\User::\$[a-z_]+#'
+    # Model::preventLazyLoading() chain
+    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::#'
+    # Gate::define closures
+    - '#Parameter .* of function array_merge expects array, .* given#'

@@ -70,4 +70,50 @@ class PasswordResetTest extends TestCase
             return true;
         });
     }
+
+    public function test_forgot_password_requires_valid_email_format(): void
+    {
+        Notification::fake();
+
+        $response = $this->post('/forgot-password', ['email' => 'not-an-email']);
+
+        $response->assertSessionHasErrors('email');
+        // La validación cortó la request, así que no se envió ninguna notificación.
+        // `Notification::fake()` no expone assertNothingSent (eso es de Bus::fake());
+        // usamos assertCount(0) que verifica que el total de notificaciones enviadas es 0.
+        Notification::assertCount(0);
+    }
+
+    public function test_reset_password_requires_token(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post('/reset-password', [
+            'token' => '',
+            'email' => $user->email,
+            'password' => 'newpassword',
+            'password_confirmation' => 'newpassword',
+        ]);
+
+        $response->assertSessionHasErrors('token');
+    }
+
+    public function test_reset_password_requires_password_confirmation(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        $this->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+            $response = $this->post('/reset-password', [
+                'token' => $notification->token,
+                'email' => $user->email,
+                'password' => 'newpassword',
+                'password_confirmation' => 'different',
+            ]);
+
+            $response->assertSessionHasErrors('password');
+            return true;
+        });
+    }
 }

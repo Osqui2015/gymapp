@@ -6,6 +6,8 @@ use App\Events\TrainerCommentSent;
 use App\Http\Controllers\Controller;
 use App\Models\Historial;
 use App\Models\TrainerComment;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class TrainerCommentController extends Controller
@@ -56,6 +58,23 @@ class TrainerCommentController extends Controller
             'historial_id' => $data['historial_id'] ?? null,
             'body' => $data['body'],
         ]);
+
+        // Crear notificación in-app para el alumno (persiste en la DB)
+        $alumno = User::find($data['alumno_id']);
+        if ($alumno) {
+            app(NotificationService::class)->notify(
+                $alumno,
+                'trainer_comment',
+                'Tu trainer te dejó un comentario',
+                mb_substr($data['body'], 0, 120),
+                [
+                    'comment_id' => $comment->id,
+                    'trainer_id' => $user->id,
+                    'trainer_name' => $user->name,
+                    'url' => '/historial',
+                ]
+            );
+        }
 
         // Si broadcasting está activo, dispara el evento realtime
         if (config('services.broadcasting.driver') !== 'null') {

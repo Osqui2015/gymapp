@@ -1,0 +1,57 @@
+{
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "loading": "Loading…",
+        "error": "An error occurred",
+        "retry": "Retry",
+        "yes": "Yes",
+        "no": "No",
+        "back": "Back"
+    },
+    "dashboard": {
+        "welcome": "Welcome, {name}",
+        "today": "Today",
+        "no_data": "No data to display yet",
+        "stats_exercises": "Exercises",
+        "stats_series": "Series",
+        "stats_weight": "Average weight"
+    },
+    "auth": {
+        "login": "Log in",
+        "logout": "Log out",
+        "register": "Sign up",
+        "forgot_password": "Forgot your password?",
+        "nick_or_email": "Username",
+        "password": "Password"
+    },
+    "rutinas": {
+        "title": "My routines",
+        "select_routine": "Select routine",
+        "clear_routine": "Clear routine",
+        "day": "Day"
+    },
+    "historial": {
+        "title": "Training history",
+        "export_csv": "Export CSV",
+        "export_pdf": "Export PDF"
+    },
+    "errors": {
+        "network": "Network error. Please try again.",
+        "unauthorized": "You don't have permission for this action",
+        "session_expired": "Your session expired",
+        "validation": "Some data is invalid",
+        "server": "Server error. Please try again."
+    },
+    "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    }
+}

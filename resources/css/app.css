@@ -31,25 +31,39 @@ body {
     color: #f9fafb;
 }
 
-.dark [class*="bg-white"] {
-    background-color: #1f2937 !important;
+/* === Dark mode: usar :where() con specificity 0 ===
+   El approach viejo con [class*="..."] + !important pisaba utilities compuestas
+   como `bg-white/50` (que tienen opacidad como parte del color). Con :where() la
+   specificity queda en 0, así que las utilities de Tailwind ganan sin necesidad
+   de !important. Si en algún elemento necesitás que el override gane, agregá
+   la variant `dark:` directamente en el template. */
+
+.dark :where(.bg-white) {
+    background-color: #1f2937;
 }
 
-.dark [class*="text-gray-"] {
-    color: #d1d5db !important;
+.dark :where(.text-gray-900, .text-gray-800, .text-gray-700) {
+    color: #f9fafb;
 }
 
-.dark [class*="border-gray-"] {
-    border-color: #374151 !important;
+.dark :where(.text-gray-600) {
+    color: #d1d5db;
 }
 
-/* === WCAG AA (6.4): contraste mejorado para textos secundarios en dark mode === */
-.dark .text-gray-500,
-.dark .text-gray-400 {
-    color: #9ca3af !important;
+.dark :where(.text-gray-500, .text-gray-400) {
+    color: #9ca3af;
 }
-.dark .text-gray-600 {
-    color: #d1d5db !important;
+
+.dark :where(.border, .border-gray-200, .border-gray-100) {
+    border-color: #374151;
+}
+
+.dark :where(.bg-gray-100, .bg-gray-50) {
+    background-color: #1f2937;
+}
+
+.dark :where(.hover\:bg-gray-100:hover) {
+    background-color: #374151;
 }
 
 /* === Focus visible accesible (a11y) === */
@@ -59,15 +73,6 @@ a:focus-visible,
     outline: 2px solid rgb(99, 102, 241);
     outline-offset: 2px;
     border-radius: 0.375rem;
-}
-
-.dark [class*="hover:bg-gray-"] {
-    background-color: #374151 !important;
-}
-
-.dark [class*="bg-gray-100"],
-.dark [class*="bg-gray-50"] {
-    background-color: #1f2937 !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

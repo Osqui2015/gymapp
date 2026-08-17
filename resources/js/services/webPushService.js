@@ -1,9 +1,18 @@
 /**
- * Registro del Service Worker + manejo de suscripción push.
+ * Web Push service — funciones puras sin reactividad de Vue.
  *
- * Se llama una vez desde bootstrap.js.
- * Es seguro de importar en navegadores sin soporte: detecta capability
- * y degrada silenciosamente.
+ * Separado de `composables/useWebPush.js` para que se pueda usar tanto
+ * desde el composable (con state reactivo) como desde `bootstrap.js`
+ * (registro del SW al cargar la app, sin componente que lo monte).
+ *
+ * API:
+ *   registerServiceWorker()          → ServiceWorkerRegistration | null
+ *   subscribeToPush(vapidPublicKey)  → { ok, subscription?, reason? }
+ *   unsubscribeFromPush()           → boolean
+ *   urlBase64ToUint8Array(b64)      → Uint8Array (helper)
+ *
+ * Si en algún momento querés un fallback distinto (polling, SSE, etc.),
+ * la firma se mantiene y solo cambiás la implementación.
  */
 import axios from 'axios';
 
@@ -19,21 +28,19 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 export async function registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) return null;
-    if (location.protocol === 'file:') return null; // no aplica en dev local file://
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null;
+    if (typeof location !== 'undefined' && location.protocol === 'file:') return null;
 
     try {
         registration = await navigator.serviceWorker.register('/sw.js', {
             scope: '/',
             updateViaCache: 'none',
         });
-        // listen for updates
         registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (!newWorker) return;
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // nueva versión instalada: pedir reload
                     console.info('[sw] nueva versión instalada, lista para activarse');
                 }
             });
@@ -51,7 +58,6 @@ export async function subscribeToPush(vapidPublicKey) {
         return { ok: false, reason: 'unsupported' };
     }
 
-    // ya suscrito?
     let sub = await registration.pushManager.getSubscription();
     if (!sub) {
         if (!vapidPublicKey) return { ok: false, reason: 'no-vapid-key' };

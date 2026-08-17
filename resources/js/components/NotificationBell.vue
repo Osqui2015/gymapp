@@ -1,12 +1,12 @@
 <!--
-  NotificationBell — campana de notificaciones con push + comentarios realtime.
+  NotificationBell — campana de notificaciones in-app persistentes + push.
 
-  - Suscribe al usuario a Web Push (si lo permite el navegador).
-  - Escucha comentarios realtime del trainer vía useRealtimeComments.
-  - Muestra contador de no leídos + dropdown con lista.
+  - Carga notificaciones del backend vía useNotificationStore.
+  - Muestra contador de no leídas + dropdown con lista.
+  - Polling cada 60s para refrescar.
+  - Suscribe al usuario a Web Push (botón Activar/Desactivar).
 
-  Props:
-    - position: 'header' | 'floating' (default 'header')
+  Posición: 'header' | 'floating' (default 'header')
 -->
 <template>
     <div class="relative" ref="rootEl">
@@ -24,7 +24,7 @@
             aria-haspopup="true"
         >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v1m6 0H9" />
             </svg>
             <span
                 v-if="unreadCount > 0"
@@ -37,81 +37,119 @@
         <Transition name="dropdown">
             <div
                 v-if="open"
-                class="absolute right-0 mt-2 w-80 max-h-[480px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-40"
+                class="absolute right-0 mt-2 w-96 max-h-[520px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-40"
             >
+                <!-- Header -->
                 <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <h3 class="font-bold text-gray-900 dark:text-white">Notificaciones</h3>
-                    <button
-                        v-if="pushSupported && !pushEnabled"
-                        type="button"
-                        @click="enablePush"
-                        class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-                    >
-                        Activar push
-                    </button>
-                    <button
-                        v-else-if="pushEnabled"
-                        type="button"
-                        @click="disablePush"
-                        class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:underline"
-                    >
-                        Desactivar push
-                    </button>
+                    <div class="flex items-center gap-3 text-xs">
+                        <button
+                            v-if="unreadCount > 0"
+                            @click="markAllRead"
+                            class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                            Marcar todas leídas
+                        </button>
+                        <button
+                            v-if="pushSupported && !pushEnabled"
+                            @click="enablePush"
+                            class="text-gray-500 dark:text-gray-400 hover:underline"
+                        >
+                            🔔 Activar push
+                        </button>
+                        <button
+                            v-else-if="pushEnabled"
+                            @click="disablePush"
+                            class="text-gray-500 dark:text-gray-400 hover:underline"
+                        >
+                            🔕 Push
+                        </button>
+                    </div>
                 </div>
 
-                <div v-if="comments.length === 0" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                    <div class="text-3xl mb-2">🔔</div>
-                    Sin notificaciones nuevas.
+                <!-- Lista -->
+                <div v-if="loading && items.length === 0" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+                    Cargando…
                 </div>
 
-                <ul v-else class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                <div v-else-if="items.length === 0" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <div class="text-4xl mb-2">🔔</div>
+                    <p class="font-medium mb-1">Sin notificaciones</p>
+                    <p class="text-xs">Te avisaremos cuando pase algo.</p>
+                </div>
+
+                <ul v-else class="max-h-[420px] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
                     <li
-                        v-for="c in comments.slice(0, 10)"
-                        :key="c.id"
+                        v-for="n in items"
+                        :key="n.id"
                         :class="[
-                            'px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
-                            !c.read_at ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : '',
+                            'px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group',
+                            !n.read_at ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : '',
                         ]"
-                        @click="markRead(c)"
                     >
-                        <div class="flex items-start gap-2">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                                {{ (c.trainer?.name || 'T')[0].toUpperCase() }}
+                        <div class="flex items-start gap-3">
+                            <div
+                                :class="[
+                                    'w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0',
+                                    iconBgFor(n.type)
+                                ]"
+                            >
+                                {{ iconFor(n.type) }}
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm text-gray-900 dark:text-white">
-                                    <strong>{{ c.trainer?.name || 'Tu trainer' }}</strong>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {{ n.data.title }}
                                 </p>
-                                <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{ c.body }}</p>
-                                <p class="text-xs text-gray-400 mt-1">{{ formatDate(c.created_at) }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-0.5">
+                                    {{ n.data.body }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">{{ formatDate(n.created_at) }}</p>
+                            </div>
+                            <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    v-if="!n.read_at"
+                                    @click="notifStore.markRead(n.id)"
+                                    class="p-1 rounded text-gray-400 hover:text-indigo-500"
+                                    title="Marcar como leída"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    @click="notifStore.remove(n.id)"
+                                    class="p-1 rounded text-gray-400 hover:text-red-500"
+                                    title="Eliminar"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
                             </div>
                             <span
-                                v-if="!c.read_at"
+                                v-if="!n.read_at"
                                 class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 mt-2"
-                                aria-label="No leído"
+                                aria-label="No leída"
                             ></span>
                         </div>
                     </li>
                 </ul>
-
-                <div v-if="comments.length > 10" class="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-                    y {{ comments.length - 10 }} más…
-                </div>
             </div>
         </Transition>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import axios from 'axios';
-import { useRealtimeComments } from '../composables/useRealtimeComments';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useNotificationStore } from '../stores/notification';
 import { useToast } from '../composables/useToast';
 import {
     registerServiceWorker,
     subscribeToPush,
     unsubscribeFromPush,
-} from '../sw-register';
+} from '../services/webPushService';
 
 const props = defineProps({
     position: { type: String, default: 'header' }, // 'header' | 'floating'
@@ -121,11 +159,17 @@ const open = ref(false);
 const rootEl = ref(null);
 const pushEnabled = ref(false);
 const pushSupported = ref(false);
-const toast = useToast();
 
-const { comments, unreadCount, markRead } = useRealtimeComments();
+const notifStore = useNotificationStore();
+const { items, unreadCount, isLoading: loading } = storeToRefs(notifStore);
+
+const toast = useToast();
+let pollTimer = null;
+
+const POLL_INTERVAL_MS = 60_000; // 60 segundos
 
 const toggle = () => { open.value = !open.value; };
+
 const close = (e) => {
     if (!rootEl.value) return;
     if (!rootEl.value.contains(e.target)) open.value = false;
@@ -138,13 +182,40 @@ const formatDate = (iso) => {
     if (diff < 60) return 'hace instantes';
     if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+    if (diff < 604800) return `hace ${Math.floor(diff / 86400)} d`;
     return d.toLocaleDateString();
+};
+
+const markAllRead = async () => {
+    const updated = await notifStore.markAllRead();
+    if (updated > 0) toast.success(`${updated} notificaciones marcadas como leídas`);
+};
+
+const iconFor = (type) => {
+    switch (type) {
+        case 'trainer_comment': return '💬';
+        case 'membership_expiring': return '⚠️';
+        case 'milestone': return '🏆';
+        case 'rutina_asignada': return '📋';
+        default: return '🔔';
+    }
+};
+
+const iconBgFor = (type) => {
+    switch (type) {
+        case 'trainer_comment': return 'bg-gradient-to-br from-indigo-500 to-purple-600';
+        case 'membership_expiring': return 'bg-gradient-to-br from-amber-500 to-red-500';
+        case 'milestone': return 'bg-gradient-to-br from-yellow-400 to-orange-500';
+        case 'rutina_asignada': return 'bg-gradient-to-br from-green-500 to-emerald-600';
+        default: return 'bg-gradient-to-br from-gray-500 to-gray-600';
+    }
 };
 
 const enablePush = async () => {
     const reg = await registerServiceWorker();
     if (!reg) return;
     try {
+        const axios = (await import('axios')).default;
         const { data } = await axios.get('/api/push/vapid-public-key');
         if (!data.vapid_public_key) {
             toast.warning('El servidor no tiene VAPID configurado.');
@@ -166,16 +237,13 @@ const disablePush = async () => {
     const ok = await unsubscribeFromPush();
     if (ok) {
         pushEnabled.value = false;
-        toast.info('Notificaciones push desactivadas.');
+        toast.info('Push desactivado.');
     }
 };
 
 const checkInitialPushState = async () => {
     const reg = await navigator.serviceWorker?.getRegistration?.();
-    if (!reg) {
-        pushSupported.value = false;
-        return;
-    }
+    if (!reg) { pushSupported.value = false; return; }
     pushSupported.value = !!(reg.pushManager);
     const sub = await reg.pushManager.getSubscription();
     pushEnabled.value = !!sub;
@@ -183,11 +251,14 @@ const checkInitialPushState = async () => {
 
 onMounted(async () => {
     document.addEventListener('click', close);
-    await checkInitialPushState();
+    await Promise.all([notifStore.fetch(), checkInitialPushState()]);
+    // Polling
+    pollTimer = setInterval(() => notifStore.fetch(), POLL_INTERVAL_MS);
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', close);
+    if (pollTimer) clearInterval(pollTimer);
 });
 </script>
 

@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\Exceptions\AuthenticationException;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\CheckMembership;
@@ -20,6 +21,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
             'membership' => CheckMembership::class,
         ]);
+    })
+    ->withSchedule(function (Schedule $schedule): void {
+        // Recordatorios automáticos: 1 vez por día a las 9am hora local.
+        // withoutOverlapping previene que se acumulen runs si tardan.
+        $schedule->command('reminders:send')
+            ->dailyAt('09:00')
+            ->withoutOverlapping()
+            ->onOneServer();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, $request) {

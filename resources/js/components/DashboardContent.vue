@@ -24,25 +24,29 @@
 
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <template v-if="rutinaStore.seleccionada">
-        <DashboardRutinaHeader
-          :nivel="rutinaStore.seleccionada.nivel"
-          :dias="rutinaStore.seleccionada.dias"
-          :dia-actual="diaActual"
-          @cambiar="cambiarRutina"
-        />
+        <div data-tour="rutina-header">
+          <DashboardRutinaHeader
+            :nivel="rutinaStore.seleccionada.nivel"
+            :dias="rutinaStore.seleccionada.dias"
+            :dia-actual="diaActual"
+            @cambiar="cambiarRutina"
+          />
+        </div>
 
-        <DashboardStats
-          :series-totales="seriesTotales"
-          :series-completadas="seriesCompletadas"
-          :series-pendientes="seriesPendientes"
-          :peso-registrado="pesoRegistrado"
-          :peso-promedio="pesoPromedio"
-          :reps-registradas="repsRegistradas"
-          :progreso-dia="progresoDia"
-        />
+        <div data-tour="stats">
+          <DashboardStats
+            :series-totales="seriesTotales"
+            :series-completadas="seriesCompletadas"
+            :series-pendientes="seriesPendientes"
+            :peso-registrado="pesoRegistrado"
+            :peso-promedio="pesoPromedio"
+            :reps-registradas="repsRegistradas"
+            :progreso-dia="progresoDia"
+          />
+        </div>
 
         <!-- Day selector -->
-        <div class="mb-6">
+        <div class="mb-6" data-tour="day-selector">
           <div class="flex flex-wrap gap-2 mb-4">
             <button
               v-for="dia in todosLosDias"
@@ -60,16 +64,18 @@
           </div>
         </div>
 
-        <DashboardSeriesList
-          :filas-serie="filasSerie"
-          :dia-index="diaIndex"
-          :texto-boton-siguiente="textoBotonSiguiente"
-          :boton-siguiente-class="botonSiguienteClass"
-          @guardar="guardarFila"
-          @dia-anterior="diaAnterior"
-          @guardar-sesion="guardarSesion"
-          @siguiente-dia="siguienteDia"
-        />
+        <div data-tour="series-list">
+          <DashboardSeriesList
+            :filas-serie="filasSerie"
+            :dia-index="diaIndex"
+            :texto-boton-siguiente="textoBotonSiguiente"
+            :boton-siguiente-class="botonSiguienteClass"
+            @guardar="guardarFila"
+            @dia-anterior="diaAnterior"
+            @guardar-sesion="guardarSesion"
+            @siguiente-dia="siguienteDia"
+          />
+        </div>
 
         <!-- Botón "Guardar sesión" fijo abajo en mobile -->
         <div class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-gray-700 bg-gray-950/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
@@ -84,9 +90,9 @@
         </div>
       </template>
 
-      <EmptyState
+      <EmptyStateIllustrated
         v-else
-        emoji="🏋️"
+        variant="no-rutinas"
         title="No hay rutina seleccionada"
         description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
         cta-text="Seleccionar Rutina"
@@ -94,11 +100,14 @@
         @cta="window.location.href = '/rutinas'"
       />
 
-      <DashboardHeatmap :historial="historialRutina" class="mt-6" />
+      <DashboardHeatmap :historial="historialRutina" class="mt-6" data-tour="heatmap" />
 
       <!-- Gráfico semanal de peso (Chart.js) -->
-      <DashboardWeeklyChart :historial="historialRutina" class="mt-6" />
+      <DashboardWeeklyChart :historial="historialRutina" class="mt-6" data-tour="weekly-chart" />
     </div>
+
+    <!-- Onboarding tour (auto-start en primera visita) -->
+    <OnboardingTour v-bind="onboarding" />
 
     <DashboardRestTimer
       :model-value="timer"
@@ -115,7 +124,10 @@ import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
-import EmptyState from './EmptyState.vue';
+import { useOnboarding } from '../composables/useOnboarding';
+import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyStateIllustrated gradualmente
+import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
+import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
 import Breadcrumbs from './Breadcrumbs.vue';
 import DashboardRutinaHeader from './dashboard/DashboardRutinaHeader.vue';
@@ -126,6 +138,40 @@ import DashboardWeeklyChart from './dashboard/DashboardWeeklyChart.vue';
 import DashboardRestTimer from './dashboard/DashboardRestTimer.vue';
 
 const rutinaStore = useRutinaStore();
+
+// Onboarding tour: 5 steps por el dashboard, se muestra la primera vez
+const onboarding = useOnboarding('dashboard-tour', [
+    {
+        selector: '[data-tour="rutina-header"]',
+        title: 'Tu rutina actual',
+        body: 'Acá ves el nombre, nivel y días de tu rutina activa. Tocá el nombre para cambiarla.',
+        position: 'bottom',
+    },
+    {
+        selector: '[data-tour="stats"]',
+        title: 'Stats del día',
+        body: 'Tu progreso en tiempo real: series completadas vs pendientes, peso levantado, reps.',
+        position: 'bottom',
+    },
+    {
+        selector: '[data-tour="day-selector"]',
+        title: 'Selector de día',
+        body: 'Cambiá entre los días de tu rutina. Cada día tiene ejercicios diferentes.',
+        position: 'bottom',
+    },
+    {
+        selector: '[data-tour="series-list"]',
+        title: 'Tus series',
+        body: 'Registrá cada serie acá. Marcá como completada cuando termines, y guardá al final.',
+        position: 'top',
+    },
+    {
+        selector: '[data-tour="heatmap"]',
+        title: 'Tu constancia',
+        body: 'Acá ves todos los días que entrenaste. ¡La constancia es la clave!',
+        position: 'top',
+    },
+]);
 const toast = useToast();
 const showSuccess = (m) => toast.success(m);
 const showError = (m) => toast.error(m);
@@ -430,10 +476,17 @@ const finalizarRutina = async () => {
 };
 
 onMounted(async () => {
+    rutinaStore.hidratar();
     await fetchUserRutina();
     if (rutinaStore.seleccionada) {
         await fetchHistorialRutina();
         fetchRutinasDelDia();
+    }
+
+    // Onboarding tour: solo se muestra la primera vez (localStorage)
+    if (rutinaStore.seleccionada && onboarding.shouldShow()) {
+        // Pequeño delay para que el DOM termine de renderizar
+        setTimeout(() => onboarding.start(), 600);
     }
 });
 

@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
 
@@ -142,13 +142,15 @@ import EmptyState from './EmptyState.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
-import { useAuth } from '../composables/useAuth';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '../stores/auth';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
 
 Chart.register(...registerables);
 
 const toast = useToast();
-const { user, role, isStaff } = useAuth();
+const auth = useAuthStore();
+const { isStaff } = storeToRefs(auth);
 
 // === State ===
 const loading = ref(true);
@@ -451,9 +453,14 @@ const exportarPDF = async () => {
 
     try {
         toast.info('Generando PDF…');
-        const { default: jsPDF } = await import('jspdf');
-        const autoTableModule = await import('jspdf-autotable');
-        const autoTable = autoTableModule.default || autoTableModule;
+        // jspdf 4: ahora ESM puro, así que usamos named import `jsPDF`
+        // (en vez de default). Si tu build se queja, probá:
+        //   const { jsPDF: jsPDFClass } = await import('jspdf');
+        //   const doc = new jsPDFClass(opts);
+        const { jsPDF } = await import('jspdf');
+        // jspdf-autotable 5: pasó a named export `autoTable` (antes era
+        // default export). El fallback `.default || ...` ya no hace falta.
+        const { autoTable } = await import('jspdf-autotable');
 
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
         const alumnoTag = isTrainerOrAdmin.value && selectedAlumnoId.value
@@ -774,5 +781,17 @@ onMounted(async () => {
     } else {
         loading.value = false;
     }
+});
+
+// === Cleanup: destruir todos los charts cuando se desmonta el componente ===
+// Sin esto, las instancias de Chart.js se quedan vivas en memoria y mantienen
+// referencias a los <canvas> y a sus datos, causando leaks en SPA navigation.
+onBeforeUnmount(() => {
+    Object.keys(chartInstances).forEach((key) => {
+        if (chartInstances[key]) {
+            chartInstances[key].destroy();
+            delete chartInstances[key];
+        }
+    });
 });
 </script>

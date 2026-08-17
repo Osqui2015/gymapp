@@ -2,24 +2,20 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-
+/**
+ * @deprecated since 2026-08-16. Use {@see EnsureUserHasRole}
+ *             (registered under the `role` alias in bootstrap/app.php).
+ *             This class is NOT wired anywhere in routes/ and is kept only
+ *             to avoid breaking external imports that might reference it.
+ *             It can be removed in the next major cleanup pass.
+ */
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function __construct()
     {
-        $user = $request->user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        if (!$user->hasRole($roles)) {
-            abort(403, 'No tienes permiso para acceder a esta sección.');
-        }
-
-        return $next($request);
+        trigger_error(
+            'App\Http\Middleware\CheckRole is deprecated; use EnsureUserHasRole (alias: role).',
+            E_USER_DEPRECATED
+        );
     }
 }

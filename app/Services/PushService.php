@@ -3,11 +3,29 @@
 namespace App\Services;
 
 use App\Models\PushSubscription;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Minishlink\WebPush\Subscription;
+use Minishlink\WebPush\WebPush;
 
+/**
+ * Envía notificaciones push a los usuarios suscritos vía Web Push (RFC 8030).
+ *
+ * Requiere:
+ *   - composer require minish/web-push
+ *   - VAPID keys configuradas (php artisan webpush:vapid)
+ *   - Variables en .env:
+ *       WEBPUSH_VAPID_SUBJECT=mailto:admin@example.com
+ *       WEBPUSH_VAPID_PUBLIC=...
+ *       WEBPUSH_VAPID_PRIVATE=...
+ *   - Variable en config/services.php bajo 'webpush' (ya existe)
+ *
+ * Si las VAPID keys no están configuradas, sendToUser() retorna 0 y loguea
+ * un warning (degrade silencioso, no rompe la app).
+ */
 class PushService
 {
+    private ?WebPush $webPush = null;
+
     /**
      * Envía una notificación push a un usuario.
      * Retorna la cantidad de suscripciones que devolvieron 2xx.
@@ -17,12 +35,9 @@ class PushService
         $subs = PushSubscription::where('user_id', $userId)->get();
         if ($subs->isEmpty()) return 0;
 
-        $publicKey = config('services.webpush.vapid_public');
-        $privateKey = config('services.webpush.vapid_private');
-        $subject = config('services.webpush.subject');
-
-        if (!$publicKey || !$privateKey) {
-            Log::warning('[push] VAPID keys no configuradas');
+        $client = $this->getClient();
+        if ($client === null) {
+            Log::warning('[push] VAPID keys no configuradas, no se enviaron notificaciones');
             return 0;
         }
 
@@ -36,14 +51,28 @@ class PushService
 
         $sent = 0;
         foreach ($subs as $sub) {
+            $subscription = Subscription::create([
+                'endpoint' => $sub->endpoint,
+                'publicKey' => $sub->p256dh,
+                'authToken' => $sub->auth,
+                'contentEncoding' => 'aesgcm',
+            ]);
+
             try {
-                $ok = $this->sendOne($sub, $payload, $publicKey, $privateKey, $subject);
-                if ($ok) {
+                $report = $client->sendOneNotification($subscription, $payload);
+
+                if ($report->isSuccess()) {
                     $sent++;
                     $sub->update(['last_seen_at' => now()]);
                 } else {
-                    // 404/410: endpoint inválido, limpiar
-                    $sub->delete();
+                    // 404/410: endpoint inválido o usuario desuscripto, limpiar
+                    $statusCode = $report->getResponse()->getStatusCode();
+                    if (in_array($statusCode, [404, 410], true)) {
+                        $sub->delete();
+                        Log::info("[push] endpoint expirado (HTTP {$statusCode}), eliminado: " . substr($sub->endpoint, 0, 80));
+                    } else {
+                        Log::warning("[push] fallo enviando (HTTP {$statusCode}): " . substr($sub->endpoint, 0, 80));
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::warning('[push] error enviando a endpoint', [
@@ -52,23 +81,40 @@ class PushService
                 ]);
             }
         }
+
         return $sent;
     }
 
     /**
-     * Implementación mínima del estándar Web Push (RFC 8030) sobre
-     * aesgcm + ECDH P-256. Para una implementación robusta en producción
-     * recomendamos `minish/web-push` o `web-token/jwt-framework`.
+     * Construye (y cachea) el cliente WebPush con la configuración VAPID.
+     * Devuelve null si las keys no están configuradas.
      */
-    protected function sendOne(PushSubscription $sub, string $payload, string $publicKey, string $privateKey, string $subject): bool
+    private function getClient(): ?WebPush
     {
-        // Esta es la versión simplificada. La librería de tu elección
-        // se encarga del cifrado ECDH + AES-GCM + firma VAPID.
-        // Se deja el esqueleto para que el equipo integre la lib elegida
-        // (web-push-php, minish/web-push, etc.) sin tocar el resto.
-        //
-        // Ver docs: https://datatracker.ietf.org/doc/html/rfc8030
-        // Ver docs: https://datatracker.ietf.org/doc/html/rfc8292 (VAPID)
-        return false;
+        if ($this->webPush !== null) return $this->webPush;
+
+        $publicKey = config('services.webpush.vapid_public');
+        $privateKey = config('services.webpush.vapid_private');
+        $subject = config('services.webpush.subject');
+
+        if (!$publicKey || !$privateKey) {
+            return null;
+        }
+
+        $this->webPush = new WebPush([
+            'VAPID' => [
+                'subject' => $subject,
+                'publicKey' => $publicKey,
+                'privateKey' => $privateKey,
+            ],
+            // Timeouts razonables: no colgar la request si el push server está lento
+            'timeout' => 10,
+            'connect_timeout' => 5,
+        ]);
+
+        // Auto-retry del cliente para 5xx transitorios del push server
+        $this->webPush->setReuseVAPIDHeaders(true);
+
+        return $this->webPush;
     }
 }

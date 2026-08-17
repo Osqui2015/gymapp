@@ -10,6 +10,9 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// Página de fallback offline (servida por el service worker cuando no hay red)
+Route::view('/offline', 'offline')->name('offline');
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified', 'membership'])->name('dashboard');

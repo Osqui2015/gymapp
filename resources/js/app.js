@@ -25,6 +25,7 @@ app.use(pinia);
 app.component('dark-mode-toggle', DarkModeToggle);
 app.component('global-search', GlobalSearch);
 app.component('rutina-publica', RutinaPublica);
+app.component('notification-bell', () => import('./components/NotificationBell.vue'));
 
 const components = {
     'dashboard-content':   () => import('./components/DashboardContent.vue'),
@@ -43,6 +44,14 @@ const components = {
     'admin-membresias':    () => import('./components/AdminMembresias.vue'),
     'admin-audit-logs':    () => import('./components/AdminAuditLogs.vue'),
     'admin-import-export': () => import('./components/AdminImportExport.vue'),
+    'admin-reports':       () => import('./components/AdminReports.vue'),
+    'sesiones-calendar':   () => import('./components/SesionesCalendar.vue'),
+    'rutinas-sugeridas':   () => import('./components/RutinasSugeridas.vue'),
+    'chat-panel':          () => import('./components/ChatPanel.vue'),
+    'ejercicio-detail-modal': () => import('./components/EjercicioDetailModal.vue'),
+    'video-player':        () => import('./components/VideoPlayer.vue'),
+    'page-transition':     () => import('./components/PageTransition.vue'),
+    'onboarding-tour':     () => import('./components/OnboardingTour.vue'),
 };
 
 for (const [name, loader] of Object.entries(components)) {

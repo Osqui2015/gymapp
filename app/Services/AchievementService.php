@@ -136,7 +136,7 @@ class AchievementService
         $currentStreak = 1;
         for ($i = 0; $i < $sortedDates->count() - 1; $i++) {
             $diff = $sortedDates[$i]->diffInDays($sortedDates[$i + 1]);
-            if ($diff === 1) {
+            if ($diff == 1) {
                 $currentStreak++;
                 if ($currentStreak > $maxStreak) {
                     $maxStreak = $currentStreak;
@@ -224,28 +224,32 @@ class AchievementService
 
         $dates = Historial::where('user_id', $user->id)
             ->where('completado', true)
-            ->selectRaw('DISTINCT fecha')
-            ->orderBy('fecha', 'desc')
+            ->select('fecha')
+            ->distinct()
+            ->orderBy('fecha', 'asc')
             ->pluck('fecha')
-            ->map(fn($d) => Carbon::parse($d));
+            ->map(fn($d) => Carbon::parse($d))
+            ->values();
 
         $uniqueDaysCount = $dates->count();
 
         $maxStreak = 0;
         if ($dates->isNotEmpty()) {
-            $sortedDates = $dates->reverse()->values();
             $maxStreak = 1;
             $currentStreak = 1;
 
-            for ($i = 0; $i < count($sortedDates) - 1; $i++) {
-                $diff = $sortedDates[$i]->diffInDays($sortedDates[$i+1]);
-                if ($diff === 1) {
+            for ($i = 1; $i < $dates->count(); $i++) {
+                $diff = $dates[$i - 1]->diffInDays($dates[$i]);
+                if ($diff == 1) {
                     $currentStreak++;
                     if ($currentStreak > $maxStreak) {
                         $maxStreak = $currentStreak;
                     }
-                } elseif ($diff > 1) {
+                } else {
                     $currentStreak = 1;
+                    if ($currentStreak > $maxStreak) {
+                        $maxStreak = $currentStreak;
+                    }
                 }
             }
         }

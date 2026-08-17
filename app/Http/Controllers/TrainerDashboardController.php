@@ -65,10 +65,11 @@ class TrainerDashboardController extends Controller
         foreach ($alumnos as $alumno) {
             $ultimo = $ultimosPorAlumno->get($alumno->id);
 
-            if (!$ultimo) {
+            if (!$ultimo || !$ultimo->fecha) {
                 $diasSinEntrenar = 999; // nunca entrenó
             } else {
-                $diasSinEntrenar = $hoy->diffInDays($ultimo->fecha);
+                $ultimoFecha = Carbon::parse($ultimo->fecha)->startOfDay();
+                $diasSinEntrenar = abs($hoy->copy()->startOfDay()->diffInDays($ultimoFecha));
             }
 
             if ($diasSinEntrenar >= 7) {
@@ -77,7 +78,7 @@ class TrainerDashboardController extends Controller
                     'name' => $alumno->name,
                     'nick' => $alumno->nick,
                     'dias_inactividad' => $diasSinEntrenar,
-                    'ultimo_entrenamiento' => $ultimo?->fecha?->format('d/m/Y'),
+                    'ultimo_entrenamiento' => $ultimo?->fecha ? Carbon::parse($ultimo->fecha)->format('d/m/Y') : null,
                 ];
             }
         }

@@ -28,4 +28,45 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
     }
+
+    public function test_email_must_be_unique_on_registration(): void
+    {
+        \App\Models\User::factory()->create(['email' => 'taken@example.com']);
+
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'taken@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_password_must_be_confirmed_on_registration(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'fresh@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'different-password',
+        ]);
+
+        $response->assertSessionHasErrors('password');
+        $this->assertGuest();
+    }
+
+    public function test_email_is_normalized_to_lowercase_on_registration(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'MIXED@Example.COM',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('users', ['email' => 'mixed@example.com']);
+    }
 }

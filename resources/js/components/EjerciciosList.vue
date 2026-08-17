@@ -78,25 +78,32 @@
                 <td class="px-4 py-4 text-gray-700 dark:text-gray-300">{{ ejercicio.grupo_muscular || '-' }}</td>
                 <td class="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs">{{ ejercicio.descripcion?.substring(0, 80) || '-' }}{{ ejercicio.descripcion?.length > 80 ? '...' : '' }}</td>
                 <td class="px-4 py-4 text-center">
-                  <button
-                    v-if="userRole === 'trainer' || userRole === 'administrador'"
-                    @click="eliminar(ejercicio.id)"
-                    class="text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded text-sm font-medium transition-all"
-                  >
-                    Eliminar
-                  </button>
+                  <div class="inline-flex items-center gap-2">
+                    <button
+                      @click="verDetalle(ejercicio)"
+                      class="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1 rounded text-sm font-medium transition-all"
+                    >
+                      Ver
+                    </button>
+                    <button
+                      v-if="userRole === 'trainer' || userRole === 'administrador'"
+                      @click="eliminar(ejercicio.id)"
+                      class="text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1 rounded text-sm font-medium transition-all"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr v-if="ejercicios.length === 0">
                 <td colspan="5">
-                  <EmptyState
-                    emoji="🏋️"
+                  <EmptyStateIllustrated
+                    variant="no-ejercicios"
                     title="No hay ejercicios"
                     :description="busqueda || grupoMuscularFiltro || equipamientoFiltro ? 'No se encontraron ejercicios con esos filtros. Probá con otros criterios.' : 'Cuando crees rutinas o agregues ejercicios, van a aparecer acá.'"
                     :cta-text="(userRole === 'trainer' || userRole === 'administrador') && !busqueda ? 'Agregar el primero' : null"
                     cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     @cta="mostrarModal = true"
-                    variant="compact"
                   />
                 </td>
               </tr>
@@ -252,6 +259,12 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
       </svg>
     </button>
+
+    <!-- Modal de detalle del ejercicio (con video player) -->
+    <EjercicioDetailModal
+      v-model:open="mostrarDetail"
+      :ejercicio="ejercicioSeleccionado"
+    />
   </div>
 </template>
 
@@ -261,12 +274,16 @@ import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { useFocusTrap } from '../composables/useFocusTrap';
-import { useAuth } from '../composables/useAuth';
 import { cachedAxiosGet } from '../composables/useApiCache';
-import EmptyState from './EmptyState.vue';
+import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyStateIllustrated gradualmente
+import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import EjercicioDetailModal from './EjercicioDetailModal.vue';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '../stores/auth';
 
-const { role: userRole, fetchUser } = useAuth();
+const auth = useAuthStore();
+const { role: userRole } = storeToRefs(auth);
 
 const toast = useToast();
 
@@ -279,6 +296,12 @@ const equipamientos = ref([]);
 const mostrarModal = ref(false);
 const modalRef = ref(null);
 useFocusTrap(modalRef, { when: mostrarModal });
+const ejercicioSeleccionado = ref(null);
+const mostrarDetail = ref(false);
+const verDetalle = (ej) => {
+    ejercicioSeleccionado.value = ej;
+    mostrarDetail.value = true;
+};
 const paginaActual = ref(1);
 const totalPages = ref(1);
 const total = ref(0);
@@ -291,7 +314,7 @@ const nuevo = ref({
 
 const fetchUserInfo = async () => {
   try {
-    await fetchUser();
+    await auth.fetchUser();
   } catch (error) {
     console.error('Error al obtener rol:', error);
   }

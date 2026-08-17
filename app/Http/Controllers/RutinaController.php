@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Rutina;
 use App\Models\User;
 use App\Services\AchievementService;
+use App\Services\RutinasSugeridasService;
 use Illuminate\Http\Request;
 
 class RutinaController extends Controller
@@ -236,6 +237,41 @@ class RutinaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rutina eliminada correctamente.',
+        ]);
+    }
+
+    /**
+     * Sugiere rutinas al user basándose en su historial de entrenamiento.
+     * Usa el service de reglas (no ML) que analiza:
+     *   - Grupos musculares más trabajados
+     *   - Frecuencia de entrenamiento
+     *   - Nivel estimado
+     *   - Popularidad de la rutina
+     */
+    public function sugeridas(Request $request, RutinasSugeridasService $service)
+    {
+        $user = $request->user();
+        $topN = (int) $request->input('limit', 5);
+        $topN = max(1, min(10, $topN));
+
+        $sugeridas = $service->sugerirPara($user, $topN);
+
+        $payload = $sugeridas->map(function ($item) {
+            $rutina = $item['rutina'];
+            return [
+                'id' => $rutina->id,
+                'nivel' => $rutina->nivel,
+                'modalidad' => $rutina->modalidad,
+                'ejercicios_count' => $rutina->getAttribute('ejercicios_count'),
+                'grupos_cubiertos' => $rutina->getAttribute('grupos_cubiertos'),
+                'score' => round($item['score'], 1),
+                'razones' => $item['razones'],
+            ];
+        });
+
+        return response()->json([
+            'sugeridas' => $payload,
+            'perfil' => $service->analizarPerfil($user),
         ]);
     }
 }

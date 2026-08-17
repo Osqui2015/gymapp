@@ -409,7 +409,8 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
-import { useAuth } from '../composables/useAuth';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '../stores/auth';
 import Breadcrumbs from './Breadcrumbs.vue';
 import { useFocusTrap } from '../composables/useFocusTrap';
 import EmptyState from './EmptyState.vue';
@@ -418,7 +419,8 @@ import BaseSkeleton from './BaseSkeleton.vue';
 
 const toast = useToast();
 const showToast = (message, type = 'success') => toast.add(message, type);
-const { role: userRole, fetchUser } = useAuth();
+const auth = useAuthStore();
+const { role: userRole } = storeToRefs(auth);
 const trainers = ref([]);
 const trainerSeleccionado = ref('');
 const trainerNombre = ref('');
@@ -442,7 +444,7 @@ const rutinaForm = ref({
 
 const fetchUserInfo = async () => {
   try {
-    await fetchUser();
+    await auth.fetchUser();
   } catch (error) {
     console.error('Error al obtener rol:', error);
   }
