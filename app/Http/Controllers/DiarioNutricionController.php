@@ -18,7 +18,10 @@ class DiarioNutricionController extends Controller
             ->whereDate('fecha', $fechaStr)
             ->first();
 
-        if (!$diario) {
+        if ($diario) {
+            $this->authorize('view', $diario);
+        } else {
+            $this->authorize('create', DiarioNutricion::class);
             $diario = DiarioNutricion::create([
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
@@ -50,8 +53,10 @@ class DiarioNutricionController extends Controller
             ->first();
 
         if ($diario) {
+            $this->authorize('update', $diario);
             $diario->update($data);
         } else {
+            $this->authorize('create', DiarioNutricion::class);
             $diario = DiarioNutricion::create(array_merge($data, [
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
@@ -85,7 +90,10 @@ class DiarioNutricionController extends Controller
             ->whereDate('fecha', $fechaStr)
             ->first();
 
-        if (!$diario) {
+        if ($diario) {
+            $this->authorize('update', $diario);
+        } else {
+            $this->authorize('create', DiarioNutricion::class);
             $diario = DiarioNutricion::create(array_merge($defaults, [
                 'user_id' => $user->id,
                 'fecha' => $fechaStr,
