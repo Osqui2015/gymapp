@@ -10,6 +10,8 @@ class MetaController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Meta::class);
+
         $metas = Meta::where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -19,6 +21,8 @@ class MetaController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Meta::class);
+
         $data = $request->validate([
             'tipo' => 'required|string|in:entrenamiento_semanal,peso_corporal,cintura_corporal,brazos_corporal,pecho_corporal,otro',
             'descripcion' => 'required|string|max:255',
@@ -42,6 +46,8 @@ class MetaController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        $this->authorize('update', $meta);
+
         $meta->update([
             'completada' => !$meta->completada,
         ]);
@@ -63,6 +69,8 @@ class MetaController extends Controller
         $meta = Meta::where('user_id', $request->user()->id)
             ->where('id', $id)
             ->firstOrFail();
+
+        $this->authorize('delete', $meta);
 
         $meta->delete();
 
