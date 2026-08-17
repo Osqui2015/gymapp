@@ -10,10 +10,11 @@
         {{-- PWA (Progressive Web App) --}}
         <link rel="manifest" href="/manifest.webmanifest">
         <meta name="theme-color" content="#4f46e5">
+        <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="GymApp">
-        <link rel="apple-touch-icon" href="/icons/icon-192.png">
+        <link rel="icon" href="/favicon.ico">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

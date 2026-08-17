@@ -107,7 +107,7 @@
     </div>
 
     <!-- Onboarding tour (auto-start en primera visita) -->
-    <OnboardingTour v-bind="onboarding" />
+    <OnboardingTour :tour="onboarding" />
 
     <DashboardRestTimer
       :model-value="timer"

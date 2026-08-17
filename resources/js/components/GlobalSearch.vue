@@ -17,7 +17,7 @@
                 @input="onInput"
                 @focus="onFocus"
                 @blur="onBlur"
-                @keydown.escape="open = false"
+                @keydown.escape="open.value = false"
                 @keydown.enter.prevent="confirmar"
                 @keydown.down.prevent="moverSeleccion(1)"
                 @keydown.up.prevent="moverSeleccion(-1)"
@@ -27,7 +27,7 @@
                 aria-label="Búsqueda global"
             />
             <kbd v-if="!query" class="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded border border-gray-300 dark:border-gray-600">⌘ K</kbd>
-            <button v-if="query" @click="query = ''; open = true" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Limpiar búsqueda">
+            <button v-if="query" @click="query = ''; open.value = true" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Limpiar búsqueda">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
@@ -91,7 +91,7 @@
                             <li v-for="(ej, i) in resultados.ejercicios" :key="`ej-${ej.id}`">
                                 <a
                                     :href="`/ejercicios?busqueda=${encodeURIComponent(query)}`"
-                                    @click="open = false"
+                                    @click="open.value = false"
                                     class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     :class="{ 'bg-indigo-50 dark:bg-indigo-950/30': indexSeleccionado === indexGlobal(i) }"
                                 >
@@ -118,7 +118,7 @@
                             <li v-for="(r, i) in resultados.rutinas" :key="`r-${r.id}`">
                                 <a
                                     :href="`/rutinas`"
-                                    @click="open = false"
+                                    @click="open.value = false"
                                     class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700"
                                     :class="{ 'bg-indigo-50 dark:bg-indigo-950/30': indexSeleccionado === indexGlobal(i, 'rutinas') }"
                                 >
@@ -141,7 +141,7 @@
                             <li v-for="(a, i) in resultados.alumnos" :key="`a-${a.id}`">
                                 <a
                                     :href="`/trainer/alumnos?buscar=${encodeURIComponent(a.nick)}`"
-                                    @click="open = false"
+                                    @click="open.value = false"
                                     class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     :class="{ 'bg-indigo-50 dark:bg-indigo-950/30': indexSeleccionado === indexGlobal(i, 'alumnos') }"
                                 >
@@ -242,7 +242,7 @@ const onInput = () => {
 };
 
 const onFocus = () => {
-    open = true;
+    open.value = true;
 };
 
 const onBlur = () => {
