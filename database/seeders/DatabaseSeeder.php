@@ -19,6 +19,16 @@ class DatabaseSeeder extends Seeder
         // Sembrar roles por defecto (idempotente)
         \App\Models\Role::seedDefaults();
 
+        // Sembrar la biblioteca de ejercicios y las rutinas ANTES de los
+        // usuarios. El historial que se inserta más abajo referencia
+        // ejercicios por nombre; las migraciones de backfill (rutinas y
+        // historials) matchean por nombre y requieren que los ejercicios
+        // ya existan.
+        $this->call([
+            EjercicioSeeder::class,
+            RutinaSeeder::class,
+        ]);
+
         User::factory()->create([
             'nick' => 'admin',
             'name' => 'Administrator',
@@ -104,10 +114,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Seed historical workout entries for maria
+        // IMPORTANTE: los nombres de ejercicio deben matchear EXACTAMENTE con
+        // los del EjercicioSeeder, sino el backfill del FK falla. Si la
+        // biblioteca cambia, actualizar acá.
         $mariaWorkouts = [
             [
                 'fecha' => '2026-05-15',
-                'ejercicio' => 'Sentadilla Libre',
+                'ejercicio' => 'Sentadilla',
                 'sets' => [
                     ['peso' => 60, 'reps' => 8],
                     ['peso' => 60, 'reps' => 8],
@@ -116,7 +129,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-05-22',
-                'ejercicio' => 'Sentadilla Libre',
+                'ejercicio' => 'Sentadilla',
                 'sets' => [
                     ['peso' => 65, 'reps' => 8],
                     ['peso' => 65, 'reps' => 8],
@@ -125,7 +138,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-05-29',
-                'ejercicio' => 'Sentadilla Libre',
+                'ejercicio' => 'Sentadilla',
                 'sets' => [
                     ['peso' => 70, 'reps' => 6],
                     ['peso' => 70, 'reps' => 6],
@@ -134,7 +147,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-06-03',
-                'ejercicio' => 'Sentadilla Libre',
+                'ejercicio' => 'Sentadilla',
                 'sets' => [
                     ['peso' => 75, 'reps' => 5],
                     ['peso' => 75, 'reps' => 5],
@@ -144,7 +157,7 @@ class DatabaseSeeder extends Seeder
             // Prensa
             [
                 'fecha' => '2026-05-15',
-                'ejercicio' => 'Prensa de Piernas',
+                'ejercicio' => 'Prensa de piernas',
                 'sets' => [
                     ['peso' => 120, 'reps' => 10],
                     ['peso' => 120, 'reps' => 10],
@@ -152,7 +165,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-05-22',
-                'ejercicio' => 'Prensa de Piernas',
+                'ejercicio' => 'Prensa de piernas',
                 'sets' => [
                     ['peso' => 130, 'reps' => 10],
                     ['peso' => 130, 'reps' => 10],
@@ -160,7 +173,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-05-29',
-                'ejercicio' => 'Prensa de Piernas',
+                'ejercicio' => 'Prensa de piernas',
                 'sets' => [
                     ['peso' => 140, 'reps' => 8],
                     ['peso' => 140, 'reps' => 8],
@@ -168,7 +181,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'fecha' => '2026-06-03',
-                'ejercicio' => 'Prensa de Piernas',
+                'ejercicio' => 'Prensa de piernas',
                 'sets' => [
                     ['peso' => 150, 'reps' => 8],
                     ['peso' => 150, 'reps' => 8],
@@ -200,15 +213,60 @@ class DatabaseSeeder extends Seeder
         \App\Models\EjercicioClave::create([
             'user_id' => $maria->id,
             'trainer_id' => $trainer->id,
-            'ejercicio_nombre' => 'Sentadilla Libre',
+            'ejercicio_nombre' => 'Sentadilla',
             'notas_trainer' => "Foco en romper el paralelo y mantener la espalda neutra.\nProgresar peso solo si mantienes buena técnica.",
         ]);
 
         \App\Models\EjercicioClave::create([
             'user_id' => $maria->id,
             'trainer_id' => $trainer->id,
-            'ejercicio_nombre' => 'Prensa de Piernas',
+            'ejercicio_nombre' => 'Prensa de piernas',
             'notas_trainer' => 'Evitar bloquear las rodillas en la extensión máxima. Empujar con los talones.',
         ]);
+
+        // === Backfill de FKs (ejercicio_id) ===
+        // Las migraciones originales hacían el backfill en su up(), pero las
+        // migraciones corren ANTES que los seeders, así que la tabla
+        // `ejercicios` estaba vacía y nada matcheaba. Por eso movemos el
+        // backfill al final del seeder, donde los ejercicios ya existen.
+        // Es idempotente: solo actualiza filas con FK null.
+        $this->backfillEjercicioId();
+    }
+
+    /**
+     * Backfill de rutinas.ejercicio_id y historials.ejercicio_id por match
+     * de nombre. Idempotente: solo actualiza filas con ejercicio_id NULL.
+     */
+    private function backfillEjercicioId(): void
+    {
+        $ejercicios = \App\Models\Ejercicio::pluck('id', 'nombre');
+
+        $totalRutinas = 0;
+        foreach ($ejercicios as $nombre => $id) {
+            $totalRutinas += \App\Models\Rutina::where('ejercicio_nombre', $nombre)
+                ->whereNull('ejercicio_id')
+                ->update(['ejercicio_id' => $id]);
+        }
+
+        $totalHist = 0;
+        foreach ($ejercicios as $nombre => $id) {
+            $totalHist += \App\Models\Historial::where('ejercicio_nombre', $nombre)
+                ->whereNull('ejercicio_id')
+                ->update(['ejercicio_id' => $id]);
+        }
+
+        $unmatchedRutinas = \App\Models\Rutina::whereNull('ejercicio_id')->count();
+        $unmatchedHist = \App\Models\Historial::whereNull('ejercicio_id')->count();
+
+        if ($unmatchedRutinas > 0 || $unmatchedHist > 0) {
+            $this->command->warn(
+                "Backfill parcial: $unmatchedRutinas rutinas y $unmatchedHist historiales sin match. " .
+                'Probable causa: nombre de ejercicio no existe en la biblioteca.'
+            );
+        } else {
+            $this->command->info(
+                "Backfill OK: $totalRutinas rutinas y $totalHist historiales con ejercicio_id seteado."
+            );
+        }
     }
 }
