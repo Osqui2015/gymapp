@@ -47,13 +47,16 @@
           <ResponsiveTable
             :rows="alumnosFiltrados"
             :columns="[
-              { key: 'alumno', label: 'Alumno', thClass: 'text-left', tdClass: '' },
-              { key: 'rutina', label: 'Rutina', thClass: 'text-center', tdClass: '' },
-              { key: 'dia_actual', label: 'Día Actual', thClass: 'text-center', tdClass: '' },
-              { key: 'estado', label: 'Estado', thClass: 'text-center', tdClass: '' },
+              { key: 'alumno', label: 'Alumno', thClass: 'text-left', tdClass: '', sortable: true, searchable: true },
+              { key: 'rutina', label: 'Rutina', thClass: 'text-center', tdClass: '', sortable: true, searchable: true },
+              { key: 'dia_actual', label: 'Día Actual', thClass: 'text-center', tdClass: '', sortable: true },
+              { key: 'estado', label: 'Estado', thClass: 'text-center', tdClass: '', sortable: true },
               { key: 'acciones', label: 'Acciones', thClass: 'text-center', tdClass: '' },
             ]"
             thead-class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700"
+            sortable
+            filterable
+            filter-placeholder="Buscar alumno o rutina…"
           >
             <template #rows="{ row: alumno }">
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -256,14 +259,15 @@
                     <ResponsiveTable
                       :rows="detalleAlumno.medidas_corporales.slice(-10).reverse()"
                       :columns="[
-                        { key: 'fecha', label: 'Fecha', thClass: 'text-left', tdClass: '' },
-                        { key: 'peso', label: 'Peso', thClass: 'text-center', tdClass: '' },
-                        { key: 'pecho', label: 'Pecho', thClass: 'text-center', tdClass: '' },
-                        { key: 'cintura', label: 'Cintura', thClass: 'text-center', tdClass: '' },
-                        { key: 'brazos', label: 'Brazos', thClass: 'text-center', tdClass: '' },
-                        { key: 'muslos', label: 'Muslos', thClass: 'text-center', tdClass: '' },
+                        { key: 'fecha', label: 'Fecha', thClass: 'text-left', tdClass: '', sortable: true },
+                        { key: 'peso', label: 'Peso', thClass: 'text-center', tdClass: '', sortable: true },
+                        { key: 'pecho', label: 'Pecho', thClass: 'text-center', tdClass: '', sortable: true },
+                        { key: 'cintura', label: 'Cintura', thClass: 'text-center', tdClass: '', sortable: true },
+                        { key: 'brazos', label: 'Brazos', thClass: 'text-center', tdClass: '', sortable: true },
+                        { key: 'muslos', label: 'Muslos', thClass: 'text-center', tdClass: '', sortable: true },
                       ]"
                       thead-class="bg-gray-100 dark:bg-gray-900"
+                      sortable
                     >
                       <template #rows="{ row: medida }">
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">

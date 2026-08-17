@@ -14,13 +14,16 @@
         <ResponsiveTable
           :rows="tablaProgreso"
           :columns="[
-            { key: 'fecha', label: 'Fecha / Día', thClass: '', tdClass: '' },
-            { key: 'nombre', label: 'Ejercicio', thClass: '', tdClass: '' },
-            { key: 'seriesCount', label: 'Series', thClass: 'text-center', tdClass: '' },
-            { key: 'avgWeight', label: 'Peso Promedio', thClass: 'text-right', tdClass: '' },
-            { key: 'maxWeight', label: 'Peso Máximo Cargado', thClass: 'text-right text-indigo-600 dark:text-indigo-400 font-bold', tdClass: '' },
+            { key: 'fecha', label: 'Fecha / Día', thClass: '', tdClass: '', sortable: true },
+            { key: 'nombre', label: 'Ejercicio', thClass: '', tdClass: '', sortable: true, searchable: true },
+            { key: 'seriesCount', label: 'Series', thClass: 'text-center', tdClass: '', sortable: true },
+            { key: 'avgWeight', label: 'Peso Promedio', thClass: 'text-right', tdClass: '', sortable: true },
+            { key: 'maxWeight', label: 'Peso Máximo Cargado', thClass: 'text-right text-indigo-600 dark:text-indigo-400 font-bold', tdClass: '', sortable: true },
           ]"
           thead-class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs"
+          sortable
+          filterable
+          filter-placeholder="Buscar ejercicio…"
         >
           <template #rows="{ row: fila, index: idx }">
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">

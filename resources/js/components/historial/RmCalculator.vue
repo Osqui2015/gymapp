@@ -96,12 +96,15 @@
       <ResponsiveTable
         :rows="historical1RMs"
         :columns="[
-          { key: 'name', label: 'Ejercicio', thClass: '', tdClass: 'font-bold text-gray-900 dark:text-white' },
-          { key: 'pr', label: 'Record de Carga (PR)', thClass: 'text-center', tdClass: 'text-center text-gray-700 dark:text-gray-300 font-mono' },
-          { key: 'rm', label: '1RM Estimado', thClass: 'text-right', tdClass: 'text-right font-black text-indigo-600 dark:text-indigo-400 font-mono text-base' },
-          { key: 'date', label: 'Fecha del Record', thClass: 'text-center', tdClass: 'text-center text-xs text-gray-500 dark:text-gray-400 font-medium' },
+          { key: 'name', label: 'Ejercicio', thClass: '', tdClass: 'font-bold text-gray-900 dark:text-white', sortable: true, searchable: true },
+          { key: 'pr', label: 'Record de Carga (PR)', thClass: 'text-center', tdClass: 'text-center text-gray-700 dark:text-gray-300 font-mono', sortable: true },
+          { key: 'rm', label: '1RM Estimado', thClass: 'text-right', tdClass: 'text-right font-black text-indigo-600 dark:text-indigo-400 font-mono text-base', sortable: true },
+          { key: 'date', label: 'Fecha del Record', thClass: 'text-center', tdClass: 'text-center text-xs text-gray-500 dark:text-gray-400 font-medium', sortable: true },
         ]"
         thead-class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-[10px] tracking-wider"
+        sortable
+        filterable
+        filter-placeholder="Buscar ejercicio…"
       >
         <template #rows="{ row }">
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
