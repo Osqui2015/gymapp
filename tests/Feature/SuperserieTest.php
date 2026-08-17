@@ -73,14 +73,9 @@ class SuperserieTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Create user routine selection
-        $userRutina = UserRutina::create([
-            'user_id' => $user->id,
-            'nivel' => 'Personalizada',
-            'modalidad' => 'Mi Rutina',
-            'dia_actual' => 'Día 1',
-            'assigned_by' => null,
-        ]);
+        // D1: nivel/modalidad viven en la relación `rutina`, no como columnas
+        // denormalizadas. Creamos primero la Rutina y después el UserRutina
+        // apuntando a ella con `rutina_id`.
 
         // Create routine exercises in db
         $rutina1 = Rutina::create([
@@ -95,6 +90,14 @@ class SuperserieTest extends TestCase
             'orden' => 1,
             'superserie_grupo' => 2,
             'created_by' => $user->id,
+        ]);
+
+        // Create user routine selection (D1: via rutina_id, no denormalización)
+        UserRutina::create([
+            'user_id' => $user->id,
+            'rutina_id' => $rutina1->id,
+            'dia_actual' => 'Día 1',
+            'assigned_by' => null,
         ]);
 
         // Finalize routine via API

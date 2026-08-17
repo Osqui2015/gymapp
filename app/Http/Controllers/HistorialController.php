@@ -33,6 +33,15 @@ class HistorialController extends Controller
             ->when($request->filled('rutina_nombre'), function ($query) use ($request) {
                 $query->where('rutina_nombre', $request->rutina_nombre);
             })
+            ->when($request->filled('ejercicio'), function ($query) use ($request) {
+                $query->where('ejercicio_nombre', 'like', '%' . $request->ejercicio . '%');
+            })
+            ->when($request->filled('from'), function ($query) use ($request) {
+                $query->where('fecha', '>=', $request->from);
+            })
+            ->when($request->filled('to'), function ($query) use ($request) {
+                $query->where('fecha', '<=', $request->to);
+            })
             ->orderBy('fecha', 'desc')
             ->orderBy('id');
 
@@ -134,10 +143,10 @@ class HistorialController extends Controller
             ->pluck('dia')
             ->toArray();
 
-        // Resolver nivel y modalidad desde la relación del usuario (mucho más robusto que parsear strings)
-        $userRutina = $user->rutinaSeleccionada;
-        $nivel = $userRutina?->nivel ?? Rutina::query()->value('nivel');
-        $modalidad = $userRutina?->modalidad ?? Rutina::query()->value('modalidad');
+        // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
+        $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
+        $nivel = $userRutina?->rutina?->nivel ?? Rutina::query()->value('nivel');
+        $modalidad = $userRutina?->rutina?->modalidad ?? Rutina::query()->value('modalidad');
 
         if (! $nivel || ! $modalidad) {
             return response()->json(['dia_actual' => 'Día 1']);
@@ -173,30 +182,32 @@ class HistorialController extends Controller
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
-        $userRutina = $user->rutinaSeleccionada;
+        // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
+        $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
 
-        if (!$userRutina) {
+        if (!$userRutina || !$userRutina->rutina) {
             return response()->json(['error' => 'No hay rutina seleccionada'], 404);
         }
 
-        $rutinaNombre = $userRutina->nivel.' '.$userRutina->modalidad;
+        $rutina = $userRutina->rutina;
+        $rutinaNombre = $rutina->nivel.' '.$rutina->modalidad;
         $diaActual = $userRutina->dia_actual ?: 'Día 1';
 
-        $rutinasDelDia = Rutina::where('nivel', $userRutina->nivel)
-            ->where('modalidad', $userRutina->modalidad)
+        $rutinasDelDia = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad)
             ->where('dia', $diaActual)
             ->orderBy('orden')
             ->get();
 
-        foreach ($rutinasDelDia as $rutina) {
-            $totalSeries = max(1, (int) $rutina->series);
+        foreach ($rutinasDelDia as $rutinaDelDia) {
+            $totalSeries = max(1, (int) $rutinaDelDia->series);
 
             for ($serie = 1; $serie <= $totalSeries; $serie++) {
                 $historial = Historial::firstOrNew([
                     'user_id' => $user->id,
                     'rutina_nombre' => $rutinaNombre,
                     'dia' => $diaActual,
-                    'ejercicio_nombre' => $rutina->ejercicio_nombre,
+                    'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
                     'series_numero' => $serie,
                 ]);
 
@@ -204,24 +215,24 @@ class HistorialController extends Controller
                     'user_id' => $user->id,
                     'rutina_nombre' => $rutinaNombre,
                     'dia' => $diaActual,
-                    'ejercicio_nombre' => $rutina->ejercicio_nombre,
+                    'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
                     'series_numero' => $serie,
                     'series_completadas' => $historial->exists ? $historial->series_completadas : 1,
-                    'reps_min' => $rutina->reps_min,
-                    'reps_max' => $rutina->reps_max,
+                    'reps_min' => $rutinaDelDia->reps_min,
+                    'reps_max' => $rutinaDelDia->reps_max,
                     'reps_realizadas' => $historial->exists ? $historial->reps_realizadas : null,
-                    'descanso_min' => $rutina->descanso_min,
+                    'descanso_min' => $rutinaDelDia->descanso_min,
                     'completado' => true,
                     'fecha' => Carbon::now()->toDateString(),
-                    'superserie_grupo' => $rutina->superserie_grupo,
+                    'superserie_grupo' => $rutinaDelDia->superserie_grupo,
                 ]);
 
                 $historial->save();
             }
         }
 
-        $diasDisponibles = Rutina::where('nivel', $userRutina->nivel)
-            ->where('modalidad', $userRutina->modalidad)
+        $diasDisponibles = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad)
             ->selectRaw('DISTINCT dia')
             ->orderBy('dia')
             ->pluck('dia')
@@ -245,6 +256,50 @@ class HistorialController extends Controller
             'dia_actual' => $diaSiguiente,
             'rutina_nombre' => $rutinaNombre,
             'new_medals' => $newMedals,
+        ]);
+    }
+
+    /**
+     * Devuelve las fechas con sesiones del user en un mes/año.
+     * Para el componente del calendario.
+     *
+     * Query params: ?year=2026&month=8&user_id=X (opcional, trainer/admin)
+     * Response: { dates: ['2026-08-15', '2026-08-16'], counts: { '2026-08-15': 3, ... } }
+     */
+    public function calendar(Request $request)
+    {
+        $user = $request->user();
+        $targetUserId = (int) $request->integer('user_id', $user->id);
+
+        if ($targetUserId !== $user->id && ! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+        if ($user->hasRole(User::ROLE_TRAINER) && $targetUserId !== $user->id) {
+            $target = User::findOrFail($targetUserId);
+            if ($target->trainer_id !== $user->id) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+        }
+
+        $year = (int) $request->integer('year', now()->year);
+        $month = (int) $request->integer('month', now()->month);
+
+        $start = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $sesiones = \App\Models\Historial::where('user_id', $targetUserId)
+            ->whereBetween('fecha', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw('fecha, COUNT(*) as total, SUM(series_completadas) as series')
+            ->groupBy('fecha')
+            ->orderBy('fecha')
+            ->get();
+
+        return response()->json([
+            'year' => $year,
+            'month' => $month,
+            'dates' => $sesiones->pluck('fecha')->toArray(),
+            'counts' => $sesiones->pluck('total', 'fecha')->toArray(),
+            'series' => $sesiones->pluck('series', 'fecha')->toArray(),
         ]);
     }
 }

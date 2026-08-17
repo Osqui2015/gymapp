@@ -19,6 +19,8 @@ use App\Http\Controllers\AdminImportExportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\TrainerCommentController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\MessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ejercicios', [EjercicioController::class, 'index']);
@@ -35,6 +37,7 @@ Route::middleware(['web', 'auth', 'role:comun,trainer,administrador'])->group(fu
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/rutinas', [RutinaController::class, 'index']);
+    Route::get('/rutinas/sugeridas', [RutinaController::class, 'sugeridas']);
     Route::delete('/rutinas', [RutinaController::class, 'destroy']);
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
@@ -51,6 +54,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/historial/completar', [HistorialController::class, 'marcarCompletado']);
     Route::get('/historial/progreso', [HistorialController::class, 'obtenerProgreso']);
     Route::post('/historial/finalizar-rutina', [HistorialController::class, 'finalizarRutina']);
+    Route::get('/historial/calendar', [HistorialController::class, 'calendar']);
 
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
@@ -79,7 +83,6 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/alumnos', [TrainerAlumnoController::class, 'index']);
-        Route::post('/trainer/alumnos/{alumno}/rutina', [TrainerAlumnoController::class, 'asignarRutina']);
     });
 
     // Rutas del Dashboard del Trainer
@@ -119,6 +122,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/admin/estadisticas', [AdminStatsController::class, 'estadisticas']);
         Route::post('/admin/estadisticas/invalidate', [AdminStatsController::class, 'invalidateCache']);
         Route::get('/admin/miembros-activos', [AdminStatsController::class, 'miembrosActivos']);
+        Route::get('/admin/reportes', [AdminStatsController::class, 'reportes']);
     });
 
     // Rutas de Audit Logs (Administrador y Coordinador)
@@ -147,6 +151,19 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/trainer-comments', [TrainerCommentController::class, 'index']);
     Route::post('/trainer-comments', [TrainerCommentController::class, 'store']);
     Route::post('/trainer-comments/{comment}/read', [TrainerCommentController::class, 'markRead']);
+
+    // === Notificaciones in-app persistentes ===
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+
+    // === Mensajería 1-a-1 ===
+    Route::get('/messages/conversations', [MessageController::class, 'conversations']);
+    Route::get('/messages/with/{user}', [MessageController::class, 'index']);
+    Route::post('/messages', [MessageController::class, 'store']);
+    Route::post('/messages/{message}/read', [MessageController::class, 'markRead']);
+    Route::post('/messages/with/{user}/read-all', [MessageController::class, 'markAllRead']);
 });
 
 // VAPID public key (pública)

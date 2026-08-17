@@ -18,11 +18,11 @@ class UserRutinaController extends Controller
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
+        // D1: `rutina_id` es ahora la única fuente de verdad para nivel/modalidad.
+        // Las columnas denormalizadas fueron dropeadas (migración 2026_08_17_000000).
         $data = $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'rutina_id' => ['nullable', 'integer', 'exists:rutinas,id'],
-            'nivel' => ['required_without:rutina_id', 'string', 'max:255'],
-            'modalidad' => ['required_without:rutina_id', 'string', 'max:255'],
+            'rutina_id' => ['required', 'integer', 'exists:rutinas,id'],
             'dia_actual' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -43,30 +43,16 @@ class UserRutinaController extends Controller
             return response()->json(['error' => 'Los alumnos no pueden autoasignarse rutinas'], 403);
         }
 
-        // Si se proporciona rutina_id, obtener nivel y modalidad de la rutina
-        $nivel = $data['nivel'] ?? null;
-        $modalidad = $data['modalidad'] ?? null;
-        
-        if (! empty($data['rutina_id'])) {
-            $rutina = Rutina::find($data['rutina_id']);
-            if ($rutina) {
-                $nivel = $rutina->nivel;
-                $modalidad = $rutina->modalidad;
-            }
-        }
-
         $userRutina = UserRutina::updateOrCreate(
             ['user_id' => $targetUser->id],
             [
-                'rutina_id' => $data['rutina_id'] ?? null,
-                'nivel' => $nivel,
-                'modalidad' => $modalidad,
+                'rutina_id' => $data['rutina_id'],
                 'dia_actual' => $data['dia_actual'] ?? 'Día 1',
                 'assigned_by' => $targetUser->id === $user->id ? null : $user->id,
             ]
         );
 
-        return response()->json($userRutina);
+        return response()->json($userRutina->load('rutina'));
     }
 
     public function show(Request $request)
@@ -202,13 +188,11 @@ class UserRutinaController extends Controller
             return response()->json(['error' => 'No puedes asignar rutinas de otro trainer'], 403);
         }
 
-        // Asignar la rutina al alumno
+        // Asignar la rutina al alumno (D1: nivel/modalidad se leen de la relación)
         $userRutina = UserRutina::updateOrCreate(
             ['user_id' => $alumno->id],
             [
                 'rutina_id' => $rutina->id,
-                'nivel' => $rutina->nivel,
-                'modalidad' => $rutina->modalidad,
                 'dia_actual' => $data['dia_actual'] ?? 'Día 1',
                 'assigned_by' => $user->id,
             ]
