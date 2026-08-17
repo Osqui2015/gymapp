@@ -12,6 +12,8 @@ class MembresiaController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Membresia::class);
+
         $query = Membresia::with('user:id,name,nick,email');
 
         // Filtros
@@ -46,6 +48,8 @@ class MembresiaController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Membresia::class);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'tipo_plan' => 'required|in:mensual,trimestral,semestral,anual',
@@ -66,6 +70,8 @@ class MembresiaController extends Controller
 
     public function update(Request $request, Membresia $membresia)
     {
+        $this->authorize('update', $membresia);
+
         $oldValues = $membresia->toArray();
 
         $validated = $request->validate([
@@ -87,6 +93,8 @@ class MembresiaController extends Controller
 
     public function renew(Membresia $membresia)
     {
+        $this->authorize('renew', $membresia);
+
         $oldValues = $membresia->toArray();
 
         $nuevaFecha = match($membresia->tipo_plan) {
@@ -111,6 +119,8 @@ class MembresiaController extends Controller
 
     public function usuariosSinMembresia()
     {
+        $this->authorize('viewAny', Membresia::class);
+
         $usuariosConMembresia = Membresia::pluck('user_id');
         
         $usuarios = User::whereNotIn('id', $usuariosConMembresia)
@@ -123,6 +133,8 @@ class MembresiaController extends Controller
 
     public function porVencer()
     {
+        $this->authorize('viewAny', Membresia::class);
+
         $membresias = Membresia::with('user:id,name,nick,email')
             ->whereIn('estado', ['por_vencer', 'vencido'])
             ->where('fecha_vencimiento', '>=', now()->subDays(30)->toDateString())
