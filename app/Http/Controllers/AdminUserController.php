@@ -11,6 +11,8 @@ class AdminUserController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
+
         $data = $request->validate([
             'nick' => ['required', 'string', 'max:255', 'unique:users,nick'],
             'name' => ['required', 'string', 'max:255'],

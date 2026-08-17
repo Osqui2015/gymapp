@@ -12,6 +12,8 @@ class AdminUserApiController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', User::class);
+
         $search = $request->query('search');
         $perPage = $request->query('per_page', 10);
 
@@ -46,6 +48,9 @@ class AdminUserApiController extends Controller
     public function update(Request $request, int $id)
     {
         $user = User::findOrFail($id);
+
+        $this->authorize('update', $user);
+
         $oldValues = $user->toArray();
 
         $data = $request->validate([
@@ -103,6 +108,8 @@ class AdminUserApiController extends Controller
             return response()->json(['error' => 'No puedes suspender tu propia cuenta'], 403);
         }
 
+        $this->authorize('suspend', $user);
+
         $oldSuspended = $user->suspended;
         $user->update(['suspended' => ! $user->suspended]);
 
@@ -119,6 +126,8 @@ class AdminUserApiController extends Controller
         if ($user->id === $request->user()->id) {
             return response()->json(['error' => 'No puedes eliminar tu propia cuenta'], 403);
         }
+
+        $this->authorize('delete', $user);
 
         $userName = $user->name;
         $userData = $user->toArray();
