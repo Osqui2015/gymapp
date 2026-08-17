@@ -15,18 +15,19 @@ class EjercicioClaveController extends Controller
         $user = $request->user();
         $targetUserId = (int) $request->integer('user_id', $user->id);
 
-        // Si se consulta el historial de otro usuario, validar permisos
-        if ($targetUserId !== $user->id) {
-            if (!$user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
+        // Cualquier user autenticado puede pedir el listado; la policy
+        // decide si el target concreto es visible.
+        $this->authorize('viewAny', EjercicioClave::class);
 
-            if ($user->hasRole(User::ROLE_TRAINER)) {
-                $target = User::findOrFail($targetUserId);
-                if ($target->trainer_id !== $user->id) {
-                    return response()->json(['error' => 'No autorizado'], 403);
-                }
-            }
+        if ($targetUserId !== $user->id) {
+            // Construimos un mock no persistido con los campos que la
+            // policy `view` necesita (user_id y trainer_id) para autorizar
+            // sobre un target que puede no estar aún cargado.
+            $target = User::find($targetUserId);
+            $this->authorize('view', new EjercicioClave([
+                'user_id' => $targetUserId,
+                'trainer_id' => $target?->trainer_id,
+            ]));
         }
 
         // Obtener los ejercicios clave del alumno
@@ -65,17 +66,8 @@ class EjercicioClaveController extends Controller
 
         $targetUserId = (int) $data['user_id'];
 
-        // Validar que solo el entrenador asignado o un admin puedan agregar/editar
-        if (!$user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-            return response()->json(['error' => 'No autorizado. Se requiere rol de entrenador o administrador.'], 403);
-        }
-
-        if ($user->hasRole(User::ROLE_TRAINER)) {
-            $student = User::findOrFail($targetUserId);
-            if ($student->trainer_id !== $user->id) {
-                return response()->json(['error' => 'No autorizado. Este alumno no está asignado a tu tutela.'], 403);
-            }
-        }
+        // La policy `create` valida que sea admin o el trainer del alumno.
+        $this->authorize('create', [EjercicioClave::class, $targetUserId]);
 
         // Crear o actualizar el ejercicio clave
         $ejercicioClave = EjercicioClave::updateOrCreate(
@@ -99,23 +91,9 @@ class EjercicioClaveController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $user = $request->user();
         $ejercicioClave = EjercicioClave::findOrFail($id);
 
-        // Validar que solo el entrenador asignado o un admin puedan borrar
-        if (!$user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        if ($user->hasRole(User::ROLE_TRAINER)) {
-            if ($ejercicioClave->trainer_id !== $user->id) {
-                // Si el entrenador cambió, permitir también al nuevo entrenador del alumno
-                $student = User::findOrFail($ejercicioClave->user_id);
-                if ($student->trainer_id !== $user->id) {
-                    return response()->json(['error' => 'No autorizado. No eres el entrenador de este alumno.'], 403);
-                }
-            }
-        }
+        $this->authorize('delete', $ejercicioClave);
 
         $ejercicioClave->delete();
 
