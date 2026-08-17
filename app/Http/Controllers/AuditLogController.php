@@ -9,6 +9,8 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', AuditLog::class);
+
         $query = AuditLog::with('user:id,name');
 
         // Filtros
@@ -47,11 +49,15 @@ class AuditLogController extends Controller
 
     public function show(AuditLog $auditLog)
     {
+        $this->authorize('view', $auditLog);
+
         return response()->json($auditLog->load('user:id,name,email'));
     }
 
     public function getModelHistory(Request $request, string $modelType, int $modelId)
     {
+        $this->authorize('viewAny', AuditLog::class);
+
         $logs = AuditLog::where('model_type', $modelType)
             ->where('model_id', $modelId)
             ->with('user:id,name')
