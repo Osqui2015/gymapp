@@ -58,7 +58,7 @@
             <div class="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
         </div>
 
-        <div class="px-4 pt-2 pb-6">
+        <div class="px-4 pt-2 pb-20">
             {{-- Header del usuario --}}
             <div class="flex items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl">
                 <div class="w-11 h-11 bg-white/20 rounded-full flex items-center justify-center">

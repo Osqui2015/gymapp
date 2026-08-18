@@ -56,3 +56,4 @@ Thumbs.db
 /tmp_*.cmd
 /tmp_*.ps1
 /tmp_*.txt
+#.htaccess
