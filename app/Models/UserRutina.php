@@ -69,12 +69,17 @@ class UserRutina extends Model
      * ni tiene `rutina_id`, devuelve null. Si `rutina_id` está seteada pero
      * la relación no se cargó, hace lazy load (cuidado con N+1: preferí
      * `->load('rutina')` o `with('rutina')` en el query).
+     *
+     * IMPORTANTE: leer `$this->attributes['rutina_id']` directo (no
+     * `$this->rutina_id`) para no disparar Model::shouldBeStrict en dev
+     * cuando se accede al accessor sin haber cargado la fila.
      */
     protected function nivel(): Attribute
     {
         return Attribute::make(
             get: function () {
-                if (! $this->rutina_id) {
+                $fkId = $this->attributes['rutina_id'] ?? null;
+                if (! $fkId) {
                     return null;
                 }
                 // Si la relación está cargada, usar source of truth directo
@@ -91,7 +96,8 @@ class UserRutina extends Model
     {
         return Attribute::make(
             get: function () {
-                if (! $this->rutina_id) {
+                $fkId = $this->attributes['rutina_id'] ?? null;
+                if (! $fkId) {
                     return null;
                 }
                 if ($this->relationLoaded('rutina')) {

@@ -69,15 +69,20 @@ class Rutina extends Model
      * Así `$rutina->ejercicio_nombre` sigue funcionando sin cambios en los
      * call sites, pero internamente lee de la fuente correcta cuando se
      * eager-loada `ejercicioRef`.
+     *
+     * IMPORTANTE: leer `$this->attributes['ejercicio_id']` directo (no
+     * `$this->ejercicio_id`) para no disparar Model::shouldBeStrict en dev.
      */
     protected function ejercicioNombre(): Attribute
     {
         return Attribute::make(
             get: function () {
-                if ($this->ejercicio_id && $this->relationLoaded('ejercicioRef') && $this->ejercicioRef) {
+                $fkId = $this->attributes['ejercicio_id'] ?? null;
+
+                if ($fkId && $this->relationLoaded('ejercicioRef') && $this->ejercicioRef) {
                     return $this->ejercicioRef->nombre;
                 }
-                if ($this->ejercicio_id) {
+                if ($fkId) {
                     // FK seteada pero relación no eager-loaded: NO hacemos lazy load
                     // (sería N+1). Devolvemos el nombre legacy como fallback seguro.
                     // Si querés el nombre actualizado, hacé ->load('ejercicioRef') antes.
