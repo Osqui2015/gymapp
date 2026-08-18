@@ -190,7 +190,7 @@ const calculate1RMValue = (w, r, formula) => {
 // === Data fetching ===
 const fetchUserInfo = async () => {
     try {
-        const u = await fetchUser();
+        const u = await auth.fetchUser();
         hasTrainer.value = !!u.has_trainer;
         isTrainerOrAdmin.value = isStaff.value;
         if (isTrainerOrAdmin.value) await fetchAlumnos();
