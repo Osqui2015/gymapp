@@ -150,7 +150,7 @@ Chart.register(...registerables);
 
 const toast = useToast();
 const auth = useAuthStore();
-const { isStaff } = storeToRefs(auth);
+const { isStaff, hasTrainer: authHasTrainer } = storeToRefs(auth);
 
 // === State ===
 const loading = ref(true);
@@ -190,8 +190,10 @@ const calculate1RMValue = (w, r, formula) => {
 // === Data fetching ===
 const fetchUserInfo = async () => {
     try {
-        const u = await auth.fetchUser();
-        hasTrainer.value = !!u.has_trainer;
+        // auth.fetchUser() retorna void — popula el store. Leemos del store
+        // directamente vía el storeToRefs.
+        await auth.fetchUser();
+        hasTrainer.value = !!authHasTrainer.value;
         isTrainerOrAdmin.value = isStaff.value;
         if (isTrainerOrAdmin.value) await fetchAlumnos();
     } catch (err) {
