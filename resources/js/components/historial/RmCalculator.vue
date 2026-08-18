@@ -106,8 +106,8 @@
         filterable
         filter-placeholder="Buscar ejercicio…"
       >
-        <template #rows="{ row }">
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
+        <template #rows="{ rows }">
+          <tr v-for="row in rows" :key="row.name ?? row.date" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
             <td class="px-4 py-3.5 font-bold text-gray-900 dark:text-white">
               {{ row.name }}
             </td>
@@ -123,8 +123,8 @@
           </tr>
         </template>
 
-        <template #cards="{ row }">
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+        <template #cards="{ rows }">
+          <div v-for="row in rows" :key="row.name ?? row.date" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
             <div class="flex items-start justify-between gap-3">
               <p class="font-bold text-gray-900 dark:text-white text-sm flex-1 min-w-0">
                 {{ row.name }}

@@ -25,8 +25,8 @@
           filterable
           filter-placeholder="Buscar ejercicio…"
         >
-          <template #rows="{ row: fila, index: idx }">
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
+          <template #rows="{ rows }">
+            <tr v-for="(fila, idx) in rows" :key="`${fila.fecha}-${idx}`" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
               <td class="px-4 py-3">
                 <div class="font-medium text-gray-900 dark:text-white">{{ fila.fecha }}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ fila.dia }}</div>
@@ -49,8 +49,8 @@
             </tr>
           </template>
 
-          <template #cards="{ row: fila }">
-            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+          <template #cards="{ rows }">
+            <div v-for="fila in rows" :key="`${fila.fecha}-${fila.nombre}`" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
               <!-- Header: ejercicio + peso máximo destacado -->
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
