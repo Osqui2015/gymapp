@@ -1,18 +1,18 @@
-fix(UserManagement): emit update:currentPage instead of mutating the prop
+feat(pwa): add PNG icons (192 + 512, any + maskable) and update manifest
 
-`currentPage` está declarada como prop en `defineProps` (línea 263), por lo
-que es readonly. Los handlers del Paginador hacían `currentPage--` /
-`currentPage++` directamente, lo que disparaba el warning
+El manifest solo tenía /favicon.ico multi-size. Chrome y la mayoría de
+launchers mobile prefieren PNGs específicos para instalar la PWA con
+buena calidad visual en el home screen y splash screen.
 
-  Set operation on key "currentPage" failed: target is readonly.
+Generados 4 archivos en public/icons/:
+- icon-192x192.png        (purpose: any)
+- icon-512x512.png        (purpose: any)
+- icon-maskable-192x192.png  (purpose: maskable, safe zone 80%)
+- icon-maskable-512x512.png  (purpose: maskable, safe zone 80%)
 
-Fix: emitir el evento `update:currentPage` con el nuevo valor desde el
-template, que es el flujo que el padre ya espera (v-model:currentPage).
+Las versiones "maskable" tienen el contenido en el 80% central para
+que Android pueda recortarlas en círculo/squircle sin perder el logo.
 
-También elimino el `localPage` que había quedado como puente bidireccional
-manual (watch localPage -> emit, watch prop -> localPage): ya no hace
-falta porque el emit directo cierra el loop sin más estado intermedio.
-
-Verificado:
-- npm run build (ok)
-- npm run test:run (118/118)
+También actualicé .env.example: el dominio real de prod es
+gym.tecnorexs.com (no gymapp.tecnorexs.com) y el locale es "es"
+(no "en"), para no confundir al próximo que arme un ambiente.
