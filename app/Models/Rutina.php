@@ -48,10 +48,15 @@ class Rutina extends Model
      * Mantenerla temporalmente para retrocompat con código viejo que
      * no haya migrado a `ejercicioRef`. Se puede eliminar cuando todos
      * los call sites estén migrados.
+     *
+     * IMPORTANTE: la firma de belongsTo es (Related, foreignKey, ownerKey):
+     *   - foreignKey = columna en la TABLA LOCAL (Rutina) que matchea
+     *   - ownerKey = columna en la TABLA DEL RELATED (Ejercicio) que matchea
+     * Rutina tiene `ejercicio_nombre` (string) y Ejercicio matchea por `nombre`.
      */
     public function ejercicio(): BelongsTo
     {
-        return $this->belongsTo(Ejercicio::class, 'nombre', 'ejercicio_nombre');
+        return $this->belongsTo(Ejercicio::class, 'ejercicio_nombre', 'nombre');
     }
 
     public function creador(): BelongsTo
