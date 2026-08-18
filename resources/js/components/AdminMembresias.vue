@@ -316,7 +316,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import EmptyState from './EmptyState.vue';
 import { useToast } from '../composables/useToast';
