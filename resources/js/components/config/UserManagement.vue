@@ -182,8 +182,8 @@
           v-if="totalPages > 1"
           :currentPage="currentPage"
           :totalPages="totalPages"
-          @prev="currentPage--"
-          @next="currentPage++"
+          @prev="emit('update:currentPage', currentPage - 1)"
+          @next="emit('update:currentPage', currentPage + 1)"
         />
       </div>
     </div>
@@ -279,7 +279,6 @@ const emit = defineEmits([
 ]);
 
 const localSearch = ref(props.searchFilter);
-const localPage = ref(props.currentPage);
 const modalRef = ref(null);
 useFocusTrap(modalRef, { when: toRef(props, 'mostrarModal') });
 const nuevoUsuario = ref({
@@ -294,8 +293,6 @@ const nuevoUsuario = ref({
 
 watch(localSearch, (val) => emit('update:searchFilter', val));
 watch(() => props.searchFilter, (val) => { localSearch.value = val; });
-watch(localPage, (val) => emit('update:currentPage', val));
-watch(() => props.currentPage, (val) => { localPage.value = val; });
 
 const roleClass = (role) => {
     return {
