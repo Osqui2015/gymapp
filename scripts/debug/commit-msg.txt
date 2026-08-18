@@ -1,0 +1,18 @@
+fix(UserManagement): emit update:currentPage instead of mutating the prop
+
+`currentPage` está declarada como prop en `defineProps` (línea 263), por lo
+que es readonly. Los handlers del Paginador hacían `currentPage--` /
+`currentPage++` directamente, lo que disparaba el warning
+
+  Set operation on key "currentPage" failed: target is readonly.
+
+Fix: emitir el evento `update:currentPage` con el nuevo valor desde el
+template, que es el flujo que el padre ya espera (v-model:currentPage).
+
+También elimino el `localPage` que había quedado como puente bidireccional
+manual (watch localPage -> emit, watch prop -> localPage): ya no hace
+falta porque el emit directo cierra el loop sin más estado intermedio.
+
+Verificado:
+- npm run build (ok)
+- npm run test:run (118/118)
