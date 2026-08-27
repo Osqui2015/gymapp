@@ -1,9 +1,12 @@
 <!--
   EjercicioDetailModal — modal con el detail de un ejercicio.
-  Incluye el VideoPlayer si el ejercicio tiene url_video.
+  Soporta:
+   - Video embebido (YouTube/Vimeo) si la URL es embebible
+   - Link externo (Facebook Reels, Instagram, TikTok) si la URL es de una plataforma que no permite embed
+   - Imagen como fallback
 
   Props:
-    - ejercicio: { id, nombre, equipamiento, grupo_muscular, descripcion, url_video, url_img }
+    - ejercicio: { id, nombre, equipamiento, grupo_muscular, descripcion, url_video, url_img, fuente_credito, fuente_tipo }
     - open: boolean (v-model)
 -->
 <template>
@@ -43,11 +46,20 @@
 
                     <!-- Body -->
                     <div class="p-6 space-y-6">
-                        <!-- Video -->
+                        <!-- Video embebido (YouTube/Vimeo) -->
                         <VideoPlayer
-                            v-if="ejercicio.url_video"
+                            v-if="videoIsEmbeddable"
                             :src="ejercicio.url_video"
                             :title="ejercicio.nombre"
+                        />
+
+                        <!-- Link externo (Facebook/Instagram/TikTok) — opción legal -->
+                        <ExternalVideoLink
+                            v-else-if="ejercicio.url_video"
+                            :url="ejercicio.url_video"
+                            :title="ejercicio.nombre"
+                            :fuente="ejercicio.fuente_credito"
+                            :tipo="ejercicio.fuente_tipo || 'other'"
                         />
 
                         <!-- Imagen (si no hay video) -->
@@ -83,14 +95,31 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import VideoPlayer from './VideoPlayer.vue';
+import ExternalVideoLink from './ExternalVideoLink.vue';
 
-defineProps({
+const props = defineProps({
     ejercicio: { type: Object, default: null },
     open: { type: Boolean, default: false },
 });
 
 defineEmits(['update:open']);
+
+/**
+ * Determina si el video puede embeberse directamente (YouTube/Vimeo) o si
+ * tiene que mostrarse como link externo (Facebook, Instagram, TikTok).
+ *
+ * Por qué: Facebook/Instagram/TikTok no permiten embeber su contenido en
+ * apps de terceros sin partnership oficial. Mostrar un link externo es
+ * 100% legal y le da tráfico a la fuente.
+ */
+const videoIsEmbeddable = computed(() => {
+    const url = props.ejercicio?.url_video;
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com');
+});
 </script>
 
 <style scoped>
