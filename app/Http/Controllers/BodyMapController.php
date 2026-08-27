@@ -78,4 +78,65 @@ class BodyMapController extends Controller
 
         return response()->json($payload);
     }
+
+    /**
+     * Devuelve los ejercicios del usuario que trabajan un músculo dado,
+     * ordenados por "volumen reciente" (sets completados en los últimos 30d).
+     * Soporta filtro por tipo (primario / secundario).
+     */
+    public function ejerciciosPorMusculo(Request $request, string $slug)
+    {
+        $userId = $request->user()->id;
+        $tipo = $request->input('tipo'); // 'primario' | 'secundario' | null
+
+        $musculo = \App\Models\Musculo::where('slug', $slug)->first();
+        if (!$musculo) {
+            return response()->json(['error' => 'Músculo no encontrado'], 404);
+        }
+
+        $query = \App\Models\Ejercicio::query()
+            ->whereHas('musculos', function ($q) use ($musculo, $tipo) {
+                $q->where('musculos.id', $musculo->id);
+                if ($tipo) $q->where('ejercicio_musculos.tipo', $tipo);
+            })
+            ->where('visibilidad', true);
+
+        $ejercicios = $query->get(['id', 'nombre', 'equipamiento', 'grupo_muscular']);
+
+        // Volumen por ejercicio en últimos 30d
+        $desde = now()->subDays(30);
+        $setsPorEj = \App\Models\Historial::where('user_id', $userId)
+            ->where('completado', true)
+            ->whereDate('fecha', '>=', $desde)
+            ->whereIn('ejercicio_id', $ejercicios->pluck('id'))
+            ->selectRaw('ejercicio_id, count(*) as sets, max(peso) as max_peso')
+            ->groupBy('ejercicio_id')
+            ->get()
+            ->keyBy('ejercicio_id');
+
+        $rows = $ejercicios->map(function ($e) use ($setsPorEj) {
+            $s = $setsPorEj[$e->id] ?? null;
+            return [
+                'id' => $e->id,
+                'nombre' => $e->nombre,
+                'equipamiento' => $e->equipamiento,
+                'grupo_muscular' => $e->grupo_muscular,
+                'sets_30d' => $s ? (int) $s->sets : 0,
+                'max_peso_30d' => $s && $s->max_peso ? (float) $s->max_peso : null,
+            ];
+        })
+        ->sortByDesc('sets_30d')
+        ->values();
+
+        return response()->json([
+            'musculo' => [
+                'slug' => $musculo->slug,
+                'nombre_es' => $musculo->nombre_es,
+                'nombre_en' => $musculo->nombre_en,
+                'body_part' => $musculo->body_part,
+            ],
+            'ejercicios' => $rows,
+            'total' => $rows->count(),
+        ]);
+    }
 }

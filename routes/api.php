@@ -18,6 +18,7 @@ use App\Http\Controllers\AdminStatsController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AdminImportExportController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\TrainerCommentController;
 use App\Http\Controllers\Api\NotificationController;
@@ -65,6 +66,11 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
     Route::get('/body-map/data', [BodyMapController::class, 'index']);
+    Route::get('/body-map/muscle/{slug}/exercises', [BodyMapController::class, 'ejerciciosPorMusculo']);
+
+    // Stats (racha + heatmap de actividad) — estilo openGym
+    Route::get('/stats/resumen', [StatsController::class, 'resumen']);
+    Route::get('/stats/heatmap', [StatsController::class, 'heatmap']);
 
     // Metas & Logros (Gamificación)
     Route::get('/metas', [MetaController::class, 'index']);

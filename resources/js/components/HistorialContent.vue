@@ -80,6 +80,14 @@
           @toggle-sort="toggleDateSort"
         />
 
+        <!-- Stats: racha + heatmap (Fase 1.3) — siempre visibles -->
+        <div v-show="activeTab === 'matrix'" class="grid gap-4 md:grid-cols-3 mb-6">
+            <StreakCard :data="statsResumen" class="md:col-span-1" />
+            <div class="md:col-span-2">
+                <ActivityHeatmap :data="statsHeatmap" />
+            </div>
+        </div>
+
         <HistorialCalendar
           v-show="activeTab === 'calendar'"
           :historial="historial"
@@ -160,6 +168,76 @@
             </div>
         </div>
 
+        <!-- Drilldown: modal con los ejercicios que trabajan el músculo clickeado -->
+        <Teleport to="body">
+            <Transition name="modal">
+                <div
+                    v-if="selectedMuscleSlug"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                    @click.self="closeMuscleDrilldown"
+                >
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-start justify-between gap-4 z-10">
+                            <div>
+                                <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">Ejercicios que trabajan</p>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
+                                    {{ muscleDrilldown.data?.musculo?.nombre_es || muscleLabels[selectedMuscleSlug] || selectedMuscleSlug }}
+                                </h2>
+                            </div>
+                            <button
+                                @click="closeMuscleDrilldown"
+                                class="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                aria-label="Cerrar"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="p-6">
+                            <div v-if="muscleDrilldown.loading" class="flex items-center justify-center py-12">
+                                <svg class="animate-spin w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                            </div>
+
+                            <div v-else-if="muscleDrilldown.error" class="text-center py-8 text-red-600">
+                                {{ muscleDrilldown.error }}
+                            </div>
+
+                            <div v-else-if="muscleDrilldown.data?.ejercicios?.length === 0" class="text-center py-8 text-gray-500">
+                                No hay ejercicios asignados a este músculo.
+                            </div>
+
+                            <div v-else>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                    {{ muscleDrilldown.data.ejercicios.length }} ejercicios · ordenados por volumen reciente (30d)
+                                </p>
+                                <ul class="space-y-2">
+                                    <li
+                                        v-for="ej in muscleDrilldown.data.ejercicios"
+                                        :key="ej.id"
+                                        class="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                                    >
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-gray-900 dark:text-white text-sm truncate">{{ ej.nombre }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ ej.equipamiento }}</p>
+                                        </div>
+                                        <div class="text-right flex-shrink-0">
+                                            <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ ej.sets_30d }} <span class="text-xs font-normal text-gray-500">sets</span></p>
+                                            <p v-if="ej.max_peso_30d" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">max {{ ej.max_peso_30d.toFixed(1) }} kg</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
         <KeyExercises
           v-show="activeTab === 'key_exercises'"
           :isTrainerOrAdmin="isTrainerOrAdmin"
@@ -194,6 +272,9 @@ import HistorialPullRefresh from './historial/HistorialPullRefresh.vue';
 import BaseSkeleton from './BaseSkeleton.vue';
 import EmptyState from './EmptyState.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import BodyMap from './BodyMap.vue';
+import StreakCard from './StreakCard.vue';
+import ActivityHeatmap from './ActivityHeatmap.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { useMuscleLoad } from '../composables/useMuscleLoad';
@@ -229,11 +310,34 @@ const chartInstances = {};
 const calculator = ref({ weight: 80, reps: 5, formula: 'epley' });
 const rmFormula = ref('epley');
 
+// === Stats: racha + heatmap (Fase 1.3) ===
+const statsResumen = ref({});
+const statsHeatmap = ref({ days: [] });
+
+const loadStats = async () => {
+    try {
+        const params = {};
+        if (isTrainerOrAdmin.value && selectedAlumnoId.value) {
+            params.user_id = selectedAlumnoId.value;
+        }
+        const [r, h] = await Promise.all([
+            axios.get('/api/stats/resumen', { params }),
+            axios.get('/api/stats/heatmap', { params }),
+        ]);
+        statsResumen.value = r.data;
+        statsHeatmap.value = h.data;
+    } catch (err) {
+        console.error('[HistorialContent] Error cargando stats:', err);
+    }
+};
+
 // === Body map (mapa corporal) ===
 const bodyMapMode = ref('balance');  // 'balance' | 'fatigue' | 'strength'
 const bodyMapGender = ref('male');
 const bodyMapLoading = ref(false);
 const bodyMapData = ref({ historiales: [], musculos: [] });
+const selectedMuscleSlug = ref(null);
+const muscleDrilldown = ref({ loading: false, error: null, data: null });
 
 // Cálculo de carga por músculo (reacciona cuando cambian los historiales)
 const bodyMapHistorial = computed(() => bodyMapData.value.historiales);
@@ -276,9 +380,25 @@ const loadBodyMap = async () => {
     }
 };
 
-const onMuscleClick = (slug) => {
-    const label = muscleLabels.value[slug] || slug;
-    toast.info(`Próximamente: detalle de ${label}`);
+const onMuscleClick = async (slug) => {
+    selectedMuscleSlug.value = slug;
+    muscleDrilldown.value = { loading: true, error: null, data: null };
+    try {
+        const params = {};
+        if (isTrainerOrAdmin.value && selectedAlumnoId.value) {
+            params.user_id = selectedAlumnoId.value;
+        }
+        const res = await axios.get(`/api/body-map/muscle/${slug}/exercises`, { params });
+        muscleDrilldown.value = { loading: false, error: null, data: res.data };
+    } catch (err) {
+        console.error('[HistorialContent] Error drilldown músculo:', err);
+        muscleDrilldown.value = { loading: false, error: 'No se pudo cargar', data: null };
+    }
+};
+
+const closeMuscleDrilldown = () => {
+    selectedMuscleSlug.value = null;
+    muscleDrilldown.value = { loading: false, error: null, data: null };
 };
 
 // Cargar el body map cuando se activa el tab o cambia el alumno
@@ -331,7 +451,7 @@ const fetchAlumnos = async () => {
 
 const onAlumnoChange = async () => {
     newKeyExercise.value = { nombre: '', notas: '' };
-    await Promise.all([loadHistorial(), loadKeyExercises()]);
+    await Promise.all([loadHistorial(), loadKeyExercises(), loadStats()]);
 };
 
 const loadHistorial = async () => {
@@ -895,9 +1015,9 @@ watch(rmFormula, () => {
 onMounted(async () => {
     await fetchUserInfo();
     if (!isTrainerOrAdmin.value) {
-        await Promise.all([loadHistorial(), loadKeyExercises()]);
+        await Promise.all([loadHistorial(), loadKeyExercises(), loadStats()]);
     } else if (selectedAlumnoId.value) {
-        await Promise.all([loadHistorial(), loadKeyExercises()]);
+        await Promise.all([loadHistorial(), loadKeyExercises(), loadStats()]);
     } else {
         loading.value = false;
     }
