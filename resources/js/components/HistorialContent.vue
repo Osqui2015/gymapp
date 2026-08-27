@@ -106,6 +106,60 @@
           :historial="historial"
         />
 
+        <!-- Mapa corporal: muestra balance/fatigue/strength de los músculos -->
+        <div v-show="activeTab === 'body_map'" class="space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mapa Corporal</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                            Visualizá qué músculos entrenás, cuáles están fatigados y cuál es tu mejor 1RM
+                        </p>
+                    </div>
+                    <div class="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold">
+                        <button
+                            v-for="m in ['balance', 'fatigue', 'strength']"
+                            :key="m"
+                            @click="bodyMapMode = m"
+                            :class="[
+                                'px-4 py-2 transition-colors',
+                                bodyMapMode === m
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            ]"
+                        >
+                            {{ m === 'balance' ? 'Volumen' : m === 'fatigue' ? 'Fatiga' : 'Fuerza' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="bodyMapLoading" class="flex items-center justify-center py-16 text-gray-400">
+                    <svg class="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                </div>
+
+                <div v-else-if="!bodyMapData || bodyMapData.historiales.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <p class="text-sm">No hay entrenamientos en los últimos 90 días.</p>
+                    <p class="text-xs mt-1">Empezá a registrar sesiones y vas a ver tu mapa acá.</p>
+                </div>
+
+                <BodyMap
+                    v-else
+                    :levels="bodyMapLevels"
+                    :mode="bodyMapMode"
+                    :muscle-labels="muscleLabels"
+                    :initial-gender="bodyMapGender"
+                    @muscle-click="onMuscleClick"
+                />
+
+                <div v-if="bodyMapData && bodyMapData.historiales.length > 0" class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Ventana: últimos 90 días · {{ bodyMapData.historiales.length }} sets · {{ muscleCount }} músculos mapeados
+                </div>
+            </div>
+        </div>
+
         <KeyExercises
           v-show="activeTab === 'key_exercises'"
           :isTrainerOrAdmin="isTrainerOrAdmin"
@@ -142,6 +196,7 @@ import EmptyState from './EmptyState.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
+import { useMuscleLoad } from '../composables/useMuscleLoad';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
@@ -173,6 +228,69 @@ const chartInstances = {};
 
 const calculator = ref({ weight: 80, reps: 5, formula: 'epley' });
 const rmFormula = ref('epley');
+
+// === Body map (mapa corporal) ===
+const bodyMapMode = ref('balance');  // 'balance' | 'fatigue' | 'strength'
+const bodyMapGender = ref('male');
+const bodyMapLoading = ref(false);
+const bodyMapData = ref({ historiales: [], musculos: [] });
+
+// Cálculo de carga por músculo (reacciona cuando cambian los historiales)
+const bodyMapHistorial = computed(() => bodyMapData.value.historiales);
+const { levelsFor: bodyMapLevelsFor } = useMuscleLoad(bodyMapHistorial);
+const bodyMapLevels = computed(() => bodyMapLevelsFor(bodyMapMode.value));
+
+// Labels para el tooltip del body map
+const muscleLabels = computed(() => {
+    const out = {};
+    for (const m of bodyMapData.value.musculos || []) {
+        out[m.slug] = m.nombre_es;
+    }
+    return out;
+});
+
+const muscleCount = computed(() => {
+    const used = new Set();
+    for (const h of bodyMapData.value.historiales) {
+        for (const m of h.ejercicio?.musculos || []) {
+            used.add(m.musculo_slug);
+        }
+    }
+    return used.size;
+});
+
+const loadBodyMap = async () => {
+    bodyMapLoading.value = true;
+    try {
+        const params = { window: 90 };
+        if (isTrainerOrAdmin.value && selectedAlumnoId.value) {
+            params.user_id = selectedAlumnoId.value;
+        }
+        const res = await axios.get('/api/body-map/data', { params });
+        bodyMapData.value = res.data;
+    } catch (err) {
+        console.error('[HistorialContent] Error cargando body map:', err);
+        bodyMapData.value = { historiales: [], musculos: [] };
+    } finally {
+        bodyMapLoading.value = false;
+    }
+};
+
+const onMuscleClick = (slug) => {
+    const label = muscleLabels.value[slug] || slug;
+    toast.info(`Próximamente: detalle de ${label}`);
+};
+
+// Cargar el body map cuando se activa el tab o cambia el alumno
+watch(activeTab, (newTab) => {
+    if (newTab === 'body_map' && bodyMapData.value.historiales.length === 0) {
+        loadBodyMap();
+    }
+});
+
+watch(selectedAlumnoId, () => {
+    if (activeTab.value === 'body_map') loadBodyMap();
+});
 
 // === Helpers ===
 const formatDate = (value) => {
