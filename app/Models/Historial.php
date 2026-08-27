@@ -38,6 +38,9 @@ class Historial extends Model
         'comentario_trainer',
         'trainer_id',
         'superserie_grupo',
+        // Fase 3: tracking de esfuerzo por set (opcional)
+        'esfuerzo_tipo',     // 'rir' o 'rpe'
+        'esfuerzo_valor',    // 0..5 (RIR) o 6..10 (RPE)
     ];
 
     protected $casts = [
@@ -49,6 +52,7 @@ class Historial extends Model
         'trainer_id' => 'integer',
         'superserie_grupo' => 'integer',
         'ejercicio_id' => 'integer',
+        'esfuerzo_valor' => 'integer',
     ];
 
     public function user(): BelongsTo

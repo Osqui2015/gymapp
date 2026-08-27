@@ -24,6 +24,10 @@
 
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <template v-if="rutinaStore.seleccionada">
+        <div data-tour="home-hero" class="mb-4">
+          <HomeHero />
+        </div>
+
         <div data-tour="rutina-header">
           <DashboardRutinaHeader
             :nivel="rutinaStore.seleccionada.nivel"
@@ -130,6 +134,7 @@ import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
 import Breadcrumbs from './Breadcrumbs.vue';
+import HomeHero from './HomeHero.vue';
 import DashboardRutinaHeader from './dashboard/DashboardRutinaHeader.vue';
 import DashboardStats from './dashboard/DashboardStats.vue';
 import DashboardSeriesList from './dashboard/DashboardSeriesList.vue';
@@ -309,6 +314,9 @@ const construirFilasSerie = (rutinasDelDia) => {
                     peso: registro?.peso ?? null,
                     completado: registro?.completado ?? false,
                     superserie_grupo: null,
+                    // Fase 3
+                    esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
+                    esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                 });
             }
         } else {
@@ -334,6 +342,9 @@ const construirFilasSerie = (rutinasDelDia) => {
                             peso: registro?.peso ?? null,
                             completado: registro?.completado ?? false,
                             superserie_grupo: block.grupo,
+                            // Fase 3
+                            esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
+                            esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                         });
                     }
                 });
@@ -374,6 +385,9 @@ const guardarFila = async (fila, silencioso = false) => {
             peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
             completado: fila.completado,
             superserie_grupo: fila.superserie_grupo,
+            // Fase 3: esfuerzo RIR/RPE
+            esfuerzo_tipo: fila.esfuerzo_tipo || null,
+            esfuerzo_valor: fila.esfuerzo_valor ?? null,
         });
         if (!silencioso && fila.completado && deberiaIniciarTemporizador(fila)) {
             iniciarTemporizador(fila);

@@ -81,11 +81,31 @@
         />
 
         <!-- Stats: racha + heatmap (Fase 1.3) — siempre visibles -->
+        <div v-show="activeTab === 'matrix'" class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                <span v-if="userRutina">Día actual: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ userRutina.dia_actual }}</span></span>
+            </p>
+            <RescheduleButton
+                v-if="userRutina && !isTrainerOrAdmin"
+                :current-day="userRutina.dia_actual"
+                @rescheduled="onRescheduled"
+            />
+        </div>
         <div v-show="activeTab === 'matrix'" class="grid gap-4 md:grid-cols-3 mb-6">
             <StreakCard :data="statsResumen" class="md:col-span-1" />
             <div class="md:col-span-2">
                 <ActivityHeatmap :data="statsHeatmap" />
             </div>
+        </div>
+
+        <!-- Fase 7: WeekCalendar con dots -->
+        <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-3">
+            <WeekCalendar :user-id="selectedAlumnoId" class="md:col-span-1" />
+        </div>
+
+        <!-- Fase 3: esfuerzo RIR/RPE -->
+        <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-2">
+            <EffortCard :user-id="selectedAlumnoId" />
         </div>
 
         <HistorialCalendar
@@ -176,7 +196,7 @@
                     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
                     @click.self="closeMuscleDrilldown"
                 >
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
                         <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-start justify-between gap-4 z-10">
                             <div>
                                 <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">Ejercicios que trabajan</p>
@@ -195,7 +215,7 @@
                             </button>
                         </div>
 
-                        <div class="p-6">
+                        <div class="p-6 space-y-4">
                             <div v-if="muscleDrilldown.loading" class="flex items-center justify-center py-12">
                                 <svg class="animate-spin w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -219,15 +239,35 @@
                                     <li
                                         v-for="ej in muscleDrilldown.data.ejercicios"
                                         :key="ej.id"
-                                        class="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                                        class="rounded-xl bg-gray-50 dark:bg-gray-900/50 transition-colors"
                                     >
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-semibold text-gray-900 dark:text-white text-sm truncate">{{ ej.nombre }}</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ ej.equipamiento }}</p>
-                                        </div>
-                                        <div class="text-right flex-shrink-0">
-                                            <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ ej.sets_30d }} <span class="text-xs font-normal text-gray-500">sets</span></p>
-                                            <p v-if="ej.max_peso_30d" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">max {{ ej.max_peso_30d.toFixed(1) }} kg</p>
+                                        <button
+                                            type="button"
+                                            class="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-100 dark:hover:bg-gray-900 rounded-xl"
+                                            @click="toggleEjercicioChart(ej)"
+                                        >
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-semibold text-gray-900 dark:text-white text-sm truncate">{{ ej.nombre }}</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ ej.equipamiento }}</p>
+                                            </div>
+                                            <div class="text-right flex-shrink-0">
+                                                <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ ej.sets_30d }} <span class="text-xs font-normal text-gray-500">sets</span></p>
+                                                <p v-if="ej.max_peso_30d" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">max {{ ej.max_peso_30d.toFixed(1) }} kg</p>
+                                            </div>
+                                            <svg
+                                                class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
+                                                :class="{ 'rotate-180': selectedEjercicioId === ej.id }"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                            >
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div v-if="selectedEjercicioId === ej.id" class="border-t border-gray-200 p-3 dark:border-gray-700">
+                                            <OneRmChart
+                                                :ejercicio-nombre="ej.nombre"
+                                                :user-id="selectedAlumnoId"
+                                                :formula="rmFormula"
+                                            />
                                         </div>
                                     </li>
                                 </ul>
@@ -275,6 +315,10 @@ import Breadcrumbs from './Breadcrumbs.vue';
 import BodyMap from './BodyMap.vue';
 import StreakCard from './StreakCard.vue';
 import ActivityHeatmap from './ActivityHeatmap.vue';
+import EffortCard from './EffortCard.vue';
+import OneRmChart from './OneRmChart.vue';
+import RescheduleButton from './RescheduleButton.vue';
+import WeekCalendar from './WeekCalendar.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { useMuscleLoad } from '../composables/useMuscleLoad';
@@ -313,6 +357,21 @@ const rmFormula = ref('epley');
 // === Stats: racha + heatmap (Fase 1.3) ===
 const statsResumen = ref({});
 const statsHeatmap = ref({ days: [] });
+const userRutina = ref(null);
+
+const loadUserRutina = async () => {
+    try {
+        const res = await axios.get('/api/user-rutina');
+        userRutina.value = res.data;
+    } catch (err) {
+        userRutina.value = null;
+    }
+};
+
+const onRescheduled = (newUserRutina) => {
+    userRutina.value = newUserRutina;
+    toast.success('Día actualizado');
+};
 
 const loadStats = async () => {
     try {
@@ -338,6 +397,11 @@ const bodyMapLoading = ref(false);
 const bodyMapData = ref({ historiales: [], musculos: [] });
 const selectedMuscleSlug = ref(null);
 const muscleDrilldown = ref({ loading: false, error: null, data: null });
+const selectedEjercicioId = ref(null);
+
+const toggleEjercicioChart = (ej) => {
+    selectedEjercicioId.value = selectedEjercicioId.value === ej.id ? null : ej.id;
+};
 
 // Cálculo de carga por músculo (reacciona cuando cambian los historiales)
 const bodyMapHistorial = computed(() => bodyMapData.value.historiales);
@@ -399,6 +463,7 @@ const onMuscleClick = async (slug) => {
 const closeMuscleDrilldown = () => {
     selectedMuscleSlug.value = null;
     muscleDrilldown.value = { loading: false, error: null, data: null };
+    selectedEjercicioId.value = null;
 };
 
 // Cargar el body map cuando se activa el tab o cambia el alumno
@@ -1015,7 +1080,7 @@ watch(rmFormula, () => {
 onMounted(async () => {
     await fetchUserInfo();
     if (!isTrainerOrAdmin.value) {
-        await Promise.all([loadHistorial(), loadKeyExercises(), loadStats()]);
+        await Promise.all([loadHistorial(), loadKeyExercises(), loadStats(), loadUserRutina()]);
     } else if (selectedAlumnoId.value) {
         await Promise.all([loadHistorial(), loadKeyExercises(), loadStats()]);
     } else {

@@ -112,6 +112,110 @@ class UserRutinaController extends Controller
     }
 
     /**
+     * Fase 5 — Reschedule: cambia el `dia_actual` a uno específico.
+     *
+     * Usado cuando el usuario entrenó un día distinto al esperado.
+     * Loguea el cambio en `user_rutina_reschedules` para análisis.
+     *
+     * Body: { to_day: "Día 3", reason?: "missed_day"|"manual"|"trainer", note?: "..." }
+     */
+    public function reschedule(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+
+        if (! $userRutina) {
+            return response()->json(['error' => 'Rutina no encontrada'], 404);
+        }
+
+        $data = $request->validate([
+            'to_day' => ['required', 'string', 'max:64'],
+            'reason' => ['nullable', 'string', 'in:missed_day,manual,trainer,other'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $fromDay = $userRutina->dia_actual ?: 'Día 1';
+        $toDay = $data['to_day'];
+
+        if ($fromDay === $toDay) {
+            return response()->json([
+                'message' => 'Mismo día, nada que cambiar',
+                'user_rutina' => $userRutina,
+                'reschedule' => null,
+            ]);
+        }
+
+        // Validar que el día exista en la rutina del user
+        $rutina = $userRutina->rutina;
+        if ($rutina) {
+            $validDays = Rutina::where('nivel', $rutina->nivel)
+                ->where('modalidad', $rutina->modalidad)
+                ->selectRaw('DISTINCT dia')
+                ->pluck('dia')
+                ->toArray();
+            if (!in_array($toDay, $validDays, true)) {
+                return response()->json([
+                    'error' => 'Día inválido para la rutina actual',
+                    'valid_days' => $validDays,
+                ], 422);
+            }
+        }
+
+        $userRutina->dia_actual = $toDay;
+        $userRutina->save();
+
+        $log = \App\Models\UserRutinaReschedule::create([
+            'user_id' => $user->id,
+            'user_rutina_id' => $userRutina->id,
+            'from_day' => $fromDay,
+            'to_day' => $toDay,
+            'reason' => $data['reason'] ?? 'manual',
+            'note' => $data['note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => "Reprogramado de {$fromDay} a {$toDay}",
+            'user_rutina' => $userRutina->load('rutina'),
+            'reschedule' => $log,
+        ]);
+    }
+
+    /**
+     * Devuelve los días disponibles de la rutina actual del user.
+     * Útil para popular el selector de reschedule.
+     */
+    public function availableDays(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+        if (! $userRutina || !$userRutina->rutina) {
+            return response()->json(['days' => [], 'current' => null]);
+        }
+
+        $rutina = $userRutina->rutina;
+        $days = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad)
+            ->selectRaw('DISTINCT dia')
+            ->orderBy('dia')
+            ->pluck('dia')
+            ->toArray();
+
+        return response()->json([
+            'days' => $days,
+            'current' => $userRutina->dia_actual,
+        ]);
+    }
+
+    /**
      * Obtener alumnos del trainer con sus rutinas asignadas
      */
     public function misAlumnos(Request $request)

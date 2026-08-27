@@ -146,4 +146,332 @@ class StatsController extends Controller
             ->where('completado', true)
             ->count();
     }
+
+    /**
+     * Fase 3 — esfuerzo promedio y distribución RIR/RPE del último mes.
+     *
+     * Devuelve:
+     *  - counts: total_sets, sets_with_esfuerzo
+     *  - avg_por_tipo: { rir: 1.5, rpe: 8.3 } o null si no hay data
+     *  - distribucion: array con buckets por tipo (0..5 RIR / 6..10 RPE)
+     *  - por_ejercicio: top 5 ejercicios por frecuencia (los más trackeados)
+     *  - tendencia_30d: array de {fecha, avg_*} diario (útil para sparkline)
+     */
+    public function esfuerzo(Request $request)
+    {
+        $user = $request->user();
+        $cacheKey = "stats:esfuerzo:user:{$user->id}";
+
+        return Cache::remember($cacheKey, 300, function () use ($user) {
+            $desde = now()->subDays(30);
+
+            $base = Historial::where('user_id', $user->id)
+                ->where('completado', true)
+                ->whereDate('fecha', '>=', $desde->toDateString())
+                ->whereNotNull('esfuerzo_tipo')
+                ->whereNotNull('esfuerzo_valor');
+
+            $total = (clone $base)->count();
+            if ($total === 0) {
+                return response()->json([
+                    'total_sets' => 0,
+                    'sets_with_esfuerzo' => 0,
+                    'avg_por_tipo' => ['rir' => null, 'rpe' => null],
+                    'distribucion' => [
+                        'rir' => array_fill(0, 6, 0),
+                        'rpe' => array_fill(6, 5, 0),
+                    ],
+                    'por_ejercicio' => [],
+                    'tendencia_30d' => [],
+                ]);
+            }
+
+            // Promedio por tipo
+            $avgs = (clone $base)
+                ->selectRaw('esfuerzo_tipo, AVG(esfuerzo_valor) as avg_val, COUNT(*) as n')
+                ->groupBy('esfuerzo_tipo')
+                ->get()
+                ->pluck('avg_val', 'esfuerzo_tipo')
+                ->map(fn($v) => round((float) $v, 2))
+                ->all();
+
+            $avgPorTipo = [
+                'rir' => $avgs['rir'] ?? null,
+                'rpe' => $avgs['rpe'] ?? null,
+            ];
+
+            // Distribución (buckets por valor exacto)
+            $distRows = (clone $base)
+                ->selectRaw('esfuerzo_tipo, esfuerzo_valor, COUNT(*) as n')
+                ->groupBy('esfuerzo_tipo', 'esfuerzo_valor')
+                ->get();
+
+            $dist = [
+                'rir' => array_fill(0, 6, 0),  // 0..5
+                'rpe' => array_fill(6, 5, 0),  // 6..10 (índices 6,7,8,9,10)
+            ];
+            foreach ($distRows as $r) {
+                $tipo = $r->esfuerzo_tipo;
+                $val = (int) $r->esfuerzo_valor;
+                if ($tipo === 'rir' && $val >= 0 && $val <= 5) {
+                    $dist['rir'][$val] = (int) $r->n;
+                } elseif ($tipo === 'rpe' && $val >= 6 && $val <= 10) {
+                    $dist['rpe'][$val] = (int) $r->n;
+                }
+            }
+
+            // Top ejercicios más trackeados
+            $porEj = (clone $base)
+                ->selectRaw('ejercicio_nombre, COUNT(*) as n, AVG(esfuerzo_valor) as avg_val')
+                ->groupBy('ejercicio_nombre')
+                ->orderByDesc('n')
+                ->limit(5)
+                ->get()
+                ->map(fn($r) => [
+                    'ejercicio' => $r->ejercicio_nombre,
+                    'sets' => (int) $r->n,
+                    'avg' => round((float) $r->avg_val, 2),
+                ])
+                ->all();
+
+            // Tendencia diaria (avg por día)
+            $tend = (clone $base)
+                ->selectRaw('fecha, esfuerzo_tipo, AVG(esfuerzo_valor) as avg_val, COUNT(*) as n')
+                ->groupBy('fecha', 'esfuerzo_tipo')
+                ->orderBy('fecha')
+                ->get();
+
+            $byDate = [];
+            foreach ($tend as $r) {
+                $key = Carbon::parse($r->fecha)->toDateString();
+                if (!isset($byDate[$key])) {
+                    $byDate[$key] = ['fecha' => $key, 'rir' => null, 'rpe' => null, 'sets' => 0];
+                }
+                $byDate[$key][$r->esfuerzo_tipo] = round((float) $r->avg_val, 2);
+                $byDate[$key]['sets'] += (int) $r->n;
+            }
+
+            // Total de sets completados en el período (para % de cobertura)
+            $totalSets = (int) Historial::where('user_id', $user->id)
+                ->where('completado', true)
+                ->whereDate('fecha', '>=', $desde->toDateString())
+                ->count();
+
+            return response()->json([
+                'total_sets' => $totalSets,
+                'sets_with_esfuerzo' => $total,
+                'avg_por_tipo' => $avgPorTipo,
+                'distribucion' => $dist,
+                'por_ejercicio' => $porEj,
+                'tendencia_30d' => array_values($byDate),
+            ]);
+        });
+    }
+
+    /**
+     * Fase 4 — Estimación de 1RM a lo largo del tiempo para un ejercicio.
+     *
+     * Query params:
+     *   - ejercicio_nombre (string, requerido) — matchea por nombre
+     *   - user_id (int, opcional, trainer/admin) — ver el de un alumno
+     *   - formula ('epley' | 'lander', default 'epley')
+     *   - months (int, default 6) — ventana hacia atrás
+     *
+     * Response:
+     *   - ejercicio: nombre
+     *   - formula: fórmula usada
+     *   - best_1rm: { value, weight, reps, fecha, dia }
+     *   - estimated_1rm: { value, weight, reps, fecha, dia } (último cálculo)
+     *   - timeline: array de { fecha, estimated_1rm, weight, reps, dia }
+     *   - pr_count: cuántos PRs batidos en el período
+     *   - total_sets: sets con peso+reps en el período
+     */
+    public function estimated1rm(Request $request)
+    {
+        $user = $request->user();
+        $ejercicioNombre = trim((string) $request->input('ejercicio_nombre', ''));
+        if ($ejercicioNombre === '') {
+            return response()->json(['error' => 'ejercicio_nombre requerido'], 422);
+        }
+        $formula = $request->input('formula', 'epley');
+        if (!in_array($formula, ['epley', 'lander'], true)) {
+            $formula = 'epley';
+        }
+        $months = max(1, min(24, (int) $request->input('months', 6)));
+
+        $targetUserId = (int) $request->integer('user_id', $user->id);
+        if ($targetUserId !== $user->id) {
+            if (! $user->hasRole([\App\Models\User::ROLE_TRAINER, \App\Models\User::ROLE_ADMINISTRADOR])) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+            if ($user->hasRole(\App\Models\User::ROLE_TRAINER)) {
+                $target = \App\Models\User::findOrFail($targetUserId);
+                if ($target->trainer_id !== $user->id) {
+                    return response()->json(['error' => 'No autorizado'], 403);
+                }
+            }
+        }
+
+        $cacheKey = "stats:1rm:user:{$targetUserId}:ej:" . md5($ejercicioNombre) . ":{$formula}:m{$months}";
+
+        return Cache::remember($cacheKey, 600, function () use ($targetUserId, $ejercicioNombre, $formula, $months) {
+            $desde = now()->subMonths($months);
+
+            $calc = function ($w, $r) use ($formula) {
+                if ($formula === 'lander') {
+                    return (100 * $w) / (101.3 - 2.6712 * $r);
+                }
+                return $w * (1 + $r / 30);
+            };
+
+            $rows = Historial::where('user_id', $targetUserId)
+                ->where('ejercicio_nombre', $ejercicioNombre)
+                ->where('completado', true)
+                ->whereNotNull('peso')
+                ->whereNotNull('reps_realizadas')
+                ->whereDate('fecha', '>=', $desde->toDateString())
+                ->orderBy('fecha')
+                ->orderBy('id')
+                ->get(['fecha', 'peso', 'reps_realizadas', 'dia']);
+
+            $timeline = [];
+            $best1rm = null;
+            $prCount = 0;
+
+            foreach ($rows as $row) {
+                $w = (float) $row->peso;
+                $r = (int) $row->reps_realizadas;
+                if ($w <= 0 || $r <= 0) continue;
+                $est = round($calc($w, $r), 1);
+
+                $timeline[] = [
+                    'fecha' => Carbon::parse($row->fecha)->toDateString(),
+                    'estimated_1rm' => $est,
+                    'weight' => $w,
+                    'reps' => $r,
+                    'dia' => $row->dia,
+                ];
+
+                if ($best1rm === null || $est > $best1rm['value']) {
+                    if ($best1rm !== null && $est > $best1rm['value']) {
+                        $prCount++;
+                    }
+                    $best1rm = [
+                        'value' => $est,
+                        'weight' => $w,
+                        'reps' => $r,
+                        'fecha' => Carbon::parse($row->fecha)->toDateString(),
+                        'dia' => $row->dia,
+                    ];
+                }
+            }
+
+            $estimatedLast = end($timeline) ?: null;
+
+            return response()->json([
+                'ejercicio' => $ejercicioNombre,
+                'formula' => $formula,
+                'months' => $months,
+                'best_1rm' => $best1rm,
+                'estimated_1rm' => $estimatedLast,
+                'timeline' => $timeline,
+                'pr_count' => $prCount,
+                'total_sets' => count($timeline),
+            ]);
+        });
+    }
+
+    /**
+     * Fase 6 — Resumen del día para el HomeHero del dashboard.
+     *
+     * Cache corto (60s) para no golpear la DB en cada refresh.
+     * Devuelve:
+     *  - rutina: { id, nombre, nivel, modalidad, dia_actual }
+     *  - hoy: { fecha, dia_semana_es, saludo }
+     *  - stats: { streak, last_workout_at, days_since_last_workout, total_sets_30d }
+     *  - quick: { suggested_action: 'empezar'|'continuar'|'descanso'|'nueva_rutina' }
+     */
+    public function dashboardToday(Request $request)
+    {
+        $user = $request->user();
+        $cacheKey = "dashboard:today:user:{$user->id}";
+
+        return Cache::remember($cacheKey, 60, function () use ($user) {
+            $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
+            $rutina = $userRutina?->rutina;
+
+            $ultimoHistorial = Historial::where('user_id', $user->id)
+                ->where('completado', true)
+                ->orderBy('fecha', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $diasDesdeUltimo = $ultimoHistorial
+                ? (int) Carbon::parse($ultimoHistorial->fecha)->startOfDay()->diffInDays(now()->startOfDay())
+                : null;
+
+            $sets30d = (int) Historial::where('user_id', $user->id)
+                ->where('completado', true)
+                ->whereDate('fecha', '>=', now()->subDays(30)->toDateString())
+                ->count();
+
+            // Resumen rápido de racha (reusar lógica)
+            $diasConActividad = Historial::where('user_id', $user->id)
+                ->where('completado', true)
+                ->whereDate('fecha', '>=', now()->subYears(2)->toDateString())
+                ->selectRaw('DISTINCT fecha')
+                ->orderBy('fecha', 'desc')
+                ->pluck('fecha')
+                ->map(fn($d) => Carbon::parse($d)->toDateString())
+                ->all();
+
+            $streak = $this->calcCurrentStreak($diasConActividad);
+
+            // Sugerir acción
+            $quick = 'empezar';
+            if (!$rutina) {
+                $quick = 'nueva_rutina';
+            } elseif ($diasDesdeUltimo === null) {
+                $quick = 'empezar'; // primera vez
+            } elseif ($diasDesdeUltimo === 0) {
+                $quick = 'continuar'; // entrenó hoy
+            } elseif ($diasDesdeUltimo === 1) {
+                $quick = 'empezar';
+            } elseif ($diasDesdeUltimo >= 2 && $diasDesdeUltimo <= 3) {
+                $quick = 'continuar';
+            } elseif ($diasDesdeUltimo >= 4) {
+                $quick = 'empezar';
+            }
+
+            $nombreRutina = $rutina
+                ? trim("{$rutina->nivel} {$rutina->modalidad}")
+                : null;
+
+            $hora = (int) now()->format('H');
+            $saludo = $hora < 12 ? 'Buenos días' : ($hora < 19 ? 'Buenas tardes' : 'Buenas noches');
+
+            return response()->json([
+                'rutina' => $rutina ? [
+                    'id' => $rutina->id,
+                    'nombre' => $nombreRutina,
+                    'nivel' => $rutina->nivel,
+                    'modalidad' => $rutina->modalidad,
+                    'dia_actual' => $userRutina->dia_actual ?? 'Día 1',
+                ] : null,
+                'hoy' => [
+                    'fecha' => now()->toDateString(),
+                    'dia_semana_es' => ucfirst(Carbon::now()->locale('es')->dayName),
+                    'saludo' => $saludo,
+                    'nombre' => $user->name,
+                ],
+                'stats' => [
+                    'streak' => $streak,
+                    'last_workout_at' => $ultimoHistorial?->fecha?->toDateString(),
+                    'days_since_last_workout' => $diasDesdeUltimo,
+                    'total_sets_30d' => $sets30d,
+                ],
+                'quick' => $quick,
+            ]);
+        });
+    }
 }

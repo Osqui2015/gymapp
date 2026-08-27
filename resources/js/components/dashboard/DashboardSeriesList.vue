@@ -26,7 +26,7 @@
           </span>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+        <div class="grid grid-cols-2 gap-3 text-sm mb-3">
           <label class="block">
             <span class="mb-1 block text-gray-500 dark:text-gray-400">Reps hechas</span>
             <input
@@ -52,6 +52,45 @@
               class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 px-3 py-2 text-center text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
             />
           </label>
+        </div>
+
+        <!-- Esfuerzo RIR/RPE (Fase 3) -->
+        <div class="mb-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40 p-2">
+          <div class="mb-1.5 flex items-center justify-between">
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Esfuerzo</span>
+            <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-[11px]">
+              <button
+                type="button"
+                :class="[
+                  'px-2 py-0.5 transition-colors',
+                  fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ]"
+                @click="toggleEsfuerzoTipo(fila, 'rir')"
+              >RIR</button>
+              <button
+                type="button"
+                :class="[
+                  'px-2 py-0.5 transition-colors',
+                  fila.esfuerzo_tipo === 'rpe' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ]"
+                @click="toggleEsfuerzoTipo(fila, 'rpe')"
+              >RPE</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="opt in esfuerzoOptions(fila.esfuerzo_tipo)"
+              :key="opt"
+              type="button"
+              :class="[
+                'min-w-[36px] rounded-md border px-2 py-1 text-xs font-semibold transition-colors',
+                fila.esfuerzo_valor === opt
+                  ? (fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-amber-500 text-white border-amber-500')
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400'
+              ]"
+              @click="setEsfuerzoValor(fila, opt)"
+            >{{ opt }}</button>
+          </div>
         </div>
 
         <div class="flex items-center justify-between gap-3">
@@ -89,6 +128,7 @@
             <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Reps hechas</th>
             <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Peso</th>
             <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Descanso</th>
+            <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Esfuerzo</th>
             <th class="px-4 py-4 text-center font-bold text-gray-700 dark:text-gray-300">Completado</th>
           </tr>
         </thead>
@@ -142,6 +182,42 @@
               <span class="text-orange-600 dark:text-orange-400 font-medium">{{ fila.descanso_min }} min</span>
             </td>
             <td class="px-4 py-4 text-center">
+              <div class="inline-flex flex-col items-center gap-1">
+                <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-[10px]">
+                  <button
+                    type="button"
+                    :class="[
+                      'px-1.5 py-0.5 transition-colors',
+                      fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ]"
+                    @click="toggleEsfuerzoTipo(fila, 'rir')"
+                  >RIR</button>
+                  <button
+                    type="button"
+                    :class="[
+                      'px-1.5 py-0.5 transition-colors',
+                      fila.esfuerzo_tipo === 'rpe' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ]"
+                    @click="toggleEsfuerzoTipo(fila, 'rpe')"
+                  >RPE</button>
+                </div>
+                <div class="flex gap-0.5">
+                  <button
+                    v-for="opt in esfuerzoOptions(fila.esfuerzo_tipo)"
+                    :key="opt"
+                    type="button"
+                    :class="[
+                      'min-w-[22px] rounded text-[10px] font-bold transition-colors',
+                      fila.esfuerzo_valor === opt
+                        ? (fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white')
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
+                    @click="setEsfuerzoValor(fila, opt)"
+                  >{{ opt }}</button>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-center">
               <input
                 v-model="fila.completado"
                 @change="$emit('guardar', fila)"
@@ -189,7 +265,33 @@ defineProps({
     botonSiguienteClass: { type: String, required: true },
 });
 
-defineEmits(['guardar', 'dia-anterior', 'guardar-sesion', 'siguiente-dia']);
+const emit = defineEmits(['guardar', 'dia-anterior', 'guardar-sesion', 'siguiente-dia']);
+
+// === Esfuerzo (Fase 3): RIR 0..5 / RPE 6..10 ===
+const esfuerzoOptions = (tipo) => (tipo === 'rpe' ? [6, 7, 8, 9, 10] : [0, 1, 2, 3, 4, 5]);
+
+const setEsfuerzoValor = (fila, valor) => {
+    const nuevo = fila.esfuerzo_valor === valor ? null : valor;
+    fila.esfuerzo_valor = nuevo;
+    if (nuevo === null) fila.esfuerzo_tipo = null;
+    emit('guardar', fila);
+};
+
+const toggleEsfuerzoTipo = (fila, tipo) => {
+    // Si clickea el mismo botón y ya hay valor, limpia todo
+    if (fila.esfuerzo_tipo === tipo && fila.esfuerzo_valor !== null) {
+        fila.esfuerzo_tipo = null;
+        fila.esfuerzo_valor = null;
+    } else {
+        fila.esfuerzo_tipo = tipo;
+        // Si el valor actual no es válido para el nuevo tipo, resetear
+        const valid = tipo === 'rpe' ? [6, 7, 8, 9, 10] : [0, 1, 2, 3, 4, 5];
+        if (fila.esfuerzo_valor === null || !valid.includes(fila.esfuerzo_valor)) {
+            fila.esfuerzo_valor = tipo === 'rpe' ? 8 : 2;
+        }
+    }
+    emit('guardar', fila);
+};
 
 const getSuperserieBgClass = (grupo, completado) => {
     if (completado) {

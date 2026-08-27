@@ -1,18 +1,31 @@
-feat(pwa): add PNG icons (192 + 512, any + maskable) and update manifest
+feat(stats+drilldown): Fase 1.3 + drilldown de músculo
 
-El manifest solo tenía /favicon.ico multi-size. Chrome y la mayoría de
-launchers mobile prefieren PNGs específicos para instalar la PWA con
-buena calidad visual en el home screen y splash screen.
+Fase 1.3 — Stats agregadas estilo openGym (streak + heatmap):
 
-Generados 4 archivos en public/icons/:
-- icon-192x192.png        (purpose: any)
-- icon-512x512.png        (purpose: any)
-- icon-maskable-192x192.png  (purpose: maskable, safe zone 80%)
-- icon-maskable-512x512.png  (purpose: maskable, safe zone 80%)
+Endpoints nuevos:
+- GET /api/stats/resumen — current_streak, longest_streak, this_week,
+  this_month, last_30_days, total_workouts, total_sets (cache 5min)
+- GET /api/stats/heatmap?weeks=53 — por fecha: sets + volumen total
+  (cache 10min)
 
-Las versiones "maskable" tienen el contenido en el 80% central para
-que Android pueda recortarlas en círculo/squircle sin perder el logo.
+Componentes nuevos:
+- StreakCard.vue: card con icono de llama + racha grande + 3 sub-stats
+  (esta semana, este mes, mejor racha) + totales
+- ActivityHeatmap.vue: grid 53×7 estilo GitHub, color por nivel de
+  sets en el día, hover con detalle
 
-También actualicé .env.example: el dominio real de prod es
-gym.tecnorexs.com (no gymapp.tecnorexs.com) y el locale es "es"
-(no "en"), para no confundir al próximo que arme un ambiente.
+Integración en HistorialContent.vue (siempre visibles en el tab
+"Matriz de Progreso", arriba del matrix):
+- grid md:grid-cols-3 con StreakCard (1 col) + Heatmap (2 col)
+- Carga en onMounted y en onAlumnoChange (cuando cambia el alumno)
+
+Drilldown de músculo (mejora sobre el body map):
+- GET /api/body-map/muscle/{slug}/exercises — lista de ejercicios
+  que trabajan ese músculo, ordenados por volumen reciente (30d)
+- Modal en HistorialContent.vue al clickear un músculo en el body map:
+  muestra los ejercicios + sets_30d + max_peso_30d
+- Cerrar con click afuera o botón X
+
+Verificado:
+- npm run build (ok)
+- php artisan test (171/171)

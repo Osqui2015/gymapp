@@ -57,3 +57,13 @@ Thumbs.db
 /tmp_*.ps1
 /tmp_*.txt
 #.htaccess
+
+# Scripts de debug locales (nunca commitear)
+/scripts/debug/*.php
+!/scripts/debug/.gitkeep
+/scripts/debug/*.js
+!/scripts/debug/README.md
+
+# Datos personales / workspace del usuario
+/yo/
+/yo/**

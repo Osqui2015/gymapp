@@ -44,6 +44,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);
+    Route::post('/user-rutina/reschedule', [UserRutinaController::class, 'reschedule']);
+    Route::get('/user-rutina/available-days', [UserRutinaController::class, 'availableDays']);
 
     Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/mis-rutinas', [UserRutinaController::class, 'misRutinas']);
@@ -57,6 +59,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/historial/progreso', [HistorialController::class, 'obtenerProgreso']);
     Route::post('/historial/finalizar-rutina', [HistorialController::class, 'finalizarRutina']);
     Route::get('/historial/calendar', [HistorialController::class, 'calendar']);
+    Route::get('/historial/week-summary', [HistorialController::class, 'weekSummary']);
 
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
@@ -71,6 +74,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     // Stats (racha + heatmap de actividad) — estilo openGym
     Route::get('/stats/resumen', [StatsController::class, 'resumen']);
     Route::get('/stats/heatmap', [StatsController::class, 'heatmap']);
+    Route::get('/stats/esfuerzo', [StatsController::class, 'esfuerzo']);
+    Route::get('/stats/estimated-1rm', [StatsController::class, 'estimated1rm']);
+    Route::get('/dashboard/today', [StatsController::class, 'dashboardToday']);
 
     // Metas & Logros (Gamificación)
     Route::get('/metas', [MetaController::class, 'index']);
