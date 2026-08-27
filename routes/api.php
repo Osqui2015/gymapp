@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserApiController;
+use App\Http\Controllers\BodyMapController;
 use App\Http\Controllers\EjercicioController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\ProgresoController;
@@ -59,6 +60,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
     Route::get('/progreso/detalle', [ProgresoController::class, 'obtenerDetalle']);
+
+    // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
+    Route::get('/body-map/data', [BodyMapController::class, 'index']);
 
     // Metas & Logros (Gamificación)
     Route::get('/metas', [MetaController::class, 'index']);
