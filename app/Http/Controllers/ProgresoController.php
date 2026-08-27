@@ -46,6 +46,73 @@ class ProgresoController extends Controller
         return $diasDesdeUltimo >= 14;
     }
 
+    /**
+     * Datos para el chart de peso corporal con línea de goal.
+     * Devuelve el histórico de peso + goal + delta al goal + tendencia.
+     */
+    public function weightChart(Request $request)
+    {
+        $user = $request->user();
+        $this->authorize('viewAny', Progreso::class);
+
+        $progresos = Progreso::where('user_id', $user->id)
+            ->whereNotNull('peso')
+            ->orderBy('fecha', 'asc')
+            ->get(['id', 'fecha', 'peso']);
+
+        $latest = $progresos->last();
+        $first = $progresos->first();
+        $goal = $user->peso_objetivo ? (float) $user->peso_objetivo : null;
+
+        $deltaToGoal = null;
+        $direction = null;  // 'down' si el goal es menor (perder), 'up' si es mayor (ganar)
+        if ($latest && $goal) {
+            $deltaToGoal = round($latest->peso - $goal, 2);
+            $direction = $goal < $latest->peso ? 'down' : ($goal > $latest->peso ? 'up' : null);
+        }
+
+        $totalChange = null;
+        if ($first && $latest && $first->id !== $latest->id) {
+            $totalChange = round($latest->peso - $first->peso, 2);
+        }
+
+        return response()->json([
+            'data' => $progresos->map(fn($p) => [
+                'fecha' => $p->fecha->toDateString(),
+                'peso' => (float) $p->peso,
+            ])->values(),
+            'goal' => $goal,
+            'latest' => $latest ? [
+                'peso' => (float) $latest->peso,
+                'fecha' => $latest->fecha->toDateString(),
+            ] : null,
+            'delta_to_goal' => $deltaToGoal,
+            'goal_direction' => $direction,
+            'total_change' => $totalChange,
+            'count' => $progresos->count(),
+        ]);
+    }
+
+    /**
+     * Actualiza solo el peso objetivo del usuario (sin tocar progresos).
+     */
+    public function updateGoal(Request $request)
+    {
+        $user = $request->user();
+        $this->authorize('update', $user);
+
+        $data = $request->validate([
+            'peso_objetivo' => ['nullable', 'numeric', 'min:30', 'max:400'],
+        ]);
+
+        $user->peso_objetivo = $data['peso_objetivo'];
+        $user->save();
+
+        return response()->json([
+            'peso_objetivo' => $user->peso_objetivo ? (float) $user->peso_objetivo : null,
+        ]);
+    }
+
     public function guardar(Request $request)
     {
         $user = $request->user();

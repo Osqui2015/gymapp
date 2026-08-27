@@ -60,6 +60,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
     Route::get('/progreso/detalle', [ProgresoController::class, 'obtenerDetalle']);
+    Route::get('/progreso/weight-chart', [ProgresoController::class, 'weightChart']);
+    Route::patch('/progreso/goal', [ProgresoController::class, 'updateGoal']);
 
     // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
     Route::get('/body-map/data', [BodyMapController::class, 'index']);

@@ -24,6 +24,19 @@
         </a>
       </div>
 
+      <!-- Body weight chart con goal line (Fase 1.2) -->
+      <div class="mb-6">
+        <BodyWeightChart
+          :data="weightChart.data"
+          :goal="weightChart.goal"
+          :latest="weightChart.latest"
+          :delta="weightChart.delta"
+          :direction="weightChart.direction"
+          :total-change="weightChart.totalChange"
+          @update:goal="onUpdateGoal"
+        />
+      </div>
+
       <!-- Tabs -->
       <div class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide">
         <button
@@ -99,6 +112,7 @@ import MetasTab from './progreso/MetasTab.vue';
 import LogrosTab from './progreso/LogrosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import BodyWeightChart from './BodyWeightChart.vue';
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
@@ -120,6 +134,52 @@ const logros = ref([]);
 const logrosStats = ref(null);
 
 let chartInstance = null;
+
+// === Body weight chart (Fase 1.2) ===
+const weightChart = ref({
+    data: [],
+    goal: null,
+    latest: null,
+    delta: null,
+    direction: null,
+    totalChange: null,
+});
+
+const cargarWeightChart = async () => {
+    try {
+        const res = await axios.get('/api/progreso/weight-chart');
+        weightChart.value = {
+            data: res.data.data || [],
+            goal: res.data.goal,
+            latest: res.data.latest,
+            delta: res.data.delta_to_goal,
+            direction: res.data.goal_direction,
+            totalChange: res.data.total_change,
+        };
+    } catch (err) {
+        console.error('[ProgresoContent] Error cargando weight chart:', err);
+    }
+};
+
+const onUpdateGoal = async (newGoal) => {
+    try {
+        await axios.patch('/api/progreso/goal', { peso_objetivo: newGoal });
+        weightChart.value.goal = newGoal;
+        const latest = weightChart.value.latest;
+        if (latest && newGoal) {
+            const delta = Math.round((latest.peso - newGoal) * 100) / 100;
+            weightChart.value.delta = delta;
+            weightChart.value.direction = newGoal < latest.peso ? 'down' : newGoal > latest.peso ? 'up' : null;
+        } else {
+            weightChart.value.delta = null;
+            weightChart.value.direction = null;
+        }
+        toast.success(newGoal ? `Objetivo actualizado a ${newGoal} kg` : 'Objetivo eliminado');
+    } catch (err) {
+        console.error('[ProgresoContent] Error actualizando goal:', err);
+        toast.error('No se pudo guardar el objetivo');
+    }
+};
 
 const form = ref({
     peso: '',
@@ -431,6 +491,7 @@ onMounted(() => {
     cargarProgresos();
     cargarMetas();
     cargarLogros();
+    cargarWeightChart();
 });
 </script>
 

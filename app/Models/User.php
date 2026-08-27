@@ -31,6 +31,8 @@ class User extends Authenticatable
         'role',
         'suspended',
         'trainer_id',
+        'altura',
+        'peso_objetivo',
     ];
 
     protected $hidden = [
