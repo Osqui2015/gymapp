@@ -74,8 +74,7 @@
                 Expandir
               </button>
             </div>
-            <!-- Leyenda compacta: solo visible cuando hay ejercicio seleccionado
-                 (sino no hay niveles que explicar y ocupa espacio al pedo). -->
+            <!-- Leyenda compacta: cambia segun el modo del body map. -->
             <div
               v-if="ejercicioSeleccionadoBodyMap"
               class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
@@ -87,13 +86,41 @@
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #a5b4fc"></span>
                   <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
-                    <strong class="font-semibold">Indigo fuerte</strong> · músculo principal (el que más trabaja)
+                    <strong class="font-semibold">Indigo fuerte</strong> · músculo principal
                   </span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #4338ca"></span>
                   <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
-                    <strong class="font-semibold">Indigo oscuro</strong> · músculo secundario (sinergista, ayuda pero no es el foco)
+                    <strong class="font-semibold">Indigo oscuro</strong> · músculo secundario
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
+              class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
+            >
+              <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                Recencia · cuánto hace entrenaste
+              </p>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #1f2937"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Gris</strong> · reciente (0-3 días)
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #4338ca"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Indigo</strong> · hace 1-2 semanas
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #a5b4fc"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Indigo claro</strong> · +30 días o nunca
                   </span>
                 </div>
               </div>
@@ -166,6 +193,7 @@
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Equipamiento</th>
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Grupo Muscular</th>
+                <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Última</th>
                 <th class="px-4 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Descripción</th>
                 <th class="px-4 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
               </tr>
@@ -182,13 +210,31 @@
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                 ]"
               >
-                <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">{{ ejercicio.nombre }}</td>
+                <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">
+                  <div class="flex items-center gap-2">
+                    <button
+                      @click="toggleFavorito(ejercicio, $event)"
+                      :title="ejercicio.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+                      :aria-label="ejercicio.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+                      class="text-lg leading-none transition-transform hover:scale-110 flex-shrink-0"
+                      :class="ejercicio.is_favorite ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600 hover:text-yellow-400'"
+                    >
+                      {{ ejercicio.is_favorite ? '★' : '☆' }}
+                    </button>
+                    <span>{{ ejercicio.nombre }}</span>
+                  </div>
+                </td>
                 <td class="px-4 py-4">
                   <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded text-xs font-medium">
                     {{ ejercicio.equipamiento }}
                   </span>
                 </td>
                 <td class="px-4 py-4 text-gray-700 dark:text-gray-300">{{ ejercicio.grupo_muscular || '-' }}</td>
+                <td class="px-4 py-4">
+                  <span :class="['inline-block px-2 py-0.5 rounded text-xs font-medium', relativeTimeBadge(relativeTime(ejercicio.last_trained_at).color)]">
+                    {{ relativeTime(ejercicio.last_trained_at).text }}
+                  </span>
+                </td>
                 <td class="px-4 py-4 text-gray-500 dark:text-gray-400 text-xs max-w-xs">{{ ejercicio.descripcion?.substring(0, 80) || '-' }}{{ ejercicio.descripcion?.length > 80 ? '...' : '' }}</td>
                 <td class="px-4 py-4 text-center">
                   <div class="inline-flex items-center gap-2">
@@ -238,7 +284,18 @@
             ]"
           >
             <div class="flex items-start justify-between gap-2">
-              <p class="font-semibold text-gray-900 dark:text-white flex-1">{{ ejercicio.nombre }}</p>
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <button
+                  @click="toggleFavorito(ejercicio, $event)"
+                  :title="ejercicio.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+                  :aria-label="ejercicio.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+                  class="text-lg leading-none transition-transform active:scale-90 flex-shrink-0"
+                  :class="ejercicio.is_favorite ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'"
+                >
+                  {{ ejercicio.is_favorite ? '★' : '☆' }}
+                </button>
+                <p class="font-semibold text-gray-900 dark:text-white truncate">{{ ejercicio.nombre }}</p>
+              </div>
               <button
                 v-if="userRole === 'trainer' || userRole === 'administrador'"
                 @click="eliminar(ejercicio.id)"
@@ -247,12 +304,15 @@
                 Eliminar
               </button>
             </div>
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
               <span class="px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded text-xs font-medium">
                 {{ ejercicio.equipamiento }}
               </span>
               <span v-if="ejercicio.grupo_muscular" class="px-2 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 rounded text-xs font-medium">
                 {{ ejercicio.grupo_muscular }}
+              </span>
+              <span :class="['px-2 py-0.5 rounded text-xs font-medium', relativeTimeBadge(relativeTime(ejercicio.last_trained_at).color)]">
+                {{ relativeTime(ejercicio.last_trained_at).text }}
               </span>
             </div>
             <p v-if="ejercicio.descripcion" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
@@ -489,10 +549,12 @@ const nuevo = ref({
 // - ejercicioSeleccionadoBodyMap: ilumina músculos al clickear una fila
 // - musculoFiltroBodyMap: filtra la lista cuando el user hace click en el mapa
 // - bodyMapExpandido: modal fullscreen al clickear el mini mapa
+// - muscleRecency: datos del endpoint /api/body-map/muscle-recency (modo default)
 const musculosCatalogo = ref([]);     // [{slug, nombre_es, ...}]
 const ejercicioSeleccionadoBodyMap = ref(null);
 const musculoFiltroBodyMap = ref(''); // slug
 const bodyMapExpandido = ref(false);
+const muscleRecency = ref([]);         // [{slug, days_since, ...}]
 
 // Labels slug → nombre_es para tooltips del body map
 const muscleLabels = computed(() => {
@@ -501,26 +563,48 @@ const muscleLabels = computed(() => {
     return map;
 });
 
-// Niveles 0-4 del body map según el ejercicio seleccionado.
-// Primario = 4 (indigo fuerte), Secundario = 2 (indigo claro), resto = 0.
-const bodyMapLevels = computed(() => {
+// Niveles 0-4 del body map:
+//   1) Si hay ejercicio seleccionado: highlight de músculos del ejercicio.
+//      Primario = 4, Secundario = 2.
+//   2) Si no hay: modo "no entrenaste" basado en recencia.
+//      0-3d = 0, 4-7d = 1, 8-14d = 2, 15-30d = 3, 30+d = 4.
+const recencyLevels = computed(() => {
     const levels = {};
-    const ej = ejercicioSeleccionadoBodyMap.value;
-    if (!ej?.musculos) return levels;
-    for (const m of ej.musculos) {
-        levels[m.slug] = m.pivot?.tipo === 'primario' ? 4
-                       : m.pivot?.tipo === 'secundario' ? 2
-                       : 1;
+    for (const r of muscleRecency.value) {
+        const d = r.days_since;
+        if (d <= 3) levels[r.slug] = 0;
+        else if (d <= 7) levels[r.slug] = 1;
+        else if (d <= 14) levels[r.slug] = 2;
+        else if (d <= 30) levels[r.slug] = 3;
+        else levels[r.slug] = 4;
     }
     return levels;
+});
+
+const bodyMapLevels = computed(() => {
+    const ej = ejercicioSeleccionadoBodyMap.value;
+    if (ej?.musculos) {
+        // Modo highlight del ejercicio: primarios indigo fuerte, secundarios indigo claro
+        const levels = {};
+        for (const m of ej.musculos) {
+            levels[m.slug] = m.pivot?.tipo === 'primario' ? 4
+                           : m.pivot?.tipo === 'secundario' ? 2
+                           : 1;
+        }
+        return levels;
+    }
+    // Modo recencia (default cuando no hay ejercicio seleccionado)
+    return recencyLevels.value;
 });
 
 // Etiqueta del modo actual (visible en el mini header)
 const bodyMapModoLabel = computed(() => {
     const ej = ejercicioSeleccionadoBodyMap.value;
-    if (!ej) return 'Hacé click en un ejercicio';
-    if (musculoFiltroBodyMap.value) {
-        return `Filtrando por: ${muscleLabels.value[musculoFiltroBodyMap.value] || musculoFiltroBodyMap.value}`;
+    if (!ej) {
+        if (musculoFiltroBodyMap.value) {
+            return `Filtrando por: ${muscleLabels.value[musculoFiltroBodyMap.value] || musculoFiltroBodyMap.value}`;
+        }
+        return 'Rojo = sin entrenar hace mucho';
     }
     return ej.nombre;
 });
@@ -578,6 +662,18 @@ const fetchMusculos = async () => {
   }
 };
 
+// Carga el "days_since" de cada músculo desde el body map del user.
+// Se usa en el body map por defecto (cuando no hay ejercicio seleccionado).
+const fetchMuscleRecency = async () => {
+  try {
+    // Cache 5min (mismo TTL que el body map original).
+    const response = await cachedAxiosGet('/api/body-map/muscle-recency', {}, { ttl: 5 * 60_000 });
+    muscleRecency.value = response.data?.recency || [];
+  } catch (error) {
+    console.error('Error al obtener recencia de músculos:', error);
+  }
+};
+
 // Click en una fila/card de la lista: ilumina el body map
 const seleccionarEjercicioBodyMap = (ej) => {
     // toggle: si ya está seleccionado, deseleccionar
@@ -594,11 +690,56 @@ const onMuscleClickBodyMap = (slug) => {
     fetchEjercicios(1);
 };
 
-// Limpiar el filtro de músculo
-const limpiarFiltroMusculo = () => {
-    musculoFiltroBodyMap.value = '';
-    ejercicioSeleccionadoBodyMap.value = null;
-    fetchEjercicios(1);
+// === Última vez / Favoritos ===
+
+/**
+ * Devuelve texto relativo ("hace 3 días", "hace 2 semanas", "nunca").
+ * Devuelve también un color para el badge según la antigüedad.
+ */
+function relativeTime(fechaStr) {
+    if (!fechaStr) return { text: 'Nunca', color: 'gray' };
+    const fecha = new Date(fechaStr);
+    const ahora = new Date();
+    const diffMs = ahora - fecha;
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias === 0) return { text: 'Hoy', color: 'green' };
+    if (diffDias === 1) return { text: 'Ayer', color: 'green' };
+    if (diffDias < 7) return { text: `Hace ${diffDias} días`, color: 'green' };
+    if (diffDias < 14) return { text: 'Hace 1 sem', color: 'yellow' };
+    if (diffDias < 30) return { text: `Hace ${Math.floor(diffDias / 7)} sem`, color: 'yellow' };
+    if (diffDias < 90) return { text: `Hace ${Math.floor(diffDias / 30)} mes`, color: 'orange' };
+    return { text: `Hace ${Math.floor(diffDias / 30)} meses`, color: 'red' };
+}
+
+const relativeTimeBadge = (color) => {
+    // Mapeo de color → clases Tailwind. El "color" viene de relativeTime.
+    const map = {
+        gray:   'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+        green:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+        orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+        red:    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    };
+    return map[color] || map.gray;
+};
+
+/**
+ * Toggle de favorito. Actualiza el item en la lista localmente (optimista)
+ * y rollback si falla.
+ */
+const toggleFavorito = async (ej, ev) => {
+    // Evitar que el click propague al row (que selecciona el ejercicio)
+    if (ev) ev.stopPropagation();
+    const prev = ej.is_favorite;
+    ej.is_favorite = !prev;
+    try {
+        await axios.post(`/api/ejercicios/${ej.id}/favorite`);
+    } catch (err) {
+        console.error('Error al togglear favorito:', err);
+        ej.is_favorite = prev;  // rollback
+        toast.error('No se pudo actualizar el favorito');
+    }
 };
 
 const visiblePages = computed(() => {
@@ -685,6 +826,7 @@ onMounted(() => {
   fetchGruposMusculares();
   fetchEquipamientos();
   fetchMusculos();
+  fetchMuscleRecency();
   fetchEjercicios();
 });
 </script>

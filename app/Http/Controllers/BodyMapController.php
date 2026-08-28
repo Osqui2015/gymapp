@@ -80,10 +80,48 @@ class BodyMapController extends Controller
     }
 
     /**
-     * Devuelve los ejercicios del usuario que trabajan un músculo dado,
-     * ordenados por "volumen reciente" (sets completados en los últimos 30d).
-     * Soporta filtro por tipo (primario / secundario).
+     * Devuelve, para cada músculo, cuántos días pasaron desde el último set
+     * completado del usuario. Útil para mostrar un modo "no entrenaste" en el
+     * body map (músculos en rojo si pasaron muchos días).
      */
+    public function muscleRecency(Request $request)
+    {
+        $userId = $request->user()->id;
+        $cacheKey = "muscle-recency:user:{$userId}";
+
+        $payload = Cache::remember($cacheKey, 300, function () use ($userId) {
+            // Para cada músculo, el MAX(fecha) de los historiales del user
+            // donde ese músculo aparece (vía pivot ejercicio_musculos).
+            $rows = \DB::table('historials as h')
+                ->join('ejercicio_musculos as em', 'em.ejercicio_id', '=', 'h.ejercicio_id')
+                ->join('musculos as m', 'm.id', '=', 'em.musculo_id')
+                ->where('h.user_id', $userId)
+                ->where('h.completado', true)
+                ->whereNotNull('h.ejercicio_id')
+                ->groupBy('m.id', 'm.slug', 'm.nombre_es')
+                ->selectRaw('m.slug, m.nombre_es, MAX(h.fecha) as last_trained_at')
+                ->get();
+
+            $hoy = now()->startOfDay();
+            $recency = $rows->map(function ($r) use ($hoy) {
+                $last = \Carbon\Carbon::parse($r->last_trained_at)->startOfDay();
+                $days = (int) $last->diffInDays($hoy, false);
+                return [
+                    'slug' => $r->slug,
+                    'nombre_es' => $r->nombre_es,
+                    'last_trained_at' => $r->last_trained_at,
+                    'days_since' => $days,
+                ];
+            })->values()->all();
+
+            return [
+                'recency' => $recency,
+                'generated_at' => now()->toIso8601String(),
+            ];
+        });
+
+        return response()->json($payload);
+    }
     public function ejerciciosPorMusculo(Request $request, string $slug)
     {
         $userId = $request->user()->id;

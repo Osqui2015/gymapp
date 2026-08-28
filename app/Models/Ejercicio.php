@@ -33,4 +33,13 @@ class Ejercicio extends Model
         return $this->belongsToMany(Musculo::class, 'ejercicio_musculos')
             ->withPivot(['tipo', 'peso', 'fuente']);
     }
+
+    /**
+     * Usuarios que marcaron este ejercicio como favorito.
+     */
+    public function favoritos(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ejercicio_favoritos')
+            ->withTimestamps();
+    }
 }

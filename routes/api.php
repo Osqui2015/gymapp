@@ -29,6 +29,11 @@ Route::get('/ejercicios', [EjercicioController::class, 'index']);
 Route::get('/ejercicios/grupos-musculares', [EjercicioController::class, 'gruposMusculares']);
 Route::get('/ejercicios/equipamientos', [EjercicioController::class, 'equipamientos']);
 Route::get('/musculos', [EjercicioController::class, 'musculos']);
+
+// Favoritos: requiere auth (devuelve is_favorite del user actual)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/ejercicios/{id}/favorite', [EjercicioController::class, 'toggleFavorite']);
+});
 Route::middleware(['web', 'auth', 'role:administrador'])->group(function () {
     Route::post('/ejercicios', [EjercicioController::class, 'store']);
     Route::delete('/ejercicios/{id}', [EjercicioController::class, 'destroy']);
@@ -70,6 +75,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
     Route::get('/body-map/data', [BodyMapController::class, 'index']);
+    Route::get('/body-map/muscle-recency', [BodyMapController::class, 'muscleRecency']);
     Route::get('/body-map/muscle/{slug}/exercises', [BodyMapController::class, 'ejerciciosPorMusculo']);
 
     // Stats (racha + heatmap de actividad) — estilo openGym

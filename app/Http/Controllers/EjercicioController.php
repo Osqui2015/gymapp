@@ -16,6 +16,8 @@ class EjercicioController extends Controller
         // por lo que no se invoca authorize() — la policy viewAny/view es
         // return true y los tests existentes llaman sin autenticar.
 
+        $userId = $request->user()?->id;
+
         $query = Ejercicio::query()
             // Cargar músculos para que el body map en /ejercicios pueda
             // iluminar las partes trabajadas al seleccionar un ejercicio.
@@ -47,7 +49,46 @@ class EjercicioController extends Controller
             });
         }
 
+        // Si hay user autenticado, agregamos last_trained_at + is_favorite
+        // con subqueries (evita N+1). Para rutas públicas devuelve null/false.
+        if ($userId) {
+            $lastTrainedSub = \DB::table('historials')
+                ->select('ejercicio_id', \DB::raw('MAX(fecha) as last_trained_at'))
+                ->where('user_id', $userId)
+                ->where('completado', true)
+                ->whereNotNull('ejercicio_id')
+                ->groupBy('ejercicio_id');
+
+            $favoriteSub = \DB::table('ejercicio_favoritos')
+                ->select('ejercicio_id')
+                ->where('user_id', $userId);
+
+            $query->addSelect([
+                'ejercicios.*',
+                'last_trained_at' => \DB::table('historials')
+                    ->select('fecha')
+                    ->whereColumn('ejercicio_id', 'ejercicios.id')
+                    ->where('user_id', $userId)
+                    ->where('completado', true)
+                    ->orderByDesc('fecha')
+                    ->limit(1),
+                'is_favorite' => \DB::table('ejercicio_favoritos')
+                    ->selectRaw('1')
+                    ->whereColumn('ejercicio_id', 'ejercicios.id')
+                    ->where('user_id', $userId)
+                    ->limit(1),
+            ]);
+        }
+
         $ejercicios = $query->paginate(20);
+
+        // Convertir is_favorite a boolean (Laravel lo deja como null/1)
+        if ($userId) {
+            $ejercicios->getCollection()->transform(function ($ej) {
+                $ej->is_favorite = (bool) $ej->is_favorite;
+                return $ej;
+            });
+        }
 
         return response()->json($ejercicios);
     }
@@ -127,5 +168,31 @@ class EjercicioController extends Controller
         AuditLog::log('deleted', "Eliminó ejercicio {$ejercicioData['nombre']}", auth()->id(), Ejercicio::class, $id, $ejercicioData, null);
 
         return response()->json(['message' => 'Eliminado']);
+    }
+
+    /**
+     * Toggle favorito del user actual sobre un ejercicio.
+     * POST /api/ejercicios/{id}/favorite → si no existe lo crea, si existe lo borra.
+     */
+    public function toggleFavorite(Request $request, $id)
+    {
+        $ejercicio = Ejercicio::findOrFail($id);
+        $userId = $request->user()->id;
+
+        $favorito = \App\Models\EjercicioFavorito::where('user_id', $userId)
+            ->where('ejercicio_id', $ejercicio->id)
+            ->first();
+
+        if ($favorito) {
+            $favorito->delete();
+            return response()->json(['is_favorite' => false]);
+        }
+
+        \App\Models\EjercicioFavorito::create([
+            'user_id' => $userId,
+            'ejercicio_id' => $ejercicio->id,
+        ]);
+
+        return response()->json(['is_favorite' => true]);
     }
 }

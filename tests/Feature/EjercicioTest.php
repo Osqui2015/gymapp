@@ -192,4 +192,81 @@ class EjercicioTest extends TestCase
             ->assertJsonCount(2)
             ->assertJsonFragment(['slug' => 'pectoral-major', 'nombre_es' => 'Pectoral mayor']);
     }
+
+    public function test_index_returns_last_trained_and_favorite_for_authed_user(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $pectoral = Musculo::create([
+            'slug' => 'pectoral-major', 'nombre_es' => 'Pectoral mayor',
+            'nombre_en' => 'Pectoralis major', 'body_part' => 'chest', 'orden' => 1,
+        ]);
+
+        $press = Ejercicio::create([
+            'nombre' => 'Press de Banca', 'equipamiento' => 'Barra', 'grupo_muscular' => 'Pecho',
+        ]);
+        $press->musculos()->attach($pectoral->id, ['tipo' => 'primario', 'peso' => 1.0]);
+
+        // 1) sin historial ni favorito
+        $resp = $this->getJson('/api/ejercicios');
+        $item = collect($resp->json('data'))->firstWhere('id', $press->id);
+        $this->assertNull($item['last_trained_at']);
+        $this->assertFalse($item['is_favorite']);
+
+        // 2) con historial (hace 2 días) y marcado como favorito
+        \Database\Factories\HistorialFactory::new()
+            ->completado()
+            ->deFecha(now()->subDays(2)->toDateString())
+            ->create([
+                'user_id' => $user->id,
+                'ejercicio_id' => $press->id,
+                'ejercicio_nombre' => $press->nombre,
+            ]);
+        \App\Models\EjercicioFavorito::create([
+            'user_id' => $user->id,
+            'ejercicio_id' => $press->id,
+        ]);
+
+        $resp = $this->getJson('/api/ejercicios');
+        $item = collect($resp->json('data'))->firstWhere('id', $press->id);
+        $this->assertNotNull($item['last_trained_at']);
+        $this->assertTrue($item['is_favorite']);
+    }
+
+    public function test_toggle_favorite_creates_then_deletes(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $press = Ejercicio::create([
+            'nombre' => 'Press', 'equipamiento' => 'Barra', 'grupo_muscular' => 'Pecho',
+        ]);
+
+        // Primera llamada: lo crea
+        $resp1 = $this->postJson("/api/ejercicios/{$press->id}/favorite");
+        $resp1->assertStatus(200)->assertJson(['is_favorite' => true]);
+        $this->assertDatabaseHas('ejercicio_favoritos', [
+            'user_id' => $user->id,
+            'ejercicio_id' => $press->id,
+        ]);
+
+        // Segunda llamada: lo borra
+        $resp2 = $this->postJson("/api/ejercicios/{$press->id}/favorite");
+        $resp2->assertStatus(200)->assertJson(['is_favorite' => false]);
+        $this->assertDatabaseMissing('ejercicio_favoritos', [
+            'user_id' => $user->id,
+            'ejercicio_id' => $press->id,
+        ]);
+    }
+
+    public function test_toggle_favorite_requires_auth(): void
+    {
+        $press = Ejercicio::create([
+            'nombre' => 'Press', 'equipamiento' => 'Barra', 'grupo_muscular' => 'Pecho',
+        ]);
+
+        $this->postJson("/api/ejercicios/{$press->id}/favorite")
+            ->assertStatus(401);
+    }
 }
