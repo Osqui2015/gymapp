@@ -35,8 +35,10 @@
             </button>
         </div>
 
-        <!-- Toggle de vista front/back (oculto en modo compact) -->
-        <div v-if="!compact" class="flex justify-center gap-2 mb-3">
+        <!-- Toggle de vista front/back: visible siempre que NO este en showBothViews.
+             En sidebar desktop con showBothViews=true no se ve (ya se ven los 2 lados).
+             En sidebar mobile con compact=true si se ve (el user alterna manualmente). -->
+        <div v-if="!showBothViews" class="flex justify-center gap-2 mb-3">
             <button
                 v-for="v in ['front', 'back']"
                 :key="v"
@@ -52,12 +54,42 @@
             </button>
         </div>
 
-        <!-- Loading state -->
-        <div v-if="isLoading" class="flex items-center justify-center py-12 text-gray-400">
-            <svg class="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
+        <!-- Loading state: skeleton con forma de cuerpo humano (shimmer) -->
+        <div v-if="isLoading" :class="[showBothViews ? 'grid grid-cols-2 gap-2' : 'flex justify-center', 'py-4 px-2']">
+            <div
+                v-for="side in (showBothViews ? 2 : 1)"
+                :key="side"
+                class="flex flex-col items-center"
+            >
+                <span v-if="showBothViews" class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-1 font-semibold">
+                    {{ side === 1 ? 'Frente' : 'Espalda' }}
+                </span>
+                <!-- Silueta estilizada de cuerpo humano en gris claro con shimmer.
+                     viewBox igual al de los paths reales para que no salte el layout. -->
+                <svg
+                    viewBox="0 0 250 600"
+                    class="w-full h-auto max-w-[180px]"
+                    preserveAspectRatio="xMidYMid meet"
+                    aria-hidden="true"
+                >
+                    <!-- Cabeza -->
+                    <circle cx="125" cy="50" r="30" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Cuello -->
+                    <rect x="115" y="78" width="20" height="20" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Tronco -->
+                    <path d="M 70 100 Q 125 95 180 100 L 195 240 Q 125 250 55 240 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Brazo izq -->
+                    <path d="M 70 110 L 30 130 L 15 240 L 35 250 L 55 140 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Brazo der -->
+                    <path d="M 180 110 L 220 130 L 235 240 L 215 250 L 195 140 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Pierna izq -->
+                    <path d="M 90 250 L 80 430 L 75 560 L 105 560 L 110 430 L 125 250 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Pierna der -->
+                    <path d="M 160 250 L 170 430 L 175 560 L 145 560 L 140 430 L 125 250 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <!-- Shimmer overlay -->
+                    <rect x="0" y="0" width="250" height="600" class="animate-shimmer" />
+                </svg>
+            </div>
         </div>
 
         <!-- SVG del body map -->
@@ -162,6 +194,10 @@ const props = defineProps({
     compact: { type: Boolean, default: false },
     // Mostrar frente y espalda lado a lado (solo útil en sidebars anchos).
     showBothViews: { type: Boolean, default: false },
+    // Segundo set de levels (modo "comparar"). Músculos solo en este set
+    // se pintan en cyan; músculos en ambos sets (levels + comparisonLevels)
+    // se pintan en un color mezclado (morado).
+    comparisonLevels: { type: Object, default: null },
 });
 
 defineEmits(['muscle-click']);
@@ -250,6 +286,24 @@ function fillFor(slug) {
         if (level === 4) return '#ef4444';     // rojo fatigado
         if (level === 2) return '#facc15';     // amarillo recuperando
         return isDark.value ? '#94a3b8' : '#374151';  // listo
+    }
+
+    // Modo "comparar": si el musculo esta en comparisonLevels (con su nivel),
+    // pintamos en cyan. Si esta en AMBOS sets, color mezclado (morado).
+    if (props.comparisonLevels && Object.keys(props.comparisonLevels).length > 0) {
+        const inMain = level > 0;
+        const cmpLevel = props.comparisonLevels[slug] || 0;
+        const inCmp = cmpLevel > 0;
+        if (inMain && inCmp) {
+            // Mezcla: morado (indigo + cyan). En dark invertimos para que destaque.
+            return isDark.value ? '#c084fc' : '#7c3aed';
+        }
+        if (inCmp) {
+            // Solo en comparación: cyan. En dark un poco más claro.
+            const intensity = cmpLevel >= 4 ? '#67e8f9' : cmpLevel >= 2 ? '#22d3ee' : '#06b6d4';
+            return isDark.value && cmpLevel < 4 ? '#67e8f9' : intensity;
+        }
+        // Solo en main: cae al flujo de abajo
     }
 
     // balance / strength: gradiente indigo con base que se adapta al tema.

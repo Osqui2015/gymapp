@@ -41,6 +41,7 @@
               <!-- Mobile: solo frente -->
               <BodyMap
                 :levels="bodyMapLevels"
+                :comparison-levels="bodyMapComparisonLevels"
                 :muscle-labels="muscleLabels"
                 mode="balance"
                 :compact="true"
@@ -50,6 +51,7 @@
               <!-- Desktop: frente + espalda lado a lado -->
               <BodyMap
                 :levels="bodyMapLevels"
+                :comparison-levels="bodyMapComparisonLevels"
                 :muscle-labels="muscleLabels"
                 mode="balance"
                 :compact="true"
@@ -75,8 +77,43 @@
               </button>
             </div>
             <!-- Leyenda compacta: cambia segun el modo del body map. -->
+            <!-- Leyenda cambia segun el modo: comparar, highlight de ejercicio, o recencia. -->
             <div
-              v-if="ejercicioSeleccionadoBodyMap"
+              v-if="modoComparar"
+              class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
+            >
+              <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                Comparando
+              </p>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #a5b4fc"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Indigo</strong> · {{ ejercicioAComparar?.nombre }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #67e8f9"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Cyan</strong> · {{ ejercicioBComparar?.nombre }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #7c3aed"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Morado</strong> · músculos en común
+                  </span>
+                </div>
+                <button
+                  @click="limpiarSeleccion"
+                  class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-1"
+                >
+                  Limpiar selección
+                </button>
+              </div>
+            </div>
+            <div
+              v-else-if="ejercicioAComparar"
               class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
             >
               <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
@@ -95,6 +132,9 @@
                     <strong class="font-semibold">Indigo oscuro</strong> · músculo secundario
                   </span>
                 </div>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1 italic">
+                  Tip: clickeá otro ejercicio para comparar
+                </p>
               </div>
             </div>
             <div
@@ -546,15 +586,22 @@ const nuevo = ref({
 });
 
 // === Body map en la lista ===
-// - ejercicioSeleccionadoBodyMap: ilumina músculos al clickear una fila
+// - ejercicioAComparar / ejercicioBComparar: hasta 2 ejercicios para el body map.
+//   - 0 seleccionados: modo recencia
+//   - 1 seleccionado: highlight indigo del ejercicio
+//   - 2 seleccionados: comparar (A indigo, B cyan, ambos morado)
 // - musculoFiltroBodyMap: filtra la lista cuando el user hace click en el mapa
 // - bodyMapExpandido: modal fullscreen al clickear el mini mapa
 // - muscleRecency: datos del endpoint /api/body-map/muscle-recency (modo default)
 const musculosCatalogo = ref([]);     // [{slug, nombre_es, ...}]
-const ejercicioSeleccionadoBodyMap = ref(null);
+const ejercicioAComparar = ref(null);
+const ejercicioBComparar = ref(null);
 const musculoFiltroBodyMap = ref(''); // slug
 const bodyMapExpandido = ref(false);
 const muscleRecency = ref([]);         // [{slug, days_since, ...}]
+
+// Backwards-compat alias (se usa en el template y computed)
+const ejercicioSeleccionadoBodyMap = ejercicioAComparar;
 
 // Labels slug → nombre_es para tooltips del body map
 const muscleLabels = computed(() => {
@@ -582,9 +629,8 @@ const recencyLevels = computed(() => {
 });
 
 const bodyMapLevels = computed(() => {
-    const ej = ejercicioSeleccionadoBodyMap.value;
+    const ej = ejercicioAComparar.value;
     if (ej?.musculos) {
-        // Modo highlight del ejercicio: primarios indigo fuerte, secundarios indigo claro
         const levels = {};
         for (const m of ej.musculos) {
             levels[m.slug] = m.pivot?.tipo === 'primario' ? 4
@@ -593,20 +639,36 @@ const bodyMapLevels = computed(() => {
         }
         return levels;
     }
-    // Modo recencia (default cuando no hay ejercicio seleccionado)
     return recencyLevels.value;
 });
 
+// Levels del segundo ejercicio (modo comparar). null si no hay B seleccionado.
+const bodyMapComparisonLevels = computed(() => {
+    const ej = ejercicioBComparar.value;
+    if (!ej?.musculos) return null;
+    const levels = {};
+    for (const m of ej.musculos) {
+        levels[m.slug] = m.pivot?.tipo === 'primario' ? 4
+                       : m.pivot?.tipo === 'secundario' ? 2
+                       : 1;
+    }
+    return levels;
+});
+
+const modoComparar = computed(() => !!ejercicioAComparar.value && !!ejercicioBComparar.value);
+
 // Etiqueta del modo actual (visible en el mini header)
 const bodyMapModoLabel = computed(() => {
-    const ej = ejercicioSeleccionadoBodyMap.value;
-    if (!ej) {
-        if (musculoFiltroBodyMap.value) {
-            return `Filtrando por: ${muscleLabels.value[musculoFiltroBodyMap.value] || musculoFiltroBodyMap.value}`;
-        }
-        return 'Rojo = sin entrenar hace mucho';
+    if (ejercicioAComparar.value && ejercicioBComparar.value) {
+        return `Comparando: ${ejercicioAComparar.value.nombre} ↔ ${ejercicioBComparar.value.nombre}`;
     }
-    return ej.nombre;
+    if (ejercicioAComparar.value) {
+        return ejercicioAComparar.value.nombre;
+    }
+    if (musculoFiltroBodyMap.value) {
+        return `Filtrando por: ${muscleLabels.value[musculoFiltroBodyMap.value] || musculoFiltroBodyMap.value}`;
+    }
+    return 'Rojo = sin entrenar hace mucho';
 });
 
 const fetchUserInfo = async () => {
@@ -675,19 +737,44 @@ const fetchMuscleRecency = async () => {
 };
 
 // Click en una fila/card de la lista: ilumina el body map
+// Click en una fila/card de la lista: ilumina el body map.
+// Flujo de selección para comparar:
+//   1ra vez: setea A
+//   2da vez (distinto): setea B (modo comparar)
+//   3ra vez: rota (B pasa a A, nuevo ejercicio pasa a B)
+//   Click en A o B ya seleccionado: deselecciona ese
 const seleccionarEjercicioBodyMap = (ej) => {
-    // toggle: si ya está seleccionado, deseleccionar
-    ejercicioSeleccionadoBodyMap.value =
-        ejercicioSeleccionadoBodyMap.value?.id === ej.id ? null : ej;
-    // Si hay un filtro de músculo activo y se selecciona otro ejercicio, lo limpiamos
+    const a = ejercicioAComparar.value;
+    const b = ejercicioBComparar.value;
+    if (a && a.id === ej.id) {
+        ejercicioAComparar.value = null;
+        ejercicioBComparar.value = null;
+    } else if (b && b.id === ej.id) {
+        ejercicioBComparar.value = null;
+    } else if (!a) {
+        ejercicioAComparar.value = ej;
+    } else if (!b) {
+        ejercicioBComparar.value = ej;
+    } else {
+        // Ya hay A y B, rota
+        ejercicioAComparar.value = b;
+        ejercicioBComparar.value = ej;
+    }
     if (musculoFiltroBodyMap.value) musculoFiltroBodyMap.value = '';
 };
 
 // Click en un músculo del body map: filtra la lista
 const onMuscleClickBodyMap = (slug) => {
     musculoFiltroBodyMap.value = slug;
-    ejercicioSeleccionadoBodyMap.value = null; // limpio el highlight
+    ejercicioAComparar.value = null;
+    ejercicioBComparar.value = null;
     fetchEjercicios(1);
+};
+
+// Limpiar la selección de ejercicios (vuelve al modo recencia)
+const limpiarSeleccion = () => {
+    ejercicioAComparar.value = null;
+    ejercicioBComparar.value = null;
 };
 
 // === Última vez / Favoritos ===
