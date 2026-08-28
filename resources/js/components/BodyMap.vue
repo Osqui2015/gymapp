@@ -18,8 +18,8 @@
 -->
 <template>
     <div class="w-full">
-        <!-- Toggle de género (opcional, default male) -->
-        <div v-if="showGenderToggle" class="flex justify-center gap-2 mb-3">
+        <!-- Toggle de género (oculto en modo compact) -->
+        <div v-if="showGenderToggle && !compact" class="flex justify-center gap-2 mb-3">
             <button
                 v-for="g in ['male', 'female']"
                 :key="g"
@@ -35,8 +35,8 @@
             </button>
         </div>
 
-        <!-- Toggle de vista front/back -->
-        <div class="flex justify-center gap-2 mb-3">
+        <!-- Toggle de vista front/back (oculto en modo compact) -->
+        <div v-if="!compact" class="flex justify-center gap-2 mb-3">
             <button
                 v-for="v in ['front', 'back']"
                 :key="v"
@@ -84,8 +84,8 @@
             </g>
         </svg>
 
-        <!-- Leyenda de color -->
-        <div class="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
+        <!-- Leyenda de color (oculta en modo compact) -->
+        <div v-if="!compact" class="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
             <slot name="legend">
                 <div v-if="mode === 'balance'" class="flex items-center justify-center gap-2">
                     <span>Menor volumen</span>
@@ -109,8 +109,8 @@
             </slot>
         </div>
 
-        <!-- Tooltip del músculo hover -->
-        <div v-if="hoveredSlug && hoveredLabel" class="text-center mt-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <!-- Tooltip del músculo hover (oculto en modo compact) -->
+        <div v-if="!compact && hoveredSlug && hoveredLabel" class="text-center mt-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             {{ hoveredLabel }}
         </div>
     </div>
@@ -126,6 +126,9 @@ const props = defineProps({
     initialView: { type: String, default: 'front' },
     showGenderToggle: { type: Boolean, default: false },
     muscleLabels: { type: Object, default: () => ({}) },  // { chest: 'Pecho', ... }
+    // Modo compact: oculta toggles (género/vista) y leyenda para usar
+    // embebido en sidebars o headers donde el chrome no entra.
+    compact: { type: Boolean, default: false },
 });
 
 defineEmits(['muscle-click']);

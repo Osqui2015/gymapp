@@ -1,6 +1,6 @@
 {
-  "_BaseSkeleton-CFkEQW98.js": {
-    "file": "assets/BaseSkeleton-CFkEQW98.js",
+  "_BaseSkeleton-B2UAJ80D.js": {
+    "file": "assets/BaseSkeleton-B2UAJ80D.js",
     "name": "BaseSkeleton",
     "imports": [
       "_vendor-vue-lRAwLNzF.js",
@@ -14,8 +14,8 @@
     "file": "assets/BaseSkeleton-kMJ--Snz.css",
     "src": "_BaseSkeleton-kMJ--Snz.css"
   },
-  "_BodyMap-CKre_ib6.js": {
-    "file": "assets/BodyMap-CKre_ib6.js",
+  "_BodyMap-DK_E_gQ-.js": {
+    "file": "assets/BodyMap-DK_E_gQ-.js",
     "name": "BodyMap",
     "imports": [
       "resources/js/app.js",
@@ -68,8 +68,8 @@
       "node_modules/axios/index.js"
     ]
   },
-  "_jspdf.es.min-KFL7vqhh.js": {
-    "file": "assets/jspdf.es.min-KFL7vqhh.js",
+  "_jspdf.es.min-C8WFLgzo.js": {
+    "file": "assets/jspdf.es.min-C8WFLgzo.js",
     "name": "jspdf.es.min",
     "isDynamicEntry": true,
     "imports": [
@@ -88,8 +88,8 @@
       "_vendor-vue-lRAwLNzF.js"
     ]
   },
-  "_useApiCache-Cn0FE3my.js": {
-    "file": "assets/useApiCache-Cn0FE3my.js",
+  "_useApiCache-CDwzgX3P.js": {
+    "file": "assets/useApiCache-CDwzgX3P.js",
     "name": "useApiCache",
     "imports": [
       "resources/js/app.js"
@@ -119,8 +119,8 @@
       "_vendor-vue-lRAwLNzF.js"
     ]
   },
-  "_useUndoable-DspZVZrH.js": {
-    "file": "assets/useUndoable-DspZVZrH.js",
+  "_useUndoable-CZOkrk0w.js": {
+    "file": "assets/useUndoable-CZOkrk0w.js",
     "name": "useUndoable",
     "imports": [
       "resources/js/app.js"
@@ -149,13 +149,13 @@
     "isDynamicEntry": true
   },
   "node_modules/canvg/lib/index.es.js": {
-    "file": "assets/index.es-DRDTjBSm.js",
+    "file": "assets/index.es-DjBEnTiz.js",
     "name": "index.es",
     "src": "node_modules/canvg/lib/index.es.js",
     "isDynamicEntry": true,
     "imports": [
       "_LineChart-taNdurmK.js",
-      "_jspdf.es.min-KFL7vqhh.js",
+      "_jspdf.es.min-C8WFLgzo.js",
       "resources/js/app.js",
       "node_modules/axios/index.js",
       "_vendor-alpine-DLuZkmyn.js",
@@ -181,7 +181,7 @@
     "isDynamicEntry": true
   },
   "resources/css/app.css": {
-    "file": "assets/app-B7cAhWLz.css",
+    "file": "assets/app-a0KiO6UO.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -190,7 +190,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DPFGl004.js",
+    "file": "assets/app-DFSHxV_0.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -232,7 +232,7 @@
     ]
   },
   "resources/js/components/AdminAuditLogs.vue": {
-    "file": "assets/AdminAuditLogs-CHyNPQMD.js",
+    "file": "assets/AdminAuditLogs-CQf1zlQh.js",
     "name": "AdminAuditLogs",
     "src": "resources/js/components/AdminAuditLogs.vue",
     "isDynamicEntry": true,
@@ -242,7 +242,7 @@
       "resources/js/app.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_EmptyState-oMwiCg0k.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [
@@ -250,7 +250,7 @@
     ]
   },
   "resources/js/components/AdminImportExport.vue": {
-    "file": "assets/AdminImportExport-CQXBgRPu.js",
+    "file": "assets/AdminImportExport-9p1Z2k3l.js",
     "name": "AdminImportExport",
     "src": "resources/js/components/AdminImportExport.vue",
     "isDynamicEntry": true,
@@ -266,7 +266,7 @@
     ]
   },
   "resources/js/components/AdminMembresias.vue": {
-    "file": "assets/AdminMembresias-CscnnegL.js",
+    "file": "assets/AdminMembresias-v2pI8hFp.js",
     "name": "AdminMembresias",
     "src": "resources/js/components/AdminMembresias.vue",
     "isDynamicEntry": true,
@@ -276,10 +276,10 @@
       "_EmptyState-oMwiCg0k.js",
       "resources/js/app.js",
       "_useDebounce-Cvz5sZoF.js",
-      "_useApiCache-Cn0FE3my.js",
+      "_useApiCache-CDwzgX3P.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_useFocusTrap-BOurhfHJ.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [
@@ -287,27 +287,27 @@
     ]
   },
   "resources/js/components/AdminReports.vue": {
-    "file": "assets/AdminReports-DZsWmoRA.js",
+    "file": "assets/AdminReports-C3_mYY3N.js",
     "name": "AdminReports",
     "src": "resources/js/components/AdminReports.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-vue-lRAwLNzF.js",
       "node_modules/axios/index.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "resources/js/app.js",
       "_vendor-alpine-DLuZkmyn.js"
     ]
   },
   "resources/js/components/AdminStats.vue": {
-    "file": "assets/AdminStats-CrfuKljx.js",
+    "file": "assets/AdminStats-CKOyd1XO.js",
     "name": "AdminStats",
     "src": "resources/js/components/AdminStats.vue",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-vue-lRAwLNzF.js",
       "node_modules/axios/index.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "resources/js/app.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_vendor-alpine-DLuZkmyn.js"
@@ -328,7 +328,7 @@
     ]
   },
   "resources/js/components/ConfiguracionPanel.vue": {
-    "file": "assets/ConfiguracionPanel-CQpZS_pQ.js",
+    "file": "assets/ConfiguracionPanel-n7cQ6L1C.js",
     "name": "ConfiguracionPanel",
     "src": "resources/js/components/ConfiguracionPanel.vue",
     "isDynamicEntry": true,
@@ -344,7 +344,7 @@
     ]
   },
   "resources/js/components/CrearRutina.vue": {
-    "file": "assets/CrearRutina-BH5YZEGJ.js",
+    "file": "assets/CrearRutina-CaA6ltHl.js",
     "name": "CrearRutina",
     "src": "resources/js/components/CrearRutina.vue",
     "isDynamicEntry": true,
@@ -358,7 +358,7 @@
     ]
   },
   "resources/js/components/DashboardContent.vue": {
-    "file": "assets/DashboardContent-CGCM03_O.js",
+    "file": "assets/DashboardContent-BlW3ccWM.js",
     "name": "DashboardContent",
     "src": "resources/js/components/DashboardContent.vue",
     "isDynamicEntry": true,
@@ -380,7 +380,7 @@
     ]
   },
   "resources/js/components/DiarioNutricion.vue": {
-    "file": "assets/DiarioNutricion-B5Q3ps1V.js",
+    "file": "assets/DiarioNutricion-Cgz90UKe.js",
     "name": "DiarioNutricion",
     "src": "resources/js/components/DiarioNutricion.vue",
     "isDynamicEntry": true,
@@ -396,7 +396,7 @@
     ]
   },
   "resources/js/components/EjercicioDetailModal.vue": {
-    "file": "assets/EjercicioDetailModal-Pn9ES-1X.js",
+    "file": "assets/EjercicioDetailModal-Bva9ZYFS.js",
     "name": "EjercicioDetailModal",
     "src": "resources/js/components/EjercicioDetailModal.vue",
     "isDynamicEntry": true,
@@ -412,7 +412,7 @@
     ]
   },
   "resources/js/components/EjerciciosList.vue": {
-    "file": "assets/EjerciciosList-Boyo-F7W.js",
+    "file": "assets/EjerciciosList-Bpb0VIKg.js",
     "name": "EjerciciosList",
     "src": "resources/js/components/EjerciciosList.vue",
     "isDynamicEntry": true,
@@ -420,21 +420,21 @@
       "_vendor-vue-lRAwLNzF.js",
       "node_modules/axios/index.js",
       "resources/js/app.js",
-      "_useUndoable-DspZVZrH.js",
+      "_useUndoable-CZOkrk0w.js",
       "_useFocusTrap-BOurhfHJ.js",
-      "_useApiCache-Cn0FE3my.js",
+      "_useApiCache-CDwzgX3P.js",
       "_EmptyState-oMwiCg0k.js",
       "_EmptyStateIllustrated-BROe6JRk.js",
       "_Breadcrumbs-DFLttJgH.js",
       "resources/js/components/EjercicioDetailModal.vue",
-      "_BodyMap-CKre_ib6.js",
+      "_BodyMap-DK_E_gQ-.js",
       "_auth-BksKb_dA.js",
       "_vendor-alpine-DLuZkmyn.js",
       "resources/js/components/VideoPlayer.vue"
     ]
   },
   "resources/js/components/HistorialContent.vue": {
-    "file": "assets/HistorialContent-Bt04XwBy.js",
+    "file": "assets/HistorialContent-3FfHrYQ2.js",
     "name": "HistorialContent",
     "src": "resources/js/components/HistorialContent.vue",
     "isDynamicEntry": true,
@@ -444,19 +444,19 @@
       "node_modules/axios/index.js",
       "_vendor-chart-Bcjh2pZL.js",
       "_ResponsiveTable-k7tfvUIt.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_EmptyState-oMwiCg0k.js",
       "_Breadcrumbs-DFLttJgH.js",
-      "_BodyMap-CKre_ib6.js",
+      "_BodyMap-DK_E_gQ-.js",
       "_LineChart-taNdurmK.js",
-      "_useUndoable-DspZVZrH.js",
+      "_useUndoable-CZOkrk0w.js",
       "_auth-BksKb_dA.js",
       "_usePullToRefresh-BSbmeAJo.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "dynamicImports": [
       "node_modules/axios/index.js",
-      "_jspdf.es.min-KFL7vqhh.js",
+      "_jspdf.es.min-C8WFLgzo.js",
       "node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.mjs"
     ],
     "css": [
@@ -464,7 +464,7 @@
     ]
   },
   "resources/js/components/NotificationBell.vue": {
-    "file": "assets/NotificationBell-dRzd4kWk.js",
+    "file": "assets/NotificationBell-CluT7jVc.js",
     "name": "NotificationBell",
     "src": "resources/js/components/NotificationBell.vue",
     "isDynamicEntry": true,
@@ -492,7 +492,7 @@
     ]
   },
   "resources/js/components/PageTransition.vue": {
-    "file": "assets/PageTransition-DoqTv5KU.js",
+    "file": "assets/PageTransition-BqKRhv2C.js",
     "name": "PageTransition",
     "src": "resources/js/components/PageTransition.vue",
     "isDynamicEntry": true,
@@ -507,7 +507,7 @@
     ]
   },
   "resources/js/components/ProgresoContent.vue": {
-    "file": "assets/ProgresoContent-B9IwRrXd.js",
+    "file": "assets/ProgresoContent-Dmvt_UKq.js",
     "name": "ProgresoContent",
     "src": "resources/js/components/ProgresoContent.vue",
     "isDynamicEntry": true,
@@ -516,7 +516,7 @@
       "node_modules/axios/index.js",
       "_vendor-chart-Bcjh2pZL.js",
       "resources/js/app.js",
-      "_useUndoable-DspZVZrH.js",
+      "_useUndoable-CZOkrk0w.js",
       "_vendor-confetti-oQXWb4Lk.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_LineChart-taNdurmK.js",
@@ -527,7 +527,7 @@
     ]
   },
   "resources/js/components/RutinasAccordion.vue": {
-    "file": "assets/RutinasAccordion-DmDA2cyU.js",
+    "file": "assets/RutinasAccordion-DBTOSpFh.js",
     "name": "RutinasAccordion",
     "src": "resources/js/components/RutinasAccordion.vue",
     "isDynamicEntry": true,
@@ -538,7 +538,7 @@
       "_vendor-confetti-oQXWb4Lk.js",
       "_EmptyState-oMwiCg0k.js",
       "resources/js/app.js",
-      "_useUndoable-DspZVZrH.js",
+      "_useUndoable-CZOkrk0w.js",
       "_usePullToRefresh-BSbmeAJo.js",
       "_auth-BksKb_dA.js",
       "_Breadcrumbs-DFLttJgH.js",
@@ -569,7 +569,7 @@
     ]
   },
   "resources/js/components/TrainerAlumnos.vue": {
-    "file": "assets/TrainerAlumnos-CZnW7ns8.js",
+    "file": "assets/TrainerAlumnos-3_FfvPtE.js",
     "name": "TrainerAlumnos",
     "src": "resources/js/components/TrainerAlumnos.vue",
     "isDynamicEntry": true,
@@ -581,7 +581,7 @@
       "_Breadcrumbs-DFLttJgH.js",
       "_useFocusTrap-BOurhfHJ.js",
       "_EmptyState-oMwiCg0k.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [
@@ -589,7 +589,7 @@
     ]
   },
   "resources/js/components/TrainerDashboard.vue": {
-    "file": "assets/TrainerDashboard-DVKp5ECV.js",
+    "file": "assets/TrainerDashboard-ly-geJ9T.js",
     "name": "TrainerDashboard",
     "src": "resources/js/components/TrainerDashboard.vue",
     "isDynamicEntry": true,
@@ -601,7 +601,7 @@
       "_useFocusTrap-BOurhfHJ.js",
       "_ResponsiveTable-k7tfvUIt.js",
       "_EmptyState-oMwiCg0k.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [
@@ -609,7 +609,7 @@
     ]
   },
   "resources/js/components/TrainerDuplicar.vue": {
-    "file": "assets/TrainerDuplicar-Bl1vHIY_.js",
+    "file": "assets/TrainerDuplicar-_zmFW_VE.js",
     "name": "TrainerDuplicar",
     "src": "resources/js/components/TrainerDuplicar.vue",
     "isDynamicEntry": true,
@@ -619,7 +619,7 @@
       "resources/js/app.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_EmptyState-oMwiCg0k.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [
@@ -627,7 +627,7 @@
     ]
   },
   "resources/js/components/TrainerEjercicios.vue": {
-    "file": "assets/TrainerEjercicios-dK0OqYPc.js",
+    "file": "assets/TrainerEjercicios-DSCPs6aD.js",
     "name": "TrainerEjercicios",
     "src": "resources/js/components/TrainerEjercicios.vue",
     "isDynamicEntry": true,
@@ -635,11 +635,11 @@
       "_vendor-vue-lRAwLNzF.js",
       "node_modules/axios/index.js",
       "resources/js/app.js",
-      "_useUndoable-DspZVZrH.js",
+      "_useUndoable-CZOkrk0w.js",
       "_useFocusTrap-BOurhfHJ.js",
       "_Breadcrumbs-DFLttJgH.js",
       "_EmptyState-oMwiCg0k.js",
-      "_BaseSkeleton-CFkEQW98.js",
+      "_BaseSkeleton-B2UAJ80D.js",
       "_vendor-alpine-DLuZkmyn.js"
     ],
     "css": [

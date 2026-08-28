@@ -13,51 +13,73 @@
         </button>
       </div>
 
-      <!-- Mini body map (siempre visible) -->
-      <!-- Click en una fila lo ilumina; click en un músculo filtra la lista;
-           botón "Expandir" lo abre en fullscreen. -->
-      <div class="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Mapa corporal</span>
-            <span class="text-xs text-gray-700 dark:text-gray-300 truncate">· {{ bodyMapModoLabel }}</span>
+      <!-- Layout principal:
+           - Mobile: body map arriba (sticky al top) + lista abajo
+           - Desktop: body map en sidebar izquierda (sticky) + lista a la derecha -->
+      <div class="md:grid md:grid-cols-[280px_1fr] md:gap-6">
+
+        <!-- ===== Body map (sidebar en desktop, top bar en mobile) ===== -->
+        <aside class="md:sticky md:top-20 md:self-start mb-6 md:mb-0">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex-shrink-0">Mapa</span>
+                <span class="text-xs text-gray-700 dark:text-gray-300 truncate">· {{ bodyMapModoLabel }}</span>
+              </div>
+              <button
+                v-if="musculoFiltroBodyMap"
+                @click="limpiarFiltroMusculo"
+                class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex-shrink-0"
+                title="Quitar filtro de músculo"
+              >
+                Limpiar
+              </button>
+            </div>
+            <!-- Mobile: altura fija para que entre en pantalla sin scrollear
+                 demasiado. Desktop: tamaño natural (cuerpo completo). -->
+            <div class="bg-gray-50 dark:bg-gray-900/40 h-[280px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden">
+              <BodyMap
+                :levels="bodyMapLevels"
+                :muscle-labels="muscleLabels"
+                mode="balance"
+                :compact="true"
+                class="h-full md:!h-auto"
+                @muscle-click="onMuscleClickBodyMap"
+              />
+            </div>
+            <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+              <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+                Tocá un músculo para filtrar
+              </p>
+              <button
+                @click="bodyMapExpandido = true"
+                class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center gap-1 flex-shrink-0"
+                title="Expandir mapa"
+                aria-label="Expandir mapa corporal"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+                Expandir
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
+        </aside>
+
+        <!-- ===== Columna principal: filtros + lista ===== -->
+        <div>
+          <div v-if="musculoFiltroBodyMap" class="mb-4 flex items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+            <p class="text-sm text-indigo-700 dark:text-indigo-300">
+              Filtrando por: <strong>{{ muscleLabels[musculoFiltroBodyMap] || musculoFiltroBodyMap }}</strong>
+              · {{ total }} resultado(s)
+            </p>
             <button
-              v-if="musculoFiltroBodyMap"
               @click="limpiarFiltroMusculo"
-              class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              class="text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline flex-shrink-0"
             >
-              Limpiar filtro
-            </button>
-            <button
-              @click="bodyMapExpandido = true"
-              class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center gap-1"
-              title="Expandir mapa"
-              aria-label="Expandir mapa corporal"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-              </svg>
-              Expandir
+              Limpiar
             </button>
           </div>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-900/40 py-2">
-          <!-- Mini: oculto toggles (sería mucho chrome para 180px). El botón
-               "Expandir" del header abre la versión full interactiva. -->
-          <div style="height: 170px" class="overflow-hidden">
-            <BodyMap
-              :levels="bodyMapLevels"
-              :muscle-labels="muscleLabels"
-              mode="balance"
-              :show-gender-toggle="false"
-              class="!h-full [&_button]:hidden [&_div.text-center.text-xs]:hidden"
-              @muscle-click="onMuscleClickBodyMap"
-            />
-          </div>
-        </div>
-      </div>
 
       <div class="mb-6">
         <div class="flex flex-col sm:flex-row gap-3">
@@ -308,6 +330,8 @@
         </div>
       </div>
     </div>
+        </div><!-- /columna derecha -->
+      </div><!-- /md:grid -->
 
     <!-- FAB (mobile only): agregar nuevo ejercicio -->
     <button
