@@ -100,9 +100,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, defineAsyncComponent } from 'vue';
 import axios from 'axios';
-import { Chart, registerables } from 'chart.js';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { useConfetti } from '../composables/useConfetti';
@@ -112,13 +111,20 @@ import MetasTab from './progreso/MetasTab.vue';
 import LogrosTab from './progreso/LogrosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
-import BodyWeightChart from './BodyWeightChart.vue';
+
+// BodyWeightChart arrastra recharts (LineChart chunk ~371 kB). Lo cargamos async
+// para que ese chunk no forme parte del grafo eager de ProgresoContent.
+const BodyWeightChart = defineAsyncComponent(
+    () => import('./BodyWeightChart.vue')
+);
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
 const { bigCelebration, celebrate, mini } = useConfetti();
 
-Chart.register(...registerables);
+// NOTA: chart.js (vendor-chart ~206 kB) se importa dinámicamente dentro de
+// initChart(). Solo se carga cuando el usuario entra a la tab Medidas y hay
+// datos para graficar. Aplaza ~206 kB del initial load de /progreso.
 
 const activeTab = ref('medidas');
 const progresos = ref([]);
@@ -411,10 +417,16 @@ const eliminarMeta = async (id) => {
 };
 
 // === Chart.js ===
-const initChart = () => {
+// async porque hace un dynamic import de chart.js (lazy-load). Solo se baja
+// el vendor-chart (~206 kB) cuando hay datos para graficar.
+const initChart = async () => {
     const ctx = document.getElementById('progresoChart');
     if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
+
+    // Lazy-load de chart.js: se carga solo cuando se inicializa el chart.
+    const { Chart, registerables } = await import('chart.js');
+    Chart.register(...registerables);
 
     const key = metricaGrafica.value;
     const validData = progresos.value
