@@ -33,6 +33,7 @@ Route::get('/musculos', [EjercicioController::class, 'musculos']);
 // Favoritos: requiere auth (devuelve is_favorite del user actual)
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/ejercicios/{id}/favorite', [EjercicioController::class, 'toggleFavorite']);
+    Route::post('/ejercicios/{id}/quick-log', [EjercicioController::class, 'quickLog']);
 });
 Route::middleware(['web', 'auth', 'role:administrador'])->group(function () {
     Route::post('/ejercicios', [EjercicioController::class, 'store']);

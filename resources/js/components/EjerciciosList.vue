@@ -279,6 +279,14 @@
                 <td class="px-4 py-4 text-center">
                   <div class="inline-flex items-center gap-2">
                     <button
+                      @click="quickLog(ejercicio, $event)"
+                      title="Marcar como hecho hoy"
+                      aria-label="Marcar como hecho hoy"
+                      class="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 px-2 py-1 rounded text-sm font-bold transition-all"
+                    >
+                      ✓
+                    </button>
+                    <button
                       @click="verDetalle(ejercicio)"
                       class="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1 rounded text-sm font-medium transition-all"
                     >
@@ -336,6 +344,14 @@
                 </button>
                 <p class="font-semibold text-gray-900 dark:text-white truncate">{{ ejercicio.nombre }}</p>
               </div>
+              <button
+                @click="quickLog(ejercicio, $event)"
+                title="Marcar como hecho hoy"
+                aria-label="Marcar como hecho hoy"
+                class="flex-shrink-0 px-2.5 py-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded text-sm font-bold transition-all"
+              >
+                ✓
+              </button>
               <button
                 v-if="userRole === 'trainer' || userRole === 'administrador'"
                 @click="eliminar(ejercicio.id)"
@@ -826,6 +842,23 @@ const toggleFavorito = async (ej, ev) => {
         console.error('Error al togglear favorito:', err);
         ej.is_favorite = prev;  // rollback
         toast.error('No se pudo actualizar el favorito');
+    }
+};
+
+/**
+ * Quick log: marca el ejercicio como hecho HOY (crea un historial placeholder
+ * con 1 set, peso=0, reps=0). El user despues va al dashboard a completar
+ * los sets reales.
+ */
+const quickLog = async (ej, ev) => {
+    if (ev) ev.stopPropagation();
+    try {
+        const resp = await axios.post(`/api/ejercicios/${ej.id}/quick-log`);
+        ej.last_trained_at = new Date().toISOString();
+        toast.success(`✓ ${ej.nombre} marcado como hecho hoy`);
+    } catch (err) {
+        console.error('Error en quick log:', err);
+        toast.error('No se pudo registrar el ejercicio');
     }
 };
 

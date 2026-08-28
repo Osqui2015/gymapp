@@ -195,4 +195,43 @@ class EjercicioController extends Controller
 
         return response()->json(['is_favorite' => true]);
     }
+
+    /**
+     * Quick log: crea un historial rapido para HOY con 1 set vacio
+     * (peso=0, reps=0, completado=true). Sirve para que el ejercicio
+     * aparezca como 'Hoy' en la lista y se sume al body map, sin tener
+     * que pasar por el flujo completo de series del dashboard.
+     *
+     * El user despues puede ir al dashboard y editar los sets reales.
+     */
+    public function quickLog(Request $request, $id)
+    {
+        $ejercicio = Ejercicio::findOrFail($id);
+        $userId = $request->user()->id;
+
+        // Mapear día de la semana al string corto que usa la tabla
+        $dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+        $hoy = $dias[now()->dayOfWeekIso - 1]; // 1=lunes, 7=domingo
+
+        $historial = \App\Models\Historial::create([
+            'user_id' => $userId,
+            'ejercicio_id' => $ejercicio->id,
+            'ejercicio_nombre' => $ejercicio->nombre,
+            'rutina_nombre' => 'Quick log',
+            'dia' => $hoy,
+            'series_numero' => 1,
+            'series_completadas' => 1,
+            'reps_min' => '0',
+            'reps_max' => '0',
+            'reps_realizadas' => 0,
+            'peso' => 0,
+            'completado' => true,
+            'fecha' => now()->toDateString(),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'historial_id' => $historial->id,
+        ]);
+    }
 }
