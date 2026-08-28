@@ -16,7 +16,7 @@
       <!-- Layout principal:
            - Mobile: body map arriba (sticky al top) + lista abajo
            - Desktop: body map en sidebar izquierda (sticky) + lista a la derecha -->
-      <div class="md:grid md:grid-cols-[280px_1fr] md:gap-6">
+      <div class="md:grid md:grid-cols-[400px_1fr] md:gap-6">
 
         <!-- ===== Body map (sidebar en desktop, top bar en mobile) ===== -->
         <aside class="md:sticky md:top-20 md:self-start mb-6 md:mb-0">
@@ -35,15 +35,26 @@
                 Limpiar
               </button>
             </div>
-            <!-- Mobile: altura fija para que entre en pantalla sin scrollear
-                 demasiado. Desktop: tamaño natural (cuerpo completo). -->
+            <!-- Mobile: altura fija (solo frente, el cuerpo no entra entero apaisado).
+                 Desktop: ambos lados (frente + espalda) lado a lado. -->
             <div class="bg-gray-50 dark:bg-gray-900/40 h-[280px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden">
+              <!-- Mobile: solo frente -->
               <BodyMap
                 :levels="bodyMapLevels"
                 :muscle-labels="muscleLabels"
                 mode="balance"
                 :compact="true"
-                class="h-full md:!h-auto"
+                class="h-full md:hidden"
+                @muscle-click="onMuscleClickBodyMap"
+              />
+              <!-- Desktop: frente + espalda lado a lado -->
+              <BodyMap
+                :levels="bodyMapLevels"
+                :muscle-labels="muscleLabels"
+                mode="balance"
+                :compact="true"
+                :show-both-views="true"
+                class="hidden md:block p-2"
                 @muscle-click="onMuscleClickBodyMap"
               />
             </div>

@@ -62,7 +62,7 @@
 
         <!-- SVG del body map -->
         <svg
-            v-else
+            v-else-if="!showBothViews"
             :viewBox="pathsData.vb"
             class="w-full h-auto max-w-md mx-auto"
             preserveAspectRatio="xMidYMid meet"
@@ -83,6 +83,36 @@
                 />
             </g>
         </svg>
+
+        <!-- Vista doble: frente + espalda lado a lado (modo sidebar) -->
+        <div v-else class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col items-center">
+                <span class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold">Frente</span>
+                <BodySideView
+                    v-if="frontPaths"
+                    :paths-data="frontPaths"
+                    :levels="props.levels"
+                    :muscle-labels="props.muscleLabels"
+                    :hovered-slug="hoveredSlug"
+                    :is-dark="isDark"
+                    @hover="hoveredSlug = $event"
+                    @muscle-click="$emit('muscle-click', $event)"
+                />
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold">Espalda</span>
+                <BodySideView
+                    v-if="backPaths"
+                    :paths-data="backPaths"
+                    :levels="props.levels"
+                    :muscle-labels="props.muscleLabels"
+                    :hovered-slug="hoveredSlug"
+                    :is-dark="isDark"
+                    @hover="hoveredSlug = $event"
+                    @muscle-click="$emit('muscle-click', $event)"
+                />
+            </div>
+        </div>
 
         <!-- Leyenda de color (oculta en modo compact) -->
         <div v-if="!compact" class="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
@@ -118,6 +148,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import BodySideView from './BodySideView.vue';
 
 const props = defineProps({
     levels: { type: Object, default: () => ({}) },
@@ -129,6 +160,8 @@ const props = defineProps({
     // Modo compact: oculta toggles (género/vista) y leyenda para usar
     // embebido en sidebars o headers donde el chrome no entra.
     compact: { type: Boolean, default: false },
+    // Mostrar frente y espalda lado a lado (solo útil en sidebars anchos).
+    showBothViews: { type: Boolean, default: false },
 });
 
 defineEmits(['muscle-click']);
@@ -163,8 +196,31 @@ async function loadPaths(g, v) {
     }
 }
 
-onMounted(() => loadPaths(gender.value, view.value));
-watch([gender, view], ([g, v]) => loadPaths(g, v));
+// Para el modo showBothViews: cargamos ambas vistas en paralelo.
+const frontPaths = ref(null);
+const backPaths = ref(null);
+async function loadSidePaths(g) {
+    const [f, b] = await Promise.allSettled([
+        import(`../lib/bodyPaths/${g}-front.js`).then(m => m.default),
+        import(`../lib/bodyPaths/${g}-back.js`).then(m => m.default),
+    ]);
+    frontPaths.value = f.status === 'fulfilled' ? f.value : { vb: '0 0 100 100', paths: {} };
+    backPaths.value = b.status === 'fulfilled' ? b.value : { vb: '0 0 100 100', paths: {} };
+}
+
+onMounted(() => {
+    if (props.showBothViews) {
+        loadSidePaths(gender.value);
+    } else {
+        loadPaths(gender.value, view.value);
+    }
+});
+watch([gender], (g) => {
+    if (props.showBothViews) loadSidePaths(g);
+});
+watch([gender, view], ([g, v]) => {
+    if (!props.showBothViews) loadPaths(g, v);
+});
 
 const hoveredLabel = computed(() => {
     if (!hoveredSlug.value) return null;
