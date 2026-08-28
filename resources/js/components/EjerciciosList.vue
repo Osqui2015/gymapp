@@ -74,6 +74,30 @@
                 Expandir
               </button>
             </div>
+            <!-- Leyenda compacta: solo visible cuando hay ejercicio seleccionado
+                 (sino no hay niveles que explicar y ocupa espacio al pedo). -->
+            <div
+              v-if="ejercicioSeleccionadoBodyMap"
+              class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30"
+            >
+              <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                Qué significa el color
+              </p>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #a5b4fc"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Indigo fuerte</strong> · músculo principal (el que más trabaja)
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background-color: #4338ca"></span>
+                  <span class="text-[10px] text-gray-700 dark:text-gray-300 leading-tight">
+                    <strong class="font-semibold">Indigo oscuro</strong> · músculo secundario (sinergista, ayuda pero no es el foco)
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
 
