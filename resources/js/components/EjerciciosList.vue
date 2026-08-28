@@ -183,7 +183,8 @@
             </button>
           </div>
 
-      <div class="mb-6">
+      <div class="mb-6 space-y-3">
+        <!-- Buscador -->
         <div class="flex flex-col sm:flex-row gap-3">
           <input
             v-model="busqueda"
@@ -192,22 +193,6 @@
             class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             @keyup.enter="buscar"
           />
-          <select
-            v-model="grupoMuscularFiltro"
-            @change="buscar"
-            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[200px]"
-          >
-            <option value="">Todos los grupos musculares</option>
-            <option v-for="grupo in gruposMusculares" :key="grupo" :value="grupo">{{ grupo }}</option>
-          </select>
-          <select
-            v-model="equipamientoFiltro"
-            @change="buscar"
-            class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[200px]"
-          >
-            <option value="">Todos los equipamientos</option>
-            <option v-for="eq in equipamientos" :key="eq" :value="eq">{{ eq }}</option>
-          </select>
           <button
             @click="buscar"
             class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg"
@@ -215,11 +200,47 @@
             Buscar
           </button>
           <button
-            v-if="busqueda || grupoMuscularFiltro || equipamientoFiltro"
+            v-if="busqueda || grupoMuscularFiltro || equipamientoFiltro || musculoFiltroBodyMap"
             @click="limpiarBusqueda"
             class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-lg text-sm font-medium transition-all"
           >
-            Limpiar
+            Limpiar todo
+          </button>
+        </div>
+
+        <!-- Chips: Grupo muscular -->
+        <div v-if="gruposMusculares.length" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Grupo:</span>
+          <button
+            v-for="grupo in gruposMusculares"
+            :key="grupo"
+            @click="toggleGrupoMuscular(grupo)"
+            :class="[
+              'px-3 py-1 rounded-full text-xs font-semibold transition-all',
+              grupoMuscularFiltro === grupo
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+            ]"
+          >
+            {{ grupo }}
+          </button>
+        </div>
+
+        <!-- Chips: Equipamiento -->
+        <div v-if="equipamientos.length" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Equipo:</span>
+          <button
+            v-for="eq in equipamientos"
+            :key="eq"
+            @click="toggleEquipamiento(eq)"
+            :class="[
+              'px-3 py-1 rounded-full text-xs font-semibold transition-all',
+              equipamientoFiltro === eq
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+            ]"
+          >
+            {{ eq }}
           </button>
         </div>
       </div>
@@ -892,6 +913,20 @@ const limpiarBusqueda = () => {
   busqueda.value = '';
   grupoMuscularFiltro.value = '';
   equipamientoFiltro.value = '';
+  musculoFiltroBodyMap.value = '';
+  ejercicioAComparar.value = null;
+  ejercicioBComparar.value = null;
+  fetchEjercicios();
+};
+
+// Toggle de un chip de grupo muscular (selecciona o deselecciona)
+const toggleGrupoMuscular = (grupo) => {
+  grupoMuscularFiltro.value = grupoMuscularFiltro.value === grupo ? '' : grupo;
+  fetchEjercicios();
+};
+
+const toggleEquipamiento = (eq) => {
+  equipamientoFiltro.value = equipamientoFiltro.value === eq ? '' : eq;
   fetchEjercicios();
 };
 
