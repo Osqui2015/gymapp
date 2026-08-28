@@ -269,11 +269,225 @@ class StatsEsfuerzoTest extends TestCase
             'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 1,
         ]);
 
-        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo');
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=30');
 
         $response->assertStatus(200);
         $data = $response->json();
         $this->assertEquals(0, $data['sets_with_esfuerzo']);
+    }
+
+    public function test_stats_esfuerzo_window_90_incluye_historico_mas_viejo(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        Historial::create([
+            'user_id' => $user->id,
+            'rutina_nombre' => 'Rutina A',
+            'dia' => 'Día 1',
+            'ejercicio_nombre' => 'Press banca',
+            'series_numero' => 1,
+            'reps_min' => '8', 'reps_max' => '12',
+            'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+            'fecha' => now()->subDays(60)->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 2,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=90');
+
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertEquals(1, $data['sets_with_esfuerzo']);
+    }
+
+    public function test_stats_esfuerzo_window_365_incluye_historico_muy_viejo(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        Historial::create([
+            'user_id' => $user->id,
+            'rutina_nombre' => 'Rutina A',
+            'dia' => 'Día 1',
+            'ejercicio_nombre' => 'Press banca',
+            'series_numero' => 1,
+            'reps_min' => '8', 'reps_max' => '12',
+            'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+            'fecha' => now()->subDays(200)->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 3,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=365');
+
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertEquals(1, $data['sets_with_esfuerzo']);
+    }
+
+    public function test_stats_esfuerzo_window_all_devuelve_todo_el_historico(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        Historial::create([
+            'user_id' => $user->id,
+            'rutina_nombre' => 'Rutina A',
+            'dia' => 'Día 1',
+            'ejercicio_nombre' => 'Press banca',
+            'series_numero' => 1,
+            'reps_min' => '8', 'reps_max' => '12',
+            'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+            'fecha' => now()->subYears(3)->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 2,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=all');
+
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertEquals(1, $data['sets_with_esfuerzo']);
+    }
+
+    public function test_stats_esfuerzo_window_invalido_cae_a_30(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=invalido');
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertEquals('30', $data['window']['key']);
+        $this->assertEquals('30 días', $data['window']['label']);
+    }
+
+    public function test_stats_esfuerzo_devuelve_window_info(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=90');
+        $data = $response->json();
+        $this->assertEquals('90', $data['window']['key']);
+        $this->assertEquals(90, $data['window']['days']);
+        $this->assertEquals('90 días', $data['window']['label']);
+    }
+
+    public function test_stats_esfuerzo_calcula_avg_hard(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        // 3 sets hard (RIR <= 2) y 1 easy (RIR 4)
+        for ($i = 0; $i < 3; $i++) {
+            Historial::create([
+                'user_id' => $user->id,
+                'rutina_nombre' => 'R',
+                'dia' => 'Día 1',
+                'ejercicio_nombre' => 'Press',
+                'series_numero' => $i + 1,
+                'reps_min' => '8', 'reps_max' => '12',
+                'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+                'fecha' => now()->toDateString(),
+                'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 1,
+            ]);
+        }
+        Historial::create([
+            'user_id' => $user->id,
+            'rutina_nombre' => 'R',
+            'dia' => 'Día 1',
+            'ejercicio_nombre' => 'Press',
+            'series_numero' => 4,
+            'reps_min' => '8', 'reps_max' => '12',
+            'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+            'fecha' => now()->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 4,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=30');
+        $data = $response->json();
+        $this->assertEquals(75, $data['avg_hard']);  // 3/4 = 75%
+    }
+
+    public function test_stats_esfuerzo_calcula_avg_hard_con_rpe(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        // 2 sets hard (RPE >= 8) y 1 easy (RPE 6)
+        foreach ([[8, 1], [9, 2], [6, 3]] as [$val, $num]) {
+            Historial::create([
+                'user_id' => $user->id,
+                'rutina_nombre' => 'R',
+                'dia' => 'Día 1',
+                'ejercicio_nombre' => 'Press',
+                'series_numero' => $num,
+                'reps_min' => '8', 'reps_max' => '12',
+                'descanso_min' => 2, 'peso' => 60, 'completado' => true,
+                'fecha' => now()->toDateString(),
+                'esfuerzo_tipo' => 'rpe', 'esfuerzo_valor' => $val,
+            ]);
+        }
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=30');
+        $data = $response->json();
+        $this->assertEquals(67, $data['avg_hard']);  // 2/3 = 67%
+    }
+
+    public function test_stats_esfuerzo_tendencia_agrupa_por_semana(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        // Forzar 2 sets esta semana (lun-mié) y 1 set la semana pasada (hace 10 días, debería ser dom-lun anterior)
+        $hoy = now();
+        $esta_semana_lun = $hoy->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+        $semana_pasada = $esta_semana_lun->copy()->subDays(10);
+
+        Historial::create([
+            'user_id' => $user->id, 'rutina_nombre' => 'R', 'dia' => 'D',
+            'ejercicio_nombre' => 'Press', 'series_numero' => 1,
+            'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 2,
+            'peso' => 60, 'completado' => true,
+            'fecha' => $esta_semana_lun->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 2,
+        ]);
+        Historial::create([
+            'user_id' => $user->id, 'rutina_nombre' => 'R', 'dia' => 'D',
+            'ejercicio_nombre' => 'Press', 'series_numero' => 2,
+            'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 2,
+            'peso' => 60, 'completado' => true,
+            'fecha' => $esta_semana_lun->copy()->addDays(2)->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 3,
+        ]);
+        Historial::create([
+            'user_id' => $user->id, 'rutina_nombre' => 'R', 'dia' => 'D',
+            'ejercicio_nombre' => 'Press', 'series_numero' => 3,
+            'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 2,
+            'peso' => 60, 'completado' => true,
+            'fecha' => $semana_pasada->toDateString(),
+            'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => 4,
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=90');
+        $data = $response->json();
+        fwrite(STDERR, "\n[DEBUG] now=" . $hoy . " lun_esta=" . $esta_semana_lun . " semana_pasada=" . $semana_pasada . " tendencia=" . json_encode($data['tendencia']) . "\n");
+        $this->assertCount(2, $data['tendencia']);
+    }
+
+    public function test_stats_esfuerzo_tendencia_orden_cronologico(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        $lun = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+        // 2 sets en la misma semana
+        foreach ([[$lun, 2], [$lun->copy()->addDays(2), 4]] as [$fecha, $val]) {
+            Historial::create([
+                'user_id' => $user->id, 'rutina_nombre' => 'R', 'dia' => 'D',
+                'ejercicio_nombre' => 'Press', 'series_numero' => 1,
+                'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 2,
+                'peso' => 60, 'completado' => true,
+                'fecha' => $fecha->toDateString(),
+                'esfuerzo_tipo' => 'rir', 'esfuerzo_valor' => $val,
+            ]);
+        }
+
+        $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=30');
+        $data = $response->json();
+        // Misma semana → 1 bucket
+        $this->assertCount(1, $data['tendencia']);
+        $this->assertEquals(2, $data['tendencia'][0]['sets']);
     }
 
     public function test_stats_esfuerzo_ignora_sets_no_completados(): void

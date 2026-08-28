@@ -148,41 +148,52 @@ class StatsController extends Controller
     }
 
     /**
-     * Fase 3 — esfuerzo promedio y distribución RIR/RPE del último mes.
+     * Fase 3/8 — esfuerzo promedio, distribución RIR/RPE y tendencia semanal.
+     *
+     * Query params:
+     *   - window: '30' | '90' | '365' | 'all' (default '30')
+     *   - user_id: opcional (trainer/admin)
      *
      * Devuelve:
-     *  - counts: total_sets, sets_with_esfuerzo
+     *  - window: { days, label }
+     *  - total_sets, sets_with_esfuerzo
      *  - avg_por_tipo: { rir: 1.5, rpe: 8.3 } o null si no hay data
+     *  - avg_hard: % de sets en RIR ≤ 2 o RPE ≥ 8 (esfuerzo alto)
      *  - distribucion: array con buckets por tipo (0..5 RIR / 6..10 RPE)
-     *  - por_ejercicio: top 5 ejercicios por frecuencia (los más trackeados)
-     *  - tendencia_30d: array de {fecha, avg_*} diario (útil para sparkline)
+     *  - por_ejercicio: top 5 ejercicios por frecuencia
+     *  - tendencia: array de buckets semanales { week_start, week_label, rir, rpe, sets, rir_sets, rpe_sets }
      */
     public function esfuerzo(Request $request)
     {
         $user = $request->user();
-        $cacheKey = "stats:esfuerzo:user:{$user->id}";
+        $window = $this->normalizeWindow($request->input('window', '30'));
+        $cacheKey = "stats:esfuerzo:user:{$user->id}:w{$window}";
 
-        return Cache::remember($cacheKey, 300, function () use ($user) {
-            $desde = now()->subDays(30);
+        return Cache::remember($cacheKey, 300, function () use ($user, $window) {
+            $since = $window === 'all' ? null : now()->subDays((int) $window);
 
             $base = Historial::where('user_id', $user->id)
                 ->where('completado', true)
-                ->whereDate('fecha', '>=', $desde->toDateString())
                 ->whereNotNull('esfuerzo_tipo')
                 ->whereNotNull('esfuerzo_valor');
+            if ($since) {
+                $base->whereDate('fecha', '>=', $since->toDateString());
+            }
 
             $total = (clone $base)->count();
             if ($total === 0) {
                 return response()->json([
+                    'window' => $this->windowInfo($window),
                     'total_sets' => 0,
                     'sets_with_esfuerzo' => 0,
                     'avg_por_tipo' => ['rir' => null, 'rpe' => null],
+                    'avg_hard' => 0,
                     'distribucion' => [
                         'rir' => array_fill(0, 6, 0),
                         'rpe' => array_fill(6, 5, 0),
                     ],
                     'por_ejercicio' => [],
-                    'tendencia_30d' => [],
+                    'tendencia' => [],
                 ]);
             }
 
@@ -199,6 +210,18 @@ class StatsController extends Controller
                 'rir' => $avgs['rir'] ?? null,
                 'rpe' => $avgs['rpe'] ?? null,
             ];
+
+            // % de sets "duros" (RIR ≤ 2 o RPE ≥ 8) — coherente con la métrica de openGym "RIR 3 or harder"
+            $hardCount = (clone $base)
+                ->where(function ($q) {
+                    $q->where(function ($q2) {
+                        $q2->where('esfuerzo_tipo', 'rir')->where('esfuerzo_valor', '<=', 2);
+                    })->orWhere(function ($q2) {
+                        $q2->where('esfuerzo_tipo', 'rpe')->where('esfuerzo_valor', '>=', 8);
+                    });
+                })
+                ->count();
+            $avgHard = $total > 0 ? (int) round(($hardCount / $total) * 100) : 0;
 
             // Distribución (buckets por valor exacto)
             $distRows = (clone $base)
@@ -234,38 +257,113 @@ class StatsController extends Controller
                 ])
                 ->all();
 
-            // Tendencia diaria (avg por día)
-            $tend = (clone $base)
-                ->selectRaw('fecha, esfuerzo_tipo, AVG(esfuerzo_valor) as avg_val, COUNT(*) as n')
-                ->groupBy('fecha', 'esfuerzo_tipo')
-                ->orderBy('fecha')
-                ->get();
-
-            $byDate = [];
-            foreach ($tend as $r) {
-                $key = Carbon::parse($r->fecha)->toDateString();
-                if (!isset($byDate[$key])) {
-                    $byDate[$key] = ['fecha' => $key, 'rir' => null, 'rpe' => null, 'sets' => 0];
-                }
-                $byDate[$key][$r->esfuerzo_tipo] = round((float) $r->avg_val, 2);
-                $byDate[$key]['sets'] += (int) $r->n;
-            }
+            // Tendencia semanal (compatible con MySQL y SQLite)
+            $tendencia = $this->buildWeeklyTrend($user->id, $since);
 
             // Total de sets completados en el período (para % de cobertura)
-            $totalSets = (int) Historial::where('user_id', $user->id)
-                ->where('completado', true)
-                ->whereDate('fecha', '>=', $desde->toDateString())
-                ->count();
+            $totalSetsQuery = Historial::where('user_id', $user->id)
+                ->where('completado', true);
+            if ($since) {
+                $totalSetsQuery->whereDate('fecha', '>=', $since->toDateString());
+            }
+            $totalSets = (int) $totalSetsQuery->count();
 
             return response()->json([
+                'window' => $this->windowInfo($window),
                 'total_sets' => $totalSets,
                 'sets_with_esfuerzo' => $total,
                 'avg_por_tipo' => $avgPorTipo,
+                'avg_hard' => $avgHard,
                 'distribucion' => $dist,
                 'por_ejercicio' => $porEj,
-                'tendencia_30d' => array_values($byDate),
+                'tendencia' => $tendencia,
             ]);
         });
+    }
+
+    private function normalizeWindow($raw): string
+    {
+        $raw = (string) $raw;
+        if (in_array($raw, ['30', '90', '365', 'all'], true)) return $raw;
+        return '30';
+    }
+
+    private function windowInfo(string $window): array
+    {
+        $map = [
+            '30' => ['key' => '30', 'days' => 30, 'label' => '30 días'],
+            '90' => ['key' => '90', 'days' => 90, 'label' => '90 días'],
+            '365' => ['key' => '365', 'days' => 365, 'label' => '1 año'],
+            'all' => ['key' => 'all', 'days' => null, 'label' => 'Todo'],
+        ];
+        return $map[$window];
+    }
+
+    /**
+     * Construye buckets semanales con avg de RIR / RPE / sets.
+     * Una semana = lunes a domingo.
+     *
+     * Devuelve array de { week_start, week_label, rir, rpe, sets, rir_sets, rpe_sets }
+     * donde rir/rpe es null si no hubo sets de ese tipo en esa semana.
+     */
+    private function buildWeeklyTrend(int $userId, $since): array
+    {
+        // Traer sets con esfuerzo (sin filtrar por tipo)
+        $query = Historial::where('user_id', $userId)
+            ->where('completado', true)
+            ->whereNotNull('esfuerzo_tipo')
+            ->whereNotNull('esfuerzo_valor');
+        if ($since) {
+            $query->whereDate('fecha', '>=', $since->toDateString());
+        }
+        $rows = $query->orderBy('fecha')->get(['fecha', 'esfuerzo_tipo', 'esfuerzo_valor']);
+
+        if ($rows->isEmpty()) return [];
+
+        // Agrupar por semana (lunes)
+        $byWeek = [];
+        foreach ($rows as $r) {
+            $fecha = Carbon::parse($r->fecha);
+            $weekStart = $fecha->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+            if (!isset($byWeek[$weekStart])) {
+                $byWeek[$weekStart] = [
+                    'rir_sum' => 0, 'rir_n' => 0,
+                    'rpe_sum' => 0, 'rpe_n' => 0,
+                    'sets' => 0,
+                ];
+            }
+            $byWeek[$weekStart]['sets']++;
+            if ($r->esfuerzo_tipo === 'rir') {
+                $byWeek[$weekStart]['rir_sum'] += (int) $r->esfuerzo_valor;
+                $byWeek[$weekStart]['rir_n']++;
+            } elseif ($r->esfuerzo_tipo === 'rpe') {
+                $byWeek[$weekStart]['rpe_sum'] += (int) $r->esfuerzo_valor;
+                $byWeek[$weekStart]['rpe_n']++;
+            }
+        }
+
+        ksort($byWeek);  // orden cronológico ascendente
+
+        $out = [];
+        foreach ($byWeek as $weekStart => $bucket) {
+            $out[] = [
+                'week_start' => $weekStart,
+                'week_label' => $this->shortWeekLabel(Carbon::parse($weekStart)),
+                'rir' => $bucket['rir_n'] > 0 ? round($bucket['rir_sum'] / $bucket['rir_n'], 2) : null,
+                'rpe' => $bucket['rpe_n'] > 0 ? round($bucket['rpe_sum'] / $bucket['rpe_n'], 2) : null,
+                'rir_sets' => $bucket['rir_n'],
+                'rpe_sets' => $bucket['rpe_n'],
+                'sets' => $bucket['sets'],
+            ];
+        }
+        return $out;
+    }
+
+    private function shortWeekLabel(Carbon $date): string
+    {
+        // Ej: "25 ago" o "1 sep"
+        $months = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
+        return $date->day . ' ' . $months[(int) $date->month];
     }
 
     /**
