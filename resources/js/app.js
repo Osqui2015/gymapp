@@ -2,7 +2,13 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
-Alpine.start();
+// Guard contra doble init: Vite HMR puede re-ejecutar este módulo,
+// y las directivas `x-data` del layout (navigation.blade.php) ya consumen Alpine.
+// Llamar Alpine.start() 2 veces tira warning en consola y puede romper bindings.
+if (!window.__alpineStarted) {
+    window.__alpineStarted = true;
+    Alpine.start();
+}
 
 import { createApp, defineAsyncComponent } from 'vue';
 import { createPinia } from 'pinia';
@@ -60,15 +66,47 @@ for (const [name, loader] of Object.entries(components)) {
 
 const mountEl = document.getElementById('app');
 if (mountEl) {
-    // Si el contenedor tiene atributo data-component, montamos ese componente específico
-    const componentName = mountEl.dataset.component;
-    if (componentName && app._context.components[componentName]) {
-        const Component = app._context.components[componentName];
-        const soloApp = createApp(Component);
-        soloApp.use(pinia);
-        soloApp.mount(mountEl);
+    // Buscamos recursivamente el primer custom element de Vue dentro de #app.
+    // Blade puede envolver el slot en <div id="main-content"> u otros wrappers,
+    // así que no alcanza con mirar solo `firstElementChild` de #app.
+    // Antes: `app.mount(mountEl)` reemplazaba todo el contenido de #app con el
+    // template del componente raíz (que era `createApp({})` = vacío), borrando
+    // el <dashboard-content> que había renderizado Blade.
+    function findCustomVueEl(el) {
+        if (!el) return null;
+        const tag = el.tagName ? el.tagName.toLowerCase() : null;
+        if (tag && tag.includes('-') && app._context.components[tag]) {
+            return el;
+        }
+        for (const child of el.children) {
+            const found = findCustomVueEl(child);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    const target = findCustomVueEl(mountEl);
+    if (target) {
+        const targetName = target.tagName.toLowerCase();
+        const Component = app._context.components[targetName];
+        if (Component) {
+            const soloApp = createApp(Component);
+            soloApp.use(pinia);
+            soloApp.mount(target);
+        } else {
+            console.warn('[GymApp] target', targetName, 'not registered in app components');
+        }
     } else {
-        app.mount(mountEl);
+        // Fallback: data-component en el propio #app (compatibilidad con
+        // páginas standalone como rutina-publica).
+        const dataName = mountEl.dataset.component;
+        if (dataName && app._context.components[dataName]) {
+            const Component = app._context.components[dataName];
+            const soloApp = createApp(Component);
+            soloApp.use(pinia);
+            soloApp.mount(mountEl);
+        }
+        // Si no hay componente Vue, dejamos el HTML de Blade intacto.
     }
 }
 

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* === Tailwind v4: activar dark mode por clase (.dark en <html>) ===
+   En v4 el default es `prefers-color-scheme` (media). Como nosotros
+   gestionamos el dark mode por class (script anti-FOUC + localStorage
+   en app.blade.php), necesitamos registrar la variant manualmente. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
 }
