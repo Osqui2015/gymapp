@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
     levels: { type: Object, default: () => ({}) },
@@ -137,6 +137,20 @@ const gender = ref(props.initialGender);
 const view = ref(props.initialView);
 const pathsData = ref(null);
 const hoveredSlug = ref(null);
+
+// === Dark mode reactivo ===
+// Leemos la class `dark` del <html> y observamos cambios via MutationObserver,
+// así el body map se re-pinta cuando el user togglea el tema sin recargar.
+const isDark = ref(typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+let darkObserver = null;
+onMounted(() => {
+    if (typeof document === 'undefined') return;
+    darkObserver = new MutationObserver(() => {
+        isDark.value = document.documentElement.classList.contains('dark');
+    });
+    darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+});
+onBeforeUnmount(() => { darkObserver?.disconnect(); });
 
 // Cargar paths según gender+view (lazy import para no inflar el bundle principal)
 async function loadPaths(g, v) {
@@ -158,31 +172,48 @@ const hoveredLabel = computed(() => {
 });
 
 /**
- * Calcula el color de fill según el level (0-4) y el mode.
- * - balance/strength: gradiente indigo (0 gris → 4 indigo fuerte)
- * - fatigue: rojo (fatigado) / amarillo (recuperando) / gris (listo)
+ * Calcula el color de fill según el level (0-4), el mode y el tema actual.
+ *
+ * El problema que resuelve: en light mode el fondo del sidebar es gris-claro
+ * y los músculos en #1f2937 (gris-oscuro) contrastan bien. En dark mode el
+ * fondo es gris-oscuro y ese mismo color de músculo desaparece. Por eso
+ * invertimos la paleta en dark mode: músculos base en gris-claro, y los
+ * iluminados en indigo saturado que se ve bien sobre ambos fondos.
  */
 function fillFor(slug) {
     const level = props.levels[slug] || 0;
 
     if (props.mode === 'fatigue') {
+        // En fatiga los colores rojo/amarillo ya contrastan en ambos modos.
         if (level === 4) return '#ef4444';     // rojo fatigado
         if (level === 2) return '#facc15';     // amarillo recuperando
-        return '#374151';                       // gris oscuro (listo)
+        return isDark.value ? '#94a3b8' : '#374151';  // listo
     }
 
-    // balance o strength: gradiente indigo
-    if (level === 0) return '#1f2937';          // gris oscuro (no entrenado)
-    if (level === 1) return '#312e81';
-    if (level === 2) return '#4338ca';
-    if (level === 3) return '#6366f1';
-    if (level === 4) return '#818cf8';
-    return '#1f2937';
+    // balance / strength: gradiente indigo con base que se adapta al tema.
+    if (isDark.value) {
+        // Dark: base gris-claro para que se vea sobre fondo oscuro, e indigo
+        // fuerte en level 4 para destacar.
+        if (level === 0) return '#475569';     // slate-600
+        if (level === 1) return '#312e81';     // indigo-900
+        if (level === 2) return '#4338ca';     // indigo-700
+        if (level === 3) return '#6366f1';     // indigo-500
+        if (level === 4) return '#a5b4fc';     // indigo-300 (contraste alto)
+        return '#475569';
+    } else {
+        // Light: como estaba, músculos oscuros sobre fondo claro.
+        if (level === 0) return '#1f2937';     // gray-800
+        if (level === 1) return '#312e81';
+        if (level === 2) return '#4338ca';
+        if (level === 3) return '#6366f1';
+        if (level === 4) return '#818cf8';
+        return '#1f2937';
+    }
 }
 
 function strokeFor(slug) {
     if (hoveredSlug.value === slug) return '#fbbf24';  // amarillo al hover
-    return '#00000020';
+    return isDark.value ? '#ffffff20' : '#00000020';
 }
 
 // Para la leyenda
