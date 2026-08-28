@@ -9,8 +9,6 @@ parameters:
     treatPhpDocTypesAsCertain: false
     checkMissingIterableValueType: false
     reportUnmatchedIgnoredErrors: false
-includes:
-    - vendor/nuovo/spreadsheet-client/extension.neon
 
 # Errores a ignorar (que son false positives o no críticos)
 ignoreErrors:
