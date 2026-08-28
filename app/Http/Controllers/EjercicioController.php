@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ejercicio;
+use App\Models\Musculo;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,11 @@ class EjercicioController extends Controller
         // por lo que no se invoca authorize() — la policy viewAny/view es
         // return true y los tests existentes llaman sin autenticar.
 
-        $query = Ejercicio::query();
+        $query = Ejercicio::query()
+            // Cargar músculos para que el body map en /ejercicios pueda
+            // iluminar las partes trabajadas al seleccionar un ejercicio.
+            // Select acotado para no inflar el response.
+            ->with(['musculos:id,slug,nombre_es']);
 
         if ($request->has('busqueda') && $request->busqueda) {
             $busqueda = $request->busqueda;
@@ -31,6 +36,15 @@ class EjercicioController extends Controller
 
         if ($request->has('equipamiento') && $request->equipamiento) {
             $query->where('equipamiento', $request->equipamiento);
+        }
+
+        // Filtro por músculo (usado cuando el usuario hace click en una
+        // parte del body map). Filtra por la pivot ejercicio_musculos.
+        if ($request->has('musculo_slug') && $request->musculo_slug) {
+            $slug = $request->musculo_slug;
+            $query->whereHas('musculos', function ($q) use ($slug) {
+                $q->where('musculos.slug', $slug);
+            });
         }
 
         $ejercicios = $query->paginate(20);
@@ -58,6 +72,26 @@ class EjercicioController extends Controller
             ->pluck('equipamiento');
 
         return response()->json($equipamientos);
+    }
+
+    /**
+     * Catálogo de músculos canónicos (slug → nombre_es).
+     * Usado por la página de Ejercicios para los tooltips del body map.
+     * Es estático y seguro de cachear.
+     */
+    public function musculos()
+    {
+        $musculos = Musculo::orderBy('orden')
+            ->get(['id', 'slug', 'nombre_es', 'nombre_en', 'body_part', 'orden'])
+            ->map(fn($m) => [
+                'slug' => $m->slug,
+                'nombre_es' => $m->nombre_es,
+                'nombre_en' => $m->nombre_en,
+                'body_part' => $m->body_part,
+                'orden' => (int) $m->orden,
+            ]);
+
+        return response()->json($musculos);
     }
 
     public function store(Request $request)

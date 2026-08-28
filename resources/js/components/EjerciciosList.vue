@@ -13,6 +13,52 @@
         </button>
       </div>
 
+      <!-- Mini body map (siempre visible) -->
+      <!-- Click en una fila lo ilumina; click en un músculo filtra la lista;
+           botón "Expandir" lo abre en fullscreen. -->
+      <div class="mb-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Mapa corporal</span>
+            <span class="text-xs text-gray-700 dark:text-gray-300 truncate">· {{ bodyMapModoLabel }}</span>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button
+              v-if="musculoFiltroBodyMap"
+              @click="limpiarFiltroMusculo"
+              class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              Limpiar filtro
+            </button>
+            <button
+              @click="bodyMapExpandido = true"
+              class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center gap-1"
+              title="Expandir mapa"
+              aria-label="Expandir mapa corporal"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+              </svg>
+              Expandir
+            </button>
+          </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-900/40 py-2">
+          <!-- Mini: oculto toggles (sería mucho chrome para 180px). El botón
+               "Expandir" del header abre la versión full interactiva. -->
+          <div style="height: 170px" class="overflow-hidden">
+            <BodyMap
+              :levels="bodyMapLevels"
+              :muscle-labels="muscleLabels"
+              mode="balance"
+              :show-gender-toggle="false"
+              class="!h-full [&_button]:hidden [&_div.text-center.text-xs]:hidden"
+              @muscle-click="onMuscleClickBodyMap"
+            />
+          </div>
+        </div>
+      </div>
+
       <div class="mb-6">
         <div class="flex flex-col sm:flex-row gap-3">
           <input
@@ -68,7 +114,17 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-for="ejercicio in ejercicios" :key="ejercicio.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <tr
+                v-for="ejercicio in ejercicios"
+                :key="ejercicio.id"
+                @click="seleccionarEjercicioBodyMap(ejercicio)"
+                :class="[
+                  'cursor-pointer transition-colors',
+                  ejercicioSeleccionadoBodyMap?.id === ejercicio.id
+                    ? 'bg-indigo-50 dark:bg-indigo-950/30 ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                ]"
+              >
                 <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">{{ ejercicio.nombre }}</td>
                 <td class="px-4 py-4">
                   <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded text-xs font-medium">
@@ -116,7 +172,13 @@
           <div
             v-for="ejercicio in ejercicios"
             :key="ejercicio.id"
-            class="p-4 space-y-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            @click="seleccionarEjercicioBodyMap(ejercicio)"
+            :class="[
+              'p-4 space-y-2 cursor-pointer transition-colors',
+              ejercicioSeleccionadoBodyMap?.id === ejercicio.id
+                ? 'bg-indigo-50 dark:bg-indigo-950/30 ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            ]"
           >
             <div class="flex items-start justify-between gap-2">
               <p class="font-semibold text-gray-900 dark:text-white flex-1">{{ ejercicio.nombre }}</p>
@@ -265,6 +327,57 @@
       v-model:open="mostrarDetail"
       :ejercicio="ejercicioSeleccionado"
     />
+
+    <!-- Modal expand del body map (vista full + filtros por músculo) -->
+    <Teleport to="body">
+      <div
+        v-if="bodyMapExpandido"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+        @click.self="bodyMapExpandido = false"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mapa corporal expandido"
+      >
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mapa corporal</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Hacé click en un músculo para filtrar la lista de ejercicios</p>
+            </div>
+            <button
+              @click="bodyMapExpandido = false"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Cerrar"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="p-5">
+            <BodyMap
+              :levels="bodyMapLevels"
+              :muscle-labels="muscleLabels"
+              mode="balance"
+              :show-gender-toggle="true"
+              @muscle-click="(slug) => { onMuscleClickBodyMap(slug); bodyMapExpandido = false; }"
+            />
+            <div v-if="musculoFiltroBodyMap" class="mt-4 flex items-center justify-between gap-3 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+              <p class="text-sm text-indigo-700 dark:text-indigo-300">
+                Filtrando por: <strong>{{ muscleLabels[musculoFiltroBodyMap] || musculoFiltroBodyMap }}</strong>
+                · {{ total }} resultado(s)
+              </p>
+              <button
+                @click="limpiarFiltroMusculo"
+                class="text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline flex-shrink-0"
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -279,6 +392,7 @@ import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyState
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
 import EjercicioDetailModal from './EjercicioDetailModal.vue';
+import BodyMap from './BodyMap.vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 
@@ -310,6 +424,46 @@ const nuevo = ref({
   equipamiento: '',
   grupo_muscular: '',
   descripcion: '',
+});
+
+// === Body map en la lista ===
+// - ejercicioSeleccionadoBodyMap: ilumina músculos al clickear una fila
+// - musculoFiltroBodyMap: filtra la lista cuando el user hace click en el mapa
+// - bodyMapExpandido: modal fullscreen al clickear el mini mapa
+const musculosCatalogo = ref([]);     // [{slug, nombre_es, ...}]
+const ejercicioSeleccionadoBodyMap = ref(null);
+const musculoFiltroBodyMap = ref(''); // slug
+const bodyMapExpandido = ref(false);
+
+// Labels slug → nombre_es para tooltips del body map
+const muscleLabels = computed(() => {
+    const map = {};
+    for (const m of musculosCatalogo.value) map[m.slug] = m.nombre_es;
+    return map;
+});
+
+// Niveles 0-4 del body map según el ejercicio seleccionado.
+// Primario = 4 (indigo fuerte), Secundario = 2 (indigo claro), resto = 0.
+const bodyMapLevels = computed(() => {
+    const levels = {};
+    const ej = ejercicioSeleccionadoBodyMap.value;
+    if (!ej?.musculos) return levels;
+    for (const m of ej.musculos) {
+        levels[m.slug] = m.pivot?.tipo === 'primario' ? 4
+                       : m.pivot?.tipo === 'secundario' ? 2
+                       : 1;
+    }
+    return levels;
+});
+
+// Etiqueta del modo actual (visible en el mini header)
+const bodyMapModoLabel = computed(() => {
+    const ej = ejercicioSeleccionadoBodyMap.value;
+    if (!ej) return 'Hacé click en un ejercicio';
+    if (musculoFiltroBodyMap.value) {
+        return `Filtrando por: ${muscleLabels.value[musculoFiltroBodyMap.value] || musculoFiltroBodyMap.value}`;
+    }
+    return ej.nombre;
 });
 
 const fetchUserInfo = async () => {
@@ -344,6 +498,7 @@ const fetchEjercicios = async (page = 1) => {
     if (busqueda.value) params.busqueda = busqueda.value;
     if (grupoMuscularFiltro.value) params.grupo_muscular = grupoMuscularFiltro.value;
     if (equipamientoFiltro.value) params.equipamiento = equipamientoFiltro.value;
+    if (musculoFiltroBodyMap.value) params.musculo_slug = musculoFiltroBodyMap.value;
     const response = await axios.get('/api/ejercicios', { params });
     ejercicios.value = response.data.data || response.data;
     paginaActual.value = response.data.current_page || 1;
@@ -352,6 +507,39 @@ const fetchEjercicios = async (page = 1) => {
   } catch (error) {
     console.error('Error:', error);
   }
+};
+
+const fetchMusculos = async () => {
+  try {
+    // Catálogo estático: cache 1h.
+    const response = await cachedAxiosGet('/api/musculos', {}, { ttl: 60 * 60_000 });
+    musculosCatalogo.value = response.data || [];
+  } catch (error) {
+    console.error('Error al obtener músculos:', error);
+  }
+};
+
+// Click en una fila/card de la lista: ilumina el body map
+const seleccionarEjercicioBodyMap = (ej) => {
+    // toggle: si ya está seleccionado, deseleccionar
+    ejercicioSeleccionadoBodyMap.value =
+        ejercicioSeleccionadoBodyMap.value?.id === ej.id ? null : ej;
+    // Si hay un filtro de músculo activo y se selecciona otro ejercicio, lo limpiamos
+    if (musculoFiltroBodyMap.value) musculoFiltroBodyMap.value = '';
+};
+
+// Click en un músculo del body map: filtra la lista
+const onMuscleClickBodyMap = (slug) => {
+    musculoFiltroBodyMap.value = slug;
+    ejercicioSeleccionadoBodyMap.value = null; // limpio el highlight
+    fetchEjercicios(1);
+};
+
+// Limpiar el filtro de músculo
+const limpiarFiltroMusculo = () => {
+    musculoFiltroBodyMap.value = '';
+    ejercicioSeleccionadoBodyMap.value = null;
+    fetchEjercicios(1);
 };
 
 const visiblePages = computed(() => {
@@ -437,6 +625,7 @@ onMounted(() => {
   fetchUserInfo();
   fetchGruposMusculares();
   fetchEquipamientos();
+  fetchMusculos();
   fetchEjercicios();
 });
 </script>
