@@ -51,6 +51,9 @@
         </button>
 
         <div v-if="openDias.includes(dia.nombre)" class="p-5 bg-gray-50/30 dark:bg-gray-900/30 overflow-x-auto">
+          <!-- Slot por-dia: botones extra (ej. Importar este dia) -->
+          <slot name="dia-footer" :dia="dia" :modalidad="modalidad" />
+
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-white dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">

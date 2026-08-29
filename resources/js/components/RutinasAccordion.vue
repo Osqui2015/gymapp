@@ -212,20 +212,31 @@
           <div v-else>
             <RutinaAcordeon
               v-for="modalidad in communityRutinas"
-              :key="`${modalidad.nombre}-${modalidad.created_by}`"
+              :key="`${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`"
               :modalidad="modalidad"
-              :open="isAcordeonOpen('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
-              :open-dias="getOpenDias('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
+              :open="isAcordeonOpen('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
+              :open-dias="getOpenDias('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
               show-quick-input
-              @toggle="toggleAcordeon('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`)"
-              @toggle-dia="(d) => toggleDia('Comunitaria', `${modalidad.nombre}-${modalidad.created_by}`, d)"
+              @toggle="toggleAcordeon('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
+              @toggle-dia="(d) => toggleDia('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`, d)"
               @quick-input="openQuickInput"
               class="mb-6"
             >
               <template #header-extra>
                 <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 italic">
-                  Creado por: @{{ nicknameCreator(modalidad) }}
+                  {{ modalidad.nivel }} · Creado por: @{{ nicknameCreator(modalidad) }}
                 </span>
+              </template>
+              <template #dia-footer="{ dia }">
+                <div class="mt-3 flex justify-end">
+                  <button
+                    @click="importarRutina(modalidad, dia)"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-3 py-2 text-xs font-bold shadow-sm hover:shadow-md transition-all"
+                    :title="`Importar solo ${dia.nombre} a Mis Rutinas`"
+                  >
+                    <span>📥</span> Importar este día
+                  </button>
+                </div>
               </template>
               <template #footer>
                 <div class="p-5 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-t border-gray-200 dark:border-gray-700">
@@ -233,7 +244,7 @@
                     @click="importarRutina(modalidad)"
                     class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-6 py-4 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
                   >
-                    <span>📥</span> Importar a Mis Rutinas
+                    <span>📥</span> Importar rutina completa ({{ modalidad.dias.length }} días)
                   </button>
                 </div>
               </template>
@@ -314,10 +325,11 @@ const communityRutinas = computed(() => {
   const agrupadas = {};
 
   comunitariasList.value.forEach(r => {
-    const key = `${r.modalidad}-${r.created_by}`;
+    const key = `${r.modalidad}-${r.nivel}-${r.created_by}`;
     if (!agrupadas[key]) {
       agrupadas[key] = {
         nombre: r.modalidad,
+        nivel: r.nivel,
         created_by: r.created_by,
         creador_obj: r.creador,
         dias: {}
@@ -497,12 +509,16 @@ const compartirRutina = async (nivel, modalidad) => {
   }
 };
 
-const importarRutina = async (modalidadObj) => {
+const importarRutina = async (modalidadObj, diaObj = null) => {
   try {
+    // Pasamos el nivel ORIGINAL (no "Personalizada") y, si viene un dia,
+    // el backend filtra para importar solo ese dia. Si no viene dia, importa
+    // todos los dias de la rutina completa.
     const response = await axios.post('/api/rutinas/importar', {
-      nivel: 'Personalizada',
+      nivel: modalidadObj.nivel,
       modalidad: modalidadObj.nombre,
-      created_by: modalidadObj.created_by
+      created_by: modalidadObj.created_by,
+      dia: diaObj?.nombre ?? null,
     });
 
     showNotification(response.data.message || 'Rutina importada con éxito.', 'success');

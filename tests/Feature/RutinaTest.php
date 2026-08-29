@@ -149,4 +149,154 @@ class RutinaTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    public function test_importar_solo_un_dia_filtra_por_dia(): void
+    {
+        // Rutina del sistema con 3 dias. El import con dia=Día 1 debe
+        // crear solo los ejercicios de ese dia (no los 3).
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1 (Torso)',
+            'series' => 4, 'reps_min' => '10', 'reps_max' => '12', 'descanso_min' => 1.5,
+            'ejercicio_nombre' => 'Press banca', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1 (Torso)',
+            'series' => 3, 'reps_min' => '8', 'reps_max' => '10', 'descanso_min' => 1.0,
+            'ejercicio_nombre' => 'Remo', 'orden' => 2,
+            'publica' => true, 'created_by' => null,
+        ]);
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 2 (Pierna)',
+            'series' => 5, 'reps_min' => '5', 'reps_max' => '5', 'descanso_min' => 2.0,
+            'ejercicio_nombre' => 'Sentadilla', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+
+        $response = $this->postJson('/api/rutinas/importar', [
+            'nivel' => 'Intermedio',
+            'modalidad' => '3 Días',
+            'created_by' => null,
+            'dia' => 'Día 1 (Torso)',
+        ]);
+        $response->assertStatus(200);
+
+        // Solo se importaron los 2 ejercicios de Día 1
+        $copias = Rutina::where('created_by', $user->id)->get();
+        $this->assertCount(2, $copias);
+        $this->assertSame('Press banca', $copias[0]->ejercicio_nombre);
+        $this->assertSame('Remo', $copias[1]->ejercicio_nombre);
+
+        // La modalidad distingue el dia en el nombre
+        $this->assertSame('3 Días - Día 1 (Torso)', $copias[0]->modalidad);
+        $this->assertSame('Día 1 (Torso)', $copias[0]->dia);
+    }
+
+    public function test_importar_todos_los_dias_sin_filtro(): void
+    {
+        // Misma rutina con 3 dias. Sin dia en el request: importa todo.
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1',
+            'series' => 4, 'reps_min' => '10', 'reps_max' => '12', 'descanso_min' => 1.5,
+            'ejercicio_nombre' => 'Press banca', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 2',
+            'series' => 5, 'reps_min' => '5', 'reps_max' => '5', 'descanso_min' => 2.0,
+            'ejercicio_nombre' => 'Sentadilla', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 3',
+            'series' => 3, 'reps_min' => '12', 'reps_max' => '15', 'descanso_min' => 1.0,
+            'ejercicio_nombre' => 'Jalón al pecho', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+
+        $response = $this->postJson('/api/rutinas/importar', [
+            'nivel' => 'Intermedio',
+            'modalidad' => '3 Días',
+            'created_by' => null,
+        ]);
+        $response->assertStatus(200);
+
+        $copias = Rutina::where('created_by', $user->id)->get();
+        $this->assertCount(3, $copias);
+        $this->assertSame('3 Días', $copias[0]->modalidad);
+    }
+
+    public function test_importar_por_dia_genera_nombres_unicos_entre_dias(): void
+    {
+        // Importar Día 1 y luego Día 2 por separado: cada uno debe terminar
+        // con un nombre distinto (y no chocar con la rutina completa).
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1',
+            'series' => 4, 'reps_min' => '10', 'reps_max' => '12', 'descanso_min' => 1.5,
+            'ejercicio_nombre' => 'Press banca', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 2',
+            'series' => 5, 'reps_min' => '5', 'reps_max' => '5', 'descanso_min' => 2.0,
+            'ejercicio_nombre' => 'Sentadilla', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+
+        // Import completo
+        $this->postJson('/api/rutinas/importar', [
+            'nivel' => 'Intermedio',
+            'modalidad' => '3 Días',
+            'created_by' => null,
+        ])->assertStatus(200);
+
+        // Import solo Dia 1
+        $this->postJson('/api/rutinas/importar', [
+            'nivel' => 'Intermedio',
+            'modalidad' => '3 Días',
+            'created_by' => null,
+            'dia' => 'Día 1',
+        ])->assertStatus(200);
+
+        $nombresUnicos = Rutina::where('created_by', $user->id)
+            ->pluck('modalidad')
+            ->unique()
+            ->values()
+            ->all();
+        sort($nombresUnicos);
+        $this->assertSame(
+            ['3 Días', '3 Días - Día 1'],
+            $nombresUnicos
+        );
+    }
+
+    public function test_importar_con_dia_inexistente_devuelve_404(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1',
+            'series' => 4, 'reps_min' => '10', 'reps_max' => '12', 'descanso_min' => 1.5,
+            'ejercicio_nombre' => 'Press banca', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+
+        $response = $this->postJson('/api/rutinas/importar', [
+            'nivel' => 'Intermedio',
+            'modalidad' => '3 Días',
+            'created_by' => null,
+            'dia' => 'Día Inexistente',
+        ]);
+        $response->assertStatus(404);
+    }
 }

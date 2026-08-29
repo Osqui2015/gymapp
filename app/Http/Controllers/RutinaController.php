@@ -164,6 +164,9 @@ class RutinaController extends Controller
             // Nullable: las rutinas del sistema tienen created_by=null.
             // Si viene null matcheamos por IS NULL; si viene entero matcheamos exacto.
             'created_by' => 'nullable|integer',
+            // Opcional: si viene, importa solo los ejercicios de ese dia. Si no
+            // viene, importa todos los dias de la rutina (modalidad + nivel).
+            'dia' => 'nullable|string',
         ]);
 
         $query = Rutina::where('nivel', $data['nivel'])
@@ -176,24 +179,32 @@ class RutinaController extends Controller
             $query->where('created_by', $data['created_by']);
         }
 
+        if (!empty($data['dia'])) {
+            $query->where('dia', $data['dia']);
+        }
+
         $rutinasToImport = $query->get();
 
         if ($rutinasToImport->isEmpty()) {
             return response()->json(['error' => 'La rutina seleccionada no está disponible para importar.'], 404);
         }
 
-        // Resolve name collision
-        $importedName = $data['modalidad'];
+        // Resolve name collision. Si el front filtro por dia, lo incluimos en
+        // el nombre para distinguir "3 Dias - Dia 1" del full "3 Dias".
+        $importedName = !empty($data['dia'])
+            ? $data['modalidad'] . ' - ' . $data['dia']
+            : $data['modalidad'];
+
         $exists = Rutina::where('created_by', $user->id)
             ->where('nivel', 'Personalizada')
             ->where('modalidad', $importedName)
             ->exists();
 
         if ($exists) {
-            $importedName = $data['modalidad'] . ' (Importada)';
+            $importedName = $importedName . ' (Importada)';
             $counter = 1;
             while (Rutina::where('created_by', $user->id)->where('nivel', 'Personalizada')->where('modalidad', $importedName)->exists()) {
-                $importedName = $data['modalidad'] . ' (Importada) ' . $counter;
+                $importedName = preg_replace('/( \(Importada\)( \d+)?)?$/', '', $importedName) . ' (Importada) ' . $counter;
                 $counter++;
             }
         }
