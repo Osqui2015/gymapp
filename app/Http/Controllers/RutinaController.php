@@ -161,14 +161,22 @@ class RutinaController extends Controller
         $data = $request->validate([
             'nivel' => 'required|string',
             'modalidad' => 'required|string',
-            'created_by' => 'required|integer',
+            // Nullable: las rutinas del sistema tienen created_by=null.
+            // Si viene null matcheamos por IS NULL; si viene entero matcheamos exacto.
+            'created_by' => 'nullable|integer',
         ]);
 
-        $rutinasToImport = Rutina::where('nivel', $data['nivel'])
+        $query = Rutina::where('nivel', $data['nivel'])
             ->where('modalidad', $data['modalidad'])
-            ->where('created_by', $data['created_by'])
-            ->where('publica', true)
-            ->get();
+            ->where('publica', true);
+
+        if (is_null($data['created_by'])) {
+            $query->whereNull('created_by');
+        } else {
+            $query->where('created_by', $data['created_by']);
+        }
+
+        $rutinasToImport = $query->get();
 
         if ($rutinasToImport->isEmpty()) {
             return response()->json(['error' => 'La rutina seleccionada no está disponible para importar.'], 404);
