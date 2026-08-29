@@ -24,6 +24,8 @@ class Rutina extends Model
         'ejercicio_id',      // NUEVO: FK a ejercicios.id
         'orden',
         'superserie_grupo',
+        'notas',             // Notas libres: RIR target, tecnicas (rest-pause, drop-set, etc.)
+        'publica',           // true = visible en el catalogo comunitario
     ];
 
     protected $casts = [
