@@ -403,9 +403,11 @@ const guardarFila = async (fila, silencioso = false) => {
 
 const guardarProgreso = async () => {
     try {
-        await axios.post('/api/user-rutina', {
-            nivel: rutinaStore.seleccionada.nivel.split(' ')[0],
-            modalidad: rutinaStore.seleccionada.nivel.substring(rutinaStore.seleccionada.nivel.split(' ')[0].length + 1),
+        // Esta funcion solo persiste el `dia_actual` (cambiaste de dia en el
+        // dashboard). NO re-selecciona la rutina, asi que usamos el endpoint
+        // dedicado en vez de /api/user-rutina (que pide rutina_id y source
+        // of truth es la FK, ver D1 migracion 2026_08_17).
+        await axios.post('/api/user-rutina/dia', {
             dia_actual: diaActual.value,
         });
     } catch (error) {
