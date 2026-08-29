@@ -83,4 +83,72 @@ class UserRutinaSeleccionTest extends TestCase
         $this->assertCount(1, UserRutina::where('user_id', $user->id)->get());
         $this->assertSame($r2->id, UserRutina::where('user_id', $user->id)->first()->rutina_id);
     }
+
+    public function test_update_dia_serializa_nivel_y_modalidad_correctamente(): void
+    {
+        // Regression: updateDia serializaba la UserRutina a JSON y disparaba
+        // los accessors nivel/modalidad. Antes el codigo usaba
+        // $this->rutina()?->nivel (con parentesis, devuelve el proxy
+        // BelongsTo) en vez de $this->rutina?->nivel (dispara lazy load).
+        // El accessor reventaba con "Undefined property: BelongsTo::$nivel"
+        // y devolvia 500.
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $rutina = Rutina::create([
+            'nivel' => 'Intermedio', 'modalidad' => '3 Días', 'dia' => 'Día 1 (Torso)',
+            'series' => 4, 'reps_min' => '10', 'reps_max' => '12', 'descanso_min' => 1.5,
+            'ejercicio_nombre' => 'Press banca', 'orden' => 1,
+            'publica' => true, 'created_by' => null,
+        ]);
+
+        // Crear la user_rutina via el endpoint normal
+        $this->postJson('/api/user-rutina', [
+            'rutina_id' => $rutina->id,
+            'dia_actual' => 'Día 1',
+        ])->assertStatus(200);
+
+        // Ahora actualizar el dia: este endpoint serializa la user_rutina
+        // y DEBE poder leer nivel/modalidad de la relacion.
+        $response = $this->postJson('/api/user-rutina/dia', [
+            'dia_actual' => 'Día 1 (Torso)',
+        ]);
+        $response->assertStatus(200);
+        $response->assertJsonPath('nivel', 'Intermedio');
+        $response->assertJsonPath('modalidad', '3 Días');
+        $response->assertJsonPath('dia_actual', 'Día 1 (Torso)');
+    }
+
+    public function test_update_dia_falla_amigable_si_user_no_tiene_rutina(): void
+    {
+        // Si el user no tiene user_rutina, updateDia devuelve 404 explicito
+        // (no 500, no error raro).
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->postJson('/api/user-rutina/dia', [
+            'dia_actual' => 'Día 1',
+        ]);
+        $response->assertStatus(404);
+    }
+
+    public function test_accessors_devuelven_null_sin_rutina_id(): void
+    {
+        // UserRutina con rutina_id=null. Los accessors deben devolver null
+        // (no explotar intentando cargar relacion).
+        $user = User::factory()->create();
+        $userRutina = UserRutina::create([
+            'user_id' => $user->id,
+            'rutina_id' => null,
+            'dia_actual' => 'Día 1',
+        ]);
+
+        $this->assertNull($userRutina->nivel);
+        $this->assertNull($userRutina->modalidad);
+
+        // Y serializar a JSON no debe romper.
+        $json = $userRutina->toArray();
+        $this->assertNull($json['nivel']);
+        $this->assertNull($json['modalidad']);
+    }
 }

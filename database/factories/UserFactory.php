@@ -33,6 +33,8 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'role' => User::ROLE_COMUN,
             'trainer_id' => null,
+            'altura' => null,
+            'peso_objetivo' => null,
             'remember_token' => Str::random(10),
         ];
     }

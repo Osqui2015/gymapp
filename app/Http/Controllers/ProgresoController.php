@@ -62,7 +62,11 @@ class ProgresoController extends Controller
 
         $latest = $progresos->last();
         $first = $progresos->first();
-        $goal = $user->peso_objetivo ? (float) $user->peso_objetivo : null;
+        // Usar array_get para tolerar user models que no tengan la columna
+        // cargada (e.g. tests con factories parciales). En produccion el
+        // atributo siempre esta presente.
+        $pesoObjetivo = $user->getAttributes()['peso_objetivo'] ?? null;
+        $goal = $pesoObjetivo ? (float) $pesoObjetivo : null;
 
         $deltaToGoal = null;
         $direction = null;  // 'down' si el goal es menor (perder), 'up' si es mayor (ganar)

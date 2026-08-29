@@ -70,9 +70,9 @@ class UserRutina extends Model
      * la relación no se cargó, hace lazy load (cuidado con N+1: preferí
      * `->load('rutina')` o `with('rutina')` en el query).
      *
-     * IMPORTANTE: leer `$this->attributes['rutina_id']` directo (no
-     * `$this->rutina_id`) para no disparar Model::shouldBeStrict en dev
-     * cuando se accede al accessor sin haber cargado la fila.
+     * IMPORTANTE: usar `$this->rutina` (sin parentesis) para que Laravel
+     * dispare el lazy load. `$this->rutina()` ejecuta el metodo de la
+     * relacion y devuelve el proxy BelongsTo, NO el modelo relacionado.
      */
     protected function nivel(): Attribute
     {
@@ -82,12 +82,7 @@ class UserRutina extends Model
                 if (! $fkId) {
                     return null;
                 }
-                // Si la relación está cargada, usar source of truth directo
-                if ($this->relationLoaded('rutina')) {
-                    return $this->rutina?->nivel;
-                }
-                // Si no está cargada pero hay FK, lazy load
-                return $this->rutina()?->nivel;
+                return $this->rutina?->nivel;
             },
         );
     }
@@ -100,10 +95,7 @@ class UserRutina extends Model
                 if (! $fkId) {
                     return null;
                 }
-                if ($this->relationLoaded('rutina')) {
-                    return $this->rutina?->modalidad;
-                }
-                return $this->rutina()?->modalidad;
+                return $this->rutina?->modalidad;
             },
         );
     }
