@@ -458,9 +458,18 @@ const seleccionarRutina = async (nivel, modalidad) => {
   isSelecting.value = true;
 
   try {
+    // D1: el backend ahora pide `rutina_id` (FK a la tabla rutinas). Las
+    // columnas denormalizadas nivel/modalidad fueron dropeadas, asi que
+    // buscamos el id de la primera fila que matchee (nivel+modalidad) en
+    // la lista ya cargada.
+    const rutinaId = rutinasAgrupadas.value?.[nivel]?.modalidades?.[modalidad]?.dias?.[0]?.ejercicios?.[0]?.id;
+    if (!rutinaId) {
+      showNotification('No se encontro la rutina seleccionada. Refresca la pagina.', 'error');
+      return;
+    }
+
     await axios.post('/api/user-rutina', {
-      nivel,
-      modalidad,
+      rutina_id: rutinaId,
       dia_actual: 'Día 1',
     });
 
