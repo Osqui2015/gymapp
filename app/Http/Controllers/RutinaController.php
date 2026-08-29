@@ -18,7 +18,14 @@ class RutinaController extends Controller
         if ($request->boolean('comunitarias')) {
             $query->where('publica', true);
             if ($user) {
-                $query->where('created_by', '!=', $user->id);
+                // Excluir rutinas del user actual, pero mantener las del
+                // sistema (created_by IS NULL). En MySQL `null != 1` da NULL,
+                // no TRUE, asi que sin el orWhereNull las rutinas oficiales
+                // desaparecen del catalogo.
+                $query->where(function ($q) use ($user) {
+                    $q->where('created_by', '!=', $user->id)
+                      ->orWhereNull('created_by');
+                });
             }
         } else {
             $query->where(function ($q) use ($user) {

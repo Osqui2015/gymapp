@@ -66,25 +66,6 @@
             Crear Nueva Rutina
           </a>
         </div>
-      </div>
-
-      <!-- Vista para usuarios NO alumnos: Catálogo completo -->
-      <div>
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">Explorar Rutinas</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Selecciona, comparte o importa planes de entrenamiento</p>
-          </div>
-          <a
-            href="/rutinas/crear"
-            class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-5 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Crear Nueva Rutina
-          </a>
-        </div>
 
         <!-- Navigation Tabs -->
         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide">
