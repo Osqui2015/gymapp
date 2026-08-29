@@ -27,7 +27,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             EjercicioSeeder::class,
             RutinaSeeder::class,
-            RutinaDia3FullBodySeeder::class,  // catalogo comunitario: DIA 3 FULL BODY
+            RutinaDia1TorsoSeeder::class,    // catalogo comunitario: DIA 1 TORSO
+            RutinaDia2PiernaSeeder::class,   // catalogo comunitario: DIA 2 PIERNA
+            RutinaDia3FullBodySeeder::class, // catalogo comunitario: DIA 3 FULL BODY
         ]);
 
         User::factory()->create([
