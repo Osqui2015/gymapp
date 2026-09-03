@@ -14,7 +14,7 @@
  *   - POST/PUT/DELETE: siempre van a la red, sin cache
  */
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
 const API_CACHE = `gymapp-api-${VERSION}`;
@@ -53,8 +53,12 @@ self.addEventListener('activate', (event) => {
 
 // === Helpers ===
 const isStaticAsset = (url) => {
+    // Los assets de /build/assets/ tienen hashes únicos e inmutables y son gestionados
+    // directamente por la caché HTTP nativa del navegador. Excluirlos evita el warning:
+    // "cross-world service worker resource mismatch" con los <link rel="modulepreload">.
+    if (url.pathname.startsWith('/build/assets/')) return false;
+
     return /\.(css|js|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif)$/i.test(url.pathname) ||
-           url.pathname.startsWith('/build/') ||
            url.pathname.startsWith('/icons/');
 };
 

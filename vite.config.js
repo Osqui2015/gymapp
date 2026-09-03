@@ -18,6 +18,9 @@ export default defineConfig({
         },
     },
     build: {
+        modulePreload: {
+            polyfill: false,
+        },
         rollupOptions: {
             output: {
                 // Separa vendors en chunks cacheables por separado.
