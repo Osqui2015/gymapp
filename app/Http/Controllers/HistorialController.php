@@ -3,14 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Historial;
-use App\Models\Rutina;
 use App\Models\User;
 use App\Services\AchievementService;
-use Illuminate\Http\Request;
+use App\Services\HistorialService;
+use App\Services\StatsService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class HistorialController extends Controller
 {
+    public function __construct(
+        private HistorialService $historial,
+        private StatsService $stats,
+    ) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -57,42 +63,63 @@ class HistorialController extends Controller
     public function guardar(Request $request)
     {
         $user = $request->user();
-        $data = $request->validate([
-            'rutina_nombre' => ['required', 'string', 'max:255'],
-            'dia' => ['required', 'string', 'max:255'],
-            'ejercicio_nombre' => ['required', 'string', 'max:255'],
-            'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
-            'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
-            'reps_min' => ['required', 'string', 'max:255'],
-            'reps_max' => ['required', 'string', 'max:255'],
-            'reps_realizadas' => ['nullable', 'integer', 'min:0', 'max:1000'],
-            'descanso_min' => ['required', 'numeric', 'min:0', 'max:30'],
-            'peso' => ['nullable', 'numeric', 'min:0', 'max:1000'],
-            'completado' => ['nullable', 'boolean'],
-            'superserie_grupo' => ['nullable', 'integer', 'min:0'],
-            // Fase 3: esfuerzo por set
-            'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
-            'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
-        ]);
+        $hoy = Carbon::now()->toDateString();
 
-        $data['user_id'] = $user->id;
-        $data['fecha'] = Carbon::now()->toDateString();
+        // Acepta DOS formatos (backward compat):
+        //   1) Single set: campos a nivel raíz (usado por el test SuperserieTest)
+        //   2) Array de sets: { ..., series: [ {...}, {...} ] } (usado por MobileQuickSeriesInput)
+        $series = $request->input('series');
+        if (is_array($series) && !empty($series)) {
+            $records = $series;
+        } else {
+            $records = [$request->all()];
+        }
 
-        Historial::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'rutina_nombre' => $data['rutina_nombre'],
-                'dia' => $data['dia'],
-                'ejercicio_nombre' => $data['ejercicio_nombre'],
-                'series_numero' => $data['series_numero'],
-            ],
-            $data
-        );
+        $validatedRecords = [];
+        foreach ($records as $rec) {
+            $data = validator($rec, [
+                'rutina_nombre' => ['required', 'string', 'max:255'],
+                'dia' => ['required', 'string', 'max:255'],
+                'ejercicio_nombre' => ['required', 'string', 'max:255'],
+                'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
+                'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
+                'reps_min' => ['required', 'string', 'max:255'],
+                'reps_max' => ['required', 'string', 'max:255'],
+                'reps_realizadas' => ['nullable', 'integer', 'min:0', 'max:1000'],
+                'descanso_min' => ['required', 'numeric', 'min:0', 'max:30'],
+                'peso' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+                'completado' => ['nullable', 'boolean'],
+                'superserie_grupo' => ['nullable', 'integer', 'min:0'],
+                // Nota libre por set (cómo se sintió, dolor, RPE subjetivo, etc.)
+                'nota_user' => ['nullable', 'string', 'max:500'],
+                // Fase 3: esfuerzo por set
+                'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
+                'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
+            ])->validate();
+
+            $data['user_id'] = $user->id;
+            $data['fecha'] = $hoy;
+            $validatedRecords[] = $data;
+        }
+
+        foreach ($validatedRecords as $data) {
+            Historial::updateOrCreate(
+                [
+                    'user_id' => $data['user_id'],
+                    'rutina_nombre' => $data['rutina_nombre'],
+                    'dia' => $data['dia'],
+                    'ejercicio_nombre' => $data['ejercicio_nombre'],
+                    'series_numero' => $data['series_numero'],
+                ],
+                $data
+            );
+        }
 
         $newMedals = AchievementService::checkWorkoutMilestones($user);
 
         return response()->json([
             'message' => 'Guardado',
+            'count' => count($validatedRecords),
             'new_medals' => $newMedals,
         ]);
     }
@@ -128,53 +155,9 @@ class HistorialController extends Controller
             'rutina_nombre' => ['required', 'string', 'max:255'],
         ]);
 
-        $ultimo = Historial::where('user_id', $user->id)
-            ->where('rutina_nombre', $data['rutina_nombre'])
-            ->where('completado', true)
-            ->orderBy('fecha', 'desc')
-            ->first();
-
-        if (!$ultimo) {
-            return response()->json(['dia_actual' => 'Día 1']);
-        }
-
-        $diasCompletados = Historial::where('user_id', $user->id)
-            ->where('rutina_nombre', $data['rutina_nombre'])
-            ->where('completado', true)
-            ->selectRaw('DISTINCT dia')
-            ->get()
-            ->pluck('dia')
-            ->toArray();
-
-        // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
-        $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
-        $nivel = $userRutina?->rutina?->nivel ?? Rutina::query()->value('nivel');
-        $modalidad = $userRutina?->rutina?->modalidad ?? Rutina::query()->value('modalidad');
-
-        if (! $nivel || ! $modalidad) {
-            return response()->json(['dia_actual' => 'Día 1']);
-        }
-
-        $todosLosDias = Rutina::where('nivel', $nivel)
-            ->where('modalidad', $modalidad)
-            ->selectRaw('DISTINCT dia')
-            ->orderBy('dia')
-            ->get()
-            ->pluck('dia')
-            ->toArray();
-
-        $diaActual = $todosLosDias[0] ?? 'Día 1';
-        foreach ($todosLosDias as $index => $dia) {
-            if (!in_array($dia, $diasCompletados)) {
-                $diaActual = $dia;
-                break;
-            }
-            if ($index === count($todosLosDias) - 1) {
-                $diaActual = $todosLosDias[0];
-            }
-        }
-
-        return response()->json(['dia_actual' => $diaActual]);
+        return response()->json(
+            $this->historial->obtenerProgreso($user->id, $data['rutina_nombre'])
+        );
     }
 
     public function finalizarRutina(Request $request)
@@ -185,79 +168,19 @@ class HistorialController extends Controller
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
-        // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
-        $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
+        $result = $this->historial->finalizarRutinaDia($user);
 
-        if (!$userRutina || !$userRutina->rutina) {
-            return response()->json(['error' => 'No hay rutina seleccionada'], 404);
+        if (isset($result['error'])) {
+            $code = $result['error'] === 'No hay rutina seleccionada' ? 404 : 400;
+            return response()->json($result, $code);
         }
-
-        $rutina = $userRutina->rutina;
-        $rutinaNombre = $rutina->nivel.' '.$rutina->modalidad;
-        $diaActual = $userRutina->dia_actual ?: 'Día 1';
-
-        $rutinasDelDia = Rutina::where('nivel', $rutina->nivel)
-            ->where('modalidad', $rutina->modalidad)
-            ->where('dia', $diaActual)
-            ->orderBy('orden')
-            ->get();
-
-        foreach ($rutinasDelDia as $rutinaDelDia) {
-            $totalSeries = max(1, (int) $rutinaDelDia->series);
-
-            for ($serie = 1; $serie <= $totalSeries; $serie++) {
-                $historial = Historial::firstOrNew([
-                    'user_id' => $user->id,
-                    'rutina_nombre' => $rutinaNombre,
-                    'dia' => $diaActual,
-                    'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
-                    'series_numero' => $serie,
-                ]);
-
-                $historial->fill([
-                    'user_id' => $user->id,
-                    'rutina_nombre' => $rutinaNombre,
-                    'dia' => $diaActual,
-                    'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
-                    'series_numero' => $serie,
-                    'series_completadas' => $historial->exists ? $historial->series_completadas : 1,
-                    'reps_min' => $rutinaDelDia->reps_min,
-                    'reps_max' => $rutinaDelDia->reps_max,
-                    'reps_realizadas' => $historial->exists ? $historial->reps_realizadas : null,
-                    'descanso_min' => $rutinaDelDia->descanso_min,
-                    'completado' => true,
-                    'fecha' => Carbon::now()->toDateString(),
-                    'superserie_grupo' => $rutinaDelDia->superserie_grupo,
-                ]);
-
-                $historial->save();
-            }
-        }
-
-        $diasDisponibles = Rutina::where('nivel', $rutina->nivel)
-            ->where('modalidad', $rutina->modalidad)
-            ->selectRaw('DISTINCT dia')
-            ->orderBy('dia')
-            ->pluck('dia')
-            ->toArray();
-
-        $diaSiguiente = 'Día 1';
-        $indiceActual = array_search($diaActual, $diasDisponibles, true);
-
-        if ($indiceActual !== false && isset($diasDisponibles[$indiceActual + 1])) {
-            $diaSiguiente = $diasDisponibles[$indiceActual + 1];
-        }
-
-        $userRutina->update([
-            'dia_actual' => $diaSiguiente,
-        ]);
 
         $newMedals = AchievementService::checkWorkoutMilestones($user);
 
         return response()->json([
             'message' => 'Rutina finalizada',
-            'dia_actual' => $diaSiguiente,
-            'rutina_nombre' => $rutinaNombre,
+            'dia_actual' => $result['dia_actual'],
+            'rutina_nombre' => $result['rutina_nombre'],
             'new_medals' => $newMedals,
         ]);
     }
@@ -287,23 +210,9 @@ class HistorialController extends Controller
         $year = (int) $request->integer('year', now()->year);
         $month = (int) $request->integer('month', now()->month);
 
-        $start = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
-        $end = $start->copy()->endOfMonth();
-
-        $sesiones = \App\Models\Historial::where('user_id', $targetUserId)
-            ->whereBetween('fecha', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw('fecha, COUNT(*) as total, SUM(series_completadas) as series')
-            ->groupBy('fecha')
-            ->orderBy('fecha')
-            ->get();
-
-        return response()->json([
-            'year' => $year,
-            'month' => $month,
-            'dates' => $sesiones->pluck('fecha')->toArray(),
-            'counts' => $sesiones->pluck('total', 'fecha')->toArray(),
-            'series' => $sesiones->pluck('series', 'fecha')->toArray(),
-        ]);
+        return response()->json(
+            $this->historial->buildCalendar($targetUserId, $year, $month)
+        );
     }
 
     /**
@@ -311,14 +220,6 @@ class HistorialController extends Controller
      *
      * Por defecto la semana actual (lunes a domingo).
      * Query: ?week_start=YYYY-MM-DD&user_id=X
-     *
-     * Response:
-     *   - week_start, week_end (YYYY-MM-DD)
-     *   - days: array de 7 elementos (lun..dom) con:
-     *       { date, dia_semana_es, dia_semana_corto, es_hoy, sets, volumen,
-     *         ejercicios: ['Press banca', 'Sentadilla', ...], completado: bool }
-     *   - totals: { sets, volumen, dias_entrenados, dias_descanso }
-     *   - streak: racha actual
      */
     public function weekSummary(Request $request)
     {
@@ -335,126 +236,36 @@ class HistorialController extends Controller
             }
         }
 
-        $weekStart = $request->filled('week_start')
-            ? Carbon::parse($request->week_start)->startOfDay()
-            : now()->startOfWeek(Carbon::MONDAY);
-
-        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
-
-        $sesiones = Historial::where('user_id', $targetUserId)
-            ->where('completado', true)
-            ->whereDate('fecha', '>=', $weekStart->toDateString())
-            ->whereDate('fecha', '<=', $weekEnd->toDateString())
-            ->selectRaw('DATE(fecha) as fecha_key, COUNT(*) as sets, SUM(peso * COALESCE(reps_realizadas, 0)) as volumen')
-            ->groupBy('fecha_key')
-            ->orderBy('fecha_key')
-            ->get()
-            ->keyBy('fecha_key');
-
-        // Traer ejercicios por día en una segunda query (compatible con SQLite y MySQL)
-        $ejerciciosPorFecha = Historial::where('user_id', $targetUserId)
-            ->where('completado', true)
-            ->whereDate('fecha', '>=', $weekStart->toDateString())
-            ->whereDate('fecha', '<=', $weekEnd->toDateString())
-            ->select('fecha', 'ejercicio_nombre')
-            ->distinct()
-            ->orderBy('fecha')
-            ->get()
-            ->groupBy(fn($r) => Carbon::parse($r->fecha)->toDateString())
-            ->map(fn($rows) => $rows->pluck('ejercicio_nombre')->unique()->values()->take(5)->all());
-
-        $days = [];
-        $totalSets = 0;
-        $totalVolumen = 0;
-        $diasEntrenados = 0;
-        $diasDescanso = 0;
-
-        $diasSemana = [
-            1 => ['lunes', 'Lun'],
-            2 => ['martes', 'Mar'],
-            3 => ['miércoles', 'Mié'],
-            4 => ['jueves', 'Jue'],
-            5 => ['viernes', 'Vie'],
-            6 => ['sábado', 'Sáb'],
-            7 => ['domingo', 'Dom'],
-        ];
-
-        for ($i = 0; $i < 7; $i++) {
-            $currentDay = $weekStart->copy()->addDays($i);
-            $date = $currentDay->toDateString();
-            $sesion = $sesiones->get($date);
-            $esHoy = $date === now()->toDateString();
-            $diaNum = (int) $currentDay->dayOfWeek ?: 7;  // 0=Dom → 7
-
-            $ejercicios = [];
-            $sets = 0;
-            $volumen = 0;
-            $completado = false;
-
-            if ($sesion) {
-                $completado = true;
-                $sets = (int) $sesion->sets;
-                $volumen = (float) $sesion->volumen;
-                $ejercicios = $ejerciciosPorFecha->get($date, []);
-                $totalSets += $sets;
-                $totalVolumen += $volumen;
-                $diasEntrenados++;
-            } else {
-                $diasDescanso++;
-            }
-
-            $days[] = [
-                'date' => $date,
-                'dia_semana_es' => ucfirst($diasSemana[$diaNum][0]),
-                'dia_semana_corto' => $diasSemana[$diaNum][1],
-                'es_hoy' => $esHoy,
-                'sets' => $sets,
-                'volumen' => round($volumen, 1),
-                'ejercicios' => $ejercicios,
-                'completado' => $completado,
-            ];
-        }
-
-        // Streak rápido
-        $diasConActividad = Historial::where('user_id', $targetUserId)
-            ->where('completado', true)
-            ->whereDate('fecha', '>=', now()->subYears(2)->toDateString())
-            ->selectRaw('DISTINCT fecha')
-            ->orderBy('fecha', 'desc')
-            ->pluck('fecha')
-            ->map(fn($d) => Carbon::parse($d)->toDateString())
-            ->all();
-
-        $streak = $this->calcCurrentStreakInline($diasConActividad);
-
-        return response()->json([
-            'week_start' => $weekStart->toDateString(),
-            'week_end' => $weekEnd->toDateString(),
-            'days' => $days,
-            'totals' => [
-                'sets' => $totalSets,
-                'volumen' => round($totalVolumen, 1),
-                'dias_entrenados' => $diasEntrenados,
-                'dias_descanso' => $diasDescanso,
-            ],
-            'streak' => $streak,
-        ]);
+        return response()->json(
+            $this->historial->buildWeekSummary(
+                $targetUserId,
+                $request->filled('week_start') ? $request->week_start : null,
+                $this->stats,
+            )
+        );
     }
 
-    private function calcCurrentStreakInline(array $diasOrdenadosDesc): int
+    /**
+     * Compara el rendimiento de un ejercicio entre dos fechas.
+     * GET /api/historial/comparar?ejercicio=X&desde=YYYY-MM-DD&hasta=YYYY-MM-DD
+     */
+    public function comparar(Request $request)
     {
-        if (empty($diasOrdenadosDesc)) return 0;
-        $streak = 0;
-        $expected = now()->toDateString();
-        $diasSet = array_flip($diasOrdenadosDesc);
-        if (!isset($diasSet[$expected])) {
-            $expected = now()->subDay()->toDateString();
-            if (!isset($diasSet[$expected])) return 0;
-        }
-        while (isset($diasSet[$expected])) {
-            $streak++;
-            $expected = Carbon::parse($expected)->subDay()->toDateString();
-        }
-        return $streak;
+        $user = $request->user();
+
+        $data = $request->validate([
+            'ejercicio' => 'required|string|max:255',
+            'desde' => 'required|date',
+            'hasta' => 'required|date|after_or_equal:desde',
+        ]);
+
+        $reporte = $this->historial->compararEjercicio(
+            $user->id,
+            $data['ejercicio'],
+            $data['desde'],
+            $data['hasta'],
+        );
+
+        return response()->json($reporte);
     }
 }

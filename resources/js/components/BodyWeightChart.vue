@@ -66,48 +66,9 @@
             </div>
         </div>
 
-        <!-- Chart -->
+        <!-- Chart (Chart.js, lazy-loaded) -->
         <div v-if="chartData.length > 0" class="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart :data="chartData" :margin="{ top: 5, right: 20, left: -10, bottom: 5 }">
-                    <CartesianGrid stroke="#e5e7eb" stroke-dasharray="3 3" :stroke-opacity="0.4" />
-                    <XAxis
-                        :data-key="'fecha'"
-                        :tick-formatter="formatTick"
-                        stroke="#9ca3af"
-                        style="font-size: 11px"
-                    />
-                    <YAxis
-                        :domain="yDomain"
-                        stroke="#9ca3af"
-                        style="font-size: 11px"
-                        tick-formatter="(v) => `${v}`"
-                    />
-                    <Tooltip
-                        :content-style="{ background: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }"
-                        :item-style="{ color: '#fff' }"
-                        :label-style="{ color: '#a3e635', fontWeight: 'bold' }"
-                        :formatter="(v) => `${v} kg`"
-                    />
-                    <!-- Línea horizontal punteada del goal -->
-                    <ReferenceLine
-                        v-if="goal"
-                        :y="goal"
-                        stroke="#a3e635"
-                        stroke-dasharray="6 4"
-                        stroke-width="2"
-                        :label="{ value: `Objetivo: ${goal} kg`, position: 'right', fill: '#a3e635', fontSize: 11, fontWeight: 'bold' }"
-                    />
-                    <Line
-                        type="monotone"
-                        :data-key="'peso'"
-                        stroke="#4f46e5"
-                        stroke-width="2.5"
-                        dot="{ r: 3, fill: '#4f46e5' }"
-                        active-dot="{ r: 5, fill: '#4f46e5' }"
-                    />
-                </LineChart>
-            </ResponsiveContainer>
+            <canvas ref="chartCanvas"></canvas>
         </div>
 
         <div v-else class="text-center py-12 text-gray-400 text-sm">
@@ -118,8 +79,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
 const props = defineProps({
     data: { type: Array, default: () => [] },
@@ -133,6 +93,8 @@ const props = defineProps({
 const emit = defineEmits(['update:goal']);
 
 const goalLocal = ref(props.goal);
+const chartCanvas = ref(null);
+let chartInstance = null;
 
 watch(() => props.goal, (v) => { goalLocal.value = v; });
 
@@ -159,7 +121,7 @@ const deltaClass = computed(() => {
     if (props.delta === 0) return 'text-emerald-600';
     if (props.direction === 'down' && props.delta < 0) return 'text-emerald-600';
     if (props.direction === 'up' && props.delta > 0) return 'text-emerald-600';
-    return 'text-rose-600';  // lejos del goal
+    return 'text-rose-600';
 });
 
 function formatDate(iso) {
@@ -178,8 +140,128 @@ function onGoalBlur() {
     if (goalLocal.value !== props.goal && goalLocal.value > 0) {
         emit('update:goal', goalLocal.value);
     } else if (!goalLocal.value) {
-        // Si está vacío, también lo mandamos (null) para borrar el goal
         emit('update:goal', null);
     }
 }
+
+function buildChart() {
+    if (!chartCanvas.value || chartData.value.length === 0) return;
+
+    const labels = chartData.value.map(d => formatTick(d.fecha));
+    const pesos = chartData.value.map(d => d.peso);
+
+    // Línea horizontal del goal: misma cantidad de puntos que el dataset principal
+    const goalLine = props.goal
+        ? labels.map(() => props.goal)
+        : null;
+
+    const datasets = [
+        {
+            label: 'Peso (kg)',
+            data: pesos,
+            borderColor: '#4f46e5',
+            backgroundColor: '#4f46e5',
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            fill: false,
+        },
+    ];
+
+    if (goalLine) {
+        datasets.push({
+            label: `Objetivo: ${props.goal} kg`,
+            data: goalLine,
+            borderColor: '#a3e635',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            fill: false,
+        });
+    }
+
+    const config = {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: {
+                    ticks: { color: '#9ca3af', font: { size: 11 } },
+                    grid: { display: false },
+                },
+                y: {
+                    min: yDomain.value[0],
+                    max: yDomain.value[1],
+                    ticks: { color: '#9ca3af', font: { size: 11 } },
+                    grid: { color: 'rgba(229, 231, 235, 0.4)' },
+                },
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1f2937',
+                    titleColor: '#a3e635',
+                    bodyColor: '#fff',
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    cornerRadius: 8,
+                    padding: 8,
+                    titleFont: { weight: 'bold' },
+                    bodyFont: { size: 12 },
+                    callbacks: {
+                        label: (ctx) => `${ctx.parsed.y} kg`,
+                    },
+                },
+            },
+        },
+    };
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    chartInstance = new Chart(chartCanvas.value, config);
+}
+
+async function initChart() {
+    // Lazy-load: chart.js vive en vendor-chart (cargado por otros componentes).
+    const { Chart, registerables } = await import('chart.js');
+    Chart.register(...registerables);
+    await nextTick();
+    buildChart();
+}
+
+onMounted(() => {
+    if (chartData.value.length > 0) {
+        initChart();
+    }
+});
+
+onBeforeUnmount(() => {
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+    }
+});
+
+// Re-render cuando cambian los datos, el goal, o el dominio Y
+watch(
+    [chartData, () => props.goal, yDomain],
+    () => {
+        if (chartData.value.length > 0) {
+            if (chartInstance) {
+                buildChart();
+            } else {
+                initChart();
+            }
+        }
+    },
+    { deep: true }
+);
 </script>

@@ -36,6 +36,7 @@ class Historial extends Model
         'completado',
         'fecha',
         'comentario_trainer',
+        'nota_user',         // Nota libre del usuario por set (cómo se sintió, RPE subjetivo, etc.)
         'trainer_id',
         'superserie_grupo',
         // Fase 3: tracking de esfuerzo por set (opcional)

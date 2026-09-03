@@ -126,6 +126,20 @@
                                         <span v-else class="text-xs">✓</span>
                                     </button>
                                 </div>
+
+                                <!-- Nota libre por set (opcional, se muestra siempre para no esconderla) -->
+                                <div class="flex items-center gap-2 pl-12">
+                                    <span class="text-[10px] uppercase tracking-wider text-gray-400 whitespace-nowrap" title="Cómo te sentiste en este ejercicio">
+                                        ✏️ nota
+                                    </span>
+                                    <input
+                                        v-model="ej._nota_user"
+                                        type="text"
+                                        maxlength="500"
+                                        placeholder="Opcional: cómo se sintió el ejercicio (ej: dolió el hombro, RPE 8, fácil)"
+                                        class="flex-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -195,7 +209,7 @@ const clonar = () => {
                 completado: false,
             });
         }
-        return { ...ej, _series: series };
+        return { ...ej, _series: series, _nota_user: '' };
     });
 };
 
@@ -241,9 +255,10 @@ const marcarCompletada = (serie) => {
 const guardar = () => {
     const records = [];
     localEjercicios.value.forEach((ej) => {
+        const nota = (ej._nota_user || '').trim();
         seriesDe(ej).forEach((s) => {
             if (!s.completado) return;
-            records.push({
+            const rec = {
                 ejercicio_nombre: ej.ejercicio_nombre || ej.nombre,
                 series_numero: s.series_numero,
                 peso: s.peso,
@@ -253,7 +268,11 @@ const guardar = () => {
                 descanso_min: ej.descanso_min,
                 superserie_grupo: ej.superserie_grupo || null,
                 completado: true,
-            });
+            };
+            // La nota se persiste en CADA set del ejercicio (así queda searchable
+            // y los trainers pueden ver "qué se sintió esa semana en sentadilla").
+            if (nota) rec.nota_user = nota;
+            records.push(rec);
         });
     });
     if (!records.length) {

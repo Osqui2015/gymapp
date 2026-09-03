@@ -13,15 +13,32 @@
           </h1>
           <p class="mt-2 text-gray-600 dark:text-gray-400">Controla tus medidas, metas personales y logros desbloqueados</p>
         </div>
-        <a
-          href="/dashboard"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm shadow-sm transition-all"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Volver al Dashboard
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            @click="exportarProgresoPdf"
+            :disabled="exportandoPdf"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            :title="exportandoPdf ? 'Generando PDF...' : 'Descargar reporte en PDF'"
+          >
+            <svg v-if="!exportandoPdf" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <svg v-else class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8" />
+            </svg>
+            {{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}
+          </button>
+          <a
+            href="/dashboard"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm shadow-sm transition-all"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver al Dashboard
+          </a>
+        </div>
       </div>
 
       <!-- Body weight chart con goal line (Fase 1.2) -->
@@ -81,6 +98,11 @@
         @eliminar="eliminarMeta"
       />
 
+      <!-- Fotos de progreso (galería cronológica) -->
+      <div v-show="activeTab === 'fotos'">
+        <FotosTab />
+      </div>
+
       <!-- Logros -->
       <LogrosTab
         v-show="activeTab === 'logros'"
@@ -105,15 +127,18 @@ import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { useConfetti } from '../composables/useConfetti';
+import { useProgresoPdf } from '../composables/useProgresoPdf';
 
 import MedidasTab from './progreso/MedidasTab.vue';
 import MetasTab from './progreso/MetasTab.vue';
 import LogrosTab from './progreso/LogrosTab.vue';
+import FotosTab from './progreso/FotosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
 
-// BodyWeightChart arrastra recharts (LineChart chunk ~371 kB). Lo cargamos async
-// para que ese chunk no forme parte del grafo eager de ProgresoContent.
+// BodyWeightChart carga chart.js dinámicamente (vendor-chart, ya cacheado
+// por otros componentes). Lo cargamos async para que ProgresoContent no
+// arrastre vendor-chart en su grafo eager.
 const BodyWeightChart = defineAsyncComponent(
     () => import('./BodyWeightChart.vue')
 );
@@ -211,6 +236,7 @@ const modalDetalle = ref({
 const tabs = [
     { id: 'medidas', emoji: '📏', label: 'Medidas Corporales' },
     { id: 'metas',   emoji: '🎯', label: 'Metas Personales' },
+    { id: 'fotos',   emoji: '📸', label: 'Galería' },
     { id: 'logros',  emoji: '🏆', label: 'Medallas y Logros' },
 ];
 
@@ -505,6 +531,43 @@ onMounted(() => {
     cargarLogros();
     cargarWeightChart();
 });
+
+// === QW4: Exportar progreso a PDF ===
+// Usa jspdf (lazy-loaded) para generar un PDF con cover, stats, medidas,
+// metas y logros. No hace falta un endpoint backend: la data ya está en
+// el estado del componente. Si la sección no se cargó todavía (ej. el
+// user nunca entró a "metas"), hacemos un fetch para tener data completa.
+const { exportando: exportandoPdf, exportarPdf } = useProgresoPdf();
+
+const exportarProgresoPdf = async () => {
+    try {
+        // Pedimos en paralelo lo que no tenemos en estado local
+        const [statsRes, userRes, metasRes, logrosRes] = await Promise.all([
+            axios.get('/api/stats/resumen').catch(() => ({ data: {} })),
+            axios.get('/api/user-info').catch(() => ({ data: {} })),
+            axios.get('/api/metas').catch(() => ({ data: [] })),
+            axios.get('/api/logros').catch(() => ({ data: [] })),
+        ]);
+
+        // Stats y metas ya pueden estar cargados en el estado local; usamos
+        // lo que esté más completo (local o lo recién fetcheado).
+        const stats = statsRes.data || {};
+        const metasArr = (metasRes.data?.length ? metasRes.data : metas.value) || [];
+        const logrosArr = (logrosRes.data?.length ? logrosRes.data : logros.value) || [];
+        const nombre = userRes.data?.name || userRes.data?.nick || 'Alumno';
+
+        await exportarPdf({
+            progresos: progresos.value,
+            stats,
+            metas: metasArr,
+            logros: logrosArr,
+            userName: nombre,
+        });
+        toast.success('PDF generado ✓');
+    } catch (e) {
+        toast.apiError(e, 'No se pudo generar el PDF.');
+    }
+};
 </script>
 
 <style scoped>

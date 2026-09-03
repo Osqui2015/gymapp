@@ -1,7 +1,6 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import axios from 'axios'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const props = defineProps({
     userId: { type: Number, default: null },
@@ -11,6 +10,8 @@ const loading = ref(false)
 const error = ref(null)
 const data = ref(null)
 const window = ref('30')
+const chartCanvas = ref(null)
+let chartInstance = null
 
 const WINDOWS = [
     { key: '30', label: '30d' },
@@ -70,7 +71,7 @@ const avgLabel = computed(() => {
     return '–'
 })
 
-// Para el LineChart: solo valores no-null en sus semanas
+// Para el chart: solo valores no-null en sus semanas
 const chartData = computed(() => {
     if (!data.value?.tendencia) return []
     return data.value.tendencia.map((w) => ({
@@ -83,7 +84,6 @@ const chartData = computed(() => {
 const hasRir = computed(() => data.value?.avg_por_tipo?.rir !== null && data.value?.avg_por_tipo?.rir !== undefined)
 const hasRpe = computed(() => data.value?.avg_por_tipo?.rpe !== null && data.value?.avg_por_tipo?.rpe !== undefined)
 
-// Dominante (la que más sets tiene en la ventana)
 const dominant = computed(() => {
     if (!data.value?.tendencia) return 'rir'
     const counts = data.value.tendencia.reduce(
@@ -98,7 +98,6 @@ const dominant = computed(() => {
     return counts.rir >= counts.rpe ? 'rir' : 'rpe'
 })
 
-// Y-axis range adaptativo a la escala dominante
 const yDomain = computed(() => {
     if (dominant.value === 'rir') return [0, 5]
     return [5, 10]
@@ -107,6 +106,112 @@ const yDomain = computed(() => {
 const reverseY = computed(() => dominant.value === 'rir')
 
 const totalChartPoints = computed(() => chartData.value.length)
+
+function buildChart() {
+    if (!chartCanvas.value || chartData.value.length === 0) return
+
+    const labels = chartData.value.map((d) => d.week)
+    const datasets = []
+
+    if (hasRir.value) {
+        datasets.push({
+            label: 'RIR',
+            data: chartData.value.map((d) => d.rir),
+            borderColor: '#10b981',
+            backgroundColor: '#10b981',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            spanGaps: true,
+        })
+    }
+    if (hasRpe.value) {
+        datasets.push({
+            label: 'RPE',
+            data: chartData.value.map((d) => d.rpe),
+            borderColor: '#f59e0b',
+            backgroundColor: '#f59e0b',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            spanGaps: true,
+        })
+    }
+
+    const config = {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: {
+                    ticks: { color: '#9ca3af', font: { size: 10 } },
+                    grid: { display: false },
+                },
+                y: {
+                    min: yDomain.value[0],
+                    max: yDomain.value[1],
+                    reverse: reverseY.value,
+                    ticks: { color: '#9ca3af', font: { size: 10 } },
+                    grid: { color: 'rgba(156, 163, 175, 0.2)' },
+                },
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                    titleColor: '#a5b4fc',
+                    bodyColor: '#fff',
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    cornerRadius: 8,
+                    padding: 8,
+                    titleFont: { weight: 'bold', size: 11 },
+                    bodyFont: { size: 11 },
+                },
+            },
+        },
+    }
+
+    if (chartInstance) {
+        chartInstance.destroy()
+    }
+    chartInstance = new Chart(chartCanvas.value, config)
+}
+
+async function initChart() {
+    const { Chart, registerables } = await import('chart.js')
+    Chart.register(...registerables)
+    await nextTick()
+    buildChart()
+}
+
+onBeforeUnmount(() => {
+    if (chartInstance) {
+        chartInstance.destroy()
+        chartInstance = null
+    }
+})
+
+// Re-render cuando llegan los datos o cambia la ventana
+watch(
+    [chartData, hasRir, hasRpe, yDomain, reverseY],
+    () => {
+        if (chartData.value.length > 0) {
+            if (chartInstance) {
+                buildChart()
+            } else {
+                initChart()
+            }
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -180,59 +285,7 @@ const totalChartPoints = computed(() => chartData.value.length)
                     </p>
                 </div>
                 <div style="width: 100%; height: 140px">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart :data="chartData" :margin="{ top: 4, right: 8, left: -16, bottom: 0 }">
-                            <CartesianGrid stroke-dasharray="3 3" stroke="#9ca3af" :stroke-opacity="0.3" />
-                            <XAxis
-                                data-key="week"
-                                :tick="{ fontSize: 10, fill: '#9ca3af' }"
-                                :tick-line="false"
-                                :axis-line="false"
-                                interval="preserveStartEnd"
-                            />
-                            <YAxis
-                                :domain="yDomain"
-                                :reversed="reverseY"
-                                :tick="{ fontSize: 10, fill: '#9ca3af' }"
-                                :tick-line="false"
-                                :axis-line="false"
-                                :width="32"
-                            />
-                            <Tooltip
-                                :content-style="{
-                                    backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontSize: '11px',
-                                    color: '#fff',
-                                }"
-                                :label-style="{ color: '#a5b4fc', fontWeight: 600 }"
-                                :item-style="{ color: '#fff' }"
-                            />
-                            <Line
-                                v-if="hasRir"
-                                type="monotone"
-                                data-key="rir"
-                                name="RIR"
-                                stroke="#10b981"
-                                :stroke-width="2"
-                                :dot="{ r: 3, fill: '#10b981' }"
-                                :active-dot="{ r: 5, fill: '#10b981' }"
-                                connect-nulls
-                            />
-                            <Line
-                                v-if="hasRpe"
-                                type="monotone"
-                                data-key="rpe"
-                                name="RPE"
-                                stroke="#f59e0b"
-                                :stroke-width="2"
-                                :dot="{ r: 3, fill: '#f59e0b' }"
-                                :active-dot="{ r: 5, fill: '#f59e0b' }"
-                                connect-nulls
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <canvas ref="chartCanvas"></canvas>
                 </div>
             </div>
 

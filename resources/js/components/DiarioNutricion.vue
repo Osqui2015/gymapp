@@ -21,6 +21,98 @@
         </a>
       </div>
 
+      <!-- TDEE Configuration Banner / Summary -->
+      <div class="mb-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-2xl shadow-md p-5 border border-indigo-200 dark:border-indigo-800/50">
+        <div v-if="loadingTdee" class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+          Calculando TDEE...
+        </div>
+
+        <div v-else-if="!tdee.inputs_completos" class="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+          <div>
+            <h3 class="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <span>🔥</span> Configurá tu TDEE para macros inteligentes
+            </h3>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Calculamos tu metabolismo basal (Mifflin-St Jeor) y te sugerimos
+              calorías y macros según tu objetivo.
+              <span v-if="tdee.faltantes?.length" class="block mt-1 font-semibold text-amber-700 dark:text-amber-400">
+                Faltan: {{ tdee.faltantes.join(', ') }}.
+              </span>
+            </p>
+          </div>
+          <button
+            @click="mostrarConfig = true"
+            class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 shadow-md text-sm whitespace-nowrap"
+          >
+            Configurar ahora
+          </button>
+        </div>
+
+        <div v-else class="grid sm:grid-cols-4 gap-4">
+          <div class="text-center sm:text-left">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">BMR</p>
+            <p class="text-2xl font-black text-gray-900 dark:text-white font-mono">{{ tdee.bmr }}</p>
+            <p class="text-[10px] text-gray-400">kcal/día en reposo</p>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">TDEE</p>
+            <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-mono">{{ tdee.tdee }}</p>
+            <p class="text-[10px] text-gray-400">mantenimiento</p>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Target</p>
+            <p class="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono">{{ tdee.calorias_target }}</p>
+            <p class="text-[10px] text-gray-400">kcal/día objetivo</p>
+          </div>
+          <div class="text-center sm:text-left flex flex-col justify-between">
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Macros</p>
+            <p class="text-sm font-mono text-gray-700 dark:text-gray-300 leading-tight">
+              <span class="text-red-500 font-bold">{{ tdee.macros.proteinas }}g</span> prot ·
+              <span class="text-amber-500 font-bold">{{ tdee.macros.carbohidratos }}g</span> carb ·
+              <span class="text-emerald-500 font-bold">{{ tdee.macros.grasas }}g</span> gras
+            </p>
+            <button
+              @click="mostrarConfig = true"
+              class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1 self-center sm:self-start"
+            >
+              Cambiar objetivo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: TdeeConfig -->
+      <Teleport to="body">
+        <Transition name="modal">
+          <div
+            v-if="mostrarConfig"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            @click.self="mostrarConfig = false"
+          >
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div class="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
+              <button
+                type="button"
+                @click="mostrarConfig = false"
+                class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                aria-label="Cerrar"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <TdeeConfig
+                cancelable
+                @saved="onTdeeSaved"
+                @cancel="mostrarConfig = false"
+              />
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
       <!-- Date selector -->
       <div class="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700 flex justify-between items-center">
         <button
@@ -75,7 +167,9 @@
                 {{ diario.calorias }}
               </p>
               <p class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold">Consumidas</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 font-mono mt-1">Límite: {{ dailyCalorieGoal }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 font-mono mt-1">
+                Target: {{ tdee.inputs_completos ? tdee.calorias_target : '—' }}
+              </p>
             </div>
           </div>
 
@@ -84,30 +178,36 @@
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold">
                 <span class="text-red-500">🥩 Proteínas</span>
-                <span class="font-mono text-gray-600 dark:text-gray-400">{{ diario.proteinas }}g</span>
+                <span class="font-mono text-gray-600 dark:text-gray-400">
+                  {{ diario.proteinas }}<span v-if="tdee.inputs_completos">/{{ tdee.macros.proteinas }}g</span>
+                </span>
               </div>
               <div class="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full bg-red-500 rounded-full" :style="{ width: `${Math.min((diario.proteinas / 150) * 100, 100)}%` }"></div>
+                <div class="h-full bg-red-500 rounded-full transition-all" :style="{ width: `${macroPct(diario.proteinas, tdee.macros?.proteinas)}%` }"></div>
               </div>
             </div>
 
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold">
                 <span class="text-amber-500">🍞 Carbohidratos</span>
-                <span class="font-mono text-gray-600 dark:text-gray-400">{{ diario.carbohidratos }}g</span>
+                <span class="font-mono text-gray-600 dark:text-gray-400">
+                  {{ diario.carbohidratos }}<span v-if="tdee.inputs_completos">/{{ tdee.macros.carbohidratos }}g</span>
+                </span>
               </div>
               <div class="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full bg-amber-500 rounded-full" :style="{ width: `${Math.min((diario.carbohidratos / 250) * 100, 100)}%` }"></div>
+                <div class="h-full bg-amber-500 rounded-full transition-all" :style="{ width: `${macroPct(diario.carbohidratos, tdee.macros?.carbohidratos)}%` }"></div>
               </div>
             </div>
 
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold">
                 <span class="text-emerald-500">🥑 Grasas</span>
-                <span class="font-mono text-gray-600 dark:text-gray-400">{{ diario.grasas }}g</span>
+                <span class="font-mono text-gray-600 dark:text-gray-400">
+                  {{ diario.grasas }}<span v-if="tdee.inputs_completos">/{{ tdee.macros.grasas }}g</span>
+                </span>
               </div>
               <div class="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full bg-emerald-500 rounded-full" :style="{ width: `${Math.min((diario.grasas / 70) * 100, 100)}%` }"></div>
+                <div class="h-full bg-emerald-500 rounded-full transition-all" :style="{ width: `${macroPct(diario.grasas, tdee.macros?.grasas)}%` }"></div>
               </div>
             </div>
           </div>
@@ -251,13 +351,18 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import Breadcrumbs from './Breadcrumbs.vue';
+import TdeeConfig from './TdeeConfig.vue';
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
 
 const fechaSeleccionada = ref(new Date().toISOString().split('T')[0]);
-const dailyCalorieGoal = ref(2000); // Default daily goal
 const guardando = ref(false);
+
+// TDEE state
+const tdee = ref({});
+const loadingTdee = ref(true);
+const mostrarConfig = ref(false);
 
 const diario = ref({
   calorias: 0,
@@ -274,14 +379,20 @@ const form = ref({
   grasas: ''
 });
 
-// SVG Dash offset representation
+// % de la barra de progreso de macros (limitado a 0..100 para que no se desborde)
+const macroPct = (actual, target) => {
+    if (!target || target <= 0) return 0;
+    return Math.min(100, Math.round((actual / target) * 100));
+};
+
+// SVG Dash offset representation (con el target real calculado)
 const dashOffset = computed(() => {
-  const goal = dailyCalorieGoal.value;
+  const goal = tdee.value.inputs_completos ? tdee.value.calorias_target : 2000;
   const current = diario.value.calorias;
   const circumference = 439.8; // 2 * pi * radius (70)
-  
+
   if (current >= goal) return 0;
-  
+
   const percentage = current / goal;
   return circumference - (percentage * circumference);
 });
@@ -303,13 +414,30 @@ const cambiarDia = (diff) => {
   fechaSeleccionada.value = current.toISOString().split('T')[0];
 };
 
+const cargarTdee = async () => {
+  loadingTdee.value = true;
+  try {
+    const { data } = await axios.get('/api/nutricion/tdee');
+    tdee.value = data || {};
+  } catch (e) {
+    console.error('Error al cargar TDEE:', e);
+  } finally {
+    loadingTdee.value = false;
+  }
+};
+
+const onTdeeSaved = (nuevoTdee) => {
+  tdee.value = nuevoTdee;
+  mostrarConfig.value = false;
+};
+
 const cargarDiario = async () => {
   try {
     const response = await axios.get('/api/nutricion', {
       params: { fecha: fechaSeleccionada.value }
     });
     diario.value = response.data;
-    
+
     // Auto-fill form values
     form.value.calorias = response.data.calorias || '';
     form.value.proteinas = response.data.proteinas || '';
@@ -330,7 +458,7 @@ const guardarNutricion = async () => {
       carbohidratos: form.value.carbohidratos || 0,
       grasas: form.value.grasas || 0
     });
-    
+
     showNotification(response.data.message || 'Registro guardado con éxito.', 'success');
     await cargarDiario();
   } catch (error) {
@@ -368,6 +496,7 @@ watch(fechaSeleccionada, () => {
 });
 
 onMounted(() => {
+  cargarTdee();
   cargarDiario();
 });
 </script>
@@ -380,5 +509,11 @@ onMounted(() => {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+.modal-enter-active, .modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+.modal-enter-from, .modal-leave-to {
+  opacity: 0;
 }
 </style>

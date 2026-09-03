@@ -134,6 +134,11 @@
           :historial="historial"
         />
 
+        <!-- Comparador numérico: diffs entre dos fechas para un ejercicio -->
+        <div v-show="activeTab === 'comparison'" class="mt-6">
+          <ComparadorEjercicios :ejercicios="historial" />
+        </div>
+
         <!-- Mapa corporal: muestra balance/fatigue/strength de los músculos -->
         <div v-show="activeTab === 'body_map'" class="space-y-4">
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
@@ -308,6 +313,7 @@ import RmCalculator from './historial/RmCalculator.vue';
 import KeyExercises from './historial/KeyExercises.vue';
 import HistorialCalendar from './historial/HistorialCalendar.vue';
 import HistorialComparison from './historial/HistorialComparison.vue';
+import ComparadorEjercicios from './historial/ComparadorEjercicios.vue';
 import HistorialPullRefresh from './historial/HistorialPullRefresh.vue';
 import BaseSkeleton from './BaseSkeleton.vue';
 import EmptyState from './EmptyState.vue';

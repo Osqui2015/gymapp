@@ -116,6 +116,7 @@
               v-for="modalidad in nivelData.modalidades"
               :key="modalidad.nombre"
               :modalidad="modalidad"
+              :nivel="nivelNombre"
               :open="isAcordeonOpen(nivelNombre, modalidad.nombre)"
               :open-dias="getOpenDias(nivelNombre, modalidad.nombre)"
               show-select-button
@@ -125,6 +126,7 @@
               @toggle-dia="(d) => toggleDia(nivelNombre, modalidad.nombre, d)"
               @select="seleccionarRutina(nivelNombre, modalidad.nombre)"
               @quick-input="openQuickInput"
+              @toggle-favorite="toggleFavorita"
               class="mb-6"
             />
           </div>
@@ -157,6 +159,7 @@
               v-for="modalidad in personalRutinas.modalidades"
               :key="modalidad.nombre"
               :modalidad="modalidad"
+              :nivel="'Personalizada'"
               :open="isAcordeonOpen('Personalizada', modalidad.nombre)"
               :open-dias="getOpenDias('Personalizada', modalidad.nombre)"
               title-class="text-indigo-600 dark:text-indigo-400"
@@ -164,6 +167,7 @@
               @toggle="toggleAcordeon('Personalizada', modalidad.nombre)"
               @toggle-dia="(d) => toggleDia('Personalizada', modalidad.nombre, d)"
               @quick-input="openQuickInput"
+              @toggle-favorite="toggleFavorita"
               class="mb-6"
             >
               <template #header-extra>
@@ -654,6 +658,52 @@ const saveQuickInput = async ({ records }) => {
         toast.apiError(e, 'No se pudieron guardar las series.');
     } finally {
         quickInputSaving.value = false;
+    }
+};
+
+// === QW2: Rutinas favoritas ===
+// Toggle del flag is_favorita para TODA la modalidad (todos los días).
+// Actualiza el flag localmente (optimista) y refresca la lista al final
+// para garantizar consistencia con el backend.
+const toggleFavorita = async ({ nivel, modalidad }) => {
+    if (!nivel || !modalidad) return;
+
+    // Optimistic update: invertimos el flag en todos los ejercicios del grupo
+    const nivelData = rutinasAgrupadas.value[nivel];
+    if (nivelData?.modalidades?.[modalidad]) {
+        const mod = nivelData.modalidades[modalidad];
+        mod.dias.forEach((dia) => {
+            dia.ejercicios.forEach((ej) => {
+                ej.is_favorita = !ej.is_favorita;
+            });
+        });
+    }
+
+    try {
+        const res = await axios.post('/api/rutinas/favorite', { nivel, modalidad });
+        const isFav = res.data?.is_favorita;
+
+        // Asegurar consistencia final (por si el optimistic update fue incorrecto)
+        if (nivelData?.modalidades?.[modalidad]) {
+            const mod = nivelData.modalidades[modalidad];
+            mod.dias.forEach((dia) => {
+                dia.ejercicios.forEach((ej) => {
+                    ej.is_favorita = isFav;
+                });
+            });
+        }
+        toast.success(isFav ? 'Agregada a favoritas ⭐' : 'Quitada de favoritas');
+    } catch (e) {
+        // Rollback
+        if (nivelData?.modalidades?.[modalidad]) {
+            const mod = nivelData.modalidades[modalidad];
+            mod.dias.forEach((dia) => {
+                dia.ejercicios.forEach((ej) => {
+                    ej.is_favorita = !ej.is_favorita;
+                });
+            });
+        }
+        toast.apiError(e, 'No se pudo actualizar la favorita');
     }
 };
 

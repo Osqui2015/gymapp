@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\DiarioNutricion;
+use App\Services\TdeeService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class DiarioNutricionController extends Controller
 {
+    public function __construct(private TdeeService $tdee) {}
+
     public function show(Request $request)
     {
         $user = $request->user();
@@ -113,6 +116,45 @@ class DiarioNutricionController extends Controller
         return response()->json([
             'message' => 'Contador de agua actualizado',
             'diario' => $diario,
+        ]);
+    }
+
+    /**
+     * Devuelve el cálculo de TDEE y los targets de macros para el user.
+     * Si faltan datos (sexo/edad/peso/altura/actividad), los lista en
+     * `faltantes` para que la UI le pida al user.
+     *
+     * GET /api/nutricion/tdee
+     */
+    public function tdee(Request $request)
+    {
+        $reporte = $this->tdee->calcular($request->user());
+        return response()->json($reporte);
+    }
+
+    /**
+     * Actualiza los datos de nutrición del user (sexo, edad, actividad,
+     * objetivo). El peso y la altura se leen del último Progreso, así
+     * que no se aceptan por acá (van por /api/progreso).
+     *
+     * PATCH /api/nutricion/config
+     */
+    public function updateConfig(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'sexo' => ['required', 'in:masculino,femenino'],
+            'edad' => ['required', 'integer', 'min:10', 'max:120'],
+            'nivel_actividad' => ['required', 'in:sedentario,ligero,moderado,activo,muy_activo'],
+            'objetivo_nutricional' => ['required', 'in:perder_grasa,mantener,ganar_masa'],
+        ]);
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Configuración nutricional actualizada',
+            'tdee' => $this->tdee->calcular($user->fresh()),
         ]);
     }
 }

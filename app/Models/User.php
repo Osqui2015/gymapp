@@ -33,6 +33,11 @@ class User extends Authenticatable
         'trainer_id',
         'altura',
         'peso_objetivo',
+        // === Nutrición (TDEE + macros) ===
+        'sexo',
+        'edad',
+        'nivel_actividad',
+        'objetivo_nutricional',
     ];
 
     protected $hidden = [
@@ -47,6 +52,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'suspended' => 'boolean',
             'trainer_id' => 'integer',
+            'edad' => 'integer',
         ];
     }
 

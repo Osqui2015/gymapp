@@ -29,6 +29,14 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt('09:00')
             ->withoutOverlapping()
             ->onOneServer();
+
+        // Detección de plateaus: corre 1 vez al día, ~10am. Necesita que
+        // reminders:send ya haya corrido (sino los plateaus llegarían antes
+        // que los recordatorios de inactividad).
+        $schedule->command('plateaus:detect')
+            ->dailyAt('10:00')
+            ->withoutOverlapping()
+            ->onOneServer();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, $request) {

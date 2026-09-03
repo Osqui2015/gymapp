@@ -47,6 +47,8 @@ Route::middleware(['web', 'auth', 'role:comun,trainer,administrador'])->group(fu
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/rutinas', [RutinaController::class, 'index']);
     Route::get('/rutinas/sugeridas', [RutinaController::class, 'sugeridas']);
+    Route::get('/rutinas/favoritas', [RutinaController::class, 'favoritas']);
+    Route::post('/rutinas/favorite', [RutinaController::class, 'toggleFavorite']);
     Route::delete('/rutinas', [RutinaController::class, 'destroy']);
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
@@ -67,12 +69,18 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/historial/finalizar-rutina', [HistorialController::class, 'finalizarRutina']);
     Route::get('/historial/calendar', [HistorialController::class, 'calendar']);
     Route::get('/historial/week-summary', [HistorialController::class, 'weekSummary']);
+    Route::get('/historial/comparar', [HistorialController::class, 'comparar']);
 
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
     Route::get('/progreso/detalle', [ProgresoController::class, 'obtenerDetalle']);
     Route::get('/progreso/weight-chart', [ProgresoController::class, 'weightChart']);
     Route::patch('/progreso/goal', [ProgresoController::class, 'updateGoal']);
+
+    // === Fotos de progreso (gallery cronológica) ===
+    Route::get('/progreso/fotos', [\App\Http\Controllers\ProgresoFotoController::class, 'index']);
+    Route::post('/progreso/fotos', [\App\Http\Controllers\ProgresoFotoController::class, 'store']);
+    Route::delete('/progreso/fotos/{id}', [\App\Http\Controllers\ProgresoFotoController::class, 'destroy']);
 
     // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
     Route::get('/body-map/data', [BodyMapController::class, 'index']);
@@ -101,6 +109,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/nutricion', [DiarioNutricionController::class, 'show']);
     Route::post('/nutricion', [DiarioNutricionController::class, 'update']);
     Route::post('/nutricion/agua', [DiarioNutricionController::class, 'updateAgua']);
+    Route::get('/nutricion/tdee', [DiarioNutricionController::class, 'tdee']);
+    Route::patch('/nutricion/config', [DiarioNutricionController::class, 'updateConfig']);
 
     // Ejercicios Clave
     Route::get('/ejercicios-clave', [EjercicioClaveController::class, 'index']);

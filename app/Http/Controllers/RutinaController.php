@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rutina;
+use App\Models\RutinaFavorita;
 use App\Models\User;
 use App\Services\AchievementService;
 use App\Services\RutinasSugeridasService;
@@ -51,13 +52,57 @@ class RutinaController extends Controller
         // Soporte de paginación: si el cliente lo pide, devolver paginado
         if ($request->boolean('paginated') || $request->has('page')) {
             $perPage = min((int) $request->input('per_page', 50), 200);
-            return response()->json($query->paginate($perPage));
+            $page = $query->paginate($perPage);
+            $this->attachFavoritaFlag($page->getCollection(), $user);
+            return response()->json($page);
         }
 
         // Si no, devolver todo (compatibilidad con clientes actuales)
         $rutinas = $query->get();
+        $this->attachFavoritaFlag($rutinas, $user);
 
         return response()->json($rutinas);
+    }
+
+    /**
+     * Adjunta el flag `is_favorita` a cada rutina de la colección.
+     *
+     * La pivot es por rutina_id (cada fila de `rutinas` es un día/ejercicio).
+     * Pero para el UX el favorito es por MODALIDAD (nivel + modalidad): si
+     * marcás "Intermedio 3 Días" como favorita, todos los días quedan
+     * marcados. Por eso acá resolvemos por (nivel, modalidad) y propagamos
+     * el flag a todas las filas del grupo en la respuesta.
+     */
+    protected function attachFavoritaFlag($rutinas, ?User $user): void
+    {
+        if (!$user || $rutinas->isEmpty()) {
+            return;
+        }
+
+        // Traemos los IDs de las rutinas favoritas del user, agrupados por (nivel, modalidad).
+        $favRutinaIds = RutinaFavorita::where('user_id', $user->id)
+            ->whereIn('rutina_id', $rutinas->pluck('id')->all())
+            ->pluck('rutina_id')
+            ->all();
+
+        if (empty($favRutinaIds)) {
+            foreach ($rutinas as $r) {
+                $r->is_favorita = false;
+            }
+            return;
+        }
+
+        $favSet = array_flip($favRutinaIds);
+        $favGroups = []; // (nivel|modalidad) => true si alguna rutina del grupo es fav
+        foreach ($rutinas as $r) {
+            if (isset($favSet[$r->id])) {
+                $favGroups[$r->nivel . '|' . $r->modalidad] = true;
+            }
+        }
+
+        foreach ($rutinas as $r) {
+            $r->is_favorita = isset($favGroups[$r->nivel . '|' . $r->modalidad]);
+        }
     }
 
     public function store(Request $request)
@@ -299,5 +344,85 @@ class RutinaController extends Controller
             'sugeridas' => $payload,
             'perfil' => $service->analizarPerfil($user),
         ]);
+    }
+
+    /**
+     * Toggle favorita del user actual sobre una MODALIDAD (nivel + modalidad).
+     * Si ya hay alguna rutina favorita de esa modalidad, las desmarca todas.
+     * Si no, marca todas las rutinas de esa modalidad como favoritas.
+     *
+     * POST /api/rutinas/favorite
+     *   body: { nivel: string, modalidad: string, rutina_id?: int (para
+     *   resolver el grupo; opcional si ya conocés nivel+modalidad) }
+     */
+    public function toggleFavorite(Request $request)
+    {
+        $data = $request->validate([
+            'nivel' => 'required|string|max:255',
+            'modalidad' => 'required|string|max:255',
+        ]);
+
+        $userId = $request->user()->id;
+
+        // Traer todas las rutinas de esta modalidad
+        $rutinasGrupo = Rutina::where('nivel', $data['nivel'])
+            ->where('modalidad', $data['modalidad'])
+            ->get();
+
+        if ($rutinasGrupo->isEmpty()) {
+            return response()->json(['error' => 'Rutina no encontrada'], 404);
+        }
+
+        $grupoIds = $rutinasGrupo->pluck('id')->all();
+
+        // ¿Alguna ya es favorita del user?
+        $existing = RutinaFavorita::where('user_id', $userId)
+            ->whereIn('rutina_id', $grupoIds)
+            ->exists();
+
+        if ($existing) {
+            RutinaFavorita::where('user_id', $userId)
+                ->whereIn('rutina_id', $grupoIds)
+                ->delete();
+            return response()->json(['is_favorita' => false]);
+        }
+
+        // Crear favoritas para todas las rutinas del grupo
+        $now = now();
+        $rows = array_map(fn($id) => [
+            'user_id' => $userId,
+            'rutina_id' => $id,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $grupoIds);
+        RutinaFavorita::insert($rows);
+
+        return response()->json(['is_favorita' => true]);
+    }
+
+    /**
+     * Devuelve las rutinas favoritas del user actual, agrupadas por modalidad.
+     * GET /api/rutinas/favoritas
+     */
+    public function favoritas(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $favoritasIds = RutinaFavorita::where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->pluck('rutina_id');
+
+        if ($favoritasIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        $rutinas = Rutina::whereIn('id', $favoritasIds)
+            ->with(['ejercicio', 'creador'])
+            ->orderBy('orden')
+            ->get();
+
+        $this->attachFavoritaFlag($rutinas, $request->user());
+
+        return response()->json($rutinas);
     }
 }
