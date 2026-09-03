@@ -317,6 +317,7 @@ const construirFilasSerie = (rutinasDelDia) => {
                     // Fase 3
                     esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                     esfuerzo_valor: registro?.esfuerzo_valor ?? null,
+                    notas: rutina.notas || null,
                 });
             }
         } else {
@@ -345,6 +346,7 @@ const construirFilasSerie = (rutinasDelDia) => {
                             // Fase 3
                             esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                             esfuerzo_valor: registro?.esfuerzo_valor ?? null,
+                            notas: rutina.notas || null,
                         });
                     }
                 });
