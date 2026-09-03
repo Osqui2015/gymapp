@@ -17,7 +17,7 @@
   ~100KB total (male+female × front+back), pero solo se carga 1 a la vez.
 -->
 <template>
-    <div class="w-full">
+    <div :class="[compact ? 'w-full h-full flex flex-col items-center justify-center' : 'w-full']">
         <!-- Toggle de género (oculto en modo compact) -->
         <div v-if="showGenderToggle && !compact" class="flex justify-center gap-2 mb-3">
             <button
@@ -38,7 +38,7 @@
         <!-- Toggle de vista front/back: visible siempre que NO este en showBothViews.
              En sidebar desktop con showBothViews=true no se ve (ya se ven los 2 lados).
              En sidebar mobile con compact=true si se ve (el user alterna manualmente). -->
-        <div v-if="!showBothViews" class="flex justify-center gap-2 mb-3">
+        <div v-if="!showBothViews" :class="['flex justify-center gap-2 flex-shrink-0', compact ? 'mb-1.5' : 'mb-3']">
             <button
                 v-for="v in ['front', 'back']"
                 :key="v"
@@ -55,7 +55,7 @@
         </div>
 
         <!-- Loading state: skeleton con forma de cuerpo humano (shimmer) -->
-        <div v-if="isLoading" :class="[showBothViews ? 'grid grid-cols-2 gap-2' : 'flex justify-center', 'py-4 px-2']">
+        <div v-if="isLoading" :class="[showBothViews ? 'grid grid-cols-2 gap-2' : 'flex justify-center', compact ? 'py-1 px-2' : 'py-4 px-2']">
             <div
                 v-for="side in (showBothViews ? 2 : 1)"
                 :key="side"
@@ -68,7 +68,7 @@
                      viewBox igual al de los paths reales para que no salte el layout. -->
                 <svg
                     viewBox="0 0 250 600"
-                    class="w-full h-auto max-w-[180px]"
+                    :class="[compact ? 'h-[230px] max-h-[240px] w-auto max-w-[150px]' : 'w-full h-auto max-w-[180px]']"
                     preserveAspectRatio="xMidYMid meet"
                     aria-hidden="true"
                 >
@@ -96,7 +96,11 @@
         <svg
             v-else-if="!showBothViews"
             :viewBox="pathsData.vb"
-            class="w-full h-auto max-w-md mx-auto"
+            :class="[
+                compact
+                    ? 'h-[230px] max-h-[240px] w-auto max-w-full mx-auto block flex-shrink'
+                    : 'w-full h-auto max-w-md mx-auto'
+            ]"
             preserveAspectRatio="xMidYMid meet"
         >
             <g v-for="(pathList, slug) in pathsData.paths" :key="slug">

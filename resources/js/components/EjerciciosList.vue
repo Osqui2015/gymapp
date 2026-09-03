@@ -35,9 +35,9 @@
                 Limpiar
               </button>
             </div>
-            <!-- Mobile: altura fija (solo frente, el cuerpo no entra entero apaisado).
+            <!-- Mobile: altura fija con cuerpo completo de pies a cabeza.
                  Desktop: ambos lados (frente + espalda) lado a lado. -->
-            <div class="bg-gray-50 dark:bg-gray-900/40 h-[280px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden">
+            <div class="bg-gray-50 dark:bg-gray-900/40 h-[300px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden flex items-center justify-center p-2">
               <!-- Mobile: solo frente -->
               <BodyMap
                 :levels="bodyMapLevels"
@@ -45,7 +45,7 @@
                 :muscle-labels="muscleLabels"
                 mode="balance"
                 :compact="true"
-                class="h-full md:hidden"
+                class="h-full w-full md:hidden flex flex-col items-center justify-center"
                 @muscle-click="onMuscleClickBodyMap"
               />
               <!-- Desktop: frente + espalda lado a lado -->
@@ -61,19 +61,19 @@
               />
             </div>
             <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
-              <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+              <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
                 Tocá un músculo para filtrar
               </p>
               <button
                 @click="bodyMapExpandido = true"
-                class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center gap-1 flex-shrink-0"
-                title="Expandir mapa"
+                class="px-2.5 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg inline-flex items-center gap-1.5 flex-shrink-0 transition-colors"
+                title="Ver cuerpo humano en grande"
                 aria-label="Expandir mapa corporal"
               >
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
                 </svg>
-                Expandir
+                Expandir en grande
               </button>
             </div>
             <!-- Leyenda compacta: cambia segun el modo del body map. -->
@@ -208,40 +208,143 @@
           </button>
         </div>
 
-        <!-- Chips: Grupo muscular -->
-        <div v-if="gruposMusculares.length" class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Grupo:</span>
-          <button
-            v-for="grupo in gruposMusculares"
-            :key="grupo"
-            @click="toggleGrupoMuscular(grupo)"
-            :class="[
-              'px-3 py-1 rounded-full text-xs font-semibold transition-all',
-              grupoMuscularFiltro === grupo
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
-            ]"
-          >
-            {{ grupo }}
-          </button>
-        </div>
+        <!-- Filtros desplegables con buscador: Grupo Muscular y Equipamiento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <!-- Dropdown con búsqueda: Grupo Muscular -->
+          <div class="relative" ref="grupoDropdownRef">
+            <button
+              type="button"
+              @click="toggleGrupoDropdown"
+              class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border bg-white dark:bg-gray-800 text-sm font-medium transition-all shadow-xs"
+              :class="grupoMuscularFiltro
+                ? 'border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/20'
+                : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-gray-400'"
+            >
+              <div class="flex items-center gap-2 truncate">
+                <span class="text-xs uppercase font-bold text-gray-400 dark:text-gray-500">Grupo:</span>
+                <span class="truncate font-semibold">{{ grupoMuscularFiltro || 'Todos los grupos' }}</span>
+              </div>
+              <div class="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                <span
+                  v-if="grupoMuscularFiltro"
+                  @click.stop="seleccionarGrupo('')"
+                  class="text-gray-400 hover:text-red-500 font-bold px-1 text-xs"
+                  title="Quitar filtro de grupo"
+                >✕</span>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': grupoSelectOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
 
-        <!-- Chips: Equipamiento -->
-        <div v-if="equipamientos.length" class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Equipo:</span>
-          <button
-            v-for="eq in equipamientos"
-            :key="eq"
-            @click="toggleEquipamiento(eq)"
-            :class="[
-              'px-3 py-1 rounded-full text-xs font-semibold transition-all',
-              equipamientoFiltro === eq
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
-            ]"
-          >
-            {{ eq }}
-          </button>
+            <!-- Menú desplegable con input para buscar -->
+            <div
+              v-if="grupoSelectOpen"
+              class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div class="p-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/50">
+                <input
+                  ref="grupoSearchInputRef"
+                  v-model="grupoSearchText"
+                  type="text"
+                  placeholder="Escribí para buscar grupo..."
+                  class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div class="max-h-56 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-750">
+                <button
+                  type="button"
+                  @click="seleccionarGrupo('')"
+                  class="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                  :class="!grupoMuscularFiltro ? 'font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' : 'text-gray-700 dark:text-gray-300'"
+                >
+                  Todos los grupos
+                </button>
+                <button
+                  v-for="grupo in gruposFiltrados"
+                  :key="grupo"
+                  type="button"
+                  @click="seleccionarGrupo(grupo)"
+                  class="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between"
+                  :class="grupoMuscularFiltro === grupo ? 'font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' : 'text-gray-700 dark:text-gray-300'"
+                >
+                  <span>{{ grupo }}</span>
+                  <span v-if="grupoMuscularFiltro === grupo" class="text-indigo-600 dark:text-indigo-400 text-xs">✓</span>
+                </button>
+                <div v-if="!gruposFiltrados.length" class="px-4 py-3 text-xs text-gray-400 text-center">
+                  No se encontró "{{ grupoSearchText }}"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown con búsqueda: Equipamiento -->
+          <div class="relative" ref="equipoDropdownRef">
+            <button
+              type="button"
+              @click="toggleEquipoDropdown"
+              class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border bg-white dark:bg-gray-800 text-sm font-medium transition-all shadow-xs"
+              :class="equipamientoFiltro
+                ? 'border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/20'
+                : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-gray-400'"
+            >
+              <div class="flex items-center gap-2 truncate">
+                <span class="text-xs uppercase font-bold text-gray-400 dark:text-gray-500">Equipo:</span>
+                <span class="truncate font-semibold">{{ equipamientoFiltro || 'Todo el equipamiento' }}</span>
+              </div>
+              <div class="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                <span
+                  v-if="equipamientoFiltro"
+                  @click.stop="seleccionarEquipamiento('')"
+                  class="text-gray-400 hover:text-red-500 font-bold px-1 text-xs"
+                  title="Quitar filtro de equipo"
+                >✕</span>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': equipoSelectOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+
+            <!-- Menú desplegable con input para buscar -->
+            <div
+              v-if="equipoSelectOpen"
+              class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div class="p-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/50">
+                <input
+                  ref="equipoSearchInputRef"
+                  v-model="equipoSearchText"
+                  type="text"
+                  placeholder="Escribí para buscar equipo..."
+                  class="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div class="max-h-56 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-750">
+                <button
+                  type="button"
+                  @click="seleccionarEquipamiento('')"
+                  class="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                  :class="!equipamientoFiltro ? 'font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' : 'text-gray-700 dark:text-gray-300'"
+                >
+                  Todo el equipamiento
+                </button>
+                <button
+                  v-for="eq in equipamientosFiltrados"
+                  :key="eq"
+                  type="button"
+                  @click="seleccionarEquipamiento(eq)"
+                  class="w-full px-4 py-2 text-left text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between"
+                  :class="equipamientoFiltro === eq ? 'font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' : 'text-gray-700 dark:text-gray-300'"
+                >
+                  <span>{{ eq }}</span>
+                  <span v-if="equipamientoFiltro === eq" class="text-indigo-600 dark:text-indigo-400 text-xs">✓</span>
+                </button>
+                <div v-if="!equipamientosFiltrados.length" class="px-4 py-3 text-xs text-gray-400 text-center">
+                  No se encontró "{{ equipoSearchText }}"
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -578,7 +681,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
@@ -603,6 +706,71 @@ const grupoMuscularFiltro = ref('');
 const gruposMusculares = ref([]);
 const equipamientoFiltro = ref('');
 const equipamientos = ref([]);
+
+// === Filtros desplegables con buscador (Grupo y Equipamiento) ===
+const grupoSelectOpen = ref(false);
+const grupoSearchText = ref('');
+const grupoDropdownRef = ref(null);
+const grupoSearchInputRef = ref(null);
+
+const equipoSelectOpen = ref(false);
+const equipoSearchText = ref('');
+const equipoDropdownRef = ref(null);
+const equipoSearchInputRef = ref(null);
+
+const toggleGrupoDropdown = () => {
+    grupoSelectOpen.value = !grupoSelectOpen.value;
+    equipoSelectOpen.value = false;
+    if (grupoSelectOpen.value) {
+        grupoSearchText.value = '';
+        nextTick(() => grupoSearchInputRef.value?.focus());
+    }
+};
+
+const toggleEquipoDropdown = () => {
+    equipoSelectOpen.value = !equipoSelectOpen.value;
+    grupoSelectOpen.value = false;
+    if (equipoSelectOpen.value) {
+        equipoSearchText.value = '';
+        nextTick(() => equipoSearchInputRef.value?.focus());
+    }
+};
+
+const gruposFiltrados = computed(() => {
+    if (!grupoSearchText.value.trim()) return gruposMusculares.value;
+    const q = grupoSearchText.value.toLowerCase().trim();
+    return gruposMusculares.value.filter((g) => g.toLowerCase().includes(q));
+});
+
+const equipamientosFiltrados = computed(() => {
+    if (!equipoSearchText.value.trim()) return equipamientos.value;
+    const q = equipoSearchText.value.toLowerCase().trim();
+    return equipamientos.value.filter((e) => e.toLowerCase().includes(q));
+});
+
+const seleccionarGrupo = (grupo) => {
+    grupoMuscularFiltro.value = grupo;
+    grupoSelectOpen.value = false;
+    grupoSearchText.value = '';
+    fetchEjercicios();
+};
+
+const seleccionarEquipamiento = (eq) => {
+    equipamientoFiltro.value = eq;
+    equipoSelectOpen.value = false;
+    equipoSearchText.value = '';
+    fetchEjercicios();
+};
+
+const handleClickOutsideFiltros = (e) => {
+    if (grupoDropdownRef.value && !grupoDropdownRef.value.contains(e.target)) {
+        grupoSelectOpen.value = false;
+    }
+    if (equipoDropdownRef.value && !equipoDropdownRef.value.contains(e.target)) {
+        equipoSelectOpen.value = false;
+    }
+};
+
 const mostrarModal = ref(false);
 const modalRef = ref(null);
 useFocusTrap(modalRef, { when: mostrarModal });
@@ -914,6 +1082,10 @@ const limpiarBusqueda = () => {
   grupoMuscularFiltro.value = '';
   equipamientoFiltro.value = '';
   musculoFiltroBodyMap.value = '';
+  grupoSearchText.value = '';
+  equipoSearchText.value = '';
+  grupoSelectOpen.value = false;
+  equipoSelectOpen.value = false;
   ejercicioAComparar.value = null;
   ejercicioBComparar.value = null;
   fetchEjercicios();
@@ -977,11 +1149,16 @@ const eliminar = async (id) => {
 };
 
 onMounted(() => {
+  document.addEventListener('click', handleClickOutsideFiltros);
   fetchUserInfo();
   fetchGruposMusculares();
   fetchEquipamientos();
   fetchMusculos();
   fetchMuscleRecency();
   fetchEjercicios();
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutsideFiltros);
 });
 </script>

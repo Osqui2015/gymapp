@@ -32,7 +32,7 @@
     </div>
 
     <!-- Lista de ejercicios en acordeón -->
-    <div class="p-4 space-y-4">
+    <div class="p-2 sm:p-4 space-y-3 sm:space-y-4">
       <div
         v-for="ejercicio in ejerciciosAgrupados"
         :key="ejercicio.nombre"
@@ -218,23 +218,20 @@
             </table>
           </div>
 
-          <!-- Mobile: Series dentro del acordeón -->
-          <div class="md:hidden p-3 space-y-3 bg-gray-50/40 dark:bg-gray-900/30">
+          <!-- Mobile: Series dentro del acordeón (Diseño limpio, sin cards anidadas) -->
+          <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-700/60 bg-white dark:bg-gray-800">
             <div
               v-for="fila in ejercicio.series"
               :key="`${fila.uid}-mobile`"
-              class="rounded-xl border p-3 transition-all"
-              :class="[
-                fila.completado
-                  ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm'
-              ]"
+              class="p-4 transition-colors"
+              :class="fila.completado ? 'bg-emerald-50/30 dark:bg-emerald-950/15' : ''"
             >
-              <div class="flex items-center justify-between mb-2.5">
+              <!-- Cabecera de la serie: Número, Reps objetivo y Checkbox completado -->
+              <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                   <span
                     :class="[
-                      'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold',
+                      'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all shadow-xs',
                       fila.completado
                         ? 'bg-emerald-500 text-white'
                         : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
@@ -242,83 +239,102 @@
                   >
                     {{ fila.series_numero }}
                   </span>
-                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
-                    Obj: <strong class="text-gray-900 dark:text-white">{{ fila.reps_min }} - {{ fila.reps_max }} reps</strong>
+                  <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    Serie {{ fila.series_numero }}
+                  </span>
+                  <span class="text-xs text-gray-400">·</span>
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Obj: <strong class="text-gray-700 dark:text-gray-300">{{ fila.reps_min }} - {{ fila.reps_max }} reps</strong>
                   </span>
                 </div>
 
-                <label class="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer" :class="fila.completado ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'">
+                <label
+                  class="inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer select-none"
+                  :class="fila.completado
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-500/30'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200'"
+                >
                   <input
                     v-model="fila.completado"
                     @change="$emit('guardar', fila)"
                     type="checkbox"
-                    class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                   />
                   {{ fila.completado ? 'Hecha ✓' : 'Marcar' }}
                 </label>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 text-xs mb-2.5">
-                <label class="block">
-                  <span class="mb-1 block text-[11px] text-gray-500 dark:text-gray-400 font-medium">Reps hechas</span>
-                  <input
-                    v-model.number="fila.reps_realizadas"
-                    @change="$emit('guardar', fila)"
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="0"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </label>
+              <!-- Inputs de Reps y Peso (Más amplios y cómodos) -->
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                    Reps hechas
+                  </label>
+                  <div class="relative rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
+                    <input
+                      v-model.number="fila.reps_realizadas"
+                      @change="$emit('guardar', fila)"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
+                    />
+                  </div>
+                </div>
 
-                <label class="block">
-                  <span class="mb-1 block text-[11px] text-gray-500 dark:text-gray-400 font-medium">Peso</span>
-                  <input
-                    v-model.number="fila.peso"
-                    @change="$emit('guardar', fila)"
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    placeholder="Kg"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 px-3 py-2 text-center text-sm font-semibold text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </label>
+                <div>
+                  <label class="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                    Peso (Kg)
+                  </label>
+                  <div class="relative rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
+                    <input
+                      v-model.number="fila.peso"
+                      @change="$emit('guardar', fila)"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="0"
+                      class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <!-- Esfuerzo RIR/RPE mobile -->
-              <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 p-2">
-                <div class="mb-1.5 flex items-center justify-between">
-                  <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Esfuerzo</span>
-                  <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-[10px]">
+              <!-- Selector de Esfuerzo (RIR / RPE): integrado limpio sin card anidada -->
+              <div class="flex items-center justify-between gap-2 pt-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Esfuerzo</span>
+                  <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-[10px]">
                     <button
                       type="button"
                       :class="[
-                        'px-2 py-0.5 transition-colors cursor-pointer',
-                        fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        'px-2 py-0.5 font-bold transition-colors cursor-pointer',
+                        fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750'
                       ]"
                       @click="toggleEsfuerzoTipo(fila, 'rir')"
                     >RIR</button>
                     <button
                       type="button"
                       :class="[
-                        'px-2 py-0.5 transition-colors cursor-pointer',
-                        fila.esfuerzo_tipo === 'rpe' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        'px-2 py-0.5 font-bold transition-colors cursor-pointer',
+                        fila.esfuerzo_tipo === 'rpe' ? 'bg-amber-500 text-white' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750'
                       ]"
                       @click="toggleEsfuerzoTipo(fila, 'rpe')"
                     >RPE</button>
                   </div>
                 </div>
-                <div class="flex flex-wrap gap-1">
+
+                <div class="flex items-center gap-1 overflow-x-auto">
                   <button
                     v-for="opt in esfuerzoOptions(fila.esfuerzo_tipo)"
                     :key="opt"
                     type="button"
                     :class="[
-                      'min-w-[32px] rounded-md border px-2 py-1 text-xs font-semibold transition-colors cursor-pointer',
+                      'w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center',
                       fila.esfuerzo_valor === opt
-                        ? (fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-amber-500 text-white border-amber-500')
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-400'
+                        ? (fila.esfuerzo_tipo === 'rir' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-amber-500 text-white shadow-xs')
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     ]"
                     @click="setEsfuerzoValor(fila, opt)"
                   >{{ opt }}</button>
