@@ -23,6 +23,7 @@ use App\Policies\ProgresoPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use App\Observers\RutinaObserver;
 use App\Observers\UserObserver;
@@ -48,6 +49,10 @@ class AppServiceProvider extends ServiceProvider
         // === Observers para audit log automático ===
         Rutina::observe(RutinaObserver::class);
         User::observe(UserObserver::class);
+
+        Vite::usePreloadTagAttributes(function ($src, string $url): array|false {
+            return str_ends_with($url, '.css') ? [] : false;
+        });
 
         $this->registerGates();
         $this->registerPolicies();
