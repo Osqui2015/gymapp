@@ -496,7 +496,8 @@ watch(selectedAlumnoId, () => {
 
 // === Helpers ===
 const formatDate = (value) => {
-    const date = new Date(value + 'T00:00:00');
+    const datePart = String(value ?? '').slice(0, 10);
+    const date = new Date(`${datePart}T00:00:00`);
     if (Number.isNaN(date.getTime())) return value;
     return new Intl.DateTimeFormat('es-AR', {
         day: '2-digit',

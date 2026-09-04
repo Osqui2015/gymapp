@@ -65,9 +65,9 @@
                 Superserie {{ row.superserie_grupo }}
               </span>
             </div>
-            <div class="grid grid-cols-2 gap-px bg-gray-200 dark:bg-gray-700">
+            <div class="grid grid-cols-1 gap-px bg-gray-200 dark:bg-gray-700">
               <template v-for="date in pivotData.dates" :key="date.raw">
-                <div v-if="row.weights[date.raw] !== '-'" class="min-w-0 bg-white px-3 py-2.5 dark:bg-gray-800">
+                <div v-if="row.weights[date.raw] !== '-'" class="flex min-w-0 items-center justify-between gap-3 bg-white px-3 py-2.5 dark:bg-gray-800">
                   <p class="text-[11px] font-medium tabular-nums text-gray-500 dark:text-gray-400">{{ date.formatted }}</p>
                   <p class="mt-0.5 text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ row.weights[date.raw] }}</p>
                 </div>
