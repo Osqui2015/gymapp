@@ -304,7 +304,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
-import { Chart, registerables } from 'chart.js';
 
 import HistorialHeader from './historial/HistorialHeader.vue';
 import HistorialMatrix from './historial/HistorialMatrix.vue';
@@ -335,7 +334,16 @@ import { useFormatters } from '@/composables/useFormatters';
 
 const { formatDateShort } = useFormatters();
 
-Chart.register(...registerables);
+let chartLoader;
+
+const loadChart = async () => {
+    chartLoader ??= import('chart.js').then(({ Chart, registerables }) => {
+        Chart.register(...registerables);
+        return Chart;
+    });
+
+    return chartLoader;
+};
 
 const toast = useToast();
 const auth = useAuthStore();
@@ -994,7 +1002,9 @@ const getExercise1RMTimeline = (exerciseName) => {
     return Object.values(dateMap).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 };
 
-const initKeyCharts = () => {
+const initKeyCharts = async () => {
+    const Chart = await loadChart();
+
     Object.keys(chartInstances).forEach((key) => {
         if (chartInstances[key]) {
             chartInstances[key].destroy();
