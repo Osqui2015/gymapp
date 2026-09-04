@@ -83,8 +83,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { useFormatters } from '@/composables/useFormatters';
+
 const { formatDateShort, formatMonthShort } = useFormatters();
-    import { computed } from 'vue';
 
 const props = defineProps({
     historial: { type: Array, default: () => [] },
@@ -141,7 +143,7 @@ const weeksAgo = computed(() => {
                 count,
                 color,
                 futuro: isFuture,
-                labelMes: d === 0 ? dateformatMonthShort(6266) : '',
+                labelMes: d === 0 ? formatMonthShort(iso) : '',
             });
         }
         result.push(week);

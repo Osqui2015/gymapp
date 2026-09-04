@@ -233,11 +233,12 @@
 </template>
 
 <script setup>
-const { formatDateLong, formatDateMedium } = useFormatters();
-    import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from '../../composables/useToast';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateLong, formatDateMedium } = useFormatters();
 
 const toast = useToast();
 

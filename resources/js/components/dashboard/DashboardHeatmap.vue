@@ -27,8 +27,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { useFormatters } from '@/composables/useFormatters';
+
 const { formatDateShort } = useFormatters();
-    import { computed } from 'vue';
 
 const props = defineProps({
     historial: { type: Array, default: () => [] },

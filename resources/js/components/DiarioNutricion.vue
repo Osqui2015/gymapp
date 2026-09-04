@@ -347,13 +347,14 @@
 </template>
 
 <script setup>
-const { formatDateWeekday } = useFormatters();
-    import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import Breadcrumbs from './Breadcrumbs.vue';
 import TdeeConfig from './TdeeConfig.vue';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateWeekday } = useFormatters();
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);

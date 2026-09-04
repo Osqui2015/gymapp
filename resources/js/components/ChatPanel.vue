@@ -173,11 +173,12 @@
 </template>
 
 <script setup>
-const { formatDateShort } = useFormatters();
-    import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useMessagesStore } from '../stores/messages';
 import { useAuthStore } from '../stores/auth';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateShort } = useFormatters();
 
 const props = defineProps({
     embedded: { type: Boolean, default: false },

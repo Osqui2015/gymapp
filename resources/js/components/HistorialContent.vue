@@ -302,8 +302,7 @@
 </template>
 
 <script setup>
-const { formatDateShort } = useFormatters();
-    import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
 
@@ -333,6 +332,8 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateShort } = useFormatters();
 
 Chart.register(...registerables);
 
@@ -1010,8 +1011,7 @@ const initKeyCharts = () => {
         if (timeline.length === 0) return;
 
         const labels = timeline.map((t) => {
-            const date = new Date(t.fecha + 'T00:00:00');
-            return dateformatDateShort(42382);
+            return formatDateShort(t.fecha);
         });
         const dataValues = timeline.map((t) => parseFloat(t.rm.toFixed(1)));
 

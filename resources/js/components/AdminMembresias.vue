@@ -316,8 +316,7 @@
 </template>
 
 <script setup>
-const { formatDateMedium } = useFormatters();
-    import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import EmptyState from './EmptyState.vue';
 import { useToast } from '../composables/useToast';
@@ -327,6 +326,8 @@ import Breadcrumbs from './Breadcrumbs.vue';
 import { useFocusTrap } from '../composables/useFocusTrap';
 import BaseSkeleton from './BaseSkeleton.vue';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateMedium } = useFormatters();
 
 const toast = useToast();
 const showToast = (message, type = 'success') => toast.add(message, type);

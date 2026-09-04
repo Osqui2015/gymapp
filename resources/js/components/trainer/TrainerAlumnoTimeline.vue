@@ -58,10 +58,11 @@
 </template>
 
 <script setup>
-const { formatDateMedium } = useFormatters();
-    import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDateMedium } = useFormatters();
 
 const props = defineProps({
     alumno: { type: Object, required: true },

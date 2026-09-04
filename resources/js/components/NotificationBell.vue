@@ -141,12 +141,13 @@
 </template>
 
 <script setup>
-const { formatDate } = useFormatters();
-    import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useNotificationStore } from '../stores/notification';
 import { useToast } from '../composables/useToast';
 import { useFormatters } from '@/composables/useFormatters';
+
+const { formatDate } = useFormatters();
 import {
     registerServiceWorker,
     subscribeToPush,
