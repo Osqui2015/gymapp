@@ -316,7 +316,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+const { formatDateMedium } = useFormatters();
+    import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import EmptyState from './EmptyState.vue';
 import { useToast } from '../composables/useToast';
@@ -325,6 +326,7 @@ import { cachedAxiosGet, invalidateApiCache } from '../composables/useApiCache';
 import Breadcrumbs from './Breadcrumbs.vue';
 import { useFocusTrap } from '../composables/useFocusTrap';
 import BaseSkeleton from './BaseSkeleton.vue';
+import { useFormatters } from '@/composables/useFormatters';
 
 const toast = useToast();
 const showToast = (message, type = 'success') => toast.add(message, type);
@@ -353,7 +355,8 @@ const form = ref({
 });
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (!date) return '';
+  return formatDateMedium(date);
 };
 
 const getDiasRestantes = (m) => {

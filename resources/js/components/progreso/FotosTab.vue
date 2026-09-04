@@ -233,9 +233,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+const { formatDateLong, formatDateMedium } = useFormatters();
+    import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from '../../composables/useToast';
+import { useFormatters } from '@/composables/useFormatters';
 
 const toast = useToast();
 
@@ -356,13 +358,13 @@ watch(lightboxIndex, (i) => {
 const formatFechaCorta = (s) => {
     if (!s) return '';
     const d = new Date(s + 'T00:00:00');
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' });
+    return dformatDateMedium(17327);
 };
 
 const formatFechaLarga = (s) => {
     if (!s) return '';
     const d = new Date(s + 'T00:00:00');
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+    return dformatDateLong(17466);
 };
 
 onMounted(cargar);

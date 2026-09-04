@@ -209,10 +209,11 @@ class StatsEsfuerzoTest extends TestCase
         $this->assertEquals(4, $data['sets_with_esfuerzo']);
         $this->assertEquals(2, $data['avg_por_tipo']['rir']);
         $this->assertEquals(9, $data['avg_por_tipo']['rpe']);
-        $this->assertEquals(1, $data['distribucion']['rir'][1]);
-        $this->assertEquals(1, $data['distribucion']['rir'][2]);
-        $this->assertEquals(1, $data['distribucion']['rir'][3]);
-        $this->assertEquals(1, $data['distribucion']['rpe'][9]);
+        $this->assertEquals(1, $data['distribucion']['rir'][1]['count']);
+        $this->assertEquals(1, $data['distribucion']['rir'][2]['count']);
+        $this->assertEquals(1, $data['distribucion']['rir'][3]['count']);
+        $this->assertEquals(9, $data['distribucion']['rpe'][3]['valor']);
+        $this->assertEquals(1, $data['distribucion']['rpe'][3]['count']);
         $this->assertCount(2, $data['por_ejercicio']);
     }
 

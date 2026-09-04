@@ -49,7 +49,16 @@ const datosAgrupados = computed(() => {
     const ultimos = sorted.slice(-30);
 
     return {
-        labels: ultimos.map(([fecha]) => fecha),
+        // Formateamos el label a dd/mm/yyyy acá para que el chart SIEMPRE
+        // muestre fecha legible, sin importar si el backend mandó ISO o
+        // string 'yyyy-mm-dd'. Si la fecha viene en formato ISO con
+        // timestamp (ej: '2026-09-03T00:00:00.000000Z'), el split
+        // normaliza a 'yyyy-mm-dd' antes de pasarlo a Date.
+        labels: ultimos.map(([fecha]) => {
+            const iso = typeof fecha === 'string' && fecha.includes('T') ? fecha.split('T')[0] : fecha;
+            const [y, m, d] = iso.split('-').map(Number);
+            return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+        }),
         pesos: ultimos.map(([, peso]) => peso),
     };
 });

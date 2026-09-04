@@ -122,7 +122,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick, defineAsyncComponent } from 'vue';
+const { formatDateLong, formatDateMedium, formatDateShort } = useFormatters();
+    import { ref, computed, onMounted, watch, nextTick, defineAsyncComponent } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
@@ -135,6 +136,7 @@ import LogrosTab from './progreso/LogrosTab.vue';
 import FotosTab from './progreso/FotosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import { useFormatters } from '@/composables/useFormatters';
 
 // BodyWeightChart carga chart.js dinámicamente (vendor-chart, ya cacheado
 // por otros componentes). Lo cargamos async para que ProgresoContent no
@@ -257,13 +259,13 @@ const diasRestantesParaRegistrar = computed(() => {
 const formatFecha = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+    return dateformatDateLong(9522);
 };
 
 const formatFechaMedalla = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    return dateformatDateMedium(9730);
 };
 
 // === Data fetching ===
@@ -464,7 +466,7 @@ const initChart = async () => {
 
     const labels = validData.map((d) => {
         const date = new Date(d.fecha + 'T00:00:00');
-        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+        return dateformatDateShort(16803);
     });
     const dataValues = validData.map((d) => d.valor);
 

@@ -173,9 +173,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+const { formatDateShort } = useFormatters();
+    import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useMessagesStore } from '../stores/messages';
 import { useAuthStore } from '../stores/auth';
+import { useFormatters } from '@/composables/useFormatters';
 
 const props = defineProps({
     embedded: { type: Boolean, default: false },
@@ -209,8 +211,8 @@ const formatTime = (iso) => {
     const d = new Date(iso);
     const today = new Date().toDateString() === d.toDateString();
     return today
-        ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : d.toLocaleDateString([], { day: '2-digit', month: 'short' });
+        ? formatTime(d)
+        : formatDateShort(d);
 };
 
 const lastMessagePreview = (msg) => {

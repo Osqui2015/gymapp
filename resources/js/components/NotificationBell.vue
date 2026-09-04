@@ -141,10 +141,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+const { formatDate } = useFormatters();
+    import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useNotificationStore } from '../stores/notification';
 import { useToast } from '../composables/useToast';
+import { useFormatters } from '@/composables/useFormatters';
 import {
     registerServiceWorker,
     subscribeToPush,
@@ -175,7 +177,7 @@ const close = (e) => {
     if (!rootEl.value.contains(e.target)) open.value = false;
 };
 
-const formatDate = (iso) => {
+const formatTimeAgo = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
     const diff = (Date.now() - d.getTime()) / 1000;
@@ -183,7 +185,7 @@ const formatDate = (iso) => {
     if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
     if (diff < 604800) return `hace ${Math.floor(diff / 86400)} d`;
-    return d.toLocaleDateString();
+    return formatDate(d);
 };
 
 const markAllRead = async () => {

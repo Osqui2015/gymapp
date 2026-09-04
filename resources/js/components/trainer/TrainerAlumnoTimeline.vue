@@ -58,8 +58,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+const { formatDateMedium } = useFormatters();
+    import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
+import { useFormatters } from '@/composables/useFormatters';
 
 const props = defineProps({
     alumno: { type: Object, required: true },
@@ -98,7 +100,7 @@ const formatFecha = (iso) => {
     if (diffDias === 0) return 'Hoy';
     if (diffDias === 1) return 'Ayer';
     if (diffDias < 7) return `Hace ${diffDias} días`;
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    return dformatDateMedium(4342);
 };
 
 watch(() => props.alumno?.id, () => {

@@ -44,7 +44,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
         {{-- Skip to content (a11y: 6.3) --}}
         <a
             href="#main-content"
@@ -64,7 +64,7 @@
                 </header>
             @endisset
 
-            <main id="app" x-ignore>
+            <main id="app" x-ignore class="overflow-x-hidden">
                 <div id="main-content" tabindex="-1">
                     {{ $slot }}
                 </div>

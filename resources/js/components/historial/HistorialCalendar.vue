@@ -83,7 +83,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+const { formatDateShort, formatMonthShort } = useFormatters();
+    import { computed } from 'vue';
 
 const props = defineProps({
     historial: { type: Array, default: () => [] },
@@ -140,7 +141,7 @@ const weeksAgo = computed(() => {
                 count,
                 color,
                 futuro: isFuture,
-                labelMes: d === 0 ? date.toLocaleDateString('es-ES', { month: 'short' }) : '',
+                labelMes: d === 0 ? dateformatMonthShort(6266) : '',
             });
         }
         result.push(week);
@@ -154,7 +155,7 @@ const heatmap = computed(() => weeksAgo.value);
 const formatDate = (iso) => {
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    return dformatDateShort(6601);
 };
 
 // Stats

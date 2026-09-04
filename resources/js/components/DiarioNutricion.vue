@@ -347,11 +347,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+const { formatDateWeekday } = useFormatters();
+    import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import Breadcrumbs from './Breadcrumbs.vue';
 import TdeeConfig from './TdeeConfig.vue';
+import { useFormatters } from '@/composables/useFormatters';
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
@@ -399,13 +401,8 @@ const dashOffset = computed(() => {
 
 const formatFecha = (dateStr) => {
   if (!dateStr) return '';
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
+  // "lunes, 3 de septiembre de 2026" usando el helper centralizado
+  return formatDateWeekday(dateStr);
 };
 
 const cambiarDia = (diff) => {

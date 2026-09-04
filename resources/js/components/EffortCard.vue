@@ -47,13 +47,13 @@ const coverage = computed(() => {
 const distribution = computed(() => {
     if (!data.value) return []
     const rows = []
-    data.value.distribucion.rir.forEach((count, val) => {
-        rows.push({ label: `RIR ${val}`, val, tipo: 'rir', count })
+    // Cada bucket es {valor, count}. `forEach` da (element, index) pero
+    // ignoramos el index: usamos el campo `valor` que viene del backend.
+    data.value.distribucion.rir.forEach((bucket) => {
+        rows.push({ label: `RIR ${bucket.valor}`, val: bucket.valor, tipo: 'rir', count: bucket.count })
     })
-    data.value.distribucion.rpe.forEach((count, val) => {
-        if (val >= 6) {
-            rows.push({ label: `RPE ${val}`, val, tipo: 'rpe', count })
-        }
+    data.value.distribucion.rpe.forEach((bucket) => {
+        rows.push({ label: `RPE ${bucket.valor}`, val: bucket.valor, tipo: 'rpe', count: bucket.count })
     })
     return rows
 })

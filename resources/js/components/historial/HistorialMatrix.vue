@@ -20,27 +20,27 @@
       </div>
 
       <div class="p-6">
-        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-          <table class="w-full text-sm text-left border-collapse">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 max-w-full">
+          <table class="w-full text-sm text-left border-collapse min-w-[600px]">
             <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
               <tr>
-                <th class="sticky left-0 z-20 bg-gray-100 dark:bg-gray-600 px-4 py-3.5 font-bold border-r border-gray-200 dark:border-gray-700 min-w-[200px]">
+                <th class="sticky left-0 z-20 bg-gray-100 dark:bg-gray-600 px-4 py-3.5 font-bold border-r border-gray-200 dark:border-gray-700 min-w-[160px] max-w-[200px]">
                   Ejercicio
                 </th>
-                <th v-for="date in pivotData.dates" :key="date.raw" class="px-4 py-3.5 font-bold text-center border-r border-gray-200 dark:border-gray-700 min-w-[100px]">
+                <th v-for="date in pivotData.dates" :key="date.raw" class="px-3 py-3.5 font-bold text-center border-r border-gray-200 dark:border-gray-700 min-w-[80px]">
                   {{ date.formatted }}
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="row in pivotData.rows" :key="row.name" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800">
-                <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3.5 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3.5 font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[160px] max-w-[200px]">
                   {{ row.name }}
                   <span v-if="row.superserie_grupo" class="ml-2 inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 dark:bg-indigo-900/40 dark:text-indigo-400">
                     Superserie {{ row.superserie_grupo }}
                   </span>
                 </td>
-                <td v-for="date in pivotData.dates" :key="date.raw" class="px-4 py-3.5 text-center border-r border-gray-200 dark:border-gray-700 font-medium">
+                <td v-for="date in pivotData.dates" :key="date.raw" class="px-3 py-3.5 text-center border-r border-gray-200 dark:border-gray-700 font-medium min-w-[80px]">
                   <span v-if="row.weights[date.raw] !== '-'" class="inline-flex items-center justify-center rounded-md bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 text-sm font-bold text-indigo-600 dark:text-indigo-400">
                     {{ row.weights[date.raw] }}
                   </span>
@@ -52,6 +52,9 @@
             </tbody>
           </table>
         </div>
+        <p v-if="pivotData.dates.length > 14" class="text-[10px] text-gray-400 mt-2 text-center md:hidden">
+          ← Deslizá horizontalmente para ver más fechas →
+        </p>
       </div>
     </div>
   </div>

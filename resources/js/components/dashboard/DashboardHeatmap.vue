@@ -27,7 +27,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+const { formatDateShort } = useFormatters();
+    import { computed } from 'vue';
 
 const props = defineProps({
     historial: { type: Array, default: () => [] },
@@ -45,7 +46,7 @@ const dias = computed(() => {
         fecha.setDate(hoy.getDate() - i);
         resultado.push({
             fecha: fecha.toISOString().split('T')[0],
-            label: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+            label: fechaformatDateShort(1716),
             diaCorto: diasCortos[fecha.getDay()],
             series: 0,
         });

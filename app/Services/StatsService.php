@@ -170,10 +170,7 @@ class StatsService
                 'sets_with_esfuerzo' => 0,
                 'avg_por_tipo' => ['rir' => null, 'rpe' => null],
                 'avg_hard' => 0,
-                'distribucion' => [
-                    'rir' => array_fill(0, 6, 0),
-                    'rpe' => array_fill(6, 5, 0),
-                ],
+                'distribucion' => $this->emptyDistribucion(),
                 'por_ejercicio' => [],
                 'tendencia' => [],
             ];
@@ -211,17 +208,15 @@ class StatsService
             ->groupBy('esfuerzo_tipo', 'esfuerzo_valor')
             ->get();
 
-        $dist = [
-            'rir' => array_fill(0, 6, 0),  // 0..5
-            'rpe' => array_fill(6, 5, 0),  // 6..10 (índices 6,7,8,9,10)
-        ];
+        $dist = $this->emptyDistribucion();
         foreach ($distRows as $r) {
             $tipo = $r->esfuerzo_tipo;
             $val = (int) $r->esfuerzo_valor;
+            // RIR: keys 0..5. RPE: keys 0..4 (acceso por val-6).
             if ($tipo === 'rir' && $val >= 0 && $val <= 5) {
-                $dist['rir'][$val] = (int) $r->n;
+                $dist['rir'][$val]['count'] = (int) $r->n;
             } elseif ($tipo === 'rpe' && $val >= 6 && $val <= 10) {
-                $dist['rpe'][$val] = (int) $r->n;
+                $dist['rpe'][$val - 6]['count'] = (int) $r->n;
             }
         }
 
@@ -606,6 +601,28 @@ class StatsService
                 'total_sets_30d' => $sets30d,
             ],
             'quick' => $quick,
+        ];
+    }
+
+    /**
+     * Distribución vacía inicializada con todos los buckets en 0.
+     *
+     * Shape: cada "bucket" es un objeto {valor, count}, NO un entero suelto.
+     * Esto es importante porque:
+     *   - Mantiene el shape estable entre el caso "sin datos" y "con datos"
+     *   - Permite que el frontend itere con `forEach` (siempre array JSON)
+     *   - Separa el "valor semántico" (6, 7, 8... para RPE) del índice de array
+     *     (siempre 0..N) — fundamental porque json_encode en PHP
+     *     no preserva keys numéricas que no arrancan en 0, y eso causaba
+     *     que `distribucion.rpe` llegara al frontend como objeto en vez de
+     *     array, reventando el `forEach`.
+     */
+    private function emptyDistribucion(): array
+    {
+        $make = fn($v) => ['valor' => $v, 'count' => 0];
+        return [
+            'rir' => array_map($make, range(0, 5)),
+            'rpe' => array_map($make, range(6, 10)),
         ];
     }
 }
