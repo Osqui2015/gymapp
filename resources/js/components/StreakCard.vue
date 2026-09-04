@@ -23,22 +23,22 @@
             <div class="text-4xl flex-shrink-0">🔥</div>
         </div>
 
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2">
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.this_week ?? 0 }}</p>
                 <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Esta semana</p>
             </div>
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2">
+            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.this_month ?? 0 }}</p>
                 <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Este mes</p>
             </div>
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2">
+            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.longest_streak ?? 0 }}</p>
                 <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Mejor racha</p>
             </div>
         </div>
 
-        <div class="mt-3 pt-3 border-t border-orange-200/60 dark:border-orange-800/60 flex items-center justify-between text-xs text-orange-700/80 dark:text-orange-300/80">
+        <div class="mt-3 pt-3 border-t border-orange-200/60 dark:border-orange-800/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-orange-700/80 dark:text-orange-300/80">
             <span>📊 {{ data?.total_workouts ?? 0 }} entrenamientos totales</span>
             <span>💪 {{ data?.total_sets ?? 0 }} sets</span>
         </div>

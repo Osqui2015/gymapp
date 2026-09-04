@@ -103,16 +103,16 @@ const goToHistorial = () => {
             </div>
 
             <!-- Resumen -->
-            <div class="grid grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-center dark:border-gray-700">
-                <div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-center dark:border-gray-700">
+                <div class="min-w-0">
                     <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Sets</p>
                     <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ data.totals.sets }}</p>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Días</p>
                     <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ data.totals.dias_entrenados }}/7</p>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Racha</p>
                     <p class="text-sm font-bold text-gray-700 dark:text-gray-200">🔥 {{ data.streak }}</p>
                 </div>
