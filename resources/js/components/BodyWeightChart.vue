@@ -95,6 +95,7 @@ const emit = defineEmits(['update:goal']);
 const goalLocal = ref(props.goal);
 const chartCanvas = ref(null);
 let chartInstance = null;
+let chartConstructor = null;
 
 watch(() => props.goal, (v) => { goalLocal.value = v; });
 
@@ -226,13 +227,14 @@ function buildChart() {
     if (chartInstance) {
         chartInstance.destroy();
     }
-    chartInstance = new Chart(chartCanvas.value, config);
+        chartInstance = new chartConstructor(chartCanvas.value, config);
 }
 
 async function initChart() {
     // Lazy-load: chart.js vive en vendor-chart (cargado por otros componentes).
     const { Chart, registerables } = await import('chart.js');
     Chart.register(...registerables);
+    chartConstructor = Chart;
     await nextTick();
     buildChart();
 }

@@ -12,6 +12,7 @@ const data = ref(null)
 const window = ref('30')
 const chartCanvas = ref(null)
 let chartInstance = null
+let chartConstructor = null
 
 const WINDOWS = [
     { key: '30', label: '30d' },
@@ -181,12 +182,13 @@ function buildChart() {
     if (chartInstance) {
         chartInstance.destroy()
     }
-    chartInstance = new Chart(chartCanvas.value, config)
+    chartInstance = new chartConstructor(chartCanvas.value, config)
 }
 
 async function initChart() {
     const { Chart, registerables } = await import('chart.js')
     Chart.register(...registerables)
+    chartConstructor = Chart
     await nextTick()
     buildChart()
 }

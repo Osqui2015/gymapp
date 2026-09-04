@@ -91,9 +91,9 @@
                 @rescheduled="onRescheduled"
             />
         </div>
-        <div v-show="activeTab === 'matrix'" class="grid gap-4 md:grid-cols-3 mb-6">
-            <StreakCard :data="statsResumen" class="md:col-span-1" />
-            <div class="md:col-span-2">
+        <div v-show="activeTab === 'matrix'" class="grid items-start gap-4 md:grid-cols-3 mb-6">
+            <StreakCard :data="statsResumen" class="min-w-0 md:col-span-1" />
+            <div class="min-w-0 md:col-span-2">
                 <ActivityHeatmap :data="statsHeatmap" />
             </div>
         </div>

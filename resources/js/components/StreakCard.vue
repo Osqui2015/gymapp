@@ -23,18 +23,18 @@
             <div class="text-4xl flex-shrink-0">🔥</div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
+        <div class="mt-4 grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.this_week ?? 0 }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Esta semana</p>
+                <p class="text-[9px] uppercase leading-tight tracking-wider text-gray-500 dark:text-gray-400 sm:text-[10px]">Esta semana</p>
             </div>
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
+            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.this_month ?? 0 }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Este mes</p>
+                <p class="text-[9px] uppercase leading-tight tracking-wider text-gray-500 dark:text-gray-400 sm:text-[10px]">Este mes</p>
             </div>
-            <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg p-2 min-w-0">
+            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
                 <p class="text-lg font-bold text-gray-900 dark:text-white">{{ data?.longest_streak ?? 0 }}</p>
-                <p class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Mejor racha</p>
+                <p class="text-[9px] uppercase leading-tight tracking-wider text-gray-500 dark:text-gray-400 sm:text-[10px]">Mejor racha</p>
             </div>
         </div>
 
