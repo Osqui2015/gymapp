@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
-      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex flex-col gap-3 bg-gradient-to-r from-slate-900 to-indigo-900 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
           <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -15,12 +15,12 @@
           <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
           </svg>
-          Orden: {{ dateSortAsc ? 'Cronológico' : 'Últimos primero' }}
+          {{ dateSortAsc ? 'Cronológico' : 'Últimos primero' }}
         </button>
       </div>
 
-      <div class="p-6">
-        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 max-w-full">
+      <div class="p-4 sm:p-6">
+        <div class="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 md:block">
           <table class="w-full text-sm text-left border-collapse min-w-[600px]">
             <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-xs">
               <tr>
@@ -52,9 +52,29 @@
             </tbody>
           </table>
         </div>
-        <p v-if="pivotData.dates.length > 14" class="text-[10px] text-gray-400 mt-2 text-center md:hidden">
-          ← Deslizá horizontalmente para ver más fechas →
-        </p>
+
+        <div class="space-y-3 md:hidden">
+          <article
+            v-for="row in pivotData.rows"
+            :key="row.name"
+            class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+              <p class="break-words text-sm font-bold leading-snug text-gray-900 dark:text-white">{{ row.name }}</p>
+              <span v-if="row.superserie_grupo" class="mt-2 inline-flex rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400">
+                Superserie {{ row.superserie_grupo }}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-px bg-gray-200 dark:bg-gray-700">
+              <template v-for="date in pivotData.dates" :key="date.raw">
+                <div v-if="row.weights[date.raw] !== '-'" class="min-w-0 bg-white px-3 py-2.5 dark:bg-gray-800">
+                  <p class="text-[11px] font-medium tabular-nums text-gray-500 dark:text-gray-400">{{ date.formatted }}</p>
+                  <p class="mt-0.5 text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ row.weights[date.raw] }}</p>
+                </div>
+              </template>
+            </div>
+          </article>
+        </div>
       </div>
     </div>
   </div>
