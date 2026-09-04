@@ -48,7 +48,7 @@ const dias = computed(() => {
         fecha.setDate(hoy.getDate() - i);
         resultado.push({
             fecha: fecha.toISOString().split('T')[0],
-            label: fechaformatDateShort(1716),
+            label: formatDateShort(fecha),
             diaCorto: diasCortos[fecha.getDay()],
             series: 0,
         });

@@ -359,13 +359,13 @@ watch(lightboxIndex, (i) => {
 const formatFechaCorta = (s) => {
     if (!s) return '';
     const d = new Date(s + 'T00:00:00');
-    return dformatDateMedium(17327);
+    return formatDateMedium(d);
 };
 
 const formatFechaLarga = (s) => {
     if (!s) return '';
     const d = new Date(s + 'T00:00:00');
-    return dformatDateLong(17466);
+    return formatDateLong(d);
 };
 
 onMounted(cargar);

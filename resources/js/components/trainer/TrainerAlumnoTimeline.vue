@@ -101,7 +101,7 @@ const formatFecha = (iso) => {
     if (diffDias === 0) return 'Hoy';
     if (diffDias === 1) return 'Ayer';
     if (diffDias < 7) return `Hace ${diffDias} días`;
-    return dformatDateMedium(4342);
+    return formatDateMedium(d);
 };
 
 watch(() => props.alumno?.id, () => {

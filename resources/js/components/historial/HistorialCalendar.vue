@@ -157,7 +157,7 @@ const heatmap = computed(() => weeksAgo.value);
 const formatDate = (iso) => {
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
-    return dformatDateShort(6601);
+    return formatDateShort(d);
 };
 
 // Stats
