@@ -21,7 +21,10 @@
                 :aria-label="`Carga rápida de series · ${dia || ''}`"
                 @click.self="$emit('close')"
             >
-                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="$emit('close')"></div>
+                <div
+                    class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    @click="$emit('close')"
+                ></div>
 
                 <div
                     ref="sheetEl"
@@ -33,7 +36,9 @@
                     </div>
 
                     <!-- header -->
-                    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+                    <div
+                        class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3"
+                    >
                         <div class="min-w-0">
                             <h2 class="text-lg font-bold text-gray-900 dark:text-white truncate">
                                 ⚡ Carga rápida
@@ -48,8 +53,18 @@
                             class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
                             aria-label="Cerrar"
                         >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
                             </svg>
                         </button>
                     </div>
@@ -64,11 +79,16 @@
                             <div class="flex items-baseline justify-between gap-3 mb-3">
                                 <h3 class="font-bold text-gray-900 dark:text-white truncate">
                                     {{ ej.ejercicio_nombre || ej.nombre }}
-                                    <span v-if="ej.superserie_grupo" class="ml-2 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full">
+                                    <span
+                                        v-if="ej.superserie_grupo"
+                                        class="ml-2 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full"
+                                    >
                                         SS {{ ej.superserie_grupo }}
                                     </span>
                                 </h3>
-                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                <span
+                                    class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                >
                                     {{ ej.reps_min }}–{{ ej.reps_max }} reps
                                 </span>
                             </div>
@@ -77,14 +97,48 @@
                                 <div
                                     v-for="serie in seriesDe(ej)"
                                     :key="serie.series_numero"
-                                    class="flex items-center gap-2"
+                                    v-bind="getLongPressBindings(serie)"
+                                    :class="[
+                                        'flex items-center gap-2 transition-colors',
+                                        isSerieLongPressed(serie.series_numero)
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/30 rounded-lg'
+                                            : '',
+                                    ]"
                                 >
-                                    <span class="w-10 text-center text-xs font-bold text-gray-500 dark:text-gray-400">
-                                        #{{ serie.series_numero }}
-                                    </span>
+                                    <div
+                                        class="flex flex-col items-center justify-center shrink-0 w-12"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-gray-500 dark:text-gray-400"
+                                        >
+                                            #{{ serie.series_numero }}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            @click="ciclarTipoSerie(serie)"
+                                            :class="[
+                                                'text-[9px] font-bold px-1 py-0.2 rounded transition-colors cursor-pointer',
+                                                serie.tipo_serie === 'calentamiento'
+                                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                                                    : serie.tipo_serie === 'dropset'
+                                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                                                      : serie.tipo_serie === 'al_fallo'
+                                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                                                        : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                                            ]"
+                                            :title="`Tipo: ${serie.tipo_serie}. Toca para cambiar.`"
+                                        >
+                                            {{ tipoSerieLabel(serie.tipo_serie) }}
+                                        </button>
+                                    </div>
 
-                                    <label class="flex-1 flex items-center bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500">
-                                        <span class="text-[10px] uppercase tracking-wider text-gray-400 mr-1">kg</span>
+                                    <label
+                                        class="flex-1 flex items-center bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500"
+                                    >
+                                        <span
+                                            class="text-[10px] uppercase tracking-wider text-gray-400 mr-1"
+                                            >kg</span
+                                        >
                                         <input
                                             type="number"
                                             inputmode="decimal"
@@ -96,8 +150,13 @@
                                         />
                                     </label>
 
-                                    <label class="flex-1 flex items-center bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500">
-                                        <span class="text-[10px] uppercase tracking-wider text-gray-400 mr-1">reps</span>
+                                    <label
+                                        class="flex-1 flex items-center bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500"
+                                    >
+                                        <span
+                                            class="text-[10px] uppercase tracking-wider text-gray-400 mr-1"
+                                            >reps</span
+                                        >
                                         <input
                                             type="number"
                                             inputmode="numeric"
@@ -118,10 +177,25 @@
                                                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
                                         ]"
                                         :aria-pressed="serie.completado"
-                                        :aria-label="serie.completado ? 'Serie completada' : 'Marcar serie completada'"
+                                        :aria-label="
+                                            serie.completado
+                                                ? 'Serie completada'
+                                                : 'Marcar serie completada'
+                                        "
                                     >
-                                        <svg v-if="serie.completado" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                        <svg
+                                            v-if="serie.completado"
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="3"
+                                                d="M5 13l4 4L19 7"
+                                            />
                                         </svg>
                                         <span v-else class="text-xs">✓</span>
                                     </button>
@@ -129,7 +203,10 @@
 
                                 <!-- Nota libre por set (opcional, se muestra siempre para no esconderla) -->
                                 <div class="flex items-center gap-2 pl-12">
-                                    <span class="text-[10px] uppercase tracking-wider text-gray-400 whitespace-nowrap" title="Cómo te sentiste en este ejercicio">
+                                    <span
+                                        class="text-[10px] uppercase tracking-wider text-gray-400 whitespace-nowrap"
+                                        title="Cómo te sentiste en este ejercicio"
+                                    >
                                         ✏️ nota
                                     </span>
                                     <input
@@ -143,15 +220,22 @@
                             </div>
                         </div>
 
-                        <div v-if="!ejercicios.length" class="text-center py-12 text-sm text-gray-500 dark:text-gray-400">
+                        <div
+                            v-if="!ejercicios.length"
+                            class="text-center py-12 text-sm text-gray-500 dark:text-gray-400"
+                        >
                             No hay ejercicios para este día.
                         </div>
                     </div>
 
                     <!-- footer -->
-                    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-3 safe-area-inset">
+                    <div
+                        class="px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-3 safe-area-inset"
+                    >
                         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                            <span class="text-emerald-600 dark:text-emerald-400">{{ totalCompletadas }}</span>
+                            <span class="text-emerald-600 dark:text-emerald-400">{{
+                                totalCompletadas
+                            }}</span>
                             / {{ totalSeries }} series
                         </div>
                         <div class="flex-1"></div>
@@ -180,6 +264,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import { useToast } from '../../composables/useToast';
+import { useLongPress } from '../../composables/useLongPress';
 
 const props = defineProps({
     open: { type: Boolean, default: false },
@@ -206,6 +291,7 @@ const clonar = () => {
                 series_numero: i,
                 peso: ej.peso_sugerido ?? null,
                 reps_realizadas: null,
+                tipo_serie: 'efectiva',
                 completado: false,
             });
         }
@@ -213,30 +299,53 @@ const clonar = () => {
     });
 };
 
-watch(() => props.open, (val) => {
-    if (val) {
-        clonar();
-        nextTick(() => {
-            // focus trap básico: enfocar el sheet al abrir
-            sheetEl.value?.focus?.();
-            document.body.style.overflow = 'hidden';
-        });
-    } else {
-        document.body.style.overflow = '';
+const tipos = ['efectiva', 'calentamiento', 'dropset', 'al_fallo'];
+const tipoSerieLabel = (t) => {
+    switch (t) {
+        case 'calentamiento':
+            return 'Cal.';
+        case 'dropset':
+            return 'Drop';
+        case 'al_fallo':
+            return 'Fallo';
+        default:
+            return 'Norm.';
     }
-}, { immediate: true });
+};
+
+const ciclarTipoSerie = (serie) => {
+    const idx = tipos.indexOf(serie.tipo_serie || 'efectiva');
+    serie.tipo_serie = tipos[(idx + 1) % tipos.length];
+};
+
+watch(
+    () => props.open,
+    (val) => {
+        if (val) {
+            clonar();
+            nextTick(() => {
+                // focus trap básico: enfocar el sheet al abrir
+                sheetEl.value?.focus?.();
+                document.body.style.overflow = 'hidden';
+            });
+        } else {
+            document.body.style.overflow = '';
+        }
+    },
+    { immediate: true }
+);
 
 const seriesDe = (ej) => ej._series || [];
 
 const totalCompletadas = computed(() =>
     localEjercicios.value.reduce(
         (acc, ej) => acc + seriesDe(ej).filter((s) => s.completado).length,
-        0,
-    ),
+        0
+    )
 );
 
 const totalSeries = computed(() =>
-    localEjercicios.value.reduce((acc, ej) => acc + seriesDe(ej).length, 0),
+    localEjercicios.value.reduce((acc, ej) => acc + seriesDe(ej).length, 0)
 );
 
 const marcarCompletada = (serie) => {
@@ -251,6 +360,38 @@ const marcarCompletada = (serie) => {
     }
     serie.completado = true;
 };
+
+// === Nivel 6: long-press en la fila de la serie para marcarla como completada.
+// Es un atajo de "un dedo, sin apuntar al ✓" pensado para uso con guantes.
+// Cada serie tiene su propio estado de long-press (clave por numero de serie).
+const longPressKeys = ref(new Set());
+const isSerieLongPressed = (n) => longPressKeys.value.has(n);
+
+const makeLongPressForSerie = (serie) =>
+    useLongPress({
+        onLongPress: () => {
+            marcarCompletada(serie);
+            // Haptic feedback: doble buzz si se completó, simple si se desmarcó.
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(serie.completado ? [60, 40, 60] : 40);
+            }
+        },
+        delay: 500,
+    });
+
+// Mapa: { [series_numero]: { bind, isPressed } }
+// useLongPress se invoca en setup; necesitamos invocarlo PER serie.
+// Solución: pre-creamos uno por serie esperada (1..10 es lo normal).
+const longPressBySerie = {};
+for (let n = 1; n <= 10; n++) {
+    longPressBySerie[n] = makeLongPressForSerie({ series_numero: n, completado: false });
+}
+
+const getLongPressBindings = (serie) => longPressBySerie[serie.series_numero]?.bind || {};
+
+// Sincronizar el highlight visual con el estado de cada long-press.
+// No es reactivo por serie, pero como se activa solo durante el press, es OK.
+// Si querés highlight fino, después se puede mapear por serie individual.
 
 const guardar = () => {
     const records = [];
@@ -267,6 +408,7 @@ const guardar = () => {
                 reps_max: ej.reps_max,
                 descanso_min: ej.descanso_min,
                 superserie_grupo: ej.superserie_grupo || null,
+                tipo_serie: s.tipo_serie || 'efectiva',
                 completado: true,
             };
             // La nota se persiste en CADA set del ejercicio (así queda searchable

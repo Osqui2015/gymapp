@@ -1,31 +1,34 @@
 <template>
-  <div
-    ref="containerRef"
-    class="overflow-y-auto"
-    :style="{ height: typeof height === 'number' ? `${height}px` : height }"
-    @scroll="onScroll"
-  >
-    <!-- Spacer para los items no renderizados arriba -->
-    <div :style="{ height: `${offsetY}px` }" />
+    <div
+        ref="containerRef"
+        class="overflow-y-auto"
+        :style="{ height: typeof height === 'number' ? `${height}px` : height }"
+        @scroll="onScroll"
+    >
+        <!-- Spacer para los items no renderizados arriba -->
+        <div :style="{ height: `${offsetY}px` }" />
 
-    <!-- Items visibles -->
-    <div>
-      <slot
-        v-for="(item, i) in visibleItems"
-        :key="getKey(item, startIndex + i)"
-        :item="item"
-        :index="startIndex + i"
-      />
+        <!-- Items visibles -->
+        <div>
+            <slot
+                v-for="(item, i) in visibleItems"
+                :key="getKey(item, startIndex + i)"
+                :item="item"
+                :index="startIndex + i"
+            />
+        </div>
+
+        <!-- Spacer para los items no renderizados abajo -->
+        <div :style="{ height: `${totalHeight - offsetY - visibleHeight}px` }" />
+
+        <!-- Mensaje si no hay items -->
+        <div
+            v-if="!items || items.length === 0"
+            class="py-8 text-center text-gray-500 dark:text-gray-400"
+        >
+            <slot name="empty">No hay elementos para mostrar</slot>
+        </div>
     </div>
-
-    <!-- Spacer para los items no renderizados abajo -->
-    <div :style="{ height: `${totalHeight - offsetY - visibleHeight}px` }" />
-
-    <!-- Mensaje si no hay items -->
-    <div v-if="!items || items.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400">
-      <slot name="empty">No hay elementos para mostrar</slot>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -51,9 +54,15 @@ const getKey = (item, index) => {
     return index;
 };
 
-const startIndex = computed(() => Math.max(0, Math.floor(scrollTop.value / props.itemHeight) - props.overscan));
-const visibleCount = computed(() => Math.ceil(containerHeight.value / props.itemHeight) + props.overscan * 2);
-const endIndex = computed(() => Math.min(props.items.length, startIndex.value + visibleCount.value));
+const startIndex = computed(() =>
+    Math.max(0, Math.floor(scrollTop.value / props.itemHeight) - props.overscan)
+);
+const visibleCount = computed(
+    () => Math.ceil(containerHeight.value / props.itemHeight) + props.overscan * 2
+);
+const endIndex = computed(() =>
+    Math.min(props.items.length, startIndex.value + visibleCount.value)
+);
 
 const visibleItems = computed(() => props.items.slice(startIndex.value, endIndex.value));
 
@@ -83,7 +92,10 @@ onBeforeUnmount(() => {
     if (resizeObserver) resizeObserver.disconnect();
 });
 
-watch(() => props.items.length, () => {
-    if (containerRef.value) containerRef.value.scrollTop = 0;
-});
+watch(
+    () => props.items.length,
+    () => {
+        if (containerRef.value) containerRef.value.scrollTop = 0;
+    }
+);
 </script>

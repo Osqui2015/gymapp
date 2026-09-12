@@ -18,6 +18,7 @@ class MembresiaFactory extends Factory
     {
         $inicio = Carbon::now()->subDays(fake()->numberBetween(1, 30));
         $vencimiento = $inicio->copy()->addDays(30);
+
         return [
             'user_id' => User::factory(),
             'tipo_plan' => 'mensual',

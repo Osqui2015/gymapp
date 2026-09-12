@@ -49,6 +49,7 @@ class EjercicioClavePolicy
 
         if ($user->hasRole(User::ROLE_TRAINER) && $alumnoId !== null) {
             $alumno = User::find($alumnoId);
+
             return $alumno !== null && (int) $alumno->trainer_id === (int) $user->id;
         }
 

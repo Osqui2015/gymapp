@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Sexo biológico: necesario para la fórmula Mifflin-St Jeor
             // (hombres y mujeres usan constantes distintas).
-            if (!Schema::hasColumn('users', 'sexo')) {
+            if (! Schema::hasColumn('users', 'sexo')) {
                 $table->enum('sexo', ['masculino', 'femenino'])->nullable()->after('altura');
             }
             // Edad: si no está seteada, se pide al usuario al calcular TDEE.
-            if (!Schema::hasColumn('users', 'edad')) {
+            if (! Schema::hasColumn('users', 'edad')) {
                 $table->unsignedTinyInteger('edad')->nullable()->after('sexo');
             }
             // Nivel de actividad física (factor para TDEE).
@@ -24,14 +24,14 @@ return new class extends Migration
             //   moderado     : BMR × 1.55  (3-5 días/semana)
             //   activo       : BMR × 1.725 (6-7 días/semana)
             //   muy_activo   : BMR × 1.9   (atleta, trabajo físico)
-            if (!Schema::hasColumn('users', 'nivel_actividad')) {
+            if (! Schema::hasColumn('users', 'nivel_actividad')) {
                 $table->enum('nivel_actividad', ['sedentario', 'ligero', 'moderado', 'activo', 'muy_activo'])
                     ->nullable()
                     ->after('edad');
             }
             // Objetivo nutricional: define el ajuste de calorías y la distribución
             // de macros sugeridos.
-            if (!Schema::hasColumn('users', 'objetivo_nutricional')) {
+            if (! Schema::hasColumn('users', 'objetivo_nutricional')) {
                 $table->enum('objetivo_nutricional', ['perder_grasa', 'mantener', 'ganar_masa'])
                     ->default('mantener')
                     ->after('nivel_actividad');

@@ -35,9 +35,10 @@ class ProgresoFoto extends Model
      */
     public function getUrlAttribute(): ?string
     {
-        if (!$this->foto_path || !Storage::disk('public')->exists($this->foto_path)) {
+        if (! $this->foto_path || ! Storage::disk('public')->exists($this->foto_path)) {
             return null;
         }
+
         return Storage::disk('public')->url($this->foto_path);
     }
 }

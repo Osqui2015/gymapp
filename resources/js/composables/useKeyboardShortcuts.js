@@ -76,7 +76,9 @@ export function setupKeyboardShortcuts() {
         if (key === 'g' && !pendingG) {
             pendingG = true;
             clearTimeout(pendingTimer);
-            pendingTimer = setTimeout(() => { pendingG = false; }, 1000);
+            pendingTimer = setTimeout(() => {
+                pendingG = false;
+            }, 1000);
             return;
         }
 
@@ -115,13 +117,13 @@ const navegarA = (routeName) => {
     }
     // Fallback: navegación manual
     const fallbacks = {
-        'dashboard': '/dashboard',
-        'rutinas': '/rutinas',
-        'ejercicios': '/ejercicios',
-        'historial': '/historial',
-        'progreso': '/progreso',
+        dashboard: '/dashboard',
+        rutinas: '/rutinas',
+        ejercicios: '/ejercicios',
+        historial: '/historial',
+        progreso: '/progreso',
         'trainer.alumnos': '/trainer/alumnos',
-        'configuracion': '/configuracion',
+        configuracion: '/configuracion',
     };
     if (fallbacks[routeName]) {
         window.location.href = fallbacks[routeName];
@@ -149,18 +151,26 @@ const mostrarAyuda = () => {
                 </button>
             </div>
             <ul class="space-y-2 text-sm">
-                ${Object.entries(SHORTCUTS).map(([key, { label }]) => `
+                ${Object.entries(SHORTCUTS)
+                    .map(
+                        ([key, { label }]) => `
                     <li class="flex items-center justify-between gap-3">
                         <span class="text-gray-700 dark:text-gray-300">${label}</span>
                         <span><kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">g</kbd> <kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">${key[1]}</kbd></span>
                     </li>
-                `).join('')}
-                ${Object.entries(SINGLE_KEY_SHORTCUTS).map(([key, { label }]) => `
+                `
+                    )
+                    .join('')}
+                ${Object.entries(SINGLE_KEY_SHORTCUTS)
+                    .map(
+                        ([key, { label }]) => `
                     <li class="flex items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                         <span class="text-gray-700 dark:text-gray-300">${label}</span>
                         <kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">${key}</kbd>
                     </li>
-                `).join('')}
+                `
+                    )
+                    .join('')}
                 <li class="flex items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span class="text-gray-700 dark:text-gray-300">Mostrar esta ayuda</span>
                     <kbd class="px-2 py-0.5 font-mono text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600">?</kbd>

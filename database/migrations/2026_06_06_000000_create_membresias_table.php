@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('metodo_pago')->nullable(); // transferencia, efectivo, tarjeta, etc.
             $table->text('notas')->nullable();
             $table->timestamps();
-            
+
             $table->index(['user_id', 'estado']);
             $table->index('fecha_vencimiento');
         });

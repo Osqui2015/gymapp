@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 class Membresia extends Model
 {
@@ -45,16 +45,17 @@ class Membresia extends Model
     public function getEstaPorVencer(): bool
     {
         $dias = $this->getDiasRestantes();
+
         return $dias >= 0 && $dias <= 7;
     }
 
     public static function actualizarEstados()
     {
         $membresias = self::whereIn('estado', ['activo', 'por_vencer'])->get();
-        
+
         foreach ($membresias as $membresia) {
             $diasRestantes = $membresia->getDiasRestantes();
-            
+
             if ($diasRestantes < 0) {
                 $membresia->update(['estado' => 'vencido']);
             } elseif ($diasRestantes <= 7) {
@@ -67,7 +68,7 @@ class Membresia extends Model
 
     public function getEstadoColor(): string
     {
-        return match($this->estado) {
+        return match ($this->estado) {
             'activo' => 'green',
             'por_vencer' => 'yellow',
             'vencido' => 'red',

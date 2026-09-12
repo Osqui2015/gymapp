@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 
-export type UserRole = 'administrador' | 'trainer' | 'comun' | 'alumno' | 'coordinador' | 'recepcionista' | null;
+export type UserRole =
+    'administrador' | 'trainer' | 'comun' | 'alumno' | 'coordinador' | 'recepcionista' | null;
 
 export interface AuthState {
     id: number | null;
@@ -26,7 +27,12 @@ interface UserInfoResponse {
     has_trainer?: boolean;
 }
 
-const STAFF_ROLES: ReadonlyArray<UserRole> = ['administrador', 'trainer', 'recepcionista', 'coordinador'];
+const STAFF_ROLES: ReadonlyArray<UserRole> = [
+    'administrador',
+    'trainer',
+    'recepcionista',
+    'coordinador',
+];
 
 /**
  * Store de autenticación / sesión actual.
@@ -59,8 +65,12 @@ export const useAuthStore = defineStore('auth', () => {
     const isTrainer = computed<boolean>(() => role.value === 'trainer');
     const isComun = computed<boolean>(() => role.value === 'comun');
     const isAlumno = computed<boolean>(() => role.value === 'alumno');
-    const isStaff = computed<boolean>(() => role.value !== null && STAFF_ROLES.includes(role.value));
-    const initials = computed<string>(() => (name.value ? name.value.charAt(0).toUpperCase() : '?'));
+    const isStaff = computed<boolean>(
+        () => role.value !== null && STAFF_ROLES.includes(role.value)
+    );
+    const initials = computed<string>(() =>
+        name.value ? name.value.charAt(0).toUpperCase() : '?'
+    );
 
     /**
      * Carga la info del usuario actual desde /api/user-info.

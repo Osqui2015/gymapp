@@ -2,6 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Backfill de `rutinas.ejercicio_id` (corre después de la migración
@@ -23,9 +25,9 @@ return new class extends Migration
     public function up(): void
     {
         // Verificar que la columna existe (sanity check)
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('rutinas', 'ejercicio_id')) {
-            throw new \RuntimeException(
-                'La columna rutinas.ejercicio_id no existe. ' .
+        if (! Schema::hasColumn('rutinas', 'ejercicio_id')) {
+            throw new RuntimeException(
+                'La columna rutinas.ejercicio_id no existe. '.
                 'Corré primero la migración 2026_08_16_000000_add_ejercicio_id_to_rutinas_table'
             );
         }
@@ -44,8 +46,8 @@ return new class extends Migration
         $matched = DB::table('rutinas')->whereNotNull('ejercicio_id')->count();
         $unmatched = $total - $matched;
 
-        \Illuminate\Support\Facades\Log::info(
-            "[backfill R1] {$matched}/{$total} rutinas con ejercicio_id seteado. " .
+        Log::info(
+            "[backfill R1] {$matched}/{$total} rutinas con ejercicio_id seteado. ".
             "{$unmatched} sin match (queda para revisión manual)."
         );
     }

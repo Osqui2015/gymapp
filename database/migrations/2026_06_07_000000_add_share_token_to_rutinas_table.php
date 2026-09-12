@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('rutinas', function (Blueprint $table) {
-            if (!Schema::hasColumn('rutinas', 'share_token')) {
+            if (! Schema::hasColumn('rutinas', 'share_token')) {
                 $table->string('share_token', 32)->nullable()->unique()->after('publica');
             }
         });

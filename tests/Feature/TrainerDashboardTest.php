@@ -73,4 +73,36 @@ class TrainerDashboardTest extends TestCase
         $response->assertStatus(200);
         $this->assertGreaterThanOrEqual(1, count($response->json('alumnos_inactivos_7dias')));
     }
+
+    public function test_trainer_dashboard_calculates_adherence_and_alerts(): void
+    {
+        $trainer = User::factory()->create(['role' => User::ROLE_TRAINER]);
+        $alumno = User::factory()->create([
+            'role' => User::ROLE_ALUMNO,
+            'trainer_id' => $trainer->id,
+        ]);
+
+        for ($i = 1; $i <= 6; $i++) {
+            Historial::create([
+                'user_id' => $alumno->id,
+                'rutina_nombre' => 'Test Rutina',
+                'dia' => 'Día '.$i,
+                'ejercicio_nombre' => 'Press',
+                'series_numero' => 1,
+                'reps_min' => '5',
+                'reps_max' => '10',
+                'descanso_min' => 1,
+                'fecha' => now()->subDays($i * 2)->toDateString(),
+                'completado' => true,
+            ]);
+        }
+
+        $response = $this->actingAs($trainer)->getJson('/api/trainer/dashboard');
+        $response->assertStatus(200);
+
+        $alumnoData = $response->json('alumnos.0');
+        $this->assertEquals(6, $alumnoData['dias_entrenados_30d']);
+        $this->assertEquals(50, $alumnoData['adherencia_pct']);
+        $this->assertFalse($alumnoData['tiene_alerta']);
+    }
 }

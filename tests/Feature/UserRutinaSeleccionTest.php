@@ -57,7 +57,7 @@ class UserRutinaSeleccionTest extends TestCase
         $response->assertJsonPath('modalidad', '3 Días');
     }
 
-    public function test_seleccionar_otra_rutina_sobreescribe_con_updateOrCreate(): void
+    public function test_seleccionar_otra_rutina_sobreescribe_con_update_or_create(): void
     {
         // Un user solo puede tener una user_rutina a la vez. updateOrCreate
         // asegura que la segunda llamada reemplaza la primera.

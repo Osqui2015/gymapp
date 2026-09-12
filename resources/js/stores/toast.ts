@@ -56,7 +56,7 @@ export const useToastStore = defineStore('toast', () => {
     function add(
         messageOrOptions: ToastInput,
         type: ToastType = 'info',
-        opts: ToastOptions = {},
+        opts: ToastOptions = {}
     ): number {
         const payload: ToastOptions & { message: string } =
             typeof messageOrOptions === 'string'

@@ -6,7 +6,6 @@ use App\Models\EjercicioTrainer;
 use App\Models\Historial;
 use App\Models\Rutina;
 use App\Models\User;
-use App\Models\UserRutina;
 use App\Services\TrainerDashboardService;
 use Illuminate\Http\Request;
 
@@ -25,8 +24,9 @@ class TrainerDashboardController extends Controller
     {
         $trainer = $request->user();
 
-        // Verificar que el alumno pertence al trainer
-        if ($alumno->trainer_id !== $trainer->id) {
+        // Nivel 5: administradores pueden ver cualquier alumno; los trainers
+        // solo los asignados a ellos. Antes bloqueaba admins también.
+        if (! TrainerTimelineController::puedeVerAlumno($trainer, $alumno)) {
             return response()->json(['error' => 'No tienes acceso a este alumno'], 403);
         }
 
@@ -37,7 +37,7 @@ class TrainerDashboardController extends Controller
     {
         $trainer = $request->user();
 
-        if ($alumno->trainer_id !== $trainer->id && !$trainer->hasRole('administrador')) {
+        if (! TrainerTimelineController::puedeVerAlumno($trainer, $alumno)) {
             return response()->json(['error' => 'No tienes acceso a este alumno'], 403);
         }
 
@@ -50,7 +50,7 @@ class TrainerDashboardController extends Controller
             ->where('user_id', $alumno->id)
             ->first();
 
-        if (!$historial) {
+        if (! $historial) {
             return response()->json(['error' => 'Entrada de historial no encontrada'], 404);
         }
 
@@ -124,7 +124,7 @@ class TrainerDashboardController extends Controller
             ->where('trainer_id', $trainer->id)
             ->first();
 
-        if (!$ejercicio) {
+        if (! $ejercicio) {
             return response()->json(['error' => 'Ejercicio no encontrado'], 404);
         }
 

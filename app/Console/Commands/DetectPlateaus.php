@@ -25,6 +25,7 @@ use Illuminate\Console\Command;
 class DetectPlateaus extends Command
 {
     protected $signature = 'plateaus:detect {--weeks=4 : Ventana de comparación (semanas)} {--min-sets=6 : Mínimo de sets para evaluar}';
+
     protected $description = 'Detecta mesetas en el progreso de los usuarios y los notifica';
 
     public function handle(StatsService $stats, NotificationService $notif, PushService $push): int
@@ -43,7 +44,9 @@ class DetectPlateaus extends Command
 
         foreach ($userIds as $userId) {
             $user = User::find($userId);
-            if (!$user) continue;
+            if (! $user) {
+                continue;
+            }
 
             // Rate-limit: si ya le mandamos un plateau hoy, skip
             if ($this->notifiedToday($user, 'plateau_detected')) {
@@ -60,6 +63,7 @@ class DetectPlateaus extends Command
         }
 
         $this->info("Plateaus detectados y notificados: {$notificados} usuarios");
+
         return self::SUCCESS;
     }
 

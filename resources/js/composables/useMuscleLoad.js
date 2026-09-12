@@ -16,11 +16,24 @@
 import { computed, ref } from 'vue';
 
 export const MUSCLE_SLUGS = [
-    'trapezius', 'deltoids', 'chest', 'upper-back', 'serratus',
-    'biceps', 'triceps', 'forearm',
-    'abs', 'obliques', 'lower-back',
-    'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors',
-    'calves', 'tibialis',
+    'trapezius',
+    'deltoids',
+    'chest',
+    'upper-back',
+    'serratus',
+    'biceps',
+    'triceps',
+    'forearm',
+    'abs',
+    'obliques',
+    'lower-back',
+    'gluteal',
+    'quadriceps',
+    'hamstring',
+    'adductors',
+    'hip-flexors',
+    'calves',
+    'tibialis',
 ];
 
 const SECUNDARIO = 0.4;
@@ -44,14 +57,14 @@ export function useMuscleLoad(historialRef, options = {}) {
      *                completados donde el músculo aparece.
      */
     const load = computed(() => {
-        const out = Object.fromEntries(MUSCLE_SLUGS.map(s => [s, 0]));
+        const out = Object.fromEntries(MUSCLE_SLUGS.map((s) => [s, 0]));
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado) continue;
             const musculos = h.ejercicio?.musculos || [];
             for (const m of musculos) {
                 const slug = m.musculo_slug;
-                if (!out.hasOwnProperty(slug)) continue;
+                if (!Object.prototype.hasOwnProperty.call(out, slug)) continue;
                 const factorMusculo = m.tipo === 'primario' ? 1.0 : SECUNDARIO;
                 out[slug] += factorMusculo;
             }
@@ -63,7 +76,7 @@ export function useMuscleLoad(historialRef, options = {}) {
      * lastTrained: timestamp del último set completado que trabajó cada músculo.
      */
     const lastTrained = computed(() => {
-        const out = Object.fromEntries(MUSCLE_SLUGS.map(s => [s, null]));
+        const out = Object.fromEntries(MUSCLE_SLUGS.map((s) => [s, null]));
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado || !h.fecha) continue;
@@ -81,7 +94,7 @@ export function useMuscleLoad(historialRef, options = {}) {
      * best1Rm: mejor 1RM estimado en el período considerado.
      */
     const best1Rm = computed(() => {
-        const out = Object.fromEntries(MUSCLE_SLUGS.map(s => [s, 0]));
+        const out = Object.fromEntries(MUSCLE_SLUGS.map((s) => [s, 0]));
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado) continue;
@@ -107,7 +120,7 @@ export function useMuscleLoad(historialRef, options = {}) {
         for (const slug of MUSCLE_SLUGS) {
             const v = l[slug];
             if (!v || max <= 0) out[slug] = 0;
-            else out[slug] = Math.max(1, Math.min(4, Math.ceil(v / max * 4)));
+            else out[slug] = Math.max(1, Math.min(4, Math.ceil((v / max) * 4)));
         }
         return out;
     });
@@ -125,7 +138,10 @@ export function useMuscleLoad(historialRef, options = {}) {
         const out = {};
         for (const slug of MUSCLE_SLUGS) {
             const last = lt[slug];
-            if (!last) { out[slug] = 0; continue; }
+            if (!last) {
+                out[slug] = 0;
+                continue;
+            }
             const hoursAgo = (n - last) / 3_600_000;
             if (hoursAgo < 48) out[slug] = 4;
             else if (hoursAgo < 72) out[slug] = 2;
@@ -144,7 +160,7 @@ export function useMuscleLoad(historialRef, options = {}) {
         for (const slug of MUSCLE_SLUGS) {
             const v = b[slug];
             if (!v || max <= 0) out[slug] = 0;
-            else out[slug] = Math.max(1, Math.min(4, Math.ceil(v / max * 4)));
+            else out[slug] = Math.max(1, Math.min(4, Math.ceil((v / max) * 4)));
         }
         return out;
     });

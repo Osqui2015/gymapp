@@ -49,12 +49,12 @@ return new class extends Migration
         // Re-creamos las columnas. Si la tabla tiene `rutina_id` y el user
         // quiere volver al approach snapshot, debe correr un backfill
         // adicional (no incluido acá).
-        if (!Schema::hasColumn('user_rutinas', 'nivel')) {
+        if (! Schema::hasColumn('user_rutinas', 'nivel')) {
             Schema::table('user_rutinas', function (Blueprint $table) {
                 $table->string('nivel')->nullable()->after('rutina_id');
             });
         }
-        if (!Schema::hasColumn('user_rutinas', 'modalidad')) {
+        if (! Schema::hasColumn('user_rutinas', 'modalidad')) {
             Schema::table('user_rutinas', function (Blueprint $table) {
                 $table->string('modalidad')->nullable()->after('nivel');
             });

@@ -6,6 +6,7 @@ use App\Models\Ejercicio;
 use App\Models\Historial;
 use App\Models\Rutina;
 use App\Models\User;
+use App\Models\UserRutina;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -31,6 +32,7 @@ use Illuminate\Support\Collection;
 class RutinasSugeridasService
 {
     private const LOOKBACK_DAYS = 60;
+
     private const TOP_N = 5;
 
     /**
@@ -124,9 +126,10 @@ class RutinasSugeridasService
         return Rutina::select('id', 'nivel', 'modalidad', 'ejercicio_nombre', 'ejercicio_id', 'created_by', 'updated_at', 'series', 'reps_min', 'reps_max')
             ->with('ejercicioRef:id,nombre,grupo_muscular')
             ->get()
-            ->groupBy(fn ($r) => $r->nivel . '|' . $r->modalidad)
+            ->groupBy(fn ($r) => $r->nivel.'|'.$r->modalidad)
             ->map(function ($items) {
                 $first = $items->first();
+
                 return tap($first, function ($rutina) use ($items) {
                     $rutina->setAttribute('ejercicios_count', $items->count());
                     $rutina->setAttribute('grupos_cubiertos', $items->pluck('ejercicioRef.grupo_muscular')->filter()->unique()->values()->toArray());
@@ -146,6 +149,7 @@ class RutinasSugeridasService
         if (! $perfil['tiene_historial']) {
             $score += $rutina->nivel === 'Principiante' ? 30 : 5;
             $score += min(20, $this->popularidad($rutina) * 0.5);
+
             return $score;
         }
 
@@ -188,12 +192,13 @@ class RutinasSugeridasService
      */
     protected function popularidad(Rutina $rutina): float
     {
-        $count = \App\Models\UserRutina::where('rutina_id', '!=', null)
+        $count = UserRutina::where('rutina_id', '!=', null)
             ->whereHas('rutina', function ($q) use ($rutina) {
                 $q->where('nivel', $rutina->nivel)->where('modalidad', $rutina->modalidad);
             })
             ->distinct('user_id')
             ->count('user_id');
+
         return min(20, floor($count / 5) * 1);
     }
 
@@ -209,6 +214,7 @@ class RutinasSugeridasService
             if ($rutina->nivel === 'Principiante') {
                 $razones[] = 'Nivel principiante (ideal para nuevos usuarios)';
             }
+
             return $razones;
         }
 
@@ -216,11 +222,11 @@ class RutinasSugeridasService
         $topGrupos = array_keys($perfil['top_grupos']);
         $overlap = $gruposCubiertos->intersect($topGrupos);
         if ($overlap->isNotEmpty()) {
-            $razones[] = 'Entrena ' . $overlap->implode(', ') . ' que son tus grupos principales';
+            $razones[] = 'Entrena '.$overlap->implode(', ').' que son tus grupos principales';
         }
 
         if (str_contains($rutina->nivel, ucfirst($perfil['nivel_estimado']))) {
-            $razones[] = 'Nivel ' . $rutina->nivel . ' (adecuado para tu nivel)';
+            $razones[] = 'Nivel '.$rutina->nivel.' (adecuado para tu nivel)';
         }
 
         if ($perfil['dias_por_mes'] >= 12) {

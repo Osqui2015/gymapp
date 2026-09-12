@@ -42,10 +42,10 @@ export const useNotificationStore = defineStore('notification', () => {
                 '/api/notifications',
                 {
                     params: unreadOnly ? { unread_only: 1, per_page: 50 } : { per_page: 50 },
-                },
+                }
             );
             // Laravel paginator entrega `data` adentro, o array directo
-            items.value = Array.isArray(data) ? data : (data.data || []);
+            items.value = Array.isArray(data) ? data : data.data || [];
             unreadCount.value = items.value.filter((n) => !n.read_at).length;
             lastFetchedAt.value = Date.now();
         } catch (e) {
@@ -72,7 +72,9 @@ export const useNotificationStore = defineStore('notification', () => {
         try {
             const { data } = await axios.post<MarkAllReadResponse>('/api/notifications/read-all');
             const now = new Date().toISOString();
-            items.value.forEach((n) => { if (!n.read_at) n.read_at = now; });
+            items.value.forEach((n) => {
+                if (!n.read_at) n.read_at = now;
+            });
             unreadCount.value = 0;
             return data.updated;
         } catch (e) {

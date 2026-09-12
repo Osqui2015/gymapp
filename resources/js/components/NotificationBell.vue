@@ -24,7 +24,12 @@
             aria-haspopup="true"
         >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v1m6 0H9" />
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v1m6 0H9"
+                />
             </svg>
             <span
                 v-if="unreadCount > 0"
@@ -40,7 +45,9 @@
                 class="absolute right-0 mt-2 w-96 max-h-[520px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-40"
             >
                 <!-- Header -->
-                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div
+                    class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+                >
                     <h3 class="font-bold text-gray-900 dark:text-white">Notificaciones</h3>
                     <div class="flex items-center gap-3 text-xs">
                         <button
@@ -68,18 +75,29 @@
                 </div>
 
                 <!-- Lista -->
-                <div v-if="loading && items.length === 0" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+                <div
+                    v-if="loading && items.length === 0"
+                    class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
+                    <div
+                        class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-2"
+                    ></div>
                     Cargando…
                 </div>
 
-                <div v-else-if="items.length === 0" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div
+                    v-else-if="items.length === 0"
+                    class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
                     <div class="text-4xl mb-2">🔔</div>
                     <p class="font-medium mb-1">Sin notificaciones</p>
                     <p class="text-xs">Te avisaremos cuando pase algo.</p>
                 </div>
 
-                <ul v-else class="max-h-[420px] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                <ul
+                    v-else
+                    class="max-h-[420px] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700"
+                >
                     <li
                         v-for="n in items"
                         :key="n.id"
@@ -92,7 +110,7 @@
                             <div
                                 :class="[
                                     'w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0',
-                                    iconBgFor(n.type)
+                                    iconBgFor(n.type),
                                 ]"
                             >
                                 {{ iconFor(n.type) }}
@@ -101,20 +119,36 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                     {{ n.data.title }}
                                 </p>
-                                <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-0.5">
+                                <p
+                                    class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-0.5"
+                                >
                                     {{ n.data.body }}
                                 </p>
-                                <p class="text-xs text-gray-400 mt-1">{{ formatDate(n.created_at) }}</p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    {{ formatDate(n.created_at) }}
+                                </p>
                             </div>
-                            <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div
+                                class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
                                 <button
                                     v-if="!n.read_at"
                                     @click="notifStore.markRead(n.id)"
                                     class="p-1 rounded text-gray-400 hover:text-indigo-500"
                                     title="Marcar como leída"
                                 >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                 </button>
                                 <button
@@ -122,8 +156,18 @@
                                     class="p-1 rounded text-gray-400 hover:text-red-500"
                                     title="Eliminar"
                                 >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                        />
                                     </svg>
                                 </button>
                             </div>
@@ -171,7 +215,9 @@ let pollTimer = null;
 
 const POLL_INTERVAL_MS = 60_000; // 60 segundos
 
-const toggle = () => { open.value = !open.value; };
+const toggle = () => {
+    open.value = !open.value;
+};
 
 const close = (e) => {
     if (!rootEl.value) return;
@@ -196,21 +242,31 @@ const markAllRead = async () => {
 
 const iconFor = (type) => {
     switch (type) {
-        case 'trainer_comment': return '💬';
-        case 'membership_expiring': return '⚠️';
-        case 'milestone': return '🏆';
-        case 'rutina_asignada': return '📋';
-        default: return '🔔';
+        case 'trainer_comment':
+            return '💬';
+        case 'membership_expiring':
+            return '⚠️';
+        case 'milestone':
+            return '🏆';
+        case 'rutina_asignada':
+            return '📋';
+        default:
+            return '🔔';
     }
 };
 
 const iconBgFor = (type) => {
     switch (type) {
-        case 'trainer_comment': return 'bg-gradient-to-br from-indigo-500 to-purple-600';
-        case 'membership_expiring': return 'bg-gradient-to-br from-amber-500 to-red-500';
-        case 'milestone': return 'bg-gradient-to-br from-yellow-400 to-orange-500';
-        case 'rutina_asignada': return 'bg-gradient-to-br from-green-500 to-emerald-600';
-        default: return 'bg-gradient-to-br from-gray-500 to-gray-600';
+        case 'trainer_comment':
+            return 'bg-gradient-to-br from-indigo-500 to-purple-600';
+        case 'membership_expiring':
+            return 'bg-gradient-to-br from-amber-500 to-red-500';
+        case 'milestone':
+            return 'bg-gradient-to-br from-yellow-400 to-orange-500';
+        case 'rutina_asignada':
+            return 'bg-gradient-to-br from-green-500 to-emerald-600';
+        default:
+            return 'bg-gradient-to-br from-gray-500 to-gray-600';
     }
 };
 
@@ -246,8 +302,11 @@ const disablePush = async () => {
 
 const checkInitialPushState = async () => {
     const reg = await navigator.serviceWorker?.getRegistration?.();
-    if (!reg) { pushSupported.value = false; return; }
-    pushSupported.value = !!(reg.pushManager);
+    if (!reg) {
+        pushSupported.value = false;
+        return;
+    }
+    pushSupported.value = !!reg.pushManager;
     const sub = await reg.pushManager.getSubscription();
     pushEnabled.value = !!sub;
 };
@@ -268,7 +327,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .dropdown-enter-active,
 .dropdown-leave-active {
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
 }
 .dropdown-enter-from,
 .dropdown-leave-to {

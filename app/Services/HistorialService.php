@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Historial;
 use App\Models\Rutina;
+use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * Servicio de historial: progresos, finalización de rutinas, calendar y week summary.
@@ -33,7 +33,7 @@ class HistorialService
             ->orderBy('fecha', 'desc')
             ->first();
 
-        if (!$ultimo) {
+        if (! $ultimo) {
             return ['dia_actual' => 'Día 1'];
         }
 
@@ -46,7 +46,7 @@ class HistorialService
             ->toArray();
 
         // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
-        $userRutina = \App\Models\User::find($userId)?->rutinaSeleccionada()->with('rutina')->first();
+        $userRutina = User::find($userId)?->rutinaSeleccionada()->with('rutina')->first();
         $nivel = $userRutina?->rutina?->nivel ?? Rutina::query()->value('nivel');
         $modalidad = $userRutina?->rutina?->modalidad ?? Rutina::query()->value('modalidad');
 
@@ -64,7 +64,7 @@ class HistorialService
 
         $diaActual = $todosLosDias[0] ?? 'Día 1';
         foreach ($todosLosDias as $index => $dia) {
-            if (!in_array($dia, $diasCompletados)) {
+            if (! in_array($dia, $diasCompletados)) {
                 $diaActual = $dia;
                 break;
             }
@@ -81,12 +81,12 @@ class HistorialService
      *
      * @return array{ dia_actual: string, rutina_nombre: string }|array{ error: string }
      */
-    public function finalizarRutinaDia(\App\Models\User $user): array
+    public function finalizarRutinaDia(User $user): array
     {
         // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
         $userRutina = $user->rutinaSeleccionada()->with('rutina')->first();
 
-        if (!$userRutina || !$userRutina->rutina) {
+        if (! $userRutina || ! $userRutina->rutina) {
             return ['error' => 'No hay rutina seleccionada'];
         }
 
@@ -197,7 +197,7 @@ class HistorialService
      */
     public function compararEjercicio(int $userId, string $ejercicioNombre, string $desde, string $hasta): array
     {
-        $rows = \App\Models\Historial::where('user_id', $userId)
+        $rows = Historial::where('user_id', $userId)
             ->where('ejercicio_nombre', $ejercicioNombre)
             ->where('completado', true)
             ->whereBetween('fecha', [$desde, $hasta])
@@ -216,7 +216,7 @@ class HistorialService
                 'ejercicio' => $ejercicioNombre,
                 'desde' => $desde,
                 'hasta' => $hasta,
-                'dias' => (int) \Carbon\Carbon::parse($desde)->diffInDays($hasta),
+                'dias' => (int) Carbon::parse($desde)->diffInDays($hasta),
                 'desde_stats' => $statsVacio,
                 'hasta_stats' => $statsVacio,
                 'diff' => ['peso_max' => 0, 'peso_max_pct' => 0, 'reps_promedio' => 0, 'volumen_total' => 0, 'volumen_pct' => 0, 'sets' => 0],
@@ -233,7 +233,8 @@ class HistorialService
             $pesoMax = (float) ($sub->max('peso') ?? 0);
             $repsTotal = (int) $sub->sum('reps_realizadas');
             $repsProm = $sets > 0 ? round($repsTotal / $sets, 1) : 0;
-            $volumen = (float) $sub->sum(fn($r) => (float) ($r->peso ?? 0) * (int) ($r->reps_realizadas ?? 0));
+            $volumen = (float) $sub->sum(fn ($r) => (float) ($r->peso ?? 0) * (int) ($r->reps_realizadas ?? 0));
+
             return [
                 'peso_max' => $pesoMax,
                 'reps_promedio' => $repsProm,
@@ -258,7 +259,7 @@ class HistorialService
             'ejercicio' => $ejercicioNombre,
             'desde' => $desde,
             'hasta' => $hasta,
-            'dias' => (int) \Carbon\Carbon::parse($desde)->diffInDays($hasta),
+            'dias' => (int) Carbon::parse($desde)->diffInDays($hasta),
             'desde_stats' => $desde_stats,
             'hasta_stats' => $hasta_stats,
             'diff' => $diff,
@@ -301,8 +302,8 @@ class HistorialService
             ->distinct()
             ->orderBy('fecha')
             ->get()
-            ->groupBy(fn($r) => Carbon::parse($r->fecha)->toDateString())
-            ->map(fn($rows) => $rows->pluck('ejercicio_nombre')->unique()->values()->take(5)->all());
+            ->groupBy(fn ($r) => Carbon::parse($r->fecha)->toDateString())
+            ->map(fn ($rows) => $rows->pluck('ejercicio_nombre')->unique()->values()->take(5)->all());
 
         $days = [];
         $totalSets = 0;

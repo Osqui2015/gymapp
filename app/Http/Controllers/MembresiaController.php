@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Membresia;
 use App\Models\User;
-use App\Models\AuditLog;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class MembresiaController extends Controller
 {
@@ -25,8 +24,8 @@ class MembresiaController extends Controller
             $buscar = $request->buscar;
             $query->whereHas('user', function ($q) use ($buscar) {
                 $q->where('name', 'like', "%{$buscar}%")
-                  ->orWhere('nick', 'like', "%{$buscar}%")
-                  ->orWhere('email', 'like', "%{$buscar}%");
+                    ->orWhere('nick', 'like', "%{$buscar}%")
+                    ->orWhere('email', 'like', "%{$buscar}%");
             });
         }
 
@@ -97,7 +96,7 @@ class MembresiaController extends Controller
 
         $oldValues = $membresia->toArray();
 
-        $nuevaFecha = match($membresia->tipo_plan) {
+        $nuevaFecha = match ($membresia->tipo_plan) {
             'mensual' => now()->addMonth(),
             'trimestral' => now()->addMonths(3),
             'semestral' => now()->addMonths(6),
@@ -122,7 +121,7 @@ class MembresiaController extends Controller
         $this->authorize('viewAny', Membresia::class);
 
         $usuariosConMembresia = Membresia::pluck('user_id');
-        
+
         $usuarios = User::whereNotIn('id', $usuariosConMembresia)
             ->where('role', '!=', 'administrador')
             ->orderBy('name')

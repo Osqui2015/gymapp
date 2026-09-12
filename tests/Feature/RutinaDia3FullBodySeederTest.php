@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Ejercicio;
 use App\Models\Rutina;
 use Database\Seeders\RutinaDia3FullBodySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -3,10 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Ejercicio;
+use App\Models\EjercicioFavorito;
 use App\Models\Musculo;
 use App\Models\User;
+use Database\Factories\HistorialFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EjercicioTest extends TestCase
@@ -215,7 +216,7 @@ class EjercicioTest extends TestCase
         $this->assertFalse($item['is_favorite']);
 
         // 2) con historial (hace 2 días) y marcado como favorito
-        \Database\Factories\HistorialFactory::new()
+        HistorialFactory::new()
             ->completado()
             ->deFecha(now()->subDays(2)->toDateString())
             ->create([
@@ -223,7 +224,7 @@ class EjercicioTest extends TestCase
                 'ejercicio_id' => $press->id,
                 'ejercicio_nombre' => $press->nombre,
             ]);
-        \App\Models\EjercicioFavorito::create([
+        EjercicioFavorito::create([
             'user_id' => $user->id,
             'ejercicio_id' => $press->id,
         ]);
@@ -268,5 +269,58 @@ class EjercicioTest extends TestCase
 
         $this->postJson("/api/ejercicios/{$press->id}/favorite")
             ->assertStatus(401);
+    }
+
+    public function test_can_filter_ejercicios_by_dificultad(): void
+    {
+        Ejercicio::create([
+            'nombre' => 'Caminata en cinta',
+            'equipamiento' => 'Cinta',
+            'dificultad' => 'principiante',
+        ]);
+
+        Ejercicio::create([
+            'nombre' => 'Snatch olímpico',
+            'equipamiento' => 'Barra',
+            'dificultad' => 'avanzado',
+        ]);
+
+        $response = $this->getJson('/api/ejercicios?dificultad=avanzado');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['nombre' => 'Snatch olímpico'])
+            ->assertJsonMissing(['nombre' => 'Caminata en cinta']);
+    }
+
+    public function test_admin_can_create_ejercicio_with_dificultad(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+
+        $response = $this->actingAs($admin)->postJson('/api/ejercicios', [
+            'nombre' => 'Flexiones diamante',
+            'equipamiento' => 'Peso corporal',
+            'dificultad' => 'intermedio',
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('ejercicios', [
+            'nombre' => 'Flexiones diamante',
+            'dificultad' => 'intermedio',
+        ]);
+    }
+
+    public function test_create_ejercicio_validates_dificultad(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+
+        $response = $this->actingAs($admin)->postJson('/api/ejercicios', [
+            'nombre' => 'Ejercicio inválido',
+            'equipamiento' => 'Ninguno',
+            'dificultad' => 'imposible', // Not in enum
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['dificultad']);
     }
 }

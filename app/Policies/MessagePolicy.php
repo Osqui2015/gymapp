@@ -16,7 +16,10 @@ class MessagePolicy
 {
     public function view(User $user, Message $message): bool
     {
-        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) return true;
+        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            return true;
+        }
+
         return $message->sender_id === $user->id || $message->recipient_id === $user->id;
     }
 

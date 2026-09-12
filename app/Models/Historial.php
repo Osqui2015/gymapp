@@ -42,6 +42,9 @@ class Historial extends Model
         // Fase 3: tracking de esfuerzo por set (opcional)
         'esfuerzo_tipo',     // 'rir' o 'rpe'
         'esfuerzo_valor',    // 0..5 (RIR) o 6..10 (RPE)
+        // Nivel 4: tipo de serie y vínculo a sesión de entrenamiento
+        'tipo_serie',        // 'efectiva', 'calentamiento', 'dropset', 'al_fallo'
+        'sesion_uuid',
     ];
 
     protected $casts = [
@@ -55,6 +58,11 @@ class Historial extends Model
         'ejercicio_id' => 'integer',
         'esfuerzo_valor' => 'integer',
     ];
+
+    public function sesion(): BelongsTo
+    {
+        return $this->belongsTo(SesionEntrenamiento::class, 'sesion_uuid', 'uuid');
+    }
 
     public function user(): BelongsTo
     {

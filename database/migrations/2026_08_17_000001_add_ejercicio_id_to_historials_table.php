@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -23,7 +24,7 @@ return new class extends Migration
     public function up(): void
     {
         // Idempotente
-        if (!Schema::hasColumn('historials', 'ejercicio_id')) {
+        if (! Schema::hasColumn('historials', 'ejercicio_id')) {
             Schema::table('historials', function (Blueprint $table) {
                 $table->unsignedBigInteger('ejercicio_id')->nullable()->after('ejercicio_nombre');
                 $table->index('ejercicio_id');
@@ -32,7 +33,7 @@ return new class extends Migration
                     ->onDelete('set null');
             });
         } else {
-            \Illuminate\Support\Facades\Log::info(
+            Log::info(
                 '[migration] historials.ejercicio_id ya existe. Saltando ALTER TABLE.'
             );
         }
@@ -59,9 +60,9 @@ return new class extends Migration
                 ->take(50)
                 ->toArray();
 
-            \Illuminate\Support\Facades\Log::warning(
-                "[migration] {$unmatched} historiales sin match en ejercicios. " .
-                "Primeros nombres: " . implode(', ', $nombresSinMatch)
+            Log::warning(
+                "[migration] {$unmatched} historiales sin match en ejercicios. ".
+                'Primeros nombres: '.implode(', ', $nombresSinMatch)
             );
         }
     }

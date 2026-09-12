@@ -31,7 +31,9 @@ class UserObserver
                 $new[$field] = $user->getAttribute($field);
             }
         }
-        if (empty($new)) return;
+        if (empty($new)) {
+            return;
+        }
 
         // Loguear con descripción más clara para acciones críticas
         $action = 'updated';

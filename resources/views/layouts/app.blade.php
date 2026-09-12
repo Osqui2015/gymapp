@@ -79,6 +79,15 @@
         {{-- Mount point para el sistema global de toasts (Vue app separada en resources/js/app.js) --}}
         <div id="toast-root"></div>
 
+        {{-- Mount point para el banner de "nueva version disponible" --}}
+        <div id="update-prompt-root"></div>
+
+        {{-- Mount point para el temporizador de descanso global (Pinia restTimer) --}}
+        <div id="rest-timer-root"></div>
+
+        {{-- Mount point para el indicador de estado offline global --}}
+        <div id="offline-status-root"></div>
+
         {{-- Dark mode manager (debe ir DESPUÉS de Alpine.js para exponer window.darkMode) --}}
         <script>
             (function () {

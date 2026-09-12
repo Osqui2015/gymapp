@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\TrainerCommentSent;
 use App\Http\Controllers\Controller;
-use App\Models\Historial;
+use App\Http\Controllers\TrainerTimelineController;
 use App\Models\TrainerComment;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -15,6 +15,9 @@ class TrainerCommentController extends Controller
     /**
      * Listar comentarios del alumno autenticado (si es alumno)
      * o de un alumno específico (si es trainer/admin).
+     *
+     * Autorización (Nivel 5): un trainer solo puede ver comentarios de
+     * alumnos asignados (alumno->trainer_id === auth()->id()).
      */
     public function index(Request $request)
     {
@@ -22,8 +25,18 @@ class TrainerCommentController extends Controller
         $alumnoId = $request->integer('alumno_id') ?: $user->id;
 
         // autorización: trainer/admin pueden ver cualquier alumno, alumno solo el suyo
-        if ($alumnoId !== $user->id && !$user->hasAnyRole(['trainer', 'admin'])) {
-            return response()->json(['error' => 'No autorizado'], 403);
+        if ($alumnoId !== $user->id) {
+            if (! $user->hasAnyRole(['administrador', 'trainer'])) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            // Trainer (no admin) solo sobre alumnos asignados
+            if ($user->hasRole('trainer') && ! $user->hasRole('administrador')) {
+                $alumno = User::find($alumnoId);
+                if (! $alumno || ! TrainerTimelineController::puedeVerAlumno($user, $alumno)) {
+                    return response()->json(['error' => 'No tienes acceso a este alumno'], 403);
+                }
+            }
         }
 
         $comments = TrainerComment::with('trainer:id,name,nick')
@@ -38,6 +51,8 @@ class TrainerCommentController extends Controller
     /**
      * Trainer envía un comentario a un alumno.
      * Disparamos el evento broadcast (si broadcasting está configurado).
+     *
+     * Autorización (Nivel 5): un trainer solo puede comentar a alumnos asignados.
      */
     public function store(Request $request)
     {
@@ -48,8 +63,16 @@ class TrainerCommentController extends Controller
         ]);
 
         $user = $request->user();
-        if (!$user->hasAnyRole(['trainer', 'admin'])) {
+        if (! $user->hasAnyRole(['trainer', 'administrador'])) {
             return response()->json(['error' => 'Solo trainers o admins pueden enviar comentarios.'], 403);
+        }
+
+        // Trainer (no admin) solo puede comentar a alumnos asignados
+        if ($user->hasRole('trainer') && ! $user->hasRole('administrador')) {
+            $alumno = User::find($data['alumno_id']);
+            if (! $alumno || ! TrainerTimelineController::puedeVerAlumno($user, $alumno)) {
+                return response()->json(['error' => 'No tienes acceso a este alumno'], 403);
+            }
         }
 
         $comment = TrainerComment::create([
@@ -96,6 +119,7 @@ class TrainerCommentController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
         $comment->update(['read_at' => now()]);
+
         return response()->json(['ok' => true]);
     }
 }

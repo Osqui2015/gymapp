@@ -12,6 +12,8 @@ use App\Models\Meta;
 use App\Models\Progreso;
 use App\Models\Rutina;
 use App\Models\User;
+use App\Observers\RutinaObserver;
+use App\Observers\UserObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\DiarioNutricionPolicy;
 use App\Policies\EjercicioClavePolicy;
@@ -25,8 +27,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
-use App\Observers\RutinaObserver;
-use App\Observers\UserObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -74,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
      *   $this->authorize('manage-users');
      *
      * Para USARLOS en Blade:
+     *
      *   @can('manage-users') ... @endcan
      *
      * Los Gates específicos de cada modelo (RutinaPolicy, HistorialPolicy, ...)
@@ -150,6 +151,7 @@ class AppServiceProvider extends ServiceProvider
             if ((int) $alumnoId === (int) $user->id) {
                 return true;
             }
+
             return false;
         });
     }

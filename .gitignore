@@ -44,11 +44,16 @@ yarn-error.log
 
 # Builds de Vite compilados
 
-# Archivos temporales
+# Archivos temporales y backups
 .DS_Store
 Thumbs.db
 *.swp
 *.swo
+*.bak
+*.disabled
+*.backup*
+/build.zip
+*.zip
 
 # Artefactos locales de desarrollo (no son parte del código)
 /.env.mysql.backup

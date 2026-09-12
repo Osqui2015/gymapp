@@ -111,6 +111,6 @@ class RutinaDia1TorsoSeeder extends Seeder
             ]));
         }
 
-        $this->command->info('Seeder DIA 1 TORSO: ' . count($ejercicios) . ' ejercicios cargados.');
+        $this->command->info('Seeder DIA 1 TORSO: '.count($ejercicios).' ejercicios cargados.');
     }
 }

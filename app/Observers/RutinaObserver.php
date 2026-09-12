@@ -40,7 +40,9 @@ class RutinaObserver
                 $new[$field] = $rutina->getAttribute($field);
             }
         }
-        if (empty($new)) return; // nada trackeable cambió
+        if (empty($new)) {
+            return;
+        } // nada trackeable cambió
 
         AuditLog::forModel($rutina, 'updated', $old, $new);
     }

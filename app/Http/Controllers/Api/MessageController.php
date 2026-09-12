@@ -38,7 +38,9 @@ class MessageController extends Controller
         $conversations = [];
         foreach ($messages as $msg) {
             $otherId = $msg->sender_id === $user->id ? $msg->recipient_id : $msg->sender_id;
-            if (isset($conversations[$otherId])) continue; // ya tenemos el último
+            if (isset($conversations[$otherId])) {
+                continue;
+            } // ya tenemos el último
 
             $unread = Message::unreadFor($user->id)
                 ->where('sender_id', $otherId)
@@ -131,6 +133,7 @@ class MessageController extends Controller
         if (! $message->read_at) {
             $message->update(['read_at' => now()]);
         }
+
         return response()->json(['ok' => true]);
     }
 
@@ -143,6 +146,7 @@ class MessageController extends Controller
         $count = Message::unreadFor($user->id)
             ->where('sender_id', $otherId)
             ->update(['read_at' => now()]);
+
         return response()->json(['ok' => true, 'updated' => $count]);
     }
 

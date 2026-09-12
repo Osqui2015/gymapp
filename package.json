@@ -6,9 +6,12 @@
         "build": "vite build",
         "dev": "vite",
         "test": "vitest",
-        "test:run": "vitest run"
+        "test:run": "vitest run",
+        "lint": "eslint resources/js",
+        "format": "prettier --write resources/js"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@tailwindcss/forms": "^0.5.2",
         "@tailwindcss/vite": "^4.0.0",
         "@vue/test-utils": "^2.4.11",
@@ -17,9 +20,13 @@
         "autoprefixer": "^10.4.2",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
+        "eslint": "^10.10.0",
+        "eslint-plugin-vue": "^10.10.0",
+        "globals": "^17.12.0",
         "jsdom": "^29.1.1",
         "laravel-vite-plugin": "^2.0.0",
         "postcss": "^8.4.31",
+        "prettier": "^3.9.6",
         "tailwindcss": "^4.3.0",
         "typescript": "^6.0.3",
         "vite": "^7.0.7",

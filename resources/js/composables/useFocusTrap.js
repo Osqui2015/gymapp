@@ -1,6 +1,7 @@
 import { watch, onBeforeUnmount } from 'vue';
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Atrapa el foco dentro de un elemento (útil para modales).
@@ -23,7 +24,8 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  *   - Restaura el foco al elemento que abrió el contenedor al desactivarse
  */
 export function useFocusTrap(elementRef, opts = {}) {
-    const onEscape = opts.onEscape || (() => elementRef.value?.dispatchEvent(new CustomEvent('close')));
+    const onEscape =
+        opts.onEscape || (() => elementRef.value?.dispatchEvent(new CustomEvent('close')));
     const whenRef = opts.when || null;
     let triggerEl = null;
     let listenerAttached = false;
@@ -58,7 +60,11 @@ export function useFocusTrap(elementRef, opts = {}) {
 
         // Restaurar foco al elemento que abrió el modal
         if (triggerEl && typeof triggerEl.focus === 'function') {
-            try { triggerEl.focus(); } catch (_) { /* noop */ }
+            try {
+                triggerEl.focus();
+            } catch (_) {
+                /* noop */
+            }
         }
         triggerEl = null;
     }

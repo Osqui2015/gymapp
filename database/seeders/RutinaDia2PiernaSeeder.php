@@ -110,6 +110,6 @@ class RutinaDia2PiernaSeeder extends Seeder
             ]));
         }
 
-        $this->command->info('Seeder DIA 2 PIERNA: ' . count($ejercicios) . ' ejercicios cargados.');
+        $this->command->info('Seeder DIA 2 PIERNA: '.count($ejercicios).' ejercicios cargados.');
     }
 }

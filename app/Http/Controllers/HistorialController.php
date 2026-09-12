@@ -40,7 +40,7 @@ class HistorialController extends Controller
                 $query->where('rutina_nombre', $request->rutina_nombre);
             })
             ->when($request->filled('ejercicio'), function ($query) use ($request) {
-                $query->where('ejercicio_nombre', 'like', '%' . $request->ejercicio . '%');
+                $query->where('ejercicio_nombre', 'like', '%'.$request->ejercicio.'%');
             })
             ->when($request->filled('from'), function ($query) use ($request) {
                 $query->where('fecha', '>=', $request->from);
@@ -54,6 +54,7 @@ class HistorialController extends Controller
         // Paginación opcional
         if ($request->boolean('paginated') || $request->has('page')) {
             $perPage = min((int) $request->input('per_page', 50), 200);
+
             return response()->json($query->paginate($perPage));
         }
 
@@ -64,12 +65,15 @@ class HistorialController extends Controller
     {
         $user = $request->user();
         $hoy = Carbon::now()->toDateString();
+        // Ventana valida para fechas offline: 7 dias en el pasado hasta hoy.
+        // No aceptamos fechas futuras para evitar registros fraudulentos.
+        $minFecha = Carbon::now()->subDays(7)->toDateString();
 
         // Acepta DOS formatos (backward compat):
         //   1) Single set: campos a nivel raíz (usado por el test SuperserieTest)
         //   2) Array de sets: { ..., series: [ {...}, {...} ] } (usado por MobileQuickSeriesInput)
         $series = $request->input('series');
-        if (is_array($series) && !empty($series)) {
+        if (is_array($series) && ! empty($series)) {
             $records = $series;
         } else {
             $records = [$request->all()];
@@ -95,25 +99,45 @@ class HistorialController extends Controller
                 // Fase 3: esfuerzo por set
                 'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
                 'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
+                // Nivel 4: tipo de serie y sesión activa
+                'tipo_serie' => ['nullable', 'string', 'in:efectiva,calentamiento,dropset,al_fallo'],
+                'sesion_uuid' => ['nullable', 'string', 'max:64'],
+                // === Soporte offline (Oleada 1 — Modo entrenamiento) ===
+                // client_id: UUID generado en el cliente. Solo lo recibimos para logs/debug;
+                // no lo persistimos porque la idempotencia esta garantizada por la clave
+                // compuesta (user_id, rutina, dia, ejercicio, serie).
+                'client_id' => ['nullable', 'string', 'max:64'],
+                // fecha: fecha real en que se hizo la serie (no la del sync).
+                // Si esta ausente, usamos hoy. Si viene, validamos que este en la ventana valida.
+                'fecha' => ['nullable', 'date', 'after_or_equal:'.$minFecha, 'before_or_equal:'.$hoy],
             ])->validate();
 
             $data['user_id'] = $user->id;
-            $data['fecha'] = $hoy;
+            $data['tipo_serie'] = $data['tipo_serie'] ?? 'efectiva';
+            // Si el cliente mando fecha, respetarla (caso offline).
+            // Si no, usar hoy (caso online, retrocompat).
+            $data['fecha'] = $rec['fecha'] ?? $hoy;
+            // client_id no se persiste: la clave compuesta ya garantiza idempotencia.
+            unset($data['client_id']);
             $validatedRecords[] = $data;
         }
 
-        foreach ($validatedRecords as $data) {
-            Historial::updateOrCreate(
-                [
-                    'user_id' => $data['user_id'],
-                    'rutina_nombre' => $data['rutina_nombre'],
-                    'dia' => $data['dia'],
-                    'ejercicio_nombre' => $data['ejercicio_nombre'],
-                    'series_numero' => $data['series_numero'],
-                ],
-                $data
-            );
-        }
+        // Nivel 5: transacción para que un fallo en una serie no deje el resto
+        // parcialmente persistidas (atomicidad all-or-nothing).
+        \DB::transaction(function () use ($validatedRecords) {
+            foreach ($validatedRecords as $data) {
+                Historial::updateOrCreate(
+                    [
+                        'user_id' => $data['user_id'],
+                        'rutina_nombre' => $data['rutina_nombre'],
+                        'dia' => $data['dia'],
+                        'ejercicio_nombre' => $data['ejercicio_nombre'],
+                        'series_numero' => $data['series_numero'],
+                    ],
+                    $data
+                );
+            }
+        });
 
         $newMedals = AchievementService::checkWorkoutMilestones($user);
 
@@ -160,11 +184,80 @@ class HistorialController extends Controller
         );
     }
 
+    /**
+     * Edita una serie ya registrada. Nivel 6: necesario para corregir
+     * errores del gym (cargar mal un peso, equivocarse de repeticiones,
+     * cambiar tipo de serie, etc.).
+     *
+     * Autorización:
+     *   - El dueño siempre puede editar sus series.
+     *   - Un trainer/admin puede editar series de un alumno asignado
+     *     (Nivel 5 - regla unica en TrainerTimelineController::puedeVerAlumno).
+     */
+    public function update(Request $request, int $id)
+    {
+        $historial = Historial::findOrFail($id);
+        $auth = $request->user();
+
+        if (! $this->puedeEditarSerie($auth, $historial)) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'peso' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'reps_realizadas' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'completado' => ['nullable', 'boolean'],
+            'tipo_serie' => ['nullable', 'string', 'in:efectiva,calentamiento,dropset,al_fallo'],
+            'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
+            'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'nota_user' => ['nullable', 'string', 'max:500'],
+            'descanso_min' => ['nullable', 'numeric', 'min:0', 'max:30'],
+        ]);
+
+        $historial->fill($data);
+        $historial->save();
+
+        return response()->json(['data' => $historial->fresh()]);
+    }
+
+    /**
+     * Elimina una serie registrada. Útil para borrar un duplicado o
+     * un registro erróneo (ej: cargaste dos veces la misma serie).
+     *
+     * Misma autorización que update().
+     */
+    public function destroy(Request $request, int $id)
+    {
+        $historial = Historial::findOrFail($id);
+        $auth = $request->user();
+
+        if (! $this->puedeEditarSerie($auth, $historial)) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $historial->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function puedeEditarSerie(User $auth, Historial $serie): bool
+    {
+        if ($serie->user_id === $auth->id) {
+            return true;
+        }
+
+        return TrainerTimelineController::puedeVerAlumno(
+            $auth,
+            User::findOrFail($serie->user_id)
+        );
+    }
+
     public function finalizarRutina(Request $request)
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
@@ -172,6 +265,7 @@ class HistorialController extends Controller
 
         if (isset($result['error'])) {
             $code = $result['error'] === 'No hay rutina seleccionada' ? 404 : 400;
+
             return response()->json($result, $code);
         }
 

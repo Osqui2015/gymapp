@@ -56,11 +56,12 @@ class MedallaPolicyTest extends TestCase
 
     private function makeMedalla(array $overrides = []): MedallaUsuario
     {
-        $m = new MedallaUsuario();
+        $m = new MedallaUsuario;
         $m->setRawAttributes(array_merge([
             'user_id' => 1,
             'medalla' => 'test-medal',
         ], $overrides));
+
         return $m;
     }
 }

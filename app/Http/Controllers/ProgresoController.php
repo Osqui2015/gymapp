@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Progreso;
 use App\Services\AchievementService;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ProgresoController extends Controller
 {
@@ -37,7 +37,7 @@ class ProgresoController extends Controller
     {
         $ultimo = $progresos->last();
 
-        if (!$ultimo) {
+        if (! $ultimo) {
             return true;
         }
 
@@ -81,7 +81,7 @@ class ProgresoController extends Controller
         }
 
         return response()->json([
-            'data' => $progresos->map(fn($p) => [
+            'data' => $progresos->map(fn ($p) => [
                 'fecha' => $p->fecha->toDateString(),
                 'peso' => (float) $p->peso,
             ])->values(),
@@ -129,6 +129,7 @@ class ProgresoController extends Controller
 
         $rules = [
             'peso' => ['nullable', 'numeric', 'min:20', 'max:400'],
+            'grasa_corporal' => ['nullable', 'numeric', 'min:3', 'max:65'],
             'altura' => ['nullable', 'numeric', 'min:0.5', 'max:3.0'],
             'edad' => ['nullable', 'integer', 'min:10', 'max:120'],
             'sexo' => ['nullable', 'in:masculino,femenino'],
@@ -155,6 +156,7 @@ class ProgresoController extends Controller
             'user_id' => $user->id,
             'fecha' => Carbon::now()->toDateString(),
             'peso' => $data['peso'] ?? null,
+            'grasa_corporal' => $data['grasa_corporal'] ?? null,
             'altura' => $data['altura'] ?? null,
             'edad' => $data['edad'] ?? null,
             'sexo' => $data['sexo'] ?? null,
@@ -186,7 +188,7 @@ class ProgresoController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$progreso) {
+        if (! $progreso) {
             return response()->json(['error' => 'No encontrado'], 404);
         }
 
@@ -197,7 +199,7 @@ class ProgresoController extends Controller
             ->orderBy('fecha', 'desc')
             ->first();
 
-        $campos = ['peso', 'altura', 'cuello', 'hombros', 'pecho', 'brazos', 'cintura', 'cadera', 'muslos', 'pantorrillas'];
+        $campos = ['peso', 'grasa_corporal', 'altura', 'cuello', 'hombros', 'pecho', 'brazos', 'cintura', 'cadera', 'muslos', 'pantorrillas'];
         $comparacion = [];
 
         foreach ($campos as $campo) {

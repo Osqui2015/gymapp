@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Musculo extends Model
 {
@@ -49,9 +49,12 @@ class Musculo extends Model
         $texto = mb_strtolower(trim($texto));
         // Primero busca por slug exacto
         $m = self::where('slug', $texto)->first();
-        if ($m) return $m;
+        if ($m) {
+            return $m;
+        }
         // Después por alias
         $alias = MusculoAlias::where('alias', $texto)->first();
+
         return $alias?->musculo;
     }
 }

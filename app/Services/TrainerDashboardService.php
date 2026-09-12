@@ -59,7 +59,7 @@ class TrainerDashboardService
             ->orderBy('fecha', 'desc')
             ->get()
             ->groupBy('user_id')
-            ->map(fn($items) => $items->first());
+            ->map(fn ($items) => $items->first());
 
         // === FIX N+1: Una sola query para alumnos activos esta semana ===
         $alumnosActivosIds = Historial::whereIn('user_id', $alumnoIds)
@@ -78,7 +78,7 @@ class TrainerDashboardService
         foreach ($alumnos as $alumno) {
             $ultimo = $ultimosPorAlumno->get($alumno->id);
 
-            if (!$ultimo || !$ultimo->fecha) {
+            if (! $ultimo || ! $ultimo->fecha) {
                 $diasSinEntrenar = 999; // nunca entrenó
             } else {
                 $ultimoFecha = Carbon::parse($ultimo->fecha)->startOfDay();
@@ -120,8 +120,28 @@ class TrainerDashboardService
             ->get()
             ->keyBy('user_id');
 
-        $alumnosConInfo = $alumnos->map(function ($alumno) use ($alumnosActivosIds, $rutinasPorAlumno) {
+        // Adherencia: contar días distintos entrenados en los últimos 30 días (sin N+1)
+        $hace30Dias = Carbon::now()->subDays(30);
+        $entrenamientosPorAlumno30d = Historial::whereIn('user_id', $alumnoIds)
+            ->where('completado', true)
+            ->where('fecha', '>=', $hace30Dias)
+            ->select('user_id', \DB::raw('COUNT(DISTINCT fecha) as dias_entrenados'))
+            ->groupBy('user_id')
+            ->pluck('dias_entrenados', 'user_id');
+
+        $alumnosConInfo = $alumnos->map(function ($alumno) use ($alumnosActivosIds, $rutinasPorAlumno, $ultimosPorAlumno, $entrenamientosPorAlumno30d, $hoy) {
             $rutina = $rutinasPorAlumno->get($alumno->id);
+            $ultimo = $ultimosPorAlumno->get($alumno->id);
+
+            if (! $ultimo || ! $ultimo->fecha) {
+                $diasSinEntrenar = 999;
+            } else {
+                $ultimoFecha = Carbon::parse($ultimo->fecha)->startOfDay();
+                $diasSinEntrenar = abs($hoy->copy()->startOfDay()->diffInDays($ultimoFecha));
+            }
+
+            $dias30d = (int) ($entrenamientosPorAlumno30d[$alumno->id] ?? 0);
+            $adherencia = min(100, (int) round(($dias30d / 12) * 100));
 
             return [
                 'id' => $alumno->id,
@@ -131,6 +151,10 @@ class TrainerDashboardService
                 'activo_semana' => isset($alumnosActivosIds[$alumno->id]),
                 'rutina' => $rutina ? "{$rutina->nivel} {$rutina->modalidad}" : null,
                 'dia_actual' => $rutina?->dia_actual,
+                'dias_sin_entrenar' => $diasSinEntrenar,
+                'tiene_alerta' => $diasSinEntrenar >= 7,
+                'dias_entrenados_30d' => $dias30d,
+                'adherencia_pct' => $adherencia,
             ];
         });
 

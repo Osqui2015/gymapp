@@ -53,12 +53,13 @@ class EjercicioPolicyTest extends TestCase
 
     private function makeEjercicio(array $overrides = []): Ejercicio
     {
-        $e = new Ejercicio();
+        $e = new Ejercicio;
         $e->setRawAttributes(array_merge([
             'nombre' => 'Test',
             'grupo_muscular' => 'pecho',
             'equipamiento' => 'barra',
         ], $overrides));
+
         return $e;
     }
 

@@ -49,7 +49,7 @@ class MetaController extends Controller
         $this->authorize('update', $meta);
 
         $meta->update([
-            'completada' => !$meta->completada,
+            'completada' => ! $meta->completada,
         ]);
 
         $newMedals = [];

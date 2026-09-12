@@ -45,7 +45,7 @@ class StatsController extends Controller
         $weeks = (int) $request->input('weeks', 53);
         $cacheKey = "stats:heatmap:user:{$user->id}:w{$weeks}";
 
-        return Cache::remember($cacheKey, 600, fn() => response()->json(
+        return Cache::remember($cacheKey, 600, fn () => response()->json(
             $this->stats->buildHeatmap($user->id, $weeks)
         ));
     }
@@ -63,7 +63,7 @@ class StatsController extends Controller
         $window = $this->stats->normalizeWindow($request->input('window', '30'));
         $cacheKey = "stats:esfuerzo:user:{$user->id}:w{$window}";
 
-        return Cache::remember($cacheKey, 300, fn() => response()->json(
+        return Cache::remember($cacheKey, 300, fn () => response()->json(
             $this->stats->buildEsfuerzo($user->id, $window)
         ));
     }
@@ -85,7 +85,7 @@ class StatsController extends Controller
             return response()->json(['error' => 'ejercicio_nombre requerido'], 422);
         }
         $formula = $request->input('formula', 'epley');
-        if (!in_array($formula, ['epley', 'lander'], true)) {
+        if (! in_array($formula, ['epley', 'lander'], true)) {
             $formula = 'epley';
         }
         $months = max(1, min(24, (int) $request->input('months', 6)));
@@ -103,9 +103,9 @@ class StatsController extends Controller
             }
         }
 
-        $cacheKey = "stats:1rm:user:{$targetUserId}:ej:" . md5($ejercicioNombre) . ":{$formula}:m{$months}";
+        $cacheKey = "stats:1rm:user:{$targetUserId}:ej:".md5($ejercicioNombre).":{$formula}:m{$months}";
 
-        return Cache::remember($cacheKey, 600, fn() => response()->json(
+        return Cache::remember($cacheKey, 600, fn () => response()->json(
             $this->stats->buildEstimated1rm($targetUserId, $ejercicioNombre, $formula, $months)
         ));
     }
@@ -119,7 +119,7 @@ class StatsController extends Controller
         $user = $request->user();
         $cacheKey = "dashboard:today:user:{$user->id}";
 
-        return Cache::remember($cacheKey, 60, fn() => response()->json(
+        return Cache::remember($cacheKey, 60, fn () => response()->json(
             $this->stats->buildDashboardToday($user)
         ));
     }

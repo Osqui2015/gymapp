@@ -34,30 +34,30 @@ app.component('rutina-publica', RutinaPublica);
 app.component('notification-bell', () => import('./components/NotificationBell.vue'));
 
 const components = {
-    'dashboard-content':   () => import('./components/DashboardContent.vue'),
-    'rutinas-accordion':   () => import('./components/RutinasAccordion.vue'),
-    'ejercicios-list':     () => import('./components/EjerciciosList.vue'),
-    'crear-rutina':        () => import('./components/CrearRutina.vue'),
+    'dashboard-content': () => import('./components/DashboardContent.vue'),
+    'rutinas-accordion': () => import('./components/RutinasAccordion.vue'),
+    'ejercicios-list': () => import('./components/EjerciciosList.vue'),
+    'crear-rutina': () => import('./components/CrearRutina.vue'),
     'configuracion-panel': () => import('./components/ConfiguracionPanel.vue'),
-    'trainer-alumnos':     () => import('./components/TrainerAlumnos.vue'),
-    'historial-content':   () => import('./components/HistorialContent.vue'),
-    'progreso-content':    () => import('./components/ProgresoContent.vue'),
-    'diario-nutricion':    () => import('./components/DiarioNutricion.vue'),
-    'trainer-dashboard':   () => import('./components/TrainerDashboard.vue'),
-    'trainer-ejercicios':  () => import('./components/TrainerEjercicios.vue'),
-    'trainer-duplicar':    () => import('./components/TrainerDuplicar.vue'),
-    'admin-stats':         () => import('./components/AdminStats.vue'),
-    'admin-membresias':    () => import('./components/AdminMembresias.vue'),
-    'admin-audit-logs':    () => import('./components/AdminAuditLogs.vue'),
+    'trainer-alumnos': () => import('./components/TrainerAlumnos.vue'),
+    'historial-content': () => import('./components/HistorialContent.vue'),
+    'progreso-content': () => import('./components/ProgresoContent.vue'),
+    'diario-nutricion': () => import('./components/DiarioNutricion.vue'),
+    'trainer-dashboard': () => import('./components/TrainerDashboard.vue'),
+    'trainer-ejercicios': () => import('./components/TrainerEjercicios.vue'),
+    'trainer-duplicar': () => import('./components/TrainerDuplicar.vue'),
+    'admin-stats': () => import('./components/AdminStats.vue'),
+    'admin-membresias': () => import('./components/AdminMembresias.vue'),
+    'admin-audit-logs': () => import('./components/AdminAuditLogs.vue'),
     'admin-import-export': () => import('./components/AdminImportExport.vue'),
-    'admin-reports':       () => import('./components/AdminReports.vue'),
-    'sesiones-calendar':   () => import('./components/SesionesCalendar.vue'),
-    'rutinas-sugeridas':   () => import('./components/RutinasSugeridas.vue'),
-    'chat-panel':          () => import('./components/ChatPanel.vue'),
+    'admin-reports': () => import('./components/AdminReports.vue'),
+    'sesiones-calendar': () => import('./components/SesionesCalendar.vue'),
+    'rutinas-sugeridas': () => import('./components/RutinasSugeridas.vue'),
+    'chat-panel': () => import('./components/ChatPanel.vue'),
     'ejercicio-detail-modal': () => import('./components/EjercicioDetailModal.vue'),
-    'video-player':        () => import('./components/VideoPlayer.vue'),
-    'page-transition':     () => import('./components/PageTransition.vue'),
-    'onboarding-tour':     () => import('./components/OnboardingTour.vue'),
+    'video-player': () => import('./components/VideoPlayer.vue'),
+    'page-transition': () => import('./components/PageTransition.vue'),
+    'onboarding-tour': () => import('./components/OnboardingTour.vue'),
 };
 
 for (const [name, loader] of Object.entries(components)) {
@@ -118,6 +118,33 @@ if (toastRoot) {
     const toastApp = createApp(ToastContainer);
     toastApp.use(pinia);
     toastApp.mount(toastRoot);
+}
+
+// === App de "Update Available" (banner persistente) ===
+// Similar a toasts: vive fuera del flujo de paginas para no interrumpir UX.
+import UpdateAvailablePrompt from './components/UpdateAvailablePrompt.vue';
+const updateRoot = document.getElementById('update-prompt-root');
+if (updateRoot) {
+    const updateApp = createApp(UpdateAvailablePrompt);
+    updateApp.use(pinia);
+    updateApp.mount(updateRoot);
+}
+
+// === App de Temporizador de Descanso Global (Pinia restTimer) ===
+import DashboardRestTimer from './components/dashboard/DashboardRestTimer.vue';
+const restTimerRoot = document.getElementById('rest-timer-root');
+if (restTimerRoot) {
+    const restTimerApp = createApp(DashboardRestTimer);
+    restTimerApp.use(pinia);
+    restTimerApp.mount(restTimerRoot);
+}
+
+// === App de Estado Offline Global ===
+import OfflineStatusBar from './components/training/OfflineStatusBar.vue';
+const offlineRoot = document.getElementById('offline-status-root');
+if (offlineRoot) {
+    const offlineApp = createApp(OfflineStatusBar);
+    offlineApp.mount(offlineRoot);
 }
 
 // Listeners globales: errores HTTP -> toasts automáticos (403, 500, 422, etc.)

@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\Historial;
-use App\Models\Progreso;
-use App\Models\Meta;
 use App\Models\MedallaUsuario;
+use App\Models\Meta;
+use App\Models\Progreso;
+use App\Models\Rutina;
+use App\Models\User;
 use Carbon\Carbon;
 
 class AchievementService
@@ -74,7 +75,7 @@ class AchievementService
         }
 
         $medallas = self::listAllMedallas();
-        if (!isset($medallas[$slug])) {
+        if (! isset($medallas[$slug])) {
             return null;
         }
 
@@ -111,11 +112,15 @@ class AchievementService
         $totalCompletedSeries = $historial->count();
         if ($totalCompletedSeries >= 1) {
             $medal = self::unlock($user, 'primer_entrenamiento');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
         if ($totalCompletedSeries >= 100) {
             $medal = self::unlock($user, '100_series');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         // 2. Fechas únicas ordenadas ascendente
@@ -123,12 +128,14 @@ class AchievementService
             ->unique()
             ->sort()
             ->values()
-            ->map(fn($d) => Carbon::parse($d));
+            ->map(fn ($d) => Carbon::parse($d));
 
         $uniqueDaysCount = $sortedDates->count();
         if ($uniqueDaysCount >= 10) {
             $medal = self::unlock($user, '10_entrenamientos');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         // 3. Calcular racha máxima (single-pass, sin allocs intermedios)
@@ -148,11 +155,15 @@ class AchievementService
 
         if ($maxStreak >= 3) {
             $medal = self::unlock($user, 'racha_3_dias');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
         if ($maxStreak >= 5) {
             $medal = self::unlock($user, 'racha_5_dias');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         return $newlyUnlocked;
@@ -168,7 +179,9 @@ class AchievementService
         $progressCount = Progreso::where('user_id', $user->id)->count();
         if ($progressCount >= 1) {
             $medal = self::unlock($user, 'primer_progreso');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         return $newlyUnlocked;
@@ -187,7 +200,9 @@ class AchievementService
 
         if ($completedGoalsCount >= 1) {
             $medal = self::unlock($user, 'meta_alcanzada');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         return $newlyUnlocked;
@@ -201,13 +216,15 @@ class AchievementService
         $newlyUnlocked = [];
 
         // Check if user has shared any routine (where created_by is this user and publica is true)
-        $hasShared = \App\Models\Rutina::where('created_by', $user->id)
+        $hasShared = Rutina::where('created_by', $user->id)
             ->where('publica', true)
             ->exists();
 
         if ($hasShared) {
             $medal = self::unlock($user, 'creador_rutinas');
-            if ($medal) $newlyUnlocked[] = $medal;
+            if ($medal) {
+                $newlyUnlocked[] = $medal;
+            }
         }
 
         return $newlyUnlocked;
@@ -228,7 +245,7 @@ class AchievementService
             ->distinct()
             ->orderBy('fecha', 'asc')
             ->pluck('fecha')
-            ->map(fn($d) => Carbon::parse($d))
+            ->map(fn ($d) => Carbon::parse($d))
             ->values();
 
         $uniqueDaysCount = $dates->count();
@@ -257,7 +274,7 @@ class AchievementService
         $goalsCount = Meta::where('user_id', $user->id)->count();
         $completedGoalsCount = Meta::where('user_id', $user->id)->where('completada', true)->count();
         $progressCount = Progreso::where('user_id', $user->id)->count();
-        $hasShared = \App\Models\Rutina::where('created_by', $user->id)->where('publica', true)->exists();
+        $hasShared = Rutina::where('created_by', $user->id)->where('publica', true)->exists();
 
         return [
             'total_series' => $totalCompletedSeries,

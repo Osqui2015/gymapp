@@ -12,7 +12,7 @@ return new class extends Migration
             // Notas libres para guardar detalle que no entra en los campos
             // estructurados: RIR target por bloque, tecnicas especiales
             // (rest-pause, drop-set, cluster), tempo, etc.
-            if (!Schema::hasColumn('rutinas', 'notas')) {
+            if (! Schema::hasColumn('rutinas', 'notas')) {
                 $table->text('notas')->nullable()->after('superserie_grupo');
             }
         });

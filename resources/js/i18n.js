@@ -32,7 +32,9 @@ function detectLocale() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored && ['es', 'en'].includes(stored)) return stored;
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 
     // 2) Browser preference
     const browser = navigator.language?.split('-')[0];
@@ -48,7 +50,7 @@ export const SUPPORTED_LOCALES = [
 ];
 
 export const i18n = createI18n({
-    legacy: false,           // Composition API mode (recomendado)
+    legacy: false, // Composition API mode (recomendado)
     locale: detectLocale(),
     fallbackLocale: 'es',
     messages: { es, en },
@@ -63,5 +65,7 @@ export function setLocale(code) {
     i18n.global.locale.value = code;
     try {
         localStorage.setItem(STORAGE_KEY, code);
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 }

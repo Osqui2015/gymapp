@@ -35,6 +35,7 @@ class MetaPolicy
 
         if ($user->hasRole(User::ROLE_TRAINER)) {
             $owner = User::find($meta->user_id);
+
             return $owner !== null && (int) $owner->trainer_id === (int) $user->id;
         }
 

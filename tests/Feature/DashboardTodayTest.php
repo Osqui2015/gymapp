@@ -37,6 +37,7 @@ class DashboardTodayTest extends TestCase
             'rutina_id' => $rutina->id,
             'dia_actual' => $dia,
         ]);
+
         return [$user, $rutina];
     }
 
@@ -86,7 +87,7 @@ class DashboardTodayTest extends TestCase
 
         $response->assertStatus(200);
         $data = $response->json();
-        $this->assertEquals('continuar', $data['quick'], 'quick was: ' . json_encode($data['quick']) . ' days: ' . $data['stats']['days_since_last_workout']);
+        $this->assertEquals('continuar', $data['quick'], 'quick was: '.json_encode($data['quick']).' days: '.$data['stats']['days_since_last_workout']);
         $this->assertEquals(0, $data['stats']['days_since_last_workout']);
         $this->assertEquals(1, $data['stats']['total_sets_30d']);
     }

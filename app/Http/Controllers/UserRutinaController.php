@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Rutina;
 use App\Models\User;
 use App\Models\UserRutina;
+use App\Models\UserRutinaReschedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -158,7 +159,7 @@ class UserRutinaController extends Controller
                 ->selectRaw('DISTINCT dia')
                 ->pluck('dia')
                 ->toArray();
-            if (!in_array($toDay, $validDays, true)) {
+            if (! in_array($toDay, $validDays, true)) {
                 return response()->json([
                     'error' => 'Día inválido para la rutina actual',
                     'valid_days' => $validDays,
@@ -169,7 +170,7 @@ class UserRutinaController extends Controller
         $userRutina->dia_actual = $toDay;
         $userRutina->save();
 
-        $log = \App\Models\UserRutinaReschedule::create([
+        $log = UserRutinaReschedule::create([
             'user_id' => $user->id,
             'user_rutina_id' => $userRutina->id,
             'from_day' => $fromDay,
@@ -197,7 +198,7 @@ class UserRutinaController extends Controller
         }
 
         $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
-        if (! $userRutina || !$userRutina->rutina) {
+        if (! $userRutina || ! $userRutina->rutina) {
             return response()->json(['days' => [], 'current' => null]);
         }
 
@@ -292,15 +293,19 @@ class UserRutinaController extends Controller
             return response()->json(['error' => 'No puedes asignar rutinas de otro trainer'], 403);
         }
 
-        // Asignar la rutina al alumno (D1: nivel/modalidad se leen de la relación)
-        $userRutina = UserRutina::updateOrCreate(
-            ['user_id' => $alumno->id],
-            [
-                'rutina_id' => $rutina->id,
-                'dia_actual' => $data['dia_actual'] ?? 'Día 1',
-                'assigned_by' => $user->id,
-            ]
-        );
+        // Asignar la rutina al alumno (D1: nivel/modalidad se leen de la relación).
+        // Nivel 5: encapsular en transacción para garantizar que el cambio de
+        // rutina asignada + las posibles bajas anteriores sean atómicas.
+        $userRutina = \DB::transaction(function () use ($alumno, $rutina, $data, $user) {
+            return UserRutina::updateOrCreate(
+                ['user_id' => $alumno->id],
+                [
+                    'rutina_id' => $rutina->id,
+                    'dia_actual' => $data['dia_actual'] ?? 'Día 1',
+                    'assigned_by' => $user->id,
+                ]
+            );
+        });
 
         return response()->json([
             'message' => 'Rutina asignada correctamente',

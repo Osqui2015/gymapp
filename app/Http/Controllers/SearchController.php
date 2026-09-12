@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ejercicio;
-use App\Models\Historial;
-use App\Models\User;
 use App\Models\Rutina;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
@@ -91,7 +90,7 @@ class SearchController extends Controller
             return response()->json(['error' => 'Ejercicio requerido.'], 422);
         }
 
-        $cacheKey = 'community.stats.' . md5(mb_strtolower($ejercicio));
+        $cacheKey = 'community.stats.'.md5(mb_strtolower($ejercicio));
         $payload = Cache::remember($cacheKey, 300, function () use ($ejercicio) {
             // Obtener el peso máximo por (usuario, ejercicio)
             $maximos = DB::table('historials')
@@ -102,14 +101,17 @@ class SearchController extends Controller
                 ->get();
 
             $totalUsuarios = $maximos->count();
-            if (!$totalUsuarios) {
+            if (! $totalUsuarios) {
                 return ['total_usuarios' => 0, 'percentiles' => []];
             }
 
             $pesos = $maximos->pluck('max_peso')->sort()->values();
             $percentil = function ($p) use ($pesos) {
-                if ($pesos->isEmpty()) return null;
+                if ($pesos->isEmpty()) {
+                    return null;
+                }
                 $idx = (int) ceil(($p / 100) * $pesos->count()) - 1;
+
                 return round((float) $pesos[max(0, min($idx, $pesos->count() - 1))], 1);
             };
 

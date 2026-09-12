@@ -1,85 +1,118 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
-    <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-white flex items-center gap-2">
-        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        Calendario de entrenamientos
-      </h2>
-      <div class="text-xs text-slate-300">
-        Últimas {{ weeks }} semanas
-      </div>
-    </div>
-
-    <div class="p-6">
-      <!-- Leyenda -->
-      <div class="flex items-center justify-between mb-4 text-xs text-gray-500 dark:text-gray-400">
-        <span>{{ formatDate(weeksAgo[0]?.date) }} – {{ formatDate(todayLabel) }}</span>
-        <div class="flex items-center gap-2">
-          <span>Menos</span>
-          <div class="flex gap-1">
-            <div class="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-700"></div>
-            <div class="w-3 h-3 rounded-sm bg-indigo-200 dark:bg-indigo-900"></div>
-            <div class="w-3 h-3 rounded-sm bg-indigo-400 dark:bg-indigo-700"></div>
-            <div class="w-3 h-3 rounded-sm bg-indigo-600 dark:bg-indigo-500"></div>
-            <div class="w-3 h-3 rounded-sm bg-indigo-800 dark:bg-indigo-300"></div>
-          </div>
-          <span>Más</span>
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden"
+    >
+        <div
+            class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+        >
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <svg
+                    class="w-5 h-5 text-indigo-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                </svg>
+                Calendario de entrenamientos
+            </h2>
+            <div class="text-xs text-slate-300">Últimas {{ weeks }} semanas</div>
         </div>
-      </div>
 
-      <!-- Heatmap grid: 7 días × N semanas -->
-      <div class="overflow-x-auto">
-        <div class="inline-flex gap-1.5">
-          <!-- Labels de días -->
-          <div class="flex flex-col gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium pt-3.5">
-            <div v-for="dia in diasSemana" :key="dia" class="h-3.5 flex items-center">
-              {{ dia }}
-            </div>
-          </div>
-
-          <!-- Columnas por semana -->
-          <div
-            v-for="(semana, sIdx) in heatmap"
-            :key="sIdx"
-            class="flex flex-col gap-1.5"
-          >
-            <div class="text-[10px] text-gray-400 text-center h-3.5 leading-3.5">
-              {{ semana[0]?.labelMes || '' }}
-            </div>
+        <div class="p-6">
+            <!-- Leyenda -->
             <div
-              v-for="(dia, dIdx) in semana"
-              :key="dIdx"
-              class="w-3.5 h-3.5 rounded-sm transition-all"
-              :class="dia.color + (dia.futuro ? ' opacity-30' : ' hover:ring-2 hover:ring-indigo-400 cursor-pointer')"
-              :title="dia.futuro ? '' : `${formatDate(dia.date)}: ${dia.count} ${dia.count === 1 ? 'serie' : 'series'}`"
-            ></div>
-          </div>
-        </div>
-      </div>
+                class="flex items-center justify-between mb-4 text-xs text-gray-500 dark:text-gray-400"
+            >
+                <span>{{ formatDate(weeksAgo[0]?.date) }} – {{ formatDate(todayLabel) }}</span>
+                <div class="flex items-center gap-2">
+                    <span>Menos</span>
+                    <div class="flex gap-1">
+                        <div class="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-700"></div>
+                        <div class="w-3 h-3 rounded-sm bg-indigo-200 dark:bg-indigo-900"></div>
+                        <div class="w-3 h-3 rounded-sm bg-indigo-400 dark:bg-indigo-700"></div>
+                        <div class="w-3 h-3 rounded-sm bg-indigo-600 dark:bg-indigo-500"></div>
+                        <div class="w-3 h-3 rounded-sm bg-indigo-800 dark:bg-indigo-300"></div>
+                    </div>
+                    <span>Más</span>
+                </div>
+            </div>
 
-      <!-- Resumen -->
-      <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ totalSeries }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Series totales</p>
+            <!-- Heatmap grid: 7 días × N semanas -->
+            <div class="overflow-x-auto">
+                <div class="inline-flex gap-1.5">
+                    <!-- Labels de días -->
+                    <div
+                        class="flex flex-col gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium pt-3.5"
+                    >
+                        <div v-for="dia in diasSemana" :key="dia" class="h-3.5 flex items-center">
+                            {{ dia }}
+                        </div>
+                    </div>
+
+                    <!-- Columnas por semana -->
+                    <div
+                        v-for="(semana, sIdx) in heatmap"
+                        :key="sIdx"
+                        class="flex flex-col gap-1.5"
+                    >
+                        <div class="text-[10px] text-gray-400 text-center h-3.5 leading-3.5">
+                            {{ semana[0]?.labelMes || '' }}
+                        </div>
+                        <div
+                            v-for="(dia, dIdx) in semana"
+                            :key="dIdx"
+                            class="w-3.5 h-3.5 rounded-sm transition-all"
+                            :class="
+                                dia.color +
+                                (dia.futuro
+                                    ? ' opacity-30'
+                                    : ' hover:ring-2 hover:ring-indigo-400 cursor-pointer')
+                            "
+                            :title="
+                                dia.futuro
+                                    ? ''
+                                    : `${formatDate(dia.date)}: ${dia.count} ${dia.count === 1 ? 'serie' : 'series'}`
+                            "
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                        {{ totalSeries }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Series totales</p>
+                </div>
+                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        {{ diasEntrenados }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Días entrenados</p>
+                </div>
+                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-2xl font-black text-amber-600 dark:text-amber-400">
+                        {{ rachaActual }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Racha actual (días)</p>
+                </div>
+                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-2xl font-black text-rose-600 dark:text-rose-400">
+                        {{ rachaMax }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mejor racha (días)</p>
+                </div>
+            </div>
         </div>
-        <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ diasEntrenados }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Días entrenados</p>
-        </div>
-        <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ rachaActual }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Racha actual (días)</p>
-        </div>
-        <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p class="text-2xl font-black text-rose-600 dark:text-rose-400">{{ rachaMax }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mejor racha (días)</p>
-        </div>
-      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -107,7 +140,7 @@ startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - dayOfWeek);
 // Construir los conteos por día desde el historial
 const countsByDate = computed(() => {
     const map = {};
-    props.historial.forEach(reg => {
+    props.historial.forEach((reg) => {
         const fecha = reg.fecha || (reg.created_at ? reg.created_at.split('T')[0] : null);
         if (!fecha) return;
         map[fecha] = (map[fecha] || 0) + 1;
@@ -162,7 +195,9 @@ const formatDate = (iso) => {
 
 // Stats
 const totalSeries = computed(() => Object.values(countsByDate.value).reduce((a, b) => a + b, 0));
-const diasEntrenados = computed(() => Object.values(countsByDate.value).filter(c => c > 0).length);
+const diasEntrenados = computed(
+    () => Object.values(countsByDate.value).filter((c) => c > 0).length
+);
 
 // Calcular racha actual y mejor racha
 const rachaActual = computed(() => {

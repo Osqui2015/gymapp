@@ -53,13 +53,17 @@ export function useOnboarding(tourId, steps = []) {
     const markAsSeen = () => {
         try {
             localStorage.setItem(STORAGE_PREFIX + tourId, '1');
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     };
 
     const reset = () => {
         try {
             localStorage.removeItem(STORAGE_PREFIX + tourId);
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     };
 
     const computePosition = async () => {

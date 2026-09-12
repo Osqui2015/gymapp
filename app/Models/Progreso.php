@@ -13,6 +13,7 @@ class Progreso extends Model
         'user_id',
         'fecha',
         'peso',
+        'grasa_corporal',
         'altura',
         'edad',
         'sexo',
@@ -29,6 +30,7 @@ class Progreso extends Model
     protected $casts = [
         'fecha' => 'date',
         'peso' => 'decimal:2',
+        'grasa_corporal' => 'decimal:2',
         'altura' => 'decimal:2',
         'cuello' => 'decimal:2',
         'hombros' => 'decimal:2',
@@ -55,13 +57,13 @@ class Progreso extends Model
         }
 
         $diferencia = $actual - $anteriorValor;
-        
+
         if ($diferencia > 0) {
-            return '+' . number_format($diferencia, 1, '.', '');
+            return '+'.number_format($diferencia, 1, '.', '');
         } elseif ($diferencia < 0) {
             return number_format($diferencia, 1, '.', '');
         }
-        
+
         return '0';
     }
 }

@@ -48,6 +48,110 @@ npm run build
 php artisan serve
 ```
 
+## Deploy a producción
+
+Procedimiento unico y obligatorio. NO improvisar.
+
+### Pre-requisitos
+
+- Acceso SSH o cPanel File Manager al server de producción (`gym.tecnorexs.com`).
+- Acceso a la base de datos MySQL.
+- Node.js y npm instalados en tu maquina local (para el build).
+
+### Paso a paso
+
+1. **Build local** (en tu maquina, NO en el server):
+```bash
+npm run build
+```
+
+2. **Verificar que pasa los tests** (antes de subir nada):
+```bash
+npm run test:run
+& "I:\laragon\bin\php\php-8.2.30-Win32-vs16-x64\php.exe" artisan test
+```
+
+3. **Subir cambios** al server. Si tenés SSH:
+```bash
+# Cambios PHP/Vue/migrations: rsync o git pull (lo que uses)
+git pull origin main
+```
+
+Si NO tenés SSH: usar cPanel File Manager o FileZilla para subir:
+- Todo el contenido del repo **excepto** `node_modules/`, `vendor/`, `.env`, `public/build/`.
+- Subir la nueva carpeta `public/build/` completa (con TODOS sus assets).
+- Subir las nuevas migraciones si las hay.
+
+4. **Limpiar caches del server** (CRITICO, sino los cambios no se ven):
+```bash
+php artisan optimize:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan config:clear
+php artisan view:clear
+```
+
+5. **Si hay migraciones nuevas**:
+```bash
+php artisan migrate --force
+```
+
+6. **Limpiar assets viejos del build anterior** (los hashes cambiaron):
+```bash
+# Ver que quedo en el server
+ls public/build/assets/
+# Borrar cualquier .js o .css que NO este en tu nuevo build
+```
+
+7. **Verificar**:
+- Login con un usuario existente.
+- Dashboard carga sin errores de consola.
+- Historial se ve completo.
+- Logout funciona.
+
+8. **Si algo sale mal** (rollback):
+- Re-subir el `public/build/` anterior.
+- Revertir los cambios de PHP (git checkout HEAD~1).
+- Limpiar caches de nuevo.
+
+### Purga de Cloudflare
+
+Si el server esta detras de Cloudflare (probable), despues del deploy:
+- Purgar cache: Dashboard > Caching > Purge Everything.
+- O purgar solo URLs especificas si sabes cuales son.
+
+### Hard refresh en el browser
+
+Despues de cada deploy, los usuarios deben hacer `Ctrl+Shift+R` (o `Cmd+Shift+R` en Mac) para evitar la cache del Service Worker.
+
+### ⚠️ Que NO hacer
+
+- **NO** hacer `npm install` o `npm run build` en el server compartido. No hay Node.js y no deberia estar.
+- **NO** commitear `public/build/` a git. El `.gitignore` ya lo excluye.
+- **NO** dejar assets viejos en `public/build/assets/`. Cada build genera hashes nuevos, los viejos quedan huerfanos.
+- **NO** cambiar `APP_DEBUG=true` en produccion. Tiene que ser `false`.
+
+### Variables de entorno criticas en produccion
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://gym.tecnorexs.com
+CACHE_DRIVER=database  # ya esta asi
+SESSION_DRIVER=database  # ya esta asi
+QUEUE_CONNECTION=database  # ya esta asi
+```
+
+### Procedimiento de rollback
+
+Si despues de un deploy algo se rompe:
+
+1. Revertir el codigo: `git revert HEAD` o `git checkout HEAD~1`.
+2. Re-subir los archivos al server.
+3. Si era una migracion: `php artisan migrate:rollback --step=1`.
+4. Limpiar caches: `php artisan optimize:clear`.
+5. Si era un build: re-subir el `public/build/` anterior.
+
 ## Base de Datos
 
 ### Migraciones
@@ -57,6 +161,66 @@ php artisan serve
 - `create_historials_table` - Historial de ejercicios completados por usuario
 - `create_user_rutinas_table` - Rutina seleccionada por usuario (nivel, modalidad, dia_actual)
 - `create_personal_access_tokens_table` - Token de Sanctum para API
+
+### Backups automáticos (Nivel 5)
+
+La app incluye un sistema de backup diario de la base de datos MySQL con retención configurable.
+
+**Comandos disponibles:**
+
+```bash
+# Generar backup manualmente
+php artisan db:backup
+php artisan db:backup --retention-days=14
+
+# Listar backups disponibles
+ls -lh storage/app/backups/
+
+# Restaurar (pide confirmación explícita)
+php artisan db:restore                # interactivo
+php artisan db:restore --latest       # usa el más reciente
+php artisan db:restore --file=backup-2026-09-06_020000.sql.gz
+```
+
+**Automático:** el scheduler corre `db:backup --retention-days=7` todos los días a las 02:00 hs.
+El archivo se guarda en `storage/app/backups/backup-YYYY-MM-DD_HHMMSS.sql.gz` (formato gzip).
+
+**Configuración opcional vía `.env`:**
+
+```dotenv
+# Ruta explícita al binario mysqldump (si no está en PATH)
+MYSQLDUMP_PATH=/usr/bin/mysqldump
+# Ruta explícita al binario mysql (para restauración)
+MYSQL_PATH=/usr/bin/mysql
+```
+
+**Restauración ante desastres:**
+
+1. Bajar la app (`php artisan down`).
+2. Confirmar conexión a la DB destino con el mismo `.env`.
+3. Ejecutar `php artisan db:restore --latest` y confirmar.
+4. Levantar la app (`php artisan up`).
+5. Verificar login y endpoints clave.
+
+**Importante:** el restore SOBREESCRIBE todos los datos. Hacer un backup fresco antes de restaurar en producción.
+
+**Limpieza de huérfanos:**
+
+```bash
+# Detectar registros con user_id inválido (modo dry-run)
+php artisan db:cleanup-orphans
+
+# Eliminarlos (pide confirmación por tabla)
+php artisan db:cleanup-orphans --prune
+
+# Sin pedir confirmación
+php artisan db:cleanup-orphans --prune --force
+```
+
+Útil cuando se hace hard-delete de usuarios sin cascade. Detecta huérfanos en
+`historials`, `sesiones_entrenamiento`, `progresos`, `diario_nutricion`,
+`user_rutinas`, `trainer_comments`, `user_rutina_reschedules`, `audit_logs`
+y `notifications`.
 
 ### Modelos
 

@@ -33,7 +33,7 @@ class RegisteredUserController extends Controller
         $nick = $baseNick;
         $counter = 1;
         while (User::where('nick', $nick)->exists()) {
-            $nick = $baseNick . $counter;
+            $nick = $baseNick.$counter;
             $counter++;
         }
 

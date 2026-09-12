@@ -31,8 +31,20 @@ describe('useNotificationStore', () => {
         it('carga las notificaciones del backend y actualiza unreadCount', async () => {
             axios.get.mockResolvedValueOnce({
                 data: [
-                    { id: '1', type: 'trainer_comment', data: { title: 'A', body: 'B' }, read_at: null, created_at: '2026-01-01' },
-                    { id: '2', type: 'milestone', data: { title: 'C', body: 'D' }, read_at: '2026-01-02T00:00:00Z', created_at: '2026-01-01' },
+                    {
+                        id: '1',
+                        type: 'trainer_comment',
+                        data: { title: 'A', body: 'B' },
+                        read_at: null,
+                        created_at: '2026-01-01',
+                    },
+                    {
+                        id: '2',
+                        type: 'milestone',
+                        data: { title: 'C', body: 'D' },
+                        read_at: '2026-01-02T00:00:00Z',
+                        created_at: '2026-01-01',
+                    },
                 ],
             });
             await store.fetch();
@@ -57,7 +69,11 @@ describe('useNotificationStore', () => {
 
         it('setea isLoading durante la request', async () => {
             let resolvePromise;
-            axios.get.mockReturnValueOnce(new Promise((r) => { resolvePromise = r; }));
+            axios.get.mockReturnValueOnce(
+                new Promise((r) => {
+                    resolvePromise = r;
+                })
+            );
             const promise = store.fetch();
             expect(store.isLoading).toBe(true);
             resolvePromise({ data: [] });

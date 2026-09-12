@@ -7,7 +7,6 @@ use App\Models\MedallaUsuario;
 use App\Models\Meta;
 use App\Models\Progreso;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TrainerTimelineController extends Controller
@@ -19,10 +18,23 @@ class TrainerTimelineController extends Controller
      * - Metas creadas / completadas
      * - Medidas corporales registradas
      * - PRs (peso máximo histórico nuevo por ejercicio)
+     *
+     * Autorización (Nivel 5):
+     * - administrador: acceso a cualquier alumno
+     * - trainer: solo alumnos asignados (alumno->trainer_id === auth()->id())
+     * - otros: 403
      */
     public function show($alumnoId)
     {
+        $auth = auth()->user();
         $alumno = User::findOrFail($alumnoId);
+
+        if (! $this->puedeVerAlumno($auth, $alumno)) {
+            return response()->json(
+                ['error' => 'No tienes acceso a este alumno'],
+                403
+            );
+        }
 
         $eventos = [];
 
@@ -52,7 +64,7 @@ class TrainerTimelineController extends Controller
                 $eventos[] = [
                     'tipo' => 'medalla',
                     'fecha' => $mu->ganado_at?->toDateString(),
-                    'titulo' => '🏆 Desbloqueó medalla: ' . ($mu->nombre ?? 'Sin nombre'),
+                    'titulo' => '🏆 Desbloqueó medalla: '.($mu->nombre ?? 'Sin nombre'),
                     'descripcion' => $mu->descripcion,
                     'icono' => '🏆',
                     'color' => 'bg-amber-500',
@@ -77,7 +89,7 @@ class TrainerTimelineController extends Controller
 
         // Medidas corporales
         Progreso::where('user_id', $alumno->id)
-            ->whereNotNull('peso_corporal')
+            ->whereNotNull('peso')
             ->orderBy('fecha', 'desc')
             ->limit(10)
             ->get()
@@ -85,7 +97,7 @@ class TrainerTimelineController extends Controller
                 $eventos[] = [
                     'tipo' => 'medida',
                     'fecha' => $p->fecha?->toDateString(),
-                    'titulo' => "Se pesó: {$p->peso_corporal} kg",
+                    'titulo' => "Se pesó: {$p->peso} kg",
                     'descripcion' => null,
                     'icono' => '⚖️',
                     'color' => 'bg-blue-500',
@@ -98,5 +110,27 @@ class TrainerTimelineController extends Controller
         });
 
         return response()->json(['alumno' => $alumno->only(['id', 'name', 'nick']), 'eventos' => $eventos]);
+    }
+
+    /**
+     * Regla única de autorización para "ver datos de un alumno".
+     * Usada por este controller y otros (TrainerComment, etc.) para mantener
+     * la política consistente.
+     */
+    public static function puedeVerAlumno(?User $auth, User $alumno): bool
+    {
+        if (! $auth) {
+            return false;
+        }
+
+        if ($auth->hasRole(User::ROLE_ADMINISTRADOR)) {
+            return true;
+        }
+
+        if ($auth->hasRole(User::ROLE_TRAINER)) {
+            return (int) $alumno->trainer_id === (int) $auth->id;
+        }
+
+        return false;
     }
 }

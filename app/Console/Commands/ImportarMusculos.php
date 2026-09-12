@@ -52,7 +52,7 @@ class ImportarMusculos extends Command
             ['slug' => 'quadriceps',     'nombre_es' => 'Cuádriceps',        'nombre_en' => 'Quads',       'body_part' => 'lower-body', 'svg_id' => 'quadriceps',     'orden' => 13],
             ['slug' => 'hamstring',      'nombre_es' => 'Isquiotibiales',    'nombre_en' => 'Hamstrings',  'body_part' => 'lower-body', 'svg_id' => 'hamstring',      'orden' => 14],
             ['slug' => 'adductors',      'nombre_es' => 'Aductores',         'nombre_en' => 'Adductors',   'body_part' => 'lower-body', 'svg_id' => 'adductors',      'orden' => 15],
-            ['slug' => 'hip-flexors',    'nombre_es' => 'Flexores de cadera','nombre_en' => 'Hip flexors', 'body_part' => 'core',       'svg_id' => 'hip-flexors',    'orden' => 16],
+            ['slug' => 'hip-flexors',    'nombre_es' => 'Flexores de cadera', 'nombre_en' => 'Hip flexors', 'body_part' => 'core',       'svg_id' => 'hip-flexors',    'orden' => 16],
             ['slug' => 'calves',         'nombre_es' => 'Pantorrillas',      'nombre_en' => 'Calves',      'body_part' => 'lower-body', 'svg_id' => 'calves',         'orden' => 17],
             ['slug' => 'tibialis',       'nombre_es' => 'Tibial anterior',   'nombre_en' => 'Shins',       'body_part' => 'lower-body', 'svg_id' => 'tibialis',       'orden' => 18],
         ];
@@ -163,7 +163,7 @@ class ImportarMusculos extends Command
         $aliasCount = 0;
         $musculoCount = 0;
 
-        $this->info('Importando ' . count($musculos) . ' músculos...');
+        $this->info('Importando '.count($musculos).' músculos...');
 
         foreach ($musculos as $m) {
             Musculo::updateOrCreate(
@@ -177,15 +177,16 @@ class ImportarMusculos extends Command
         $this->newLine();
         $this->info("✓ {$musculoCount} músculos listos");
         $this->newLine();
-        $this->info('Importando ' . count($aliases) . ' aliases...');
+        $this->info('Importando '.count($aliases).' aliases...');
 
         // Mapear alias → musculo_id en una sola query
         $musculosBySlug = Musculo::pluck('id', 'slug');
 
         foreach ($aliases as $alias => $slug) {
             $musculoId = $musculosBySlug[$slug] ?? null;
-            if (!$musculoId) {
+            if (! $musculoId) {
                 $this->warn("  Alias '{$alias}' apunta a slug '{$slug}' que no existe, saltando.");
+
                 continue;
             }
             MusculoAlias::firstOrCreate(

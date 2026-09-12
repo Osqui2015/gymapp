@@ -2,10 +2,15 @@
 
 namespace Database\Seeders;
 
+use App\Models\Ejercicio;
+use App\Models\EjercicioClave;
+use App\Models\Historial;
+use App\Models\Role;
+use App\Models\Rutina;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,7 +22,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Sembrar roles por defecto (idempotente)
-        \App\Models\Role::seedDefaults();
+        Role::seedDefaults();
 
         // Sembrar la biblioteca de ejercicios y las rutinas ANTES de los
         // usuarios. El historial que se inserta más abajo referencia
@@ -128,7 +133,7 @@ class DatabaseSeeder extends Seeder
                     ['peso' => 60, 'reps' => 8],
                     ['peso' => 60, 'reps' => 8],
                     ['peso' => 60, 'reps' => 8],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-05-22',
@@ -137,7 +142,7 @@ class DatabaseSeeder extends Seeder
                     ['peso' => 65, 'reps' => 8],
                     ['peso' => 65, 'reps' => 8],
                     ['peso' => 65, 'reps' => 8],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-05-29',
@@ -146,7 +151,7 @@ class DatabaseSeeder extends Seeder
                     ['peso' => 70, 'reps' => 6],
                     ['peso' => 70, 'reps' => 6],
                     ['peso' => 70, 'reps' => 6],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-06-03',
@@ -155,7 +160,7 @@ class DatabaseSeeder extends Seeder
                     ['peso' => 75, 'reps' => 5],
                     ['peso' => 75, 'reps' => 5],
                     ['peso' => 75, 'reps' => 5],
-                ]
+                ],
             ],
             // Prensa
             [
@@ -164,7 +169,7 @@ class DatabaseSeeder extends Seeder
                 'sets' => [
                     ['peso' => 120, 'reps' => 10],
                     ['peso' => 120, 'reps' => 10],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-05-22',
@@ -172,7 +177,7 @@ class DatabaseSeeder extends Seeder
                 'sets' => [
                     ['peso' => 130, 'reps' => 10],
                     ['peso' => 130, 'reps' => 10],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-05-29',
@@ -180,7 +185,7 @@ class DatabaseSeeder extends Seeder
                 'sets' => [
                     ['peso' => 140, 'reps' => 8],
                     ['peso' => 140, 'reps' => 8],
-                ]
+                ],
             ],
             [
                 'fecha' => '2026-06-03',
@@ -188,13 +193,13 @@ class DatabaseSeeder extends Seeder
                 'sets' => [
                     ['peso' => 150, 'reps' => 8],
                     ['peso' => 150, 'reps' => 8],
-                ]
+                ],
             ],
         ];
 
         foreach ($mariaWorkouts as $wGroup) {
             foreach ($wGroup['sets'] as $index => $set) {
-                \App\Models\Historial::create([
+                Historial::create([
                     'user_id' => $maria->id,
                     'rutina_nombre' => 'Fuerza Piernas',
                     'dia' => 'Día 1',
@@ -213,14 +218,14 @@ class DatabaseSeeder extends Seeder
         }
 
         // Seed some Ejercicios Clave
-        \App\Models\EjercicioClave::create([
+        EjercicioClave::create([
             'user_id' => $maria->id,
             'trainer_id' => $trainer->id,
             'ejercicio_nombre' => 'Sentadilla',
             'notas_trainer' => "Foco en romper el paralelo y mantener la espalda neutra.\nProgresar peso solo si mantienes buena técnica.",
         ]);
 
-        \App\Models\EjercicioClave::create([
+        EjercicioClave::create([
             'user_id' => $maria->id,
             'trainer_id' => $trainer->id,
             'ejercicio_nombre' => 'Prensa de piernas',
@@ -242,28 +247,28 @@ class DatabaseSeeder extends Seeder
      */
     private function backfillEjercicioId(): void
     {
-        $ejercicios = \App\Models\Ejercicio::pluck('id', 'nombre');
+        $ejercicios = Ejercicio::pluck('id', 'nombre');
 
         $totalRutinas = 0;
         foreach ($ejercicios as $nombre => $id) {
-            $totalRutinas += \App\Models\Rutina::where('ejercicio_nombre', $nombre)
+            $totalRutinas += Rutina::where('ejercicio_nombre', $nombre)
                 ->whereNull('ejercicio_id')
                 ->update(['ejercicio_id' => $id]);
         }
 
         $totalHist = 0;
         foreach ($ejercicios as $nombre => $id) {
-            $totalHist += \App\Models\Historial::where('ejercicio_nombre', $nombre)
+            $totalHist += Historial::where('ejercicio_nombre', $nombre)
                 ->whereNull('ejercicio_id')
                 ->update(['ejercicio_id' => $id]);
         }
 
-        $unmatchedRutinas = \App\Models\Rutina::whereNull('ejercicio_id')->count();
-        $unmatchedHist = \App\Models\Historial::whereNull('ejercicio_id')->count();
+        $unmatchedRutinas = Rutina::whereNull('ejercicio_id')->count();
+        $unmatchedHist = Historial::whereNull('ejercicio_id')->count();
 
         if ($unmatchedRutinas > 0 || $unmatchedHist > 0) {
             $this->command->warn(
-                "Backfill parcial: $unmatchedRutinas rutinas y $unmatchedHist historiales sin match. " .
+                "Backfill parcial: $unmatchedRutinas rutinas y $unmatchedHist historiales sin match. ".
                 'Probable causa: nombre de ejercicio no existe en la biblioteca.'
             );
         } else {

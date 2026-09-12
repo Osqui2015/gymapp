@@ -35,24 +35,24 @@ class MapearEjerciciosMusculos extends Command
     private function mapeoDirecto(): array
     {
         return [
-            'Abdomen'              => ['abs'],
-            'Antebrazos'           => ['forearm'],
-            'Bíceps'               => ['biceps'],
-            'Cuádriceps'           => ['quadriceps'],
-            'Espalda'              => ['upper-back'],
-            'Espalda baja'         => ['lower-back'],
-            'Glúteos'              => ['gluteal'],
-            'Hombros'              => ['deltoids'],
-            'Isquiotibiales'       => ['hamstring'],
-            'Pantorrillas'         => ['calves'],
-            'Pecho'                => ['chest'],
-            'Trapecio'             => ['trapezius'],
-            'Tríceps'              => ['triceps'],
-            'Piernas'              => ['quadriceps'],   // ambiguo, default a quads
-            'Full Body'            => ['chest', 'upper-back', 'quadriceps', 'gluteal'],
-            'Cardio'               => [],                // no es un músculo
-            'Cardio / Espalda'     => ['upper-back'],     // secundario
-            'Cardio / Pantorrillas'=> ['calves'],         // secundario
+            'Abdomen' => ['abs'],
+            'Antebrazos' => ['forearm'],
+            'Bíceps' => ['biceps'],
+            'Cuádriceps' => ['quadriceps'],
+            'Espalda' => ['upper-back'],
+            'Espalda baja' => ['lower-back'],
+            'Glúteos' => ['gluteal'],
+            'Hombros' => ['deltoids'],
+            'Isquiotibiales' => ['hamstring'],
+            'Pantorrillas' => ['calves'],
+            'Pecho' => ['chest'],
+            'Trapecio' => ['trapezius'],
+            'Tríceps' => ['triceps'],
+            'Piernas' => ['quadriceps'],   // ambiguo, default a quads
+            'Full Body' => ['chest', 'upper-back', 'quadriceps', 'gluteal'],
+            'Cardio' => [],                // no es un músculo
+            'Cardio / Espalda' => ['upper-back'],     // secundario
+            'Cardio / Pantorrillas' => ['calves'],         // secundario
         ];
     }
 
@@ -63,21 +63,21 @@ class MapearEjerciciosMusculos extends Command
     private function mapeoSecundarios(): array
     {
         return [
-            'Abdomen'        => ['obliques'],
-            'Antebrazos'     => ['biceps', 'triceps'],
-            'Bíceps'         => ['forearm'],
-            'Cuádriceps'     => ['gluteal', 'hamstring', 'adductors', 'calves'],
-            'Espalda'        => ['biceps', 'trapezius', 'lower-back'],
-            'Espalda baja'   => ['gluteal', 'hamstring', 'upper-back'],
-            'Glúteos'        => ['hamstring', 'quadriceps', 'lower-back'],
-            'Hombros'        => ['trapezius', 'chest', 'upper-back', 'triceps'],
+            'Abdomen' => ['obliques'],
+            'Antebrazos' => ['biceps', 'triceps'],
+            'Bíceps' => ['forearm'],
+            'Cuádriceps' => ['gluteal', 'hamstring', 'adductors', 'calves'],
+            'Espalda' => ['biceps', 'trapezius', 'lower-back'],
+            'Espalda baja' => ['gluteal', 'hamstring', 'upper-back'],
+            'Glúteos' => ['hamstring', 'quadriceps', 'lower-back'],
+            'Hombros' => ['trapezius', 'chest', 'upper-back', 'triceps'],
             'Isquiotibiales' => ['gluteal', 'calves', 'lower-back'],
-            'Pantorrillas'   => ['hamstring'],
-            'Pecho'          => ['triceps', 'deltoids', 'serratus'],
-            'Trapecio'       => ['deltoids', 'upper-back'],
-            'Tríceps'        => ['chest', 'deltoids'],
-            'Piernas'        => ['hamstring', 'gluteal', 'calves'],
-            'Full Body'      => ['biceps', 'triceps', 'deltoids', 'abs', 'hamstring', 'calves'],
+            'Pantorrillas' => ['hamstring'],
+            'Pecho' => ['triceps', 'deltoids', 'serratus'],
+            'Trapecio' => ['deltoids', 'upper-back'],
+            'Tríceps' => ['chest', 'deltoids'],
+            'Piernas' => ['hamstring', 'gluteal', 'calves'],
+            'Full Body' => ['biceps', 'triceps', 'deltoids', 'abs', 'hamstring', 'calves'],
         ];
     }
 
@@ -111,20 +111,24 @@ class MapearEjerciciosMusculos extends Command
             if ($primarios === null) {
                 $sinGrupo[$grupo] = ($sinGrupo[$grupo] ?? 0) + 1;
                 $omitidos++;
+
                 continue;
             }
 
             if (empty($primarios) && empty($segundos)) {
                 // Cardio puro sin músculos
                 $omitidos++;
+
                 continue;
             }
 
             $mapeados++;
             foreach ($primarios as $slug) {
                 $musculoId = $musculosBySlug[$slug] ?? null;
-                if (!$musculoId) continue;
-                if (!$dryRun) {
+                if (! $musculoId) {
+                    continue;
+                }
+                if (! $dryRun) {
                     \DB::table('ejercicio_musculos')->updateOrInsert(
                         ['ejercicio_id' => $ej->id, 'musculo_id' => $musculoId, 'tipo' => 'primario'],
                         ['peso' => 1.00, 'fuente' => 'mapeo_automatico', 'created_at' => now(), 'updated_at' => now()]
@@ -133,8 +137,10 @@ class MapearEjerciciosMusculos extends Command
             }
             foreach ($segundos as $slug) {
                 $musculoId = $musculosBySlug[$slug] ?? null;
-                if (!$musculoId) continue;
-                if (!$dryRun) {
+                if (! $musculoId) {
+                    continue;
+                }
+                if (! $dryRun) {
                     \DB::table('ejercicio_musculos')->updateOrInsert(
                         ['ejercicio_id' => $ej->id, 'musculo_id' => $musculoId, 'tipo' => 'secundario'],
                         ['peso' => 0.40, 'fuente' => 'mapeo_automatico', 'created_at' => now(), 'updated_at' => now()]
@@ -147,7 +153,7 @@ class MapearEjerciciosMusculos extends Command
         $this->info("✓ {$mapeados} ejercicios mapeados");
         $this->info("⊘ {$omitidos} omitidos (sin mapeo o cardio puro)");
 
-        if (!empty($sinGrupo)) {
+        if (! empty($sinGrupo)) {
             $this->newLine();
             $this->warn('Grupos no reconocidos (sumalos a los arrays de mapeo si querés cubrirlos):');
             foreach ($sinGrupo as $g => $c) {
@@ -155,7 +161,7 @@ class MapearEjerciciosMusculos extends Command
             }
         }
 
-        if (!$dryRun) {
+        if (! $dryRun) {
             $this->newLine();
             $totalMapeos = \DB::table('ejercicio_musculos')->count();
             $this->info("Total de mapeos ejercicio-músculo en la DB: {$totalMapeos}");

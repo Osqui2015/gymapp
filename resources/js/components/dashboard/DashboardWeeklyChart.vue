@@ -1,21 +1,30 @@
 <template>
-  <div v-if="hasData" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">📈 Peso máximo por día (últimos 30 días)</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tu PR diario a lo largo del tiempo</p>
-      </div>
-      <div class="flex items-center gap-3 text-xs">
-        <div class="flex items-center gap-1.5">
-          <div class="w-3 h-3 rounded-sm bg-gradient-to-br from-indigo-500 to-purple-500"></div>
-          <span class="text-gray-600 dark:text-gray-400">Peso (kg)</span>
+    <div
+        v-if="hasData"
+        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm"
+    >
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    📈 Peso máximo por día (últimos 30 días)
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Tu PR diario a lo largo del tiempo
+                </p>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+                <div class="flex items-center gap-1.5">
+                    <div
+                        class="w-3 h-3 rounded-sm bg-gradient-to-br from-indigo-500 to-purple-500"
+                    ></div>
+                    <span class="text-gray-600 dark:text-gray-400">Peso (kg)</span>
+                </div>
+            </div>
         </div>
-      </div>
+        <div class="relative" style="height: 220px">
+            <canvas ref="chartCanvas"></canvas>
+        </div>
     </div>
-    <div class="relative" style="height: 220px;">
-      <canvas ref="chartCanvas"></canvas>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -55,7 +64,8 @@ const datosAgrupados = computed(() => {
         // timestamp (ej: '2026-09-03T00:00:00.000000Z'), el split
         // normaliza a 'yyyy-mm-dd' antes de pasarlo a Date.
         labels: ultimos.map(([fecha]) => {
-            const iso = typeof fecha === 'string' && fecha.includes('T') ? fecha.split('T')[0] : fecha;
+            const iso =
+                typeof fecha === 'string' && fecha.includes('T') ? fecha.split('T')[0] : fecha;
             const [y, m, d] = iso.split('-').map(Number);
             return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
         }),
@@ -85,20 +95,22 @@ const renderChart = () => {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: 'Peso (kg)',
-                data: pesos,
-                borderColor: '#6366f1',
-                backgroundColor: gradient,
-                borderWidth: 2.5,
-                tension: 0.35,
-                fill: true,
-                pointBackgroundColor: '#6366f1',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }],
+            datasets: [
+                {
+                    label: 'Peso (kg)',
+                    data: pesos,
+                    borderColor: '#6366f1',
+                    backgroundColor: gradient,
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    fill: true,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                },
+            ],
         },
         options: {
             responsive: true,
@@ -129,11 +141,18 @@ const renderChart = () => {
     });
 };
 
-watch(() => props.historial, () => nextTick(renderChart), { deep: true });
+watch(
+    () => props.historial,
+    () => nextTick(renderChart),
+    { deep: true }
+);
 
 onMounted(() => nextTick(renderChart));
 
 onBeforeUnmount(() => {
-    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+    }
 });
 </script>

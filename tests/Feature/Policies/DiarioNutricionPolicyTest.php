@@ -58,11 +58,12 @@ class DiarioNutricionPolicyTest extends TestCase
 
     private function makeDiario(array $overrides = []): DiarioNutricion
     {
-        $d = new DiarioNutricion();
+        $d = new DiarioNutricion;
         $d->setRawAttributes(array_merge([
             'user_id' => 1,
             'fecha' => now()->toDateString(),
         ], $overrides));
+
         return $d;
     }
 }

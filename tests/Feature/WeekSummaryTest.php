@@ -53,7 +53,7 @@ class WeekSummaryTest extends TestCase
         // Run controller-like query directly
         $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY);
         $weekEnd = $weekStart->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
-        $direct = \App\Models\Historial::where('user_id', $user->id)
+        $direct = Historial::where('user_id', $user->id)
             ->where('completado', true)
             ->whereDate('fecha', '>=', $weekStart->toDateString())
             ->whereDate('fecha', '<=', $weekEnd->toDateString())
@@ -61,7 +61,7 @@ class WeekSummaryTest extends TestCase
             ->groupBy('fecha_raw', 'fecha')
             ->orderBy('fecha_raw')
             ->get();
-        fwrite(STDERR, "\n[DEBUG] direct_sql_count=" . $direct->count() . " rows=" . $direct->toJson() . "\n");
+        fwrite(STDERR, "\n[DEBUG] direct_sql_count=".$direct->count().' rows='.$direct->toJson()."\n");
 
         $response = $this->actingAs($user)->getJson('/api/historial/week-summary');
         $data = $response->json();

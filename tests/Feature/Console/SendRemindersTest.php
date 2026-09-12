@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Console;
 
+use App\Models\Historial;
 use App\Models\Membresia;
 use App\Models\Notification;
 use App\Models\User;
@@ -114,7 +115,7 @@ class SendRemindersTest extends TestCase
             'estado' => 'activo',
         ]);
         // El user entrenó ayer
-        \App\Models\Historial::create([
+        Historial::create([
             'user_id' => $user->id,
             'fecha' => Carbon::yesterday()->toDateString(),
             'ejercicio_nombre' => 'Press banca',

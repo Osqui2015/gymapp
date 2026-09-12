@@ -28,25 +28,34 @@
     >
         <!-- Header con icono de la plataforma -->
         <div :class="['flex items-center gap-3 px-4 py-3 text-white', headerBg]">
-            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <div
+                class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"
+            >
                 <span class="text-2xl">{{ platformIcon }}</span>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-semibold text-sm leading-tight">Ver técnica correcta</p>
                 <p class="text-xs opacity-90 truncate">{{ fuente || 'Fuente externa' }}</p>
             </div>
-            <svg class="w-5 h-5 opacity-80 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            <svg
+                class="w-5 h-5 opacity-80 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
             </svg>
         </div>
 
         <!-- Body con CTA -->
         <div class="px-4 py-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-700 dark:text-gray-300">
-                    Abrir en {{ platformName }}
-                </p>
+                <p class="text-sm text-gray-700 dark:text-gray-300">Abrir en {{ platformName }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                     {{ url }}
                 </p>

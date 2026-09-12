@@ -63,12 +63,13 @@ class AuditLogPolicyTest extends TestCase
 
     private function makeAuditLog(): AuditLog
     {
-        $a = new AuditLog();
+        $a = new AuditLog;
         $a->setRawAttributes([
             'user_id' => 1,
             'action' => 'test',
             'description' => 'Test log',
         ]);
+
         return $a;
     }
 }

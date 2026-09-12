@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Historial;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -433,7 +434,7 @@ class StatsEsfuerzoTest extends TestCase
 
         // Forzar 2 sets esta semana (lun-mié) y 1 set la semana pasada (hace 10 días, debería ser dom-lun anterior)
         $hoy = now();
-        $esta_semana_lun = $hoy->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+        $esta_semana_lun = $hoy->copy()->startOfWeek(Carbon::MONDAY);
         $semana_pasada = $esta_semana_lun->copy()->subDays(10);
 
         Historial::create([
@@ -463,7 +464,7 @@ class StatsEsfuerzoTest extends TestCase
 
         $response = $this->actingAs($user)->getJson('/api/stats/esfuerzo?window=90');
         $data = $response->json();
-        fwrite(STDERR, "\n[DEBUG] now=" . $hoy . " lun_esta=" . $esta_semana_lun . " semana_pasada=" . $semana_pasada . " tendencia=" . json_encode($data['tendencia']) . "\n");
+        fwrite(STDERR, "\n[DEBUG] now=".$hoy.' lun_esta='.$esta_semana_lun.' semana_pasada='.$semana_pasada.' tendencia='.json_encode($data['tendencia'])."\n");
         $this->assertCount(2, $data['tendencia']);
     }
 
@@ -471,7 +472,7 @@ class StatsEsfuerzoTest extends TestCase
     {
         $user = User::factory()->create(['role' => User::ROLE_COMUN]);
 
-        $lun = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+        $lun = now()->startOfWeek(Carbon::MONDAY);
         // 2 sets en la misma semana
         foreach ([[$lun, 2], [$lun->copy()->addDays(2), 4]] as [$fecha, $val]) {
             Historial::create([

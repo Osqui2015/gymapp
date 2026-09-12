@@ -1,28 +1,33 @@
 <?php
 
-use App\Http\Controllers\AdminUserApiController;
-use App\Http\Controllers\BodyMapController;
-use App\Http\Controllers\EjercicioController;
-use App\Http\Controllers\HistorialController;
-use App\Http\Controllers\ProgresoController;
-use App\Http\Controllers\RutinaController;
-use App\Http\Controllers\TrainerAlumnoController;
-use App\Http\Controllers\TrainerDashboardController;
-use App\Http\Controllers\UserRutinaController;
-use App\Http\Controllers\MetaController;
-use App\Http\Controllers\MedallaController;
-use App\Http\Controllers\DiarioNutricionController;
-use App\Http\Controllers\EjercicioClaveController;
-use App\Http\Controllers\MembresiaController;
-use App\Http\Controllers\AdminStatsController;
-use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AdminImportExportController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\StatsController;
+use App\Http\Controllers\AdminStatsController;
+use App\Http\Controllers\AdminUserApiController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\TrainerCommentController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BienestarController;
+use App\Http\Controllers\BodyMapController;
+use App\Http\Controllers\ComidaFrecuenteController;
+use App\Http\Controllers\DiarioNutricionController;
+use App\Http\Controllers\EjercicioClaveController;
+use App\Http\Controllers\EjercicioController;
+use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\MedallaController;
+use App\Http\Controllers\MembresiaController;
+use App\Http\Controllers\MetaController;
+use App\Http\Controllers\ProgresoController;
+use App\Http\Controllers\ProgresoFotoController;
+use App\Http\Controllers\RutinaController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StatsController;
+use App\Http\Controllers\TrainerAlumnoController;
+use App\Http\Controllers\TrainerDashboardController;
+use App\Http\Controllers\TrainerTimelineController;
+use App\Http\Controllers\UserRutinaController;
+use App\Http\Controllers\WorkoutSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ejercicios', [EjercicioController::class, 'index']);
@@ -49,6 +54,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/rutinas/sugeridas', [RutinaController::class, 'sugeridas']);
     Route::get('/rutinas/favoritas', [RutinaController::class, 'favoritas']);
     Route::post('/rutinas/favorite', [RutinaController::class, 'toggleFavorite']);
+    Route::post('/rutinas/duplicar-dia', [RutinaController::class, 'duplicarDia']);
+    Route::post('/rutinas/reorder', [RutinaController::class, 'reorder']);
     Route::delete('/rutinas', [RutinaController::class, 'destroy']);
     Route::post('/user-rutina', [UserRutinaController::class, 'store']);
     Route::get('/user-rutina', [UserRutinaController::class, 'show']);
@@ -64,12 +71,20 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::get('/historial', [HistorialController::class, 'index']);
     Route::post('/historial/guardar', [HistorialController::class, 'guardar']);
+    Route::put('/historial/{id}', [HistorialController::class, 'update']);
+    Route::delete('/historial/{id}', [HistorialController::class, 'destroy']);
     Route::post('/historial/completar', [HistorialController::class, 'marcarCompletado']);
     Route::get('/historial/progreso', [HistorialController::class, 'obtenerProgreso']);
     Route::post('/historial/finalizar-rutina', [HistorialController::class, 'finalizarRutina']);
     Route::get('/historial/calendar', [HistorialController::class, 'calendar']);
     Route::get('/historial/week-summary', [HistorialController::class, 'weekSummary']);
     Route::get('/historial/comparar', [HistorialController::class, 'comparar']);
+
+    // === Sesiones de Entrenamiento (Nivel 4) ===
+    Route::post('/sesiones/iniciar', [WorkoutSessionController::class, 'iniciar']);
+    Route::get('/sesiones/activa', [WorkoutSessionController::class, 'activa']);
+    Route::post('/sesiones/finalizar', [WorkoutSessionController::class, 'finalizar']);
+    Route::delete('/sesiones/{uuid}', [WorkoutSessionController::class, 'descartar']);
 
     Route::get('/progreso', [ProgresoController::class, 'obtener']);
     Route::post('/progreso', [ProgresoController::class, 'guardar']);
@@ -78,9 +93,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::patch('/progreso/goal', [ProgresoController::class, 'updateGoal']);
 
     // === Fotos de progreso (gallery cronológica) ===
-    Route::get('/progreso/fotos', [\App\Http\Controllers\ProgresoFotoController::class, 'index']);
-    Route::post('/progreso/fotos', [\App\Http\Controllers\ProgresoFotoController::class, 'store']);
-    Route::delete('/progreso/fotos/{id}', [\App\Http\Controllers\ProgresoFotoController::class, 'destroy']);
+    Route::get('/progreso/fotos', [ProgresoFotoController::class, 'index']);
+    Route::post('/progreso/fotos', [ProgresoFotoController::class, 'store']);
+    Route::delete('/progreso/fotos/{id}', [ProgresoFotoController::class, 'destroy']);
 
     // Body map (mapa corporal de musculatura) — usado por BodyMap.vue
     Route::get('/body-map/data', [BodyMapController::class, 'index']);
@@ -112,6 +127,15 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/nutricion/tdee', [DiarioNutricionController::class, 'tdee']);
     Route::patch('/nutricion/config', [DiarioNutricionController::class, 'updateConfig']);
 
+    // Comidas Frecuentes
+    Route::get('/comidas-frecuentes', [ComidaFrecuenteController::class, 'index']);
+    Route::post('/comidas-frecuentes', [ComidaFrecuenteController::class, 'store']);
+    Route::delete('/comidas-frecuentes/{id}', [ComidaFrecuenteController::class, 'destroy']);
+
+    // Bienestar Diario
+    Route::get('/bienestar', [BienestarController::class, 'show']);
+    Route::post('/bienestar', [BienestarController::class, 'update']);
+
     // Ejercicios Clave
     Route::get('/ejercicios-clave', [EjercicioClaveController::class, 'index']);
     Route::post('/ejercicios-clave', [EjercicioClaveController::class, 'store']);
@@ -126,7 +150,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/trainer/dashboard', [TrainerDashboardController::class, 'index']);
         Route::get('/trainer/alumno/{alumno}', [TrainerDashboardController::class, 'verAlumno']);
         Route::post('/trainer/alumno/{alumno}/comentario', [TrainerDashboardController::class, 'agregarComentario']);
-        Route::get('/trainer/alumnos/{alumno}/timeline', [\App\Http\Controllers\TrainerTimelineController::class, 'show']);
+        Route::get('/trainer/alumnos/{alumno}/timeline', [TrainerTimelineController::class, 'show']);
         Route::post('/trainer/duplicar-rutina', [TrainerDashboardController::class, 'duplicarRutina']);
         Route::get('/trainer/ejercicios-privados', [TrainerDashboardController::class, 'ejerciciosPrivados']);
         Route::post('/trainer/ejercicios-privados', [TrainerDashboardController::class, 'crearEjercicioPrivado']);
@@ -214,10 +238,11 @@ Route::get('/comunidad/stats', [SearchController::class, 'comunidadStats']);
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/user-info', function () {
         $user = auth()->user();
+
         return response()->json([
             'role' => $user->normalizedRole(),
             'trainer_id' => $user->trainer_id,
-            'has_trainer' => !empty($user->trainer_id),
+            'has_trainer' => ! empty($user->trainer_id),
         ]);
     });
 });

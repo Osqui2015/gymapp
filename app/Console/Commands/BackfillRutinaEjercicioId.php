@@ -26,6 +26,7 @@ use Illuminate\Console\Command;
 class BackfillRutinaEjercicioId extends Command
 {
     protected $signature = 'rutinas:backfill-fk {--dry-run : No escribir en la DB}';
+
     protected $description = 'Setea ejercicio_id en rutinas e historiales matcheando por nombre';
 
     public function handle(): int
@@ -38,6 +39,7 @@ class BackfillRutinaEjercicioId extends Command
         $ejercicios = Ejercicio::pluck('id', 'nombre');
         if ($ejercicios->isEmpty()) {
             $this->error('Tabla ejercicios vacia. Correr primero php artisan db:seed --class=EjercicioSeeder');
+
             return self::FAILURE;
         }
 
@@ -51,7 +53,7 @@ class BackfillRutinaEjercicioId extends Command
             if ($count > 0) {
                 $this->line("  - {$nombre} (id={$id}): {$count} rutinas");
             }
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $totalRutinas += Rutina::where('ejercicio_nombre', $nombre)
                     ->whereNull('ejercicio_id')
                     ->update(['ejercicio_id' => $id]);
@@ -68,7 +70,7 @@ class BackfillRutinaEjercicioId extends Command
             if ($count > 0) {
                 $this->line("  - {$nombre} (id={$id}): {$count} historiales");
             }
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $totalHist += Historial::where('ejercicio_nombre', $nombre)
                     ->whereNull('ejercicio_id')
                     ->update(['ejercicio_id' => $id]);

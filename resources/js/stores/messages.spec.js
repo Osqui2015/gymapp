@@ -73,7 +73,12 @@ describe('useMessagesStore', () => {
     describe('openConversation', () => {
         it('sets activeUserId and loads messages', async () => {
             axios.get.mockResolvedValue({
-                data: { data: [{ id: 1, body: 'Hola' }, { id: 2, body: 'Mundo' }] },
+                data: {
+                    data: [
+                        { id: 1, body: 'Hola' },
+                        { id: 2, body: 'Mundo' },
+                    ],
+                },
             });
 
             await store.openConversation(42);
@@ -96,9 +101,7 @@ describe('useMessagesStore', () => {
     describe('sendMessage', () => {
         beforeEach(() => {
             store.activeUserId = 42;
-            store.conversations = [
-                { other_user: { id: 42 }, unread_count: 1, last_message: null },
-            ];
+            store.conversations = [{ other_user: { id: 42 }, unread_count: 1, last_message: null }];
         });
 
         it('sends message and appends to activeMessages', async () => {

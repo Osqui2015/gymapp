@@ -2,11 +2,8 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Ejercicio;
-use App\Models\Historial;
 use App\Models\Rutina;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

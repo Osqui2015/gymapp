@@ -128,6 +128,6 @@ class RutinaDia3FullBodySeeder extends Seeder
             ]));
         }
 
-        $this->command->info('Seeder DIA 3 FULL BODY: ' . count($ejercicios) . ' ejercicios cargados.');
+        $this->command->info('Seeder DIA 3 FULL BODY: '.count($ejercicios).' ejercicios cargados.');
     }
 }

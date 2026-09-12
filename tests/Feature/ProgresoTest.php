@@ -93,6 +93,41 @@ class ProgresoTest extends TestCase
             ->assertJsonPath('puede_registrar', false);
     }
 
+    public function test_user_can_save_progreso_with_grasa_corporal(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        $response = $this->actingAs($user)->postJson('/api/progreso', [
+            'peso' => 78.2,
+            'altura' => 1.78,
+            'edad' => 28,
+            'sexo' => 'masculino',
+            'grasa_corporal' => 18.5,
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('progresos', [
+            'user_id' => $user->id,
+            'grasa_corporal' => 18.5,
+        ]);
+    }
+
+    public function test_progreso_validates_grasa_corporal_range(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_COMUN]);
+
+        $response = $this->actingAs($user)->postJson('/api/progreso', [
+            'peso' => 75,
+            'altura' => 1.75,
+            'edad' => 30,
+            'sexo' => 'masculino',
+            'grasa_corporal' => 70, // Max is 65
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['grasa_corporal']);
+    }
+
     public function test_unauthenticated_cannot_access_progreso(): void
     {
         $response = $this->getJson('/api/progreso');

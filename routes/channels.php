@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\TrainerComment;
 use Illuminate\Support\Facades\Broadcast;
 
 /*

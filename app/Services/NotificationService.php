@@ -23,12 +23,10 @@ class NotificationService
     /**
      * Crea una notificación para un user.
      *
-     * @param User $user
-     * @param string $type  Identificador del tipo (ej: 'trainer_comment', 'membership_expiring', 'milestone')
-     * @param string $title Título que se muestra en el centro
-     * @param string $body  Cuerpo / mensaje corto
-     * @param array $data   Metadata extra (URL, IDs, etc.) — disponible en $notif->data
-     * @return Notification
+     * @param  string  $type  Identificador del tipo (ej: 'trainer_comment', 'membership_expiring', 'milestone')
+     * @param  string  $title  Título que se muestra en el centro
+     * @param  string  $body  Cuerpo / mensaje corto
+     * @param  array  $data  Metadata extra (URL, IDs, etc.) — disponible en $notif->data
      */
     public function notify(User $user, string $type, string $title, string $body, array $data = []): Notification
     {
@@ -54,6 +52,7 @@ class NotificationService
             $this->notify($user, $type, $title, $body, $data);
             $count++;
         }
+
         return $count;
     }
 }

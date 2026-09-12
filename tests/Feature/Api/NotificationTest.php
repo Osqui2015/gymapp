@@ -16,7 +16,12 @@ class NotificationTest extends TestCase
     {
         parent::setUp();
         $this->trainer = User::factory()->create(['role' => User::ROLE_TRAINER]);
-        $this->alumno = User::factory()->create(['role' => User::ROLE_ALUMNO]);
+        // Nivel 5: el alumno debe estar asignado al trainer para que pueda
+        // comentarle (regla nueva en TrainerCommentController).
+        $this->alumno = User::factory()->create([
+            'role' => User::ROLE_ALUMNO,
+            'trainer_id' => $this->trainer->id,
+        ]);
     }
 
     public function test_user_can_list_their_notifications(): void

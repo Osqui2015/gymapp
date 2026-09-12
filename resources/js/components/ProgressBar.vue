@@ -1,20 +1,24 @@
 <template>
-  <div
-    class="w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
-    :class="sizeClass"
-  >
     <div
-      class="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-      :class="[colorClass, animate ? 'animate-progress-fill' : '', striped ? 'bg-stripes' : '']"
-      :style="{ width: `${clamped}%` }"
-      role="progressbar"
-      :aria-valuenow="Math.round(clamped)"
-      aria-valuemin="0"
-      aria-valuemax="100"
+        class="w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
+        :class="sizeClass"
     >
-      <slot />
+        <div
+            class="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+            :class="[
+                colorClass,
+                animate ? 'animate-progress-fill' : '',
+                striped ? 'bg-stripes' : '',
+            ]"
+            :style="{ width: `${clamped}%` }"
+            role="progressbar"
+            :aria-valuenow="Math.round(clamped)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+        >
+            <slot />
+        </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -43,33 +47,52 @@ const colorClass = computed(() => {
 });
 
 const sizeClass = computed(() => {
-    return {
-        sm: 'h-1.5',
-        md: 'h-2.5',
-        lg: 'h-3.5',
-    }[props.size] || 'h-2.5';
+    return (
+        {
+            sm: 'h-1.5',
+            md: 'h-2.5',
+            lg: 'h-3.5',
+        }[props.size] || 'h-2.5'
+    );
 });
 </script>
 
 <style scoped>
 @keyframes progress-stripes {
-    from { background-position: 1rem 0; }
-    to   { background-position: 0 0; }
+    from {
+        background-position: 1rem 0;
+    }
+    to {
+        background-position: 0 0;
+    }
 }
 
 @keyframes progress-shine {
-    0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-    50%  { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
 }
 
 @keyframes progress-pulse {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.85; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.85;
+    }
 }
 
 .animate-progress-fill {
-    animation: progress-shine 1.5s ease-out, progress-pulse 2.5s ease-in-out 1.5s;
+    animation:
+        progress-shine 1.5s ease-out,
+        progress-pulse 2.5s ease-in-out 1.5s;
 }
 
 .bg-stripes {

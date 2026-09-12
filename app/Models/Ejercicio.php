@@ -18,6 +18,7 @@ class Ejercicio extends Model
         'visibilidad',
         'grupo_muscular',
         'descripcion',
+        'dificultad',
     ];
 
     protected $casts = [

@@ -8,7 +8,9 @@
     - data: { from, to, days: [{ fecha, sets, volumen }] }
 -->
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm"
+    >
         <div class="flex items-center justify-between mb-3">
             <div>
                 <h3 class="text-sm font-bold text-gray-900 dark:text-white">Actividad</h3>
@@ -18,13 +20,20 @@
             </div>
             <div class="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
                 <span>Menos</span>
-                <div v-for="i in 5" :key="i" :class="['w-2.5 h-2.5 rounded-sm', colorFor(i - 1)]"></div>
+                <div
+                    v-for="i in 5"
+                    :key="i"
+                    :class="['w-2.5 h-2.5 rounded-sm', colorFor(i - 1)]"
+                ></div>
                 <span>Más</span>
             </div>
         </div>
 
         <div class="overflow-x-auto pb-2">
-            <div class="inline-grid grid-flow-col gap-1" :style="{ gridTemplateRows: 'repeat(7, 1fr)' }">
+            <div
+                class="inline-grid grid-flow-col gap-1"
+                :style="{ gridTemplateRows: 'repeat(7, 1fr)' }"
+            >
                 <template v-for="(week, wi) in weeks" :key="wi">
                     <div
                         v-for="day in week"
@@ -32,17 +41,25 @@
                         :class="[
                             'w-3 h-3 rounded-sm transition-all cursor-default',
                             day.fecha ? colorFor(day.level) : 'bg-transparent',
-                            hover && 'hover:ring-1 hover:ring-indigo-500'
+                            hover && 'hover:ring-1 hover:ring-indigo-500',
                         ]"
-                        :title="day.fecha ? `${day.fecha}: ${day.sets} sets, ${day.volumen?.toFixed(0) ?? 0} kg` : ''"
+                        :title="
+                            day.fecha
+                                ? `${day.fecha}: ${day.sets} sets, ${day.volumen?.toFixed(0) ?? 0} kg`
+                                : ''
+                        "
                     ></div>
                 </template>
             </div>
         </div>
 
-        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div
+            class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+        >
             <span>{{ formatDate(data?.from) }} → {{ formatDate(data?.to) }}</span>
-            <span v-if="data?.total_sets">{{ data.total_sets.toLocaleString() }} sets en el año</span>
+            <span v-if="data?.total_sets"
+                >{{ data.total_sets.toLocaleString() }} sets en el año</span
+            >
         </div>
     </div>
 </template>
@@ -69,10 +86,10 @@ const weeks = computed(() => {
     const from = new Date(props.data.from + 'T00:00:00');
     const to = new Date(props.data.to + 'T00:00:00');
     const firstSunday = new Date(from);
-    firstSunday.setDate(firstSunday.getDate() - firstSunday.getDay());  // 0=Dom, 1=Lun, ...
+    firstSunday.setDate(firstSunday.getDate() - firstSunday.getDay()); // 0=Dom, 1=Lun, ...
 
     // Encontrar max de sets para escalar color
-    const maxSets = Math.max(1, ...Object.values(byDate).map(d => d.sets));
+    const maxSets = Math.max(1, ...Object.values(byDate).map((d) => d.sets));
 
     const result = [];
     const cursor = new Date(firstSunday);

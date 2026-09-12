@@ -32,7 +32,9 @@
         <template v-else-if="data">
             <!-- Cards de retención -->
             <section>
-                <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <h3
+                    class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                >
                     Retención mensual
                 </h3>
                 <div class="grid gap-4 md:grid-cols-4">
@@ -50,39 +52,63 @@
                         label="Retención"
                         :value="`${data.retencion.tasa_retencion}%`"
                         :sub="`${data.retencion.retenidos} de ${data.retencion.activos_mes_pasado}`"
-                        :color="data.retencion.tasa_retencion >= 70 ? 'emerald' : data.retencion.tasa_retencion >= 40 ? 'amber' : 'red'"
+                        :color="
+                            data.retencion.tasa_retencion >= 70
+                                ? 'emerald'
+                                : data.retencion.tasa_retencion >= 40
+                                  ? 'amber'
+                                  : 'red'
+                        "
                     />
                     <StatCard
                         label="Churn"
                         :value="`${data.retencion.tasa_churn}%`"
                         :sub="`${data.retencion.churned} usuarios`"
-                        :color="data.retencion.tasa_churn <= 30 ? 'emerald' : data.retencion.tasa_churn <= 60 ? 'amber' : 'red'"
+                        :color="
+                            data.retencion.tasa_churn <= 30
+                                ? 'emerald'
+                                : data.retencion.tasa_churn <= 60
+                                  ? 'amber'
+                                  : 'red'
+                        "
                     />
                 </div>
             </section>
 
             <!-- Frecuencia -->
             <section>
-                <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <h3
+                    class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                >
                     Frecuencia de entrenamiento (últimos 30 días)
                 </h3>
-                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
+                >
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <p class="text-3xl font-bold text-gray-900 dark:text-white">
                                 {{ data.frecuencia.promedio_dias_por_mes }}
                             </p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">días/mes promedio</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                días/mes promedio
+                            </p>
                         </div>
                     </div>
                     <!-- Barras horizontales de distribución -->
                     <div class="space-y-3">
                         <div v-for="(count, label) in data.frecuencia.distribucion" :key="label">
                             <div class="flex items-center justify-between text-sm mb-1">
-                                <span class="text-gray-700 dark:text-gray-300">{{ labelForDist(label) }}</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ count }}</span>
+                                <span class="text-gray-700 dark:text-gray-300">{{
+                                    labelForDist(label)
+                                }}</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{
+                                    count
+                                }}</span>
                             </div>
-                            <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden"
+                            >
                                 <div
                                     class="h-full transition-all duration-500"
                                     :class="distColor(label)"
@@ -96,34 +122,68 @@
 
             <!-- Top alumnos -->
             <section>
-                <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <h3
+                    class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+                >
                     Top 10 alumnos más activos
                 </h3>
-                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+                >
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">#</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Alumno</th>
-                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Días</th>
-                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Series</th>
+                            <tr
+                                class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700"
+                            >
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
+                                >
+                                    #
+                                </th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
+                                >
+                                    Alumno
+                                </th>
+                                <th
+                                    class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
+                                >
+                                    Días
+                                </th>
+                                <th
+                                    class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
+                                >
+                                    Series
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            <tr v-for="(u, idx) in data.top_alumnos" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono">{{ idx + 1 }}</td>
+                            <tr
+                                v-for="(u, idx) in data.top_alumnos"
+                                :key="u.id"
+                                class="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                            >
+                                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono">
+                                    {{ idx + 1 }}
+                                </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs">
+                                        <div
+                                            class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs"
+                                        >
                                             {{ (u.name || '?').charAt(0).toUpperCase() }}
                                         </div>
                                         <div>
-                                            <p class="font-semibold text-gray-900 dark:text-white">{{ u.name }}</p>
+                                            <p class="font-semibold text-gray-900 dark:text-white">
+                                                {{ u.name }}
+                                            </p>
                                             <p class="text-xs text-gray-500">@{{ u.nick }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400">
+                                <td
+                                    class="px-4 py-3 text-right font-bold text-indigo-600 dark:text-indigo-400"
+                                >
                                     {{ u.dias_entrenados }}
                                 </td>
                                 <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
@@ -142,15 +202,17 @@
 
             <!-- Churn alert -->
             <section v-if="data.churn.en_riesgo > 0">
-                <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 flex items-start gap-4">
+                <div
+                    class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 flex items-start gap-4"
+                >
                     <div class="text-3xl">⚠️</div>
                     <div class="flex-1">
                         <h3 class="font-bold text-amber-900 dark:text-amber-200">
                             {{ data.churn.en_riesgo }} usuarios en riesgo de abandono
                         </h3>
                         <p class="text-sm text-amber-800 dark:text-amber-300 mt-1">
-                            Tienen membresía activa pero no entrenan hace 14+ días.
-                            Considerá enviarles un recordatorio o contactarlos.
+                            Tienen membresía activa pero no entrenan hace 14+ días. Considerá
+                            enviarles un recordatorio o contactarlos.
                         </p>
                     </div>
                 </div>
@@ -194,21 +256,23 @@ const formatRelative = (iso) => {
     return d.toLocaleString();
 };
 
-const labelForDist = (key) => ({
-    diario: '🔥 Diario (20-30 días)',
-    frecuente: '💪 Frecuente (12-19 días)',
-    regular: '✓ Regular (6-11 días)',
-    ocasional: '⏸ Ocasional (1-5 días)',
-    inactivo: '💤 Inactivo (0 días)',
-}[key] || key);
+const labelForDist = (key) =>
+    ({
+        diario: '🔥 Diario (20-30 días)',
+        frecuente: '💪 Frecuente (12-19 días)',
+        regular: '✓ Regular (6-11 días)',
+        ocasional: '⏸ Ocasional (1-5 días)',
+        inactivo: '💤 Inactivo (0 días)',
+    })[key] || key;
 
-const distColor = (key) => ({
-    diario: 'bg-emerald-500',
-    frecuente: 'bg-emerald-400',
-    regular: 'bg-amber-400',
-    ocasional: 'bg-orange-400',
-    inactivo: 'bg-gray-300 dark:bg-gray-600',
-}[key] || 'bg-gray-300');
+const distColor = (key) =>
+    ({
+        diario: 'bg-emerald-500',
+        frecuente: 'bg-emerald-400',
+        regular: 'bg-amber-400',
+        ocasional: 'bg-orange-400',
+        inactivo: 'bg-gray-300 dark:bg-gray-600',
+    })[key] || 'bg-gray-300';
 
 const barWidth = (count) => {
     if (!data.value) return 0;

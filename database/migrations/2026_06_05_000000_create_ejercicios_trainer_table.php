@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('equipamiento')->default('Ninguno');
             $table->string('descripcion')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['trainer_id', 'nombre']);
         });
     }

@@ -1,304 +1,480 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <Breadcrumbs :items="[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Historial de entrenamiento' },
-      ]" />
-      <HistorialHeader
-        :isTrainerOrAdmin="isTrainerOrAdmin"
-        :alumnos="alumnos"
-        :selectedAlumnoId="selectedAlumnoId"
-        :activeTab="activeTab"
-        :showKeyExercisesTab="isTrainerOrAdmin || hasTrainer"
-        :can-export="historial.length > 0"
-        :stats="headerStats"
-        @alumno-change="onAlumnoChange"
-        @tab-change="activeTab = $event"
-        @export-csv="exportarCSV"
-        @export-pdf="exportarPDF"
-      />
-
-      <!-- Pull-to-refresh indicator (mobile) -->
-      <HistorialPullRefresh
-        :offset="pullOffset"
-        :refreshing="isRefreshing"
-        class="md:hidden"
-      />
-
-      <!-- Loading / empty states -->
-      <div v-if="loading" class="space-y-4">
-        <div class="grid gap-4 md:grid-cols-4">
-          <BaseSkeleton variant="stat-card" :count="4" />
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-          <BaseSkeleton variant="text" :count="6" />
-        </div>
-      </div>
-
-      <div v-else-if="isTrainerOrAdmin && alumnos.length === 0">
-        <EmptyState
-          emoji="👥"
-          title="No tienes alumnos asignados"
-          description="Cuando un coordinador te asigne alumnos, vas a poder ver su historial de entrenamiento acá."
-        />
-      </div>
-
-      <div v-else-if="isTrainerOrAdmin && !selectedAlumnoId">
-        <EmptyState
-          emoji="👆"
-          title="Selecciona un alumno"
-          description="Elegí un alumno del selector de arriba para ver su historial."
-        />
-      </div>
-
-      <div v-else-if="!resumenEjercicios.length">
-        <EmptyState
-          emoji="📊"
-          title="Aún no hay historial"
-          description="Cuando registres tus primeras series de entrenamiento, vas a ver acá la evolución de tu progreso."
-        >
-          <template #cta>
-            <a
-              href="/dashboard"
-              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all shadow-md"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Empezar a registrar
-            </a>
-          </template>
-        </EmptyState>
-      </div>
-
-      <div v-else class="space-y-6 animate-fadeIn">
-        <HistorialMatrix
-          v-show="activeTab === 'matrix'"
-          :pivotData="pivotData"
-          :dateSortAsc="dateSortAsc"
-          @toggle-sort="toggleDateSort"
-        />
-
-        <!-- Stats: racha + heatmap (Fase 1.3) — siempre visibles -->
-        <div v-show="activeTab === 'matrix'" class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-                <span v-if="userRutina">Día actual: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ userRutina.dia_actual }}</span></span>
-            </p>
-            <RescheduleButton
-                v-if="userRutina && !isTrainerOrAdmin"
-                :current-day="userRutina.dia_actual"
-                @rescheduled="onRescheduled"
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Breadcrumbs
+                :items="[
+                    { label: 'Inicio', href: '/dashboard' },
+                    { label: 'Historial de entrenamiento' },
+                ]"
             />
-        </div>
-        <div v-show="activeTab === 'matrix'" class="grid items-start gap-4 md:grid-cols-3 mb-6">
-            <StreakCard :data="statsResumen" class="min-w-0 md:col-span-1" />
-            <div class="min-w-0 md:col-span-2">
-                <ActivityHeatmap :data="statsHeatmap" />
+            <HistorialHeader
+                :isTrainerOrAdmin="isTrainerOrAdmin"
+                :alumnos="alumnos"
+                :selectedAlumnoId="selectedAlumnoId"
+                :activeTab="activeTab"
+                :showKeyExercisesTab="isTrainerOrAdmin || hasTrainer"
+                :can-export="historial.length > 0"
+                :stats="headerStats"
+                @alumno-change="onAlumnoChange"
+                @tab-change="activeTab = $event"
+                @export-csv="exportarCSV"
+                @export-pdf="exportarPDF"
+            />
+
+            <!-- Pull-to-refresh indicator (mobile) -->
+            <HistorialPullRefresh
+                :offset="pullOffset"
+                :refreshing="isRefreshing"
+                class="md:hidden"
+            />
+
+            <!-- Nivel 6: modal de edición de serie (se monta al final para que
+                 pueda superponerse a cualquier contenido sin afectar layout). -->
+            <EditHistorialModal
+                :open="showEditModal"
+                :serie="editingSerie"
+                @close="showEditModal = false"
+                @saved="onSerieSaved"
+                @deleted="onSerieDeleted"
+            />
+
+            <!-- Loading / empty states -->
+            <div v-if="loading" class="space-y-4">
+                <div class="grid gap-4 md:grid-cols-4">
+                    <BaseSkeleton variant="stat-card" :count="4" />
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
+                >
+                    <BaseSkeleton variant="text" :count="6" />
+                </div>
             </div>
-        </div>
 
-        <!-- Fase 7: WeekCalendar con dots -->
-        <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-3">
-            <WeekCalendar :user-id="selectedAlumnoId" class="md:col-span-1" />
-        </div>
+            <div v-else-if="isTrainerOrAdmin && alumnos.length === 0">
+                <EmptyState
+                    emoji="👥"
+                    title="No tienes alumnos asignados"
+                    description="Cuando un coordinador te asigne alumnos, vas a poder ver su historial de entrenamiento acá."
+                />
+            </div>
 
-        <!-- Fase 3: esfuerzo RIR/RPE -->
-        <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-2">
-            <EffortCard :user-id="selectedAlumnoId" />
-        </div>
+            <div v-else-if="isTrainerOrAdmin && !selectedAlumnoId">
+                <EmptyState
+                    emoji="👆"
+                    title="Selecciona un alumno"
+                    description="Elegí un alumno del selector de arriba para ver su historial."
+                />
+            </div>
 
-        <HistorialCalendar
-          v-show="activeTab === 'calendar'"
-          :historial="historial"
-        />
-
-        <HistorialEvolution
-          v-show="activeTab === 'evolution'"
-          :tablaProgreso="tablaProgreso"
-          :resumenEjercicios="resumenEjercicios"
-          :globalMaxWeight="globalMaxWeight"
-        />
-
-        <RmCalculator
-          v-show="activeTab === 'rm_calculator'"
-          :calculator="calculator"
-          :rmFormula="rmFormula"
-          :historical1RMs="historical1RMs"
-          @update:calculator="calculator = $event"
-          @update:rmFormula="rmFormula = $event"
-        />
-
-        <HistorialComparison
-          v-show="activeTab === 'comparison'"
-          :historial="historial"
-        />
-
-        <!-- Comparador numérico: diffs entre dos fechas para un ejercicio -->
-        <div v-show="activeTab === 'comparison'" class="mt-6">
-          <ComparadorEjercicios :ejercicios="historial" />
-        </div>
-
-        <!-- Mapa corporal: muestra balance/fatigue/strength de los músculos -->
-        <div v-show="activeTab === 'body_map'" class="space-y-4">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mapa Corporal</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Visualizá qué músculos entrenás, cuáles están fatigados y cuál es tu mejor 1RM
-                        </p>
-                    </div>
-                    <div class="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold">
-                        <button
-                            v-for="m in ['balance', 'fatigue', 'strength']"
-                            :key="m"
-                            @click="bodyMapMode = m"
-                            :class="[
-                                'px-4 py-2 transition-colors',
-                                bodyMapMode === m
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            ]"
+            <div v-else-if="!resumenEjercicios.length">
+                <EmptyState
+                    emoji="📊"
+                    title="Aún no hay historial"
+                    description="Cuando registres tus primeras series de entrenamiento, vas a ver acá la evolución de tu progreso."
+                >
+                    <template #cta>
+                        <a
+                            href="/dashboard"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all shadow-md"
                         >
-                            {{ m === 'balance' ? 'Volumen' : m === 'fatigue' ? 'Fatiga' : 'Fuerza' }}
-                        </button>
-                    </div>
-                </div>
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                />
+                            </svg>
+                            Empezar a registrar
+                        </a>
+                    </template>
+                </EmptyState>
+            </div>
 
-                <div v-if="bodyMapLoading" class="flex items-center justify-center py-16 text-gray-400">
-                    <svg class="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                    </svg>
-                </div>
-
-                <div v-else-if="!bodyMapData || bodyMapData.historiales.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <p class="text-sm">No hay entrenamientos en los últimos 90 días.</p>
-                    <p class="text-xs mt-1">Empezá a registrar sesiones y vas a ver tu mapa acá.</p>
-                </div>
-
-                <BodyMap
-                    v-else
-                    :levels="bodyMapLevels"
-                    :mode="bodyMapMode"
-                    :muscle-labels="muscleLabels"
-                    :initial-gender="bodyMapGender"
-                    @muscle-click="onMuscleClick"
+            <div v-else class="space-y-6 animate-fadeIn">
+                <!-- Filtros avanzados de Historial -->
+                <HistorialFilters
+                    v-model="filtros"
+                    :rutinas-disponibles="rutinasDisponibles"
+                    :dias-disponibles="diasDisponibles"
+                    :total-filtrados="filteredHistorial.length"
+                    :total-original="historial.length"
+                    @limpiar="limpiarFiltros"
                 />
 
-                <div v-if="bodyMapData && bodyMapData.historiales.length > 0" class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                    Ventana: últimos 90 días · {{ bodyMapData.historiales.length }} sets · {{ muscleCount }} músculos mapeados
-                </div>
-            </div>
-        </div>
-
-        <!-- Drilldown: modal con los ejercicios que trabajan el músculo clickeado -->
-        <Teleport to="body">
-            <Transition name="modal">
                 <div
-                    v-if="selectedMuscleSlug"
-                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-                    @click.self="closeMuscleDrilldown"
+                    v-if="filteredHistorial.length === 0"
+                    class="p-8 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm"
                 >
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-                        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-start justify-between gap-4 z-10">
+                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        No se encontraron series que coincidan con los filtros aplicados.
+                    </p>
+                    <button
+                        type="button"
+                        @click="limpiarFiltros"
+                        class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                    >
+                        Restablecer filtros
+                    </button>
+                </div>
+
+                <HistorialMatrix
+                    v-else-if="activeTab === 'matrix'"
+                    :pivotData="pivotData"
+                    :dateSortAsc="dateSortAsc"
+                    :prDates="prDates"
+                    @toggle-sort="toggleDateSort"
+                    @cell-click="onMatrixCellClick"
+                />
+
+                <!-- Stats: racha + heatmap (Fase 1.3) — siempre visibles -->
+                <div
+                    v-show="activeTab === 'matrix'"
+                    class="mb-4 flex flex-wrap items-center justify-between gap-3"
+                >
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <span v-if="userRutina"
+                            >Día actual:
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">{{
+                                userRutina.dia_actual
+                            }}</span></span
+                        >
+                    </p>
+                    <RescheduleButton
+                        v-if="userRutina && !isTrainerOrAdmin"
+                        :current-day="userRutina.dia_actual"
+                        @rescheduled="onRescheduled"
+                    />
+                </div>
+                <div
+                    v-show="activeTab === 'matrix'"
+                    class="grid items-start gap-4 md:grid-cols-3 mb-6"
+                >
+                    <StreakCard :data="statsResumen" class="min-w-0 md:col-span-1" />
+                    <div class="min-w-0 md:col-span-2">
+                        <ActivityHeatmap :data="statsHeatmap" />
+                    </div>
+                </div>
+
+                <!-- Fase 7: WeekCalendar con dots -->
+                <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-3">
+                    <WeekCalendar :user-id="selectedAlumnoId" class="md:col-span-1" />
+                </div>
+
+                <!-- Fase 3: esfuerzo RIR/RPE -->
+                <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-2">
+                    <EffortCard :user-id="selectedAlumnoId" />
+                </div>
+
+                <HistorialCalendar v-show="activeTab === 'calendar'" :historial="historial" />
+
+                <HistorialEvolution
+                    v-show="activeTab === 'evolution'"
+                    :tablaProgreso="tablaProgreso"
+                    :resumenEjercicios="resumenEjercicios"
+                    :globalMaxWeight="globalMaxWeight"
+                />
+
+                <RmCalculator
+                    v-show="activeTab === 'rm_calculator'"
+                    :calculator="calculator"
+                    :rmFormula="rmFormula"
+                    :historical1RMs="historical1RMs"
+                    @update:calculator="calculator = $event"
+                    @update:rmFormula="rmFormula = $event"
+                />
+
+                <HistorialComparison v-show="activeTab === 'comparison'" :historial="historial" />
+
+                <!-- Comparador numérico: diffs entre dos fechas para un ejercicio -->
+                <div v-show="activeTab === 'comparison'" class="mt-6">
+                    <ComparadorEjercicios :ejercicios="historial" />
+                </div>
+
+                <!-- Mapa corporal: muestra balance/fatigue/strength de los músculos -->
+                <div v-show="activeTab === 'body_map'" class="space-y-4">
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
+                    >
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
                             <div>
-                                <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">Ejercicios que trabajan</p>
-                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
-                                    {{ muscleDrilldown.data?.musculo?.nombre_es || muscleLabels[selectedMuscleSlug] || selectedMuscleSlug }}
-                                </h2>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                    Mapa Corporal
+                                </h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Visualizá qué músculos entrenás, cuáles están fatigados y cuál
+                                    es tu mejor 1RM
+                                </p>
                             </div>
-                            <button
-                                @click="closeMuscleDrilldown"
-                                class="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                aria-label="Cerrar"
+                            <div
+                                class="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold"
                             >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                                <button
+                                    v-for="m in ['balance', 'fatigue', 'strength']"
+                                    :key="m"
+                                    @click="bodyMapMode = m"
+                                    :class="[
+                                        'px-4 py-2 transition-colors',
+                                        bodyMapMode === m
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
+                                    ]"
+                                >
+                                    {{
+                                        m === 'balance'
+                                            ? 'Volumen'
+                                            : m === 'fatigue'
+                                              ? 'Fatiga'
+                                              : 'Fuerza'
+                                    }}
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="p-6 space-y-4">
-                            <div v-if="muscleDrilldown.loading" class="flex items-center justify-center py-12">
-                                <svg class="animate-spin w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                </svg>
-                            </div>
+                        <div
+                            v-if="bodyMapLoading"
+                            class="flex items-center justify-center py-16 text-gray-400"
+                        >
+                            <svg class="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                ></path>
+                            </svg>
+                        </div>
 
-                            <div v-else-if="muscleDrilldown.error" class="text-center py-8 text-red-600">
-                                {{ muscleDrilldown.error }}
-                            </div>
+                        <div
+                            v-else-if="!bodyMapData || bodyMapData.historiales.length === 0"
+                            class="text-center py-12 text-gray-500 dark:text-gray-400"
+                        >
+                            <p class="text-sm">No hay entrenamientos en los últimos 90 días.</p>
+                            <p class="text-xs mt-1">
+                                Empezá a registrar sesiones y vas a ver tu mapa acá.
+                            </p>
+                        </div>
 
-                            <div v-else-if="muscleDrilldown.data?.ejercicios?.length === 0" class="text-center py-8 text-gray-500">
-                                No hay ejercicios asignados a este músculo.
-                            </div>
+                        <BodyMap
+                            v-else
+                            :levels="bodyMapLevels"
+                            :mode="bodyMapMode"
+                            :muscle-labels="muscleLabels"
+                            :initial-gender="bodyMapGender"
+                            @muscle-click="onMuscleClick"
+                        />
 
-                            <div v-else>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                                    {{ muscleDrilldown.data.ejercicios.length }} ejercicios · ordenados por volumen reciente (30d)
-                                </p>
-                                <ul class="space-y-2">
-                                    <li
-                                        v-for="ej in muscleDrilldown.data.ejercicios"
-                                        :key="ej.id"
-                                        class="rounded-xl bg-gray-50 dark:bg-gray-900/50 transition-colors"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-100 dark:hover:bg-gray-900 rounded-xl"
-                                            @click="toggleEjercicioChart(ej)"
-                                        >
-                                            <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-gray-900 dark:text-white text-sm truncate">{{ ej.nombre }}</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ ej.equipamiento }}</p>
-                                            </div>
-                                            <div class="text-right flex-shrink-0">
-                                                <p class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ ej.sets_30d }} <span class="text-xs font-normal text-gray-500">sets</span></p>
-                                                <p v-if="ej.max_peso_30d" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">max {{ ej.max_peso_30d.toFixed(1) }} kg</p>
-                                            </div>
-                                            <svg
-                                                class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
-                                                :class="{ 'rotate-180': selectedEjercicioId === ej.id }"
-                                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                            >
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        <div v-if="selectedEjercicioId === ej.id" class="border-t border-gray-200 p-3 dark:border-gray-700">
-                                            <OneRmChart
-                                                :ejercicio-nombre="ej.nombre"
-                                                :user-id="selectedAlumnoId"
-                                                :formula="rmFormula"
-                                            />
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
+                        <div
+                            v-if="bodyMapData && bodyMapData.historiales.length > 0"
+                            class="mt-4 text-center text-xs text-gray-500 dark:text-gray-400"
+                        >
+                            Ventana: últimos 90 días · {{ bodyMapData.historiales.length }} sets ·
+                            {{ muscleCount }} músculos mapeados
                         </div>
                     </div>
                 </div>
-            </Transition>
-        </Teleport>
 
-        <KeyExercises
-          v-show="activeTab === 'key_exercises'"
-          :isTrainerOrAdmin="isTrainerOrAdmin"
-          :ejerciciosClave="ejerciciosClave"
-          :todosEjercicios="todosEjercicios"
-          :keyExercisesLoading="keyExercisesLoading"
-          :savingKeyExercise="savingKeyExercise"
-          :rmFormula="rmFormula"
-          :getExercise1RMTimeline="getExercise1RMTimeline"
-          @save-key="saveKeyExercise"
-          @delete-key="deleteKeyExercise"
-          @save-notes="saveEditingNotes"
-        />
-      </div>
+                <!-- Drilldown: modal con los ejercicios que trabajan el músculo clickeado -->
+                <Teleport to="body">
+                    <Transition name="modal">
+                        <div
+                            v-if="selectedMuscleSlug"
+                            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                            @click.self="closeMuscleDrilldown"
+                        >
+                            <div
+                                class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto"
+                            >
+                                <div
+                                    class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-start justify-between gap-4 z-10"
+                                >
+                                    <div>
+                                        <p
+                                            class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold"
+                                        >
+                                            Ejercicios que trabajan
+                                        </p>
+                                        <h2
+                                            class="text-2xl font-bold text-gray-900 dark:text-white mt-0.5"
+                                        >
+                                            {{
+                                                muscleDrilldown.data?.musculo?.nombre_es ||
+                                                muscleLabels[selectedMuscleSlug] ||
+                                                selectedMuscleSlug
+                                            }}
+                                        </h2>
+                                    </div>
+                                    <button
+                                        @click="closeMuscleDrilldown"
+                                        class="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        aria-label="Cerrar"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="p-6 space-y-4">
+                                    <div
+                                        v-if="muscleDrilldown.loading"
+                                        class="flex items-center justify-center py-12"
+                                    >
+                                        <svg
+                                            class="animate-spin w-8 h-8 text-indigo-600"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                class="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="4"
+                                            ></circle>
+                                            <path
+                                                class="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                            ></path>
+                                        </svg>
+                                    </div>
+
+                                    <div
+                                        v-else-if="muscleDrilldown.error"
+                                        class="text-center py-8 text-red-600"
+                                    >
+                                        {{ muscleDrilldown.error }}
+                                    </div>
+
+                                    <div
+                                        v-else-if="muscleDrilldown.data?.ejercicios?.length === 0"
+                                        class="text-center py-8 text-gray-500"
+                                    >
+                                        No hay ejercicios asignados a este músculo.
+                                    </div>
+
+                                    <div v-else>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                            {{ muscleDrilldown.data.ejercicios.length }} ejercicios
+                                            · ordenados por volumen reciente (30d)
+                                        </p>
+                                        <ul class="space-y-2">
+                                            <li
+                                                v-for="ej in muscleDrilldown.data.ejercicios"
+                                                :key="ej.id"
+                                                class="rounded-xl bg-gray-50 dark:bg-gray-900/50 transition-colors"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-100 dark:hover:bg-gray-900 rounded-xl"
+                                                    @click="toggleEjercicioChart(ej)"
+                                                >
+                                                    <div class="flex-1 min-w-0">
+                                                        <p
+                                                            class="font-semibold text-gray-900 dark:text-white text-sm truncate"
+                                                        >
+                                                            {{ ej.nombre }}
+                                                        </p>
+                                                        <p
+                                                            class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        >
+                                                            {{ ej.equipamiento }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="text-right flex-shrink-0">
+                                                        <p
+                                                            class="text-sm font-bold text-indigo-600 dark:text-indigo-400"
+                                                        >
+                                                            {{ ej.sets_30d }}
+                                                            <span
+                                                                class="text-xs font-normal text-gray-500"
+                                                                >sets</span
+                                                            >
+                                                        </p>
+                                                        <p
+                                                            v-if="ej.max_peso_30d"
+                                                            class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        >
+                                                            max {{ ej.max_peso_30d.toFixed(1) }} kg
+                                                        </p>
+                                                    </div>
+                                                    <svg
+                                                        class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
+                                                        :class="{
+                                                            'rotate-180':
+                                                                selectedEjercicioId === ej.id,
+                                                        }"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 9l-7 7-7-7"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                                <div
+                                                    v-if="selectedEjercicioId === ej.id"
+                                                    class="border-t border-gray-200 p-3 dark:border-gray-700"
+                                                >
+                                                    <OneRmChart
+                                                        :ejercicio-nombre="ej.nombre"
+                                                        :user-id="selectedAlumnoId"
+                                                        :formula="rmFormula"
+                                                    />
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
+                </Teleport>
+
+                <KeyExercises
+                    v-show="activeTab === 'key_exercises'"
+                    :isTrainerOrAdmin="isTrainerOrAdmin"
+                    :ejerciciosClave="ejerciciosClave"
+                    :todosEjercicios="todosEjercicios"
+                    :keyExercisesLoading="keyExercisesLoading"
+                    :savingKeyExercise="savingKeyExercise"
+                    :rmFormula="rmFormula"
+                    :getExercise1RMTimeline="getExercise1RMTimeline"
+                    @save-key="saveKeyExercise"
+                    @delete-key="deleteKeyExercise"
+                    @save-notes="saveEditingNotes"
+                />
+            </div>
+        </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -306,7 +482,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import axios from 'axios';
 
 import HistorialHeader from './historial/HistorialHeader.vue';
+import HistorialFilters from './historial/HistorialFilters.vue';
 import HistorialMatrix from './historial/HistorialMatrix.vue';
+import EditHistorialModal from './historial/EditHistorialModal.vue';
 import HistorialEvolution from './historial/HistorialEvolution.vue';
 import RmCalculator from './historial/RmCalculator.vue';
 import KeyExercises from './historial/KeyExercises.vue';
@@ -371,6 +549,89 @@ const chartInstances = {};
 const calculator = ref({ weight: 80, reps: 5, formula: 'epley' });
 const rmFormula = ref('epley');
 
+// === Filtros avanzados de historial ===
+const filtros = ref({
+    search: '',
+    rutina: '',
+    dia: '',
+    periodo: 'all',
+    soloCompletados: false,
+    orden: 'fecha_desc',
+});
+
+const limpiarFiltros = () => {
+    filtros.value = {
+        search: '',
+        rutina: '',
+        dia: '',
+        periodo: 'all',
+        soloCompletados: false,
+        orden: 'fecha_desc',
+    };
+};
+
+const rutinasDisponibles = computed(() => {
+    const set = new Set();
+    historial.value.forEach((h) => {
+        if (h.rutina) set.add(h.rutina);
+    });
+    return Array.from(set).sort();
+});
+
+const diasDisponibles = computed(() => {
+    const set = new Set();
+    historial.value.forEach((h) => {
+        if (h.dia) set.add(h.dia);
+    });
+    return Array.from(set).sort();
+});
+
+const filteredHistorial = computed(() => {
+    let list = [...historial.value];
+
+    if (filtros.value.search && filtros.value.search.trim()) {
+        const q = filtros.value.search.toLowerCase().trim();
+        list = list.filter((h) => (h.ejercicio_nombre || '').toLowerCase().includes(q));
+    }
+
+    if (filtros.value.rutina) {
+        list = list.filter((h) => h.rutina === filtros.value.rutina);
+    }
+
+    if (filtros.value.dia) {
+        list = list.filter((h) => h.dia === filtros.value.dia);
+    }
+
+    if (filtros.value.soloCompletados) {
+        list = list.filter((h) => !!h.completado);
+    }
+
+    if (filtros.value.periodo !== 'all') {
+        const days = parseInt(filtros.value.periodo, 10);
+        if (!isNaN(days) && days > 0) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+            const cutoffStr = cutoff.toISOString().slice(0, 10);
+            list = list.filter((h) => h.fecha >= cutoffStr);
+        }
+    }
+
+    list.sort((a, b) => {
+        if (filtros.value.orden === 'fecha_asc') {
+            return (a.fecha || '').localeCompare(b.fecha || '');
+        }
+        if (filtros.value.orden === 'peso_desc') {
+            return (Number(b.peso) || 0) - (Number(a.peso) || 0);
+        }
+        if (filtros.value.orden === 'reps_desc') {
+            return (Number(b.reps_realizadas) || 0) - (Number(a.reps_realizadas) || 0);
+        }
+        return (b.fecha || '').localeCompare(a.fecha || '');
+    });
+
+    return list;
+});
+
 // === Stats: racha + heatmap (Fase 1.3) ===
 const statsResumen = ref({});
 const statsHeatmap = ref({ days: [] });
@@ -408,7 +669,7 @@ const loadStats = async () => {
 };
 
 // === Body map (mapa corporal) ===
-const bodyMapMode = ref('balance');  // 'balance' | 'fatigue' | 'strength'
+const bodyMapMode = ref('balance'); // 'balance' | 'fatigue' | 'strength'
 const bodyMapGender = ref('male');
 const bodyMapLoading = ref(false);
 const bodyMapData = ref({ historiales: [], musculos: [] });
@@ -605,20 +866,20 @@ const deleteKeyExercise = async (id) => {
     if (!confirmed) return;
 
     // Snapshot para undo (buscamos en ambas posibles fuentes)
-    const idx = keyExercises.value.findIndex(e => e.id === id);
-    const snapshot = idx >= 0 ? { ...keyExercises.value[idx] } : null;
+    const idx = ejerciciosClave.value.findIndex((e) => e.id === id);
+    const snapshot = idx >= 0 ? { ...ejerciciosClave.value[idx] } : null;
 
     await useUndoable({
         message: 'Ejercicio clave eliminado',
         apply: () => {
-            keyExercises.value = keyExercises.value.filter(e => e.id !== id);
+            ejerciciosClave.value = ejerciciosClave.value.filter((e) => e.id !== id);
         },
         undo: () => {
             if (!snapshot) return;
-            if (idx >= 0 && idx <= keyExercises.value.length) {
-                keyExercises.value.splice(idx, 0, snapshot);
+            if (idx >= 0 && idx <= ejerciciosClave.value.length) {
+                ejerciciosClave.value.splice(idx, 0, snapshot);
             } else {
-                keyExercises.value.push(snapshot);
+                ejerciciosClave.value.push(snapshot);
             }
         },
         commit: () => axios.delete(`/api/ejercicios-clave/${id}`),
@@ -643,12 +904,79 @@ const saveEditingNotes = async ({ ej, value }) => {
     }
 };
 
-// === Computed aggregations ===
+// === EditHistorialModal: estado y handlers (Nivel 6) ===
+const showEditModal = ref(false);
+const editingSerie = ref(null);
+
+const onMatrixCellClick = ({ ejercicio, fecha }) => {
+    // Buscar la primera serie que matchea (ejercicio, fecha).
+    // Si hay varias (distintos pesos/reps), tomar la de mayor peso.
+    const matches = filteredHistorial.value.filter(
+        (h) => h.ejercicio_nombre === ejercicio && h.fecha === fecha
+    );
+    if (!matches.length) return;
+    const target =
+        matches.length === 1
+            ? matches[0]
+            : matches.reduce((a, b) => (Number(b.peso) > Number(a.peso) ? b : a));
+    editingSerie.value = target;
+    showEditModal.value = true;
+};
+
+const onSerieSaved = (updated) => {
+    if (!updated) return;
+    // Reemplazar la serie en el array (insert o update)
+    const idx = historial.value.findIndex((h) => h.id === updated.id);
+    if (idx >= 0) {
+        historial.value[idx] = updated;
+    } else {
+        // Caso undo: insertar
+        historial.value.push(updated);
+    }
+};
+
+const onSerieDeleted = (id) => {
+    historial.value = historial.value.filter((h) => h.id !== id);
+};
+
+// === PR detection: marca fechas donde el peso fue máximo histórico ===
+// (considera todas las series hasta esa fecha, no solo del filtro).
+const prDates = computed(() => {
+    const set = new Set();
+    if (!historial.value || !historial.value.length) return set;
+
+    // Agrupar por ejercicio, ordenar por fecha, llevar max acumulado.
+    const porEjercicio = new Map();
+    historial.value.forEach((h) => {
+        if (!h.ejercicio_nombre || !h.fecha || h.peso == null) return;
+        if (!porEjercicio.has(h.ejercicio_nombre)) porEjercicio.set(h.ejercicio_nombre, []);
+        porEjercicio.get(h.ejercicio_nombre).push(h);
+    });
+
+    porEjercicio.forEach((series) => {
+        const ordenadas = [...series].sort((a, b) => {
+            if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
+            return (a.id ?? 0) - (b.id ?? 0);
+        });
+        let max = 0;
+        ordenadas.forEach((s) => {
+            const peso = Number(s.peso) || 0;
+            if (peso > 0 && peso > max) {
+                max = peso;
+                set.add(`${s.ejercicio_nombre}|||${s.fecha}`);
+            }
+        });
+    });
+
+    return set;
+});
+
+// === Computed aggregations (aplican sobre filteredHistorial) ===
 const pivotData = computed(() => {
-    if (!historial.value || !historial.value.length) return { dates: [], rows: [] };
+    if (!filteredHistorial.value || !filteredHistorial.value.length) return { dates: [], rows: [] };
 
     const dateMap = new Map();
-    historial.value.forEach((row) => {
+    filteredHistorial.value.forEach((row) => {
         if (!dateMap.has(row.fecha)) dateMap.set(row.fecha, formatDate(row.fecha));
     });
 
@@ -658,10 +986,14 @@ const pivotData = computed(() => {
         return dateSortAsc.value ? dateA - dateB : dateB - dateA;
     });
 
-    const exercises = [...new Set(historial.value.map((row) => row.ejercicio_nombre))].sort();
+    const exercises = [
+        ...new Set(filteredHistorial.value.map((row) => row.ejercicio_nombre)),
+    ].sort();
 
     const rows = exercises.map((exerciseName) => {
-        const exerciseRows = historial.value.filter((row) => row.ejercicio_nombre === exerciseName);
+        const exerciseRows = filteredHistorial.value.filter(
+            (row) => row.ejercicio_nombre === exerciseName
+        );
         const dateWeights = {};
         sortedDates.forEach((date) => {
             const dayRows = exerciseRows.filter((row) => row.fecha === date && row.peso !== null);
@@ -673,7 +1005,8 @@ const pivotData = computed(() => {
                 dateWeights[date] = '-';
             }
         });
-        const superserie_grupo = exerciseRows.find((row) => row.superserie_grupo !== null)?.superserie_grupo || null;
+        const superserie_grupo =
+            exerciseRows.find((row) => row.superserie_grupo !== null)?.superserie_grupo || null;
         return { name: exerciseName, weights: dateWeights, superserie_grupo };
     });
 
@@ -684,16 +1017,28 @@ const pivotData = computed(() => {
 });
 
 const globalMaxWeight = computed(() => {
-    const values = historial.value
+    const values = filteredHistorial.value
         .map((row) => Number(row.peso))
         .filter((peso) => Number.isFinite(peso) && peso > 0);
     return values.length ? Math.max(...values, 10) : 10;
 });
 
-const totalSeries = computed(() => historial.value.length);
+const totalSeries = computed(() => filteredHistorial.value.length);
+
+const tonelajeTotal = computed(() => {
+    const totalKg = filteredHistorial.value.reduce((sum, row) => {
+        const p = Number(row.peso) || 0;
+        const r = Number(row.reps_realizadas) || 0;
+        return sum + p * r;
+    }, 0);
+    if (totalKg >= 1000) {
+        return `${(totalKg / 1000).toFixed(1)} t`;
+    }
+    return `${Math.round(totalKg).toLocaleString('es-AR')} kg`;
+});
 
 const pesoPromedioGlobal = computed(() => {
-    const values = historial.value
+    const values = filteredHistorial.value
         .map((row) => Number(row.peso))
         .filter((peso) => Number.isFinite(peso) && peso > 0);
     if (!values.length) return '0.0';
@@ -701,7 +1046,7 @@ const pesoPromedioGlobal = computed(() => {
 });
 
 const repsPromedioGlobal = computed(() => {
-    const values = historial.value
+    const values = filteredHistorial.value
         .map((row) => Number(row.reps_realizadas))
         .filter((reps) => Number.isFinite(reps) && reps >= 0);
     if (!values.length) return '0.0';
@@ -711,19 +1056,33 @@ const repsPromedioGlobal = computed(() => {
 const headerStats = computed(() => ({
     ejercicios: resumenEjercicios.value.length,
     totalSeries: totalSeries.value,
+    tonelajeTotal: tonelajeTotal.value,
     pesoPromedio: pesoPromedioGlobal.value,
     repsPromedio: repsPromedioGlobal.value,
 }));
 
-// === Exportar historial a CSV ===
-// Convierte el historial completo del alumno (o del usuario logueado) a CSV descargable.
+// === Exportar historial a CSV (respeta filtros actuales) ===
 const exportarCSV = () => {
-    if (!historial.value.length) {
-        toast.warning('No hay historial para exportar.');
+    const dataToExport = filteredHistorial.value;
+    if (!dataToExport.length) {
+        toast.warning('No hay datos en el filtro actual para exportar.');
         return;
     }
 
-    const headers = ['Fecha', 'Rutina', 'Día', 'Ejercicio', 'Serie #', 'Reps min', 'Reps max', 'Reps hechas', 'Peso (kg)', 'Descanso (min)', 'Completado', 'Superserie'];
+    const headers = [
+        'Fecha',
+        'Rutina',
+        'Día',
+        'Ejercicio',
+        'Serie #',
+        'Reps min',
+        'Reps max',
+        'Reps hechas',
+        'Peso (kg)',
+        'Descanso (min)',
+        'Completado',
+        'Superserie',
+    ];
     const escape = (val) => {
         const s = val == null ? '' : String(val);
         // Escapar comillas dobles y envolver en comillas si tiene comas/comillas/saltos
@@ -731,28 +1090,31 @@ const exportarCSV = () => {
         return s;
     };
 
-    const rows = historial.value.map((row) => [
-        row.fecha || '',
-        row.rutina || '',
-        row.dia || '',
-        row.ejercicio_nombre || '',
-        row.series_numero ?? '',
-        row.reps_min ?? '',
-        row.reps_max ?? '',
-        row.reps_realizadas ?? '',
-        row.peso ?? '',
-        row.descanso_min ?? '',
-        row.completado ? 'Sí' : 'No',
-        row.superserie_grupo ?? '',
-    ].map(escape).join(','));
+    const rows = dataToExport.map((row) =>
+        [
+            row.fecha || '',
+            row.rutina || '',
+            row.dia || '',
+            row.ejercicio_nombre || '',
+            row.series_numero ?? '',
+            row.reps_min ?? '',
+            row.reps_max ?? '',
+            row.reps_realizadas ?? '',
+            row.peso ?? '',
+            row.descanso_min ?? '',
+            row.completado ? 'Sí' : 'No',
+            row.superserie_grupo ?? '',
+        ]
+            .map(escape)
+            .join(',')
+    );
 
     const csv = '\ufeff' + [headers.map(escape).join(','), ...rows].join('\n'); // BOM para Excel
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
-    const alumnoTag = isTrainerOrAdmin.value && selectedAlumnoId.value
-        ? `-alumno-${selectedAlumnoId.value}`
-        : '';
+    const alumnoTag =
+        isTrainerOrAdmin.value && selectedAlumnoId.value ? `-alumno-${selectedAlumnoId.value}` : '';
     const filename = `historial${alumnoTag}-${new Date().toISOString().split('T')[0]}.csv`;
 
     const link = document.createElement('a');
@@ -763,18 +1125,14 @@ const exportarCSV = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    toast.success(`Historial exportado (${historial.value.length} registros).`);
+    toast.success(`Historial exportado (${dataToExport.length} registros filtrados).`);
 };
 
-// === Exportar historial a PDF ===
-// Genera un PDF profesional con resumen + detalle. Lazy-load jspdf para
-// no penalizar el bundle inicial. autoTable se importa del mismo paquete.
-// NOTA: NO usar Promise.all con dos import() dinámicos: Vite genera un
-// helper __vitePreload que se acopla estáticamente al grafo. Mejor
-// cargar en serie (o usar un único import del bundle compilado).
+// === Exportar historial a PDF (respeta filtros actuales) ===
 const exportarPDF = async () => {
-    if (!historial.value.length) {
-        toast.warning('No hay historial para exportar.');
+    const dataToExport = filteredHistorial.value;
+    if (!dataToExport.length) {
+        toast.warning('No hay datos en el filtro actual para exportar.');
         return;
     }
 
@@ -790,9 +1148,10 @@ const exportarPDF = async () => {
         const { autoTable } = await import('jspdf-autotable');
 
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-        const alumnoTag = isTrainerOrAdmin.value && selectedAlumnoId.value
-            ? `-alumno-${selectedAlumnoId.value}`
-            : '';
+        const alumnoTag =
+            isTrainerOrAdmin.value && selectedAlumnoId.value
+                ? `-alumno-${selectedAlumnoId.value}`
+                : '';
         const filename = `historial${alumnoTag}-${new Date().toISOString().split('T')[0]}.pdf`;
 
         // Header
@@ -804,7 +1163,10 @@ const exportarPDF = async () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(75, 85, 99);
-        const fechaTexto = new Date().toLocaleString('es-AR', { dateStyle: 'long', timeStyle: 'short' });
+        const fechaTexto = new Date().toLocaleString('es-AR', {
+            dateStyle: 'long',
+            timeStyle: 'short',
+        });
         doc.text(`Generado: ${fechaTexto}`, 40, 68);
 
         // Stats resumen
@@ -814,18 +1176,35 @@ const exportarPDF = async () => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.text(
-            `Ejercicios rastreados: ${headerStats.value.ejercicios}   ·   ` +
-            `Series registradas: ${headerStats.value.totalSeries}   ·   ` +
-            `Peso promedio: ${headerStats.value.pesoPromedio} kg   ·   ` +
-            `Reps promedio: ${headerStats.value.repsPromedio}`,
-            40, 118,
+            `Ejercicios rastreados: ${headerStats.value.ejercicios} · ` +
+                `Series registradas: ${headerStats.value.totalSeries} · ` +
+                `Peso promedio: ${headerStats.value.pesoPromedio} kg · ` +
+                `Reps promedio: ${headerStats.value.repsPromedio} · ` +
+                `Volumen: ${headerStats.value.tonelajeTotal} kg`,
+            40,
+            118
         );
 
         // Tabla
         autoTable(doc, {
             startY: 140,
-            head: [['Fecha', 'Rutina', 'Día', 'Ejercicio', 'Serie', 'Reps min', 'Reps max', 'Reps hechas', 'Peso (kg)', 'Descanso (min)', 'OK', 'SS']],
-            body: historial.value.map((row) => [
+            head: [
+                [
+                    'Fecha',
+                    'Rutina',
+                    'Día',
+                    'Ejercicio',
+                    'Serie',
+                    'Reps min',
+                    'Reps max',
+                    'Reps hechas',
+                    'Peso (kg)',
+                    'Descanso (min)',
+                    'OK',
+                    'SS',
+                ],
+            ],
+            body: dataToExport.map((row) => [
                 row.fecha || '',
                 row.rutina || '',
                 row.dia || '',
@@ -855,13 +1234,13 @@ const exportarPDF = async () => {
                 doc.text(
                     pageStr,
                     doc.internal.pageSize.width - 60,
-                    doc.internal.pageSize.height - 20,
+                    doc.internal.pageSize.height - 20
                 );
             },
         });
 
         doc.save(filename);
-        toast.success(`PDF generado (${historial.value.length} registros).`);
+        toast.success(`PDF generado (${dataToExport.length} registros).`);
     } catch (e) {
         console.error('[exportPDF]', e);
         toast.apiError(e, 'Error al generar el PDF.');
@@ -875,17 +1254,18 @@ const loadHistorialWithFeedback = async () => {
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadHistorialWithFeedback);
 
-const slugify = (value) => value
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+const slugify = (value) =>
+    value
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 
 const resumenEjercicios = computed(() => {
     const grouped = new Map();
-    historial.value.forEach((row) => {
+    filteredHistorial.value.forEach((row) => {
         if (!grouped.has(row.ejercicio_nombre)) grouped.set(row.ejercicio_nombre, []);
         grouped.get(row.ejercicio_nombre).push(row);
     });
@@ -901,9 +1281,15 @@ const resumenEjercicios = computed(() => {
         const timeline = [...timelineMap.entries()]
             .sort((a, b) => new Date(a[0]) - new Date(b[0]))
             .map(([fecha, dayRows]) => {
-                const weights = dayRows.map((row) => Number(row.peso)).filter((peso) => Number.isFinite(peso) && peso > 0);
-                const reps = dayRows.map((row) => Number(row.reps_realizadas)).filter((value) => Number.isFinite(value) && value >= 0);
-                const avgPeso = weights.length ? weights.reduce((sum, v) => sum + v, 0) / weights.length : 0;
+                const weights = dayRows
+                    .map((row) => Number(row.peso))
+                    .filter((peso) => Number.isFinite(peso) && peso > 0);
+                const reps = dayRows
+                    .map((row) => Number(row.reps_realizadas))
+                    .filter((value) => Number.isFinite(value) && value >= 0);
+                const avgPeso = weights.length
+                    ? weights.reduce((sum, v) => sum + v, 0) / weights.length
+                    : 0;
                 const avgReps = reps.length ? reps.reduce((sum, v) => sum + v, 0) / reps.length : 0;
                 const sample = dayRows[0];
                 return {
@@ -916,8 +1302,12 @@ const resumenEjercicios = computed(() => {
                 };
             });
 
-        const weights = rows.map((row) => Number(row.peso)).filter((peso) => Number.isFinite(peso) && peso > 0);
-        const reps = rows.map((row) => Number(row.reps_realizadas)).filter((value) => Number.isFinite(value) && value >= 0);
+        const weights = rows
+            .map((row) => Number(row.peso))
+            .filter((peso) => Number.isFinite(peso) && peso > 0);
+        const reps = rows
+            .map((row) => Number(row.reps_realizadas))
+            .filter((value) => Number.isFinite(value) && value >= 0);
         const totalPeso = weights.reduce((sum, v) => sum + v, 0);
         const totalReps = reps.reduce((sum, v) => sum + v, 0);
 
@@ -948,12 +1338,15 @@ const tablaProgreso = computed(() => {
     const result = [];
     resumenEjercicios.value.forEach((ejercicio) => {
         ejercicio.timeline.forEach((sesion) => {
-            const dayRows = historial.value.filter(
+            const dayRows = filteredHistorial.value.filter(
                 (row) => row.ejercicio_nombre === ejercicio.nombre && row.fecha === sesion.fecha
             );
-            const weights = dayRows.map((row) => Number(row.peso)).filter((peso) => Number.isFinite(peso) && peso > 0);
+            const weights = dayRows
+                .map((row) => Number(row.peso))
+                .filter((peso) => Number.isFinite(peso) && peso > 0);
             const maxWeight = weights.length ? Math.max(...weights) : 0;
-            const superserie_grupo = dayRows.find((row) => row.superserie_grupo !== null)?.superserie_grupo || null;
+            const superserie_grupo =
+                dayRows.find((row) => row.superserie_grupo !== null)?.superserie_grupo || null;
             result.push({
                 nombre: ejercicio.nombre,
                 fecha: sesion.fechaLabel,
@@ -977,7 +1370,10 @@ const historical1RMs = computed(() => {
         const r = parseInt(row.reps_realizadas);
         if (!w || !r || w <= 0 || r <= 0) return;
         const rmVal = calculate1RMValue(w, r, rmFormula.value);
-        if (!exerciseMaxes[row.ejercicio_nombre] || rmVal > exerciseMaxes[row.ejercicio_nombre].rm) {
+        if (
+            !exerciseMaxes[row.ejercicio_nombre] ||
+            rmVal > exerciseMaxes[row.ejercicio_nombre].rm
+        ) {
             exerciseMaxes[row.ejercicio_nombre] = {
                 name: row.ejercicio_nombre,
                 weight: w,
@@ -1001,7 +1397,13 @@ const getExercise1RMTimeline = (exerciseName) => {
         if (!w || !r || w <= 0 || r <= 0) return;
         const rmVal = calculate1RMValue(w, r, rmFormula.value);
         if (!dateMap[row.fecha] || rmVal > dateMap[row.fecha].rm) {
-            dateMap[row.fecha] = { fecha: row.fecha, rm: rmVal, weight: w, reps: r, dia: row.dia || 'Día' };
+            dateMap[row.fecha] = {
+                fecha: row.fecha,
+                rm: rmVal,
+                weight: w,
+                reps: r,
+                dia: row.dia || 'Día',
+            };
         }
     });
     return Object.values(dateMap).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
@@ -1030,8 +1432,12 @@ const initKeyCharts = async () => {
         });
         const dataValues = timeline.map((t) => parseFloat(t.rm.toFixed(1)));
 
-        const gridColor = document.documentElement.classList.contains('dark') ? '#374151' : '#e2e8f0';
-        const textColor = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+        const gridColor = document.documentElement.classList.contains('dark')
+            ? '#374151'
+            : '#e2e8f0';
+        const textColor = document.documentElement.classList.contains('dark')
+            ? '#9ca3af'
+            : '#4b5563';
 
         const canvasCtx = ctx.getContext('2d');
         const gradient = canvasCtx.createLinearGradient(0, 0, 0, 200);
@@ -1042,23 +1448,25 @@ const initKeyCharts = async () => {
             type: 'line',
             data: {
                 labels,
-                datasets: [{
-                    label: '1RM Estimado (kg)',
-                    data: dataValues,
-                    borderColor: '#6366f1',
-                    borderWidth: 2.5,
-                    backgroundColor: gradient,
-                    fill: true,
-                    tension: 0.35,
-                    pointBackgroundColor: '#6366f1',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1.5,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#4f46e5',
-                    pointHoverBorderColor: '#ffffff',
-                    pointHoverBorderWidth: 2,
-                }],
+                datasets: [
+                    {
+                        label: '1RM Estimado (kg)',
+                        data: dataValues,
+                        borderColor: '#6366f1',
+                        borderWidth: 2.5,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#4f46e5',
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2,
+                    },
+                ],
             },
             options: {
                 responsive: true,
@@ -1081,8 +1489,20 @@ const initKeyCharts = async () => {
                     },
                 },
                 scales: {
-                    y: { grid: { color: gridColor, drawBorder: false }, ticks: { color: textColor, font: { size: 10, family: 'ui-sans-serif, system-ui' } } },
-                    x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10, family: 'ui-sans-serif, system-ui' } } },
+                    y: {
+                        grid: { color: gridColor, drawBorder: false },
+                        ticks: {
+                            color: textColor,
+                            font: { size: 10, family: 'ui-sans-serif, system-ui' },
+                        },
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textColor,
+                            font: { size: 10, family: 'ui-sans-serif, system-ui' },
+                        },
+                    },
                 },
             },
         });
@@ -1090,7 +1510,9 @@ const initKeyCharts = async () => {
 };
 
 // === UI actions ===
-const toggleDateSort = () => { dateSortAsc.value = !dateSortAsc.value; };
+const toggleDateSort = () => {
+    dateSortAsc.value = !dateSortAsc.value;
+};
 
 watch(activeTab, (newTab) => {
     if (newTab === 'key_exercises') nextTick(() => initKeyCharts());

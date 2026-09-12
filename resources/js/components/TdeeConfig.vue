@@ -2,11 +2,14 @@
     <div class="space-y-4">
         <div class="flex items-start justify-between gap-3">
             <div>
-                <h3 class="text-base font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <h3
+                    class="text-base font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                >
                     <span>⚙️</span> Configurar TDEE
                 </h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Tus datos se usan para calcular tu metabolismo basal (Mifflin-St Jeor) y sugerirte calorías y macros diarios.
+                    Tus datos se usan para calcular tu metabolismo basal (Mifflin-St Jeor) y
+                    sugerirte calorías y macros diarios.
                 </p>
             </div>
         </div>
@@ -17,7 +20,9 @@
 
         <form v-else @submit.prevent="guardar" class="grid sm:grid-cols-2 gap-4">
             <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Sexo biológico</label>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                    >Sexo biológico</label
+                >
                 <select
                     v-model="form.sexo"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm"
@@ -29,7 +34,9 @@
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Edad</label>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                    >Edad</label
+                >
                 <input
                     v-model.number="form.edad"
                     type="number"
@@ -60,7 +67,9 @@
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Objetivo</label>
+                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                    >Objetivo</label
+                >
                 <select
                     v-model="form.objetivo_nutricional"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm"
@@ -72,11 +81,16 @@
                 </select>
             </div>
 
-            <div v-if="inputs.peso" class="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-3">
+            <div
+                v-if="inputs.peso"
+                class="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-3"
+            >
                 Usando peso y altura de tu último registro de Progreso del
                 <strong>{{ inputs.ultimo_progreso_fecha || '—' }}</strong>
                 ({{ inputs.peso }}kg, {{ inputs.altura }}cm). Actualizalos desde
-                <a href="/progreso" class="text-indigo-600 dark:text-indigo-400 underline">Progreso</a>
+                <a href="/progreso" class="text-indigo-600 dark:text-indigo-400 underline"
+                    >Progreso</a
+                >
                 para que el cálculo use los más recientes.
             </div>
 
@@ -130,7 +144,8 @@ const cargar = async () => {
         if (data.inputs?.sexo) form.value.sexo = data.inputs.sexo;
         if (data.inputs?.edad) form.value.edad = data.inputs.edad;
         if (data.inputs?.nivel_actividad) form.value.nivel_actividad = data.inputs.nivel_actividad;
-        if (data.inputs?.objetivo_nutricional) form.value.objetivo_nutricional = data.inputs.objetivo_nutricional;
+        if (data.inputs?.objetivo_nutricional)
+            form.value.objetivo_nutricional = data.inputs.objetivo_nutricional;
     } catch (e) {
         toast.apiError(e, 'No se pudo cargar la configuración.');
     } finally {

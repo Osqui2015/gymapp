@@ -37,6 +37,7 @@ class NotificationController extends Controller
         if (! $notif->read_at) {
             $notif->update(['read_at' => now()]);
         }
+
         return response()->json(['ok' => true]);
     }
 
@@ -49,6 +50,7 @@ class NotificationController extends Controller
         $count = Notification::forUser($user->id)
             ->unread()
             ->update(['read_at' => now()]);
+
         return response()->json(['ok' => true, 'updated' => $count]);
     }
 
@@ -59,6 +61,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
         Notification::forUser($user->id)->findOrFail($id)->delete();
+
         return response()->json(['ok' => true]);
     }
 }

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Rutina;
 use App\Models\RutinaFavorita;
 use App\Models\User;
+use App\Models\UserRutina;
 use App\Services\AchievementService;
 use App\Services\RutinasSugeridasService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RutinaController extends Controller
 {
@@ -25,7 +27,7 @@ class RutinaController extends Controller
                 // desaparecen del catalogo.
                 $query->where(function ($q) use ($user) {
                     $q->where('created_by', '!=', $user->id)
-                      ->orWhereNull('created_by');
+                        ->orWhereNull('created_by');
                 });
             }
         } else {
@@ -54,6 +56,7 @@ class RutinaController extends Controller
             $perPage = min((int) $request->input('per_page', 50), 200);
             $page = $query->paginate($perPage);
             $this->attachFavoritaFlag($page->getCollection(), $user);
+
             return response()->json($page);
         }
 
@@ -75,7 +78,7 @@ class RutinaController extends Controller
      */
     protected function attachFavoritaFlag($rutinas, ?User $user): void
     {
-        if (!$user || $rutinas->isEmpty()) {
+        if (! $user || $rutinas->isEmpty()) {
             return;
         }
 
@@ -89,6 +92,7 @@ class RutinaController extends Controller
             foreach ($rutinas as $r) {
                 $r->is_favorita = false;
             }
+
             return;
         }
 
@@ -96,12 +100,12 @@ class RutinaController extends Controller
         $favGroups = []; // (nivel|modalidad) => true si alguna rutina del grupo es fav
         foreach ($rutinas as $r) {
             if (isset($favSet[$r->id])) {
-                $favGroups[$r->nivel . '|' . $r->modalidad] = true;
+                $favGroups[$r->nivel.'|'.$r->modalidad] = true;
             }
         }
 
         foreach ($rutinas as $r) {
-            $r->is_favorita = isset($favGroups[$r->nivel . '|' . $r->modalidad]);
+            $r->is_favorita = isset($favGroups[$r->nivel.'|'.$r->modalidad]);
         }
     }
 
@@ -224,7 +228,7 @@ class RutinaController extends Controller
             $query->where('created_by', $data['created_by']);
         }
 
-        if (!empty($data['dia'])) {
+        if (! empty($data['dia'])) {
             $query->where('dia', $data['dia']);
         }
 
@@ -236,8 +240,8 @@ class RutinaController extends Controller
 
         // Resolve name collision. Si el front filtro por dia, lo incluimos en
         // el nombre para distinguir "3 Dias - Dia 1" del full "3 Dias".
-        $importedName = !empty($data['dia'])
-            ? $data['modalidad'] . ' - ' . $data['dia']
+        $importedName = ! empty($data['dia'])
+            ? $data['modalidad'].' - '.$data['dia']
             : $data['modalidad'];
 
         $exists = Rutina::where('created_by', $user->id)
@@ -246,10 +250,10 @@ class RutinaController extends Controller
             ->exists();
 
         if ($exists) {
-            $importedName = $importedName . ' (Importada)';
+            $importedName = $importedName.' (Importada)';
             $counter = 1;
             while (Rutina::where('created_by', $user->id)->where('nivel', 'Personalizada')->where('modalidad', $importedName)->exists()) {
-                $importedName = preg_replace('/( \(Importada\)( \d+)?)?$/', '', $importedName) . ' (Importada) ' . $counter;
+                $importedName = preg_replace('/( \(Importada\)( \d+)?)?$/', '', $importedName).' (Importada) '.$counter;
                 $counter++;
             }
         }
@@ -292,14 +296,14 @@ class RutinaController extends Controller
                 ->where('nivel', $data['nivel'])
                 ->where('modalidad', $data['modalidad']);
 
-            if ($user && !$user->hasRole(\App\Models\User::ROLE_ADMINISTRADOR)) {
+            if ($user && ! $user->hasRole(User::ROLE_ADMINISTRADOR)) {
                 $query->where('created_by', $user->id);
             }
 
             $routineIds = $query->pluck('id');
 
             if ($routineIds->isNotEmpty()) {
-                \App\Models\UserRutina::whereIn('rutina_id', $routineIds)->delete();
+                UserRutina::whereIn('rutina_id', $routineIds)->delete();
             }
 
             $query->delete();
@@ -329,6 +333,7 @@ class RutinaController extends Controller
 
         $payload = $sugeridas->map(function ($item) {
             $rutina = $item['rutina'];
+
             return [
                 'id' => $rutina->id,
                 'nivel' => $rutina->nivel,
@@ -384,12 +389,13 @@ class RutinaController extends Controller
             RutinaFavorita::where('user_id', $userId)
                 ->whereIn('rutina_id', $grupoIds)
                 ->delete();
+
             return response()->json(['is_favorita' => false]);
         }
 
         // Crear favoritas para todas las rutinas del grupo
         $now = now();
-        $rows = array_map(fn($id) => [
+        $rows = array_map(fn ($id) => [
             'user_id' => $userId,
             'rutina_id' => $id,
             'created_at' => $now,
@@ -424,5 +430,111 @@ class RutinaController extends Controller
         $this->attachFavoritaFlag($rutinas, $request->user());
 
         return response()->json($rutinas);
+    }
+
+    /**
+     * Duplica todos los ejercicios de un día a otro día dentro de la misma rutina.
+     * POST /api/rutinas/duplicar-dia
+     */
+    public function duplicarDia(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'nivel' => 'required|string',
+            'modalidad' => 'required|string',
+            'dia_origen' => 'required|string',
+            'dia_destino' => 'required|string',
+        ]);
+
+        $ejerciciosOrigen = Rutina::where('nivel', $data['nivel'])
+            ->where('modalidad', $data['modalidad'])
+            ->where('dia', $data['dia_origen'])
+            ->where(function ($q) use ($user) {
+                $q->whereNull('created_by')->orWhere('created_by', $user->id);
+            })
+            ->orderBy('orden')
+            ->get();
+
+        if ($ejerciciosOrigen->isEmpty()) {
+            return response()->json(['error' => 'No se encontraron ejercicios en el día de origen'], 404);
+        }
+
+        $nuevos = [];
+        foreach ($ejerciciosOrigen as $ej) {
+            $nuevo = Rutina::create([
+                'nivel' => $ej->nivel,
+                'modalidad' => $ej->modalidad,
+                'dia' => $data['dia_destino'],
+                'ejercicio_nombre' => $ej->ejercicio_nombre,
+                'ejercicio_id' => $ej->ejercicio_id,
+                'series' => $ej->series,
+                'reps_min' => $ej->reps_min,
+                'reps_max' => $ej->reps_max,
+                'descanso_min' => $ej->descanso_min,
+                'orden' => $ej->orden,
+                'superserie_grupo' => $ej->superserie_grupo,
+                'created_by' => $user->id,
+            ]);
+            $nuevos[] = $nuevo;
+        }
+
+        return response()->json([
+            'message' => 'Día duplicado con éxito',
+            'count' => count($nuevos),
+            'ejercicios' => $nuevos,
+        ], 201);
+    }
+
+    /**
+     * Reordena ejercicios en batch (drag & drop). Nivel 6.
+     *
+     * Body: { nivel, modalidad, dia, items: [{ id, orden }, ...] }
+     * Todos los items deben pertenecer al mismo (nivel, modalidad, dia).
+     *
+     * Validamos que el user sea el creador de los ejercicios (o admin)
+     * para evitar que un alumno reordene rutinas default del gimnasio.
+     */
+    public function reorder(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'nivel' => 'required|string',
+            'modalidad' => 'required|string',
+            'dia' => 'required|string',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer|exists:rutinas,id',
+            'items.*.orden' => 'required|integer|min:0',
+        ]);
+
+        $ids = collect($data['items'])->pluck('id')->all();
+
+        $ejercicios = Rutina::whereIn('id', $ids)->get();
+
+        // Verificar que todos los items son del mismo (nivel, modalidad, dia)
+        // y que el user es el creador (o admin).
+        foreach ($ejercicios as $ej) {
+            if ($ej->nivel !== $data['nivel']
+                || $ej->modalidad !== $data['modalidad']
+                || $ej->dia !== $data['dia']) {
+                return response()->json([
+                    'error' => 'Los ejercicios no pertenecen al mismo día/rutina',
+                ], 422);
+            }
+            if (! $user->hasRole(User::ROLE_ADMINISTRADOR)
+                && $ej->created_by !== null
+                && $ej->created_by !== $user->id) {
+                return response()->json([
+                    'error' => 'No podés reordenar ejercicios de otra rutina',
+                ], 403);
+            }
+        }
+
+        DB::transaction(function () use ($data) {
+            foreach ($data['items'] as $item) {
+                Rutina::where('id', $item['id'])->update(['orden' => $item['orden']]);
+            }
+        });
+
+        return response()->json(['ok' => true, 'count' => count($data['items'])]);
     }
 }

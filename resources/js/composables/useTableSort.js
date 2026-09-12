@@ -53,7 +53,12 @@ export function useTableSort(rows, options = {}) {
             if (av == null) return 1;
             if (bv == null) return -1;
             if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' }) * dir;
+            return (
+                String(av).localeCompare(String(bv), undefined, {
+                    numeric: true,
+                    sensitivity: 'base',
+                }) * dir
+            );
         });
     });
 
@@ -71,8 +76,14 @@ export function useTableSort(rows, options = {}) {
         return sortDir.value === 'asc' ? '▲' : '▼';
     };
 
-    const setQuery = (val) => { query.value = val; };
-    const reset = () => { sortKey.value = initialKey; sortDir.value = initialDir; query.value = ''; };
+    const setQuery = (val) => {
+        query.value = val;
+    };
+    const reset = () => {
+        sortKey.value = initialKey;
+        sortDir.value = initialDir;
+        query.value = '';
+    };
 
     return {
         sortKey,

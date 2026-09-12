@@ -14,7 +14,8 @@
                             : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
                     ]"
                 >
-                    <span class="mr-1">{{ opt.emoji }}</span>{{ opt.label }}
+                    <span class="mr-1">{{ opt.emoji }}</span
+                    >{{ opt.label }}
                 </button>
             </div>
             <div class="flex items-center gap-2">
@@ -26,7 +27,12 @@
                     class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-md text-sm transition-all"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2.5"
+                            d="M12 4v16m8-8H4"
+                        />
                     </svg>
                     Subir foto
                 </button>
@@ -34,12 +40,17 @@
         </div>
 
         <!-- Estado vacío -->
-        <div v-if="!loading && fotos.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <div
+            v-if="!loading && fotos.length === 0"
+            class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center"
+        >
             <p class="text-5xl mb-3">📸</p>
-            <h3 class="text-base font-bold text-gray-800 dark:text-white mb-1">Tu galería está vacía</h3>
+            <h3 class="text-base font-bold text-gray-800 dark:text-white mb-1">
+                Tu galería está vacía
+            </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Subí tu primera foto de progreso. Lo ideal es hacerlo siempre
-                en el mismo lugar, con la misma luz, a la misma hora.
+                Subí tu primera foto de progreso. Lo ideal es hacerlo siempre en el mismo lugar, con
+                la misma luz, a la misma hora.
             </p>
         </div>
 
@@ -51,7 +62,7 @@
         <!-- Grid cronológico -->
         <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             <div
-                v-for="foto in fotosAgrupados.flatMap(g => g.fotos)"
+                v-for="foto in fotosAgrupados.flatMap((g) => g.fotos)"
                 :key="foto.id"
                 class="relative aspect-[3/4] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 cursor-pointer group hover:ring-2 hover:ring-indigo-500 transition-all"
                 @click="abrirLightbox(foto)"
@@ -63,16 +74,23 @@
                     class="w-full h-full object-cover"
                     loading="lazy"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center text-gray-400 text-xs"
+                >
                     Archivo no disponible
                 </div>
-                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                    class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                     <p class="text-[10px] text-white font-mono">
                         {{ formatFechaCorta(foto.fecha) }}
                     </p>
                 </div>
-                <div class="absolute top-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                    {{ TIPO_OPTIONS.find(o => o.value === foto.tipo)?.emoji }}
+                <div
+                    class="absolute top-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded"
+                >
+                    {{ TIPO_OPTIONS.find((o) => o.value === foto.tipo)?.emoji }}
                 </div>
                 <button
                     v-if="foto.url"
@@ -81,7 +99,12 @@
                     title="Eliminar"
                 >
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
                     </svg>
                 </button>
             </div>
@@ -103,21 +126,36 @@
                         class="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 space-y-4"
                     >
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">📸 Subir foto de progreso</h3>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                📸 Subir foto de progreso
+                            </h3>
                             <button
                                 type="button"
                                 @click="mostrarUpload = false"
                                 class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                             >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
                                 </svg>
                             </button>
                         </div>
 
                         <!-- File input con preview -->
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Foto</label>
+                            <label
+                                class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                                >Foto</label
+                            >
                             <input
                                 ref="fileInputRef"
                                 type="file"
@@ -126,34 +164,76 @@
                                 class="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/40 dark:file:text-indigo-300"
                                 required
                             />
-                            <div v-if="previewUrl" class="mt-2 aspect-[3/4] max-h-64 mx-auto rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                                <img :src="previewUrl" class="w-full h-full object-cover" alt="preview" />
+                            <div
+                                v-if="previewUrl"
+                                class="mt-2 aspect-[3/4] max-h-64 mx-auto rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700"
+                            >
+                                <img
+                                    :src="previewUrl"
+                                    class="w-full h-full object-cover"
+                                    alt="preview"
+                                />
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Ángulo</label>
-                                <select v-model="form.tipo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm" required>
+                                <label
+                                    class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                                    >Ángulo</label
+                                >
+                                <select
+                                    v-model="form.tipo"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                                    required
+                                >
                                     <option value="front">Frente</option>
                                     <option value="side">Perfil</option>
                                     <option value="back">Espalda</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Fecha</label>
-                                <input v-model="form.fecha" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm" required />
+                                <label
+                                    class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                                    >Fecha</label
+                                >
+                                <input
+                                    v-model="form.fecha"
+                                    type="date"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                                    required
+                                />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Peso (opcional, kg)</label>
-                            <input v-model.number="form.peso" type="number" step="0.1" min="0" max="500" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm" placeholder="Ej: 70.5" />
+                            <label
+                                class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                                >Peso (opcional, kg)</label
+                            >
+                            <input
+                                v-model.number="form.peso"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="500"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                                placeholder="Ej: 70.5"
+                            />
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Notas (opcional)</label>
-                            <textarea v-model="form.notas" maxlength="500" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm" placeholder="Cómo venís sintiéndote, éclairage, etc."></textarea>
+                            <label
+                                class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
+                                >Notas (opcional)</label
+                            >
+                            <textarea
+                                v-model="form.notas"
+                                maxlength="500"
+                                rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-sm"
+                                placeholder="Cómo venís sintiéndote, éclairage, etc."
+                            ></textarea>
                         </div>
 
                         <div class="flex items-center gap-2 pt-2">
@@ -192,7 +272,12 @@
                         class="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                     </button>
                     <button
@@ -201,7 +286,12 @@
                         class="absolute left-4 p-3 text-white hover:bg-white/10 rounded-full"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 19l-7-7 7-7"
+                            />
                         </svg>
                     </button>
                     <button
@@ -210,7 +300,12 @@
                         class="absolute right-4 p-3 text-white hover:bg-white/10 rounded-full"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5l7 7-7 7"
+                            />
                         </svg>
                     </button>
                     <div class="max-w-3xl max-h-[90vh] flex flex-col items-center gap-3">
@@ -222,8 +317,15 @@
                         />
                         <div class="text-center text-white">
                             <p class="font-bold">{{ formatFechaLarga(lightboxFoto.fecha) }}</p>
-                            <p v-if="lightboxFoto.peso" class="text-sm text-white/70">Peso: {{ lightboxFoto.peso }}kg</p>
-                            <p v-if="lightboxFoto.notas" class="text-sm text-white/80 mt-1 max-w-md">{{ lightboxFoto.notas }}</p>
+                            <p v-if="lightboxFoto.peso" class="text-sm text-white/70">
+                                Peso: {{ lightboxFoto.peso }}kg
+                            </p>
+                            <p
+                                v-if="lightboxFoto.notas"
+                                class="text-sm text-white/80 mt-1 max-w-md"
+                            >
+                                {{ lightboxFoto.notas }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -319,7 +421,13 @@ const subir = async () => {
         toast.success('Foto subida ✓');
         mostrarUpload.value = false;
         // Reset form
-        form.value = { foto: null, fecha: new Date().toISOString().split('T')[0], tipo: 'front', peso: null, notas: '' };
+        form.value = {
+            foto: null,
+            fecha: new Date().toISOString().split('T')[0],
+            tipo: 'front',
+            peso: null,
+            notas: '',
+        };
         previewUrl.value = null;
         if (fileInputRef.value) fileInputRef.value.value = '';
         await cargar();
@@ -331,10 +439,11 @@ const subir = async () => {
 };
 
 const confirmarBorrar = async (foto) => {
-    const ok = await toast.confirm(
-        '¿Eliminar esta foto? Esta acción no se puede deshacer.',
-        { title: 'Eliminar foto', confirmLabel: 'Sí, eliminar', type: 'error' }
-    );
+    const ok = await toast.confirm('¿Eliminar esta foto? Esta acción no se puede deshacer.', {
+        title: 'Eliminar foto',
+        confirmLabel: 'Sí, eliminar',
+        type: 'error',
+    });
     if (!ok) return;
     try {
         await axios.delete(`/api/progreso/fotos/${foto.id}`);
@@ -347,7 +456,7 @@ const confirmarBorrar = async (foto) => {
 
 const abrirLightbox = (foto) => {
     if (!foto.url) return;
-    const idx = fotos.value.findIndex(f => f.id === foto.id);
+    const idx = fotos.value.findIndex((f) => f.id === foto.id);
     lightboxIndex.value = idx >= 0 ? idx : 0;
     lightboxFoto.value = fotos.value[lightboxIndex.value] || foto;
 };
@@ -372,10 +481,12 @@ onMounted(cargar);
 </script>
 
 <style scoped>
-.modal-enter-active, .modal-leave-active {
+.modal-enter-active,
+.modal-leave-active {
     transition: opacity 0.2s ease;
 }
-.modal-enter-from, .modal-leave-to {
+.modal-enter-from,
+.modal-leave-to {
     opacity: 0;
 }
 </style>

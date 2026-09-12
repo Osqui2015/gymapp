@@ -56,13 +56,13 @@ class AdminReportsTest extends TestCase
         ]);
         Historial::create([
             'user_id' => $this->alumno->id,
-            'fecha' => Carbon::now()->subDays(45)->toDateString(),
+            'fecha' => Carbon::now()->subMonth()->startOfMonth()->addDays(5)->toDateString(),
             'ejercicio_nombre' => 'A', 'rutina_nombre' => 'R', 'dia' => 'D1',
             'series_numero' => 1, 'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 1,
         ]);
         Historial::create([
             'user_id' => $this->alumno->id,
-            'fecha' => Carbon::now()->subDays(5)->toDateString(),
+            'fecha' => Carbon::now()->startOfMonth()->addDays(1)->toDateString(),
             'ejercicio_nombre' => 'B', 'rutina_nombre' => 'R', 'dia' => 'D1',
             'series_numero' => 1, 'reps_min' => '8', 'reps_max' => '12', 'descanso_min' => 1,
         ]);

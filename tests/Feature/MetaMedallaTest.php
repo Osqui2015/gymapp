@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Historial;
-use App\Models\MedallaUsuario;
 use App\Models\Meta;
 use App\Models\User;
 use App\Services\AchievementService;

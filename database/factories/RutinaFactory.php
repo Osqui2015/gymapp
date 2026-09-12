@@ -18,7 +18,7 @@ class RutinaFactory extends Factory
         return [
             'nivel' => fake()->randomElement(['Principiante', 'Intermedio', 'Avanzado']),
             'modalidad' => fake()->randomElement(['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full body']),
-            'dia' => 'Día ' . fake()->numberBetween(1, 5),
+            'dia' => 'Día '.fake()->numberBetween(1, 5),
             'created_by' => null, // rutina default
             'series' => fake()->numberBetween(3, 5),
             'reps_min' => '8',

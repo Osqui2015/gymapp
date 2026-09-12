@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class AdminUserController extends Controller
 {
@@ -18,7 +19,9 @@ class AdminUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'telefono' => ['nullable', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:6'],
+            // Endurecido (Oleada 2 - seguridad): antes min:6, ahora Password::defaults()
+            // que exige 8+ chars con mayuscula, minuscula, numero y simbolo.
+            'password' => ['required', Password::defaults()],
             'role' => ['required', 'string', 'in:comun,alumno,trainer,administrador'],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
@@ -33,9 +36,10 @@ class AdminUserController extends Controller
                 if ($request->wantsJson()) {
                     return response()->json([
                         'message' => 'El usuario seleccionado no es trainer.',
-                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']]
+                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']],
                     ], 422);
                 }
+
                 return redirect()->route('profile.edit')
                     ->withErrors(['trainer_id' => 'El usuario seleccionado no es trainer.'], 'adminUserCreation')
                     ->withInput();

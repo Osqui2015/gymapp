@@ -55,9 +55,7 @@ export function useRealtimeComments(options = {}) {
     const pollingTimer = ref(null);
     const channelUnsubscribers = [];
 
-    const unreadCount = computed(
-        () => comments.value.filter((c) => !c.read_at).length,
-    );
+    const unreadCount = computed(() => comments.value.filter((c) => !c.read_at).length);
 
     const load = async () => {
         loading.value = true;
@@ -135,7 +133,11 @@ export function useRealtimeComments(options = {}) {
             });
 
             channelUnsubscribers.push(() => {
-                try { Echo.leave(channelName); } catch { /* ignore */ }
+                try {
+                    Echo.leave(channelName);
+                } catch {
+                    /* ignore */
+                }
             });
             return true;
         } catch (e) {

@@ -20,7 +20,7 @@ class HistorialFactory extends Factory
             'user_id' => User::factory(),
             'fecha' => Carbon::now()->toDateString(),
             'rutina_nombre' => fake()->randomElement(['Push Intermedio', 'Pull Avanzado', 'Legs Principiante']),
-            'dia' => 'Día ' . fake()->numberBetween(1, 5),
+            'dia' => 'Día '.fake()->numberBetween(1, 5),
             'ejercicio_nombre' => ucfirst(fake()->words(2, true)),
             'series_numero' => fake()->numberBetween(1, 5),
             'series_completadas' => fake()->numberBetween(0, 5),

@@ -38,7 +38,10 @@
         <!-- Toggle de vista front/back: visible siempre que NO este en showBothViews.
              En sidebar desktop con showBothViews=true no se ve (ya se ven los 2 lados).
              En sidebar mobile con compact=true si se ve (el user alterna manualmente). -->
-        <div v-if="!showBothViews" :class="['flex justify-center gap-2 flex-shrink-0', compact ? 'mb-1.5' : 'mb-3']">
+        <div
+            v-if="!showBothViews"
+            :class="['flex justify-center gap-2 flex-shrink-0', compact ? 'mb-1.5' : 'mb-3']"
+        >
             <button
                 v-for="v in ['front', 'back']"
                 :key="v"
@@ -55,37 +58,71 @@
         </div>
 
         <!-- Loading state: skeleton con forma de cuerpo humano (shimmer) -->
-        <div v-if="isLoading" :class="[showBothViews ? 'grid grid-cols-2 gap-2' : 'flex justify-center', compact ? 'py-1 px-2' : 'py-4 px-2']">
+        <div
+            v-if="isLoading"
+            :class="[
+                showBothViews ? 'grid grid-cols-2 gap-2' : 'flex justify-center',
+                compact ? 'py-1 px-2' : 'py-4 px-2',
+            ]"
+        >
             <div
-                v-for="side in (showBothViews ? 2 : 1)"
+                v-for="side in showBothViews ? 2 : 1"
                 :key="side"
                 class="flex flex-col items-center"
             >
-                <span v-if="showBothViews" class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-1 font-semibold">
+                <span
+                    v-if="showBothViews"
+                    class="text-[10px] uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-1 font-semibold"
+                >
                     {{ side === 1 ? 'Frente' : 'Espalda' }}
                 </span>
                 <!-- Silueta estilizada de cuerpo humano en gris claro con shimmer.
                      viewBox igual al de los paths reales para que no salte el layout. -->
                 <svg
                     viewBox="0 0 250 600"
-                    :class="[compact ? 'h-[230px] max-h-[240px] w-auto max-w-[150px]' : 'w-full h-auto max-w-[180px]']"
+                    :class="[
+                        compact
+                            ? 'h-[230px] max-h-[240px] w-auto max-w-[150px]'
+                            : 'w-full h-auto max-w-[180px]',
+                    ]"
                     preserveAspectRatio="xMidYMid meet"
                     aria-hidden="true"
                 >
                     <!-- Cabeza -->
                     <circle cx="125" cy="50" r="30" class="fill-gray-200 dark:fill-gray-700" />
                     <!-- Cuello -->
-                    <rect x="115" y="78" width="20" height="20" class="fill-gray-200 dark:fill-gray-700" />
+                    <rect
+                        x="115"
+                        y="78"
+                        width="20"
+                        height="20"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Tronco -->
-                    <path d="M 70 100 Q 125 95 180 100 L 195 240 Q 125 250 55 240 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <path
+                        d="M 70 100 Q 125 95 180 100 L 195 240 Q 125 250 55 240 Z"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Brazo izq -->
-                    <path d="M 70 110 L 30 130 L 15 240 L 35 250 L 55 140 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <path
+                        d="M 70 110 L 30 130 L 15 240 L 35 250 L 55 140 Z"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Brazo der -->
-                    <path d="M 180 110 L 220 130 L 235 240 L 215 250 L 195 140 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <path
+                        d="M 180 110 L 220 130 L 235 240 L 215 250 L 195 140 Z"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Pierna izq -->
-                    <path d="M 90 250 L 80 430 L 75 560 L 105 560 L 110 430 L 125 250 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <path
+                        d="M 90 250 L 80 430 L 75 560 L 105 560 L 110 430 L 125 250 Z"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Pierna der -->
-                    <path d="M 160 250 L 170 430 L 175 560 L 145 560 L 140 430 L 125 250 Z" class="fill-gray-200 dark:fill-gray-700" />
+                    <path
+                        d="M 160 250 L 170 430 L 175 560 L 145 560 L 140 430 L 125 250 Z"
+                        class="fill-gray-200 dark:fill-gray-700"
+                    />
                     <!-- Shimmer overlay -->
                     <rect x="0" y="0" width="250" height="600" class="animate-shimmer" />
                 </svg>
@@ -99,7 +136,7 @@
             :class="[
                 compact
                     ? 'h-[230px] max-h-[240px] w-auto max-w-full mx-auto block flex-shrink'
-                    : 'w-full h-auto max-w-md mx-auto'
+                    : 'w-full h-auto max-w-md mx-auto',
             ]"
             preserveAspectRatio="xMidYMid meet"
         >
@@ -123,7 +160,10 @@
         <!-- Vista doble: frente + espalda lado a lado (modo sidebar) -->
         <div v-else class="grid grid-cols-2 gap-2">
             <div class="flex flex-col items-center">
-                <span class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold">Frente</span>
+                <span
+                    class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold"
+                    >Frente</span
+                >
                 <BodySideView
                     v-if="frontPaths"
                     :paths-data="frontPaths"
@@ -136,7 +176,10 @@
                 />
             </div>
             <div class="flex flex-col items-center">
-                <span class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold">Espalda</span>
+                <span
+                    class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 font-semibold"
+                    >Espalda</span
+                >
                 <BodySideView
                     v-if="backPaths"
                     :paths-data="backPaths"
@@ -156,19 +199,34 @@
                 <div v-if="mode === 'balance'" class="flex items-center justify-center gap-2">
                     <span>Menor volumen</span>
                     <div class="flex gap-0.5">
-                        <div v-for="i in 5" :key="i" :class="['w-5 h-3 rounded-sm', legendBgClass(i - 1)]"></div>
+                        <div
+                            v-for="i in 5"
+                            :key="i"
+                            :class="['w-5 h-3 rounded-sm', legendBgClass(i - 1)]"
+                        ></div>
                     </div>
                     <span>Mayor volumen</span>
                 </div>
                 <div v-else-if="mode === 'fatigue'" class="flex items-center justify-center gap-3">
-                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-red-500"></span> Fatigado</span>
-                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-yellow-400"></span> Recuperando</span>
-                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-600"></span> Listo</span>
+                    <span class="flex items-center gap-1"
+                        ><span class="w-3 h-3 rounded-sm bg-red-500"></span> Fatigado</span
+                    >
+                    <span class="flex items-center gap-1"
+                        ><span class="w-3 h-3 rounded-sm bg-yellow-400"></span> Recuperando</span
+                    >
+                    <span class="flex items-center gap-1"
+                        ><span class="w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-600"></span>
+                        Listo</span
+                    >
                 </div>
                 <div v-else-if="mode === 'strength'" class="flex items-center justify-center gap-2">
                     <span>Menor 1RM</span>
                     <div class="flex gap-0.5">
-                        <div v-for="i in 5" :key="i" :class="['w-5 h-3 rounded-sm', legendBgClass(i - 1)]"></div>
+                        <div
+                            v-for="i in 5"
+                            :key="i"
+                            :class="['w-5 h-3 rounded-sm', legendBgClass(i - 1)]"
+                        ></div>
                     </div>
                     <span>Mayor 1RM</span>
                 </div>
@@ -176,7 +234,10 @@
         </div>
 
         <!-- Tooltip del músculo hover (oculto en modo compact) -->
-        <div v-if="!compact && hoveredSlug && hoveredLabel" class="text-center mt-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <div
+            v-if="!compact && hoveredSlug && hoveredLabel"
+            class="text-center mt-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+        >
             {{ hoveredLabel }}
         </div>
     </div>
@@ -188,11 +249,11 @@ import BodySideView from './BodySideView.vue';
 
 const props = defineProps({
     levels: { type: Object, default: () => ({}) },
-    mode: { type: String, default: 'balance' },  // 'balance' | 'fatigue' | 'strength'
+    mode: { type: String, default: 'balance' }, // 'balance' | 'fatigue' | 'strength'
     initialGender: { type: String, default: 'male' },
     initialView: { type: String, default: 'front' },
     showGenderToggle: { type: Boolean, default: false },
-    muscleLabels: { type: Object, default: () => ({}) },  // { chest: 'Pecho', ... }
+    muscleLabels: { type: Object, default: () => ({}) }, // { chest: 'Pecho', ... }
     // Modo compact: oculta toggles (género/vista) y leyenda para usar
     // embebido en sidebars o headers donde el chrome no entra.
     compact: { type: Boolean, default: false },
@@ -214,16 +275,23 @@ const hoveredSlug = ref(null);
 // === Dark mode reactivo ===
 // Leemos la class `dark` del <html> y observamos cambios via MutationObserver,
 // así el body map se re-pinta cuando el user togglea el tema sin recargar.
-const isDark = ref(typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+const isDark = ref(
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+);
 let darkObserver = null;
 onMounted(() => {
     if (typeof document === 'undefined') return;
     darkObserver = new MutationObserver(() => {
         isDark.value = document.documentElement.classList.contains('dark');
     });
-    darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    darkObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
 });
-onBeforeUnmount(() => { darkObserver?.disconnect(); });
+onBeforeUnmount(() => {
+    darkObserver?.disconnect();
+});
 
 // Cargar paths según gender+view (lazy import para no inflar el bundle principal)
 async function loadPaths(g, v) {
@@ -241,8 +309,8 @@ const frontPaths = ref(null);
 const backPaths = ref(null);
 async function loadSidePaths(g) {
     const [f, b] = await Promise.allSettled([
-        import(`../lib/bodyPaths/${g}-front.js`).then(m => m.default),
-        import(`../lib/bodyPaths/${g}-back.js`).then(m => m.default),
+        import(`../lib/bodyPaths/${g}-front.js`).then((m) => m.default),
+        import(`../lib/bodyPaths/${g}-back.js`).then((m) => m.default),
     ]);
     frontPaths.value = f.status === 'fulfilled' ? f.value : { vb: '0 0 100 100', paths: {} };
     backPaths.value = b.status === 'fulfilled' ? b.value : { vb: '0 0 100 100', paths: {} };
@@ -287,9 +355,9 @@ function fillFor(slug) {
 
     if (props.mode === 'fatigue') {
         // En fatiga los colores rojo/amarillo ya contrastan en ambos modos.
-        if (level === 4) return '#ef4444';     // rojo fatigado
-        if (level === 2) return '#facc15';     // amarillo recuperando
-        return isDark.value ? '#94a3b8' : '#374151';  // listo
+        if (level === 4) return '#ef4444'; // rojo fatigado
+        if (level === 2) return '#facc15'; // amarillo recuperando
+        return isDark.value ? '#94a3b8' : '#374151'; // listo
     }
 
     // Modo "comparar": si el musculo esta en comparisonLevels (con su nivel),
@@ -314,15 +382,15 @@ function fillFor(slug) {
     if (isDark.value) {
         // Dark: base gris-claro para que se vea sobre fondo oscuro, e indigo
         // fuerte en level 4 para destacar.
-        if (level === 0) return '#475569';     // slate-600
-        if (level === 1) return '#312e81';     // indigo-900
-        if (level === 2) return '#4338ca';     // indigo-700
-        if (level === 3) return '#6366f1';     // indigo-500
-        if (level === 4) return '#a5b4fc';     // indigo-300 (contraste alto)
+        if (level === 0) return '#475569'; // slate-600
+        if (level === 1) return '#312e81'; // indigo-900
+        if (level === 2) return '#4338ca'; // indigo-700
+        if (level === 3) return '#6366f1'; // indigo-500
+        if (level === 4) return '#a5b4fc'; // indigo-300 (contraste alto)
         return '#475569';
     } else {
         // Light: como estaba, músculos oscuros sobre fondo claro.
-        if (level === 0) return '#1f2937';     // gray-800
+        if (level === 0) return '#1f2937'; // gray-800
         if (level === 1) return '#312e81';
         if (level === 2) return '#4338ca';
         if (level === 3) return '#6366f1';
@@ -332,7 +400,7 @@ function fillFor(slug) {
 }
 
 function strokeFor(slug) {
-    if (hoveredSlug.value === slug) return '#fbbf24';  // amarillo al hover
+    if (hoveredSlug.value === slug) return '#fbbf24'; // amarillo al hover
     return isDark.value ? '#ffffff20' : '#00000020';
 }
 

@@ -6,7 +6,6 @@ use App\Models\Historial;
 use App\Models\User;
 use App\Services\AdminStatsService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -81,6 +80,7 @@ class AdminStatsController extends Controller
     public function invalidateCache()
     {
         Cache::forget('admin.stats');
+
         return response()->json(['success' => true]);
     }
 }

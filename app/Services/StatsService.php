@@ -32,7 +32,7 @@ class StatsService
             ->selectRaw('DISTINCT fecha')
             ->orderBy('fecha', 'desc')
             ->pluck('fecha')
-            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->map(fn ($d) => Carbon::parse($d)->toDateString())
             ->all();
     }
 
@@ -44,21 +44,26 @@ class StatsService
      */
     public function calcCurrentStreak(array $diasOrdenadosDesc): int
     {
-        if (empty($diasOrdenadosDesc)) return 0;
+        if (empty($diasOrdenadosDesc)) {
+            return 0;
+        }
         $streak = 0;
         $expected = now()->toDateString();
         $diasSet = array_flip($diasOrdenadosDesc);
 
         // Si no entrenó hoy, empezar desde ayer (la racha todavía no se rompió)
-        if (!isset($diasSet[$expected])) {
+        if (! isset($diasSet[$expected])) {
             $expected = now()->subDay()->toDateString();
-            if (!isset($diasSet[$expected])) return 0;
+            if (! isset($diasSet[$expected])) {
+                return 0;
+            }
         }
 
         while (isset($diasSet[$expected])) {
             $streak++;
             $expected = Carbon::parse($expected)->subDay()->toDateString();
         }
+
         return $streak;
     }
 
@@ -67,7 +72,9 @@ class StatsService
      */
     public function calcLongestStreak(array $diasOrdenadosDesc): int
     {
-        if (empty($diasOrdenadosDesc)) return 0;
+        if (empty($diasOrdenadosDesc)) {
+            return 0;
+        }
         // Convertir a ascendente para walk forward
         $dias = $diasOrdenadosDesc;
         rsort($dias);  // ascendente ahora
@@ -84,6 +91,7 @@ class StatsService
                 $current = 1;
             }
         }
+
         return $longest;
     }
 
@@ -96,8 +104,11 @@ class StatsService
         $fromStr = Carbon::parse($from)->toDateString();
         $toStr = Carbon::parse($to)->toDateString();
         foreach ($dias as $d) {
-            if ($d >= $fromStr && $d <= $toStr) $count++;
+            if ($d >= $fromStr && $d <= $toStr) {
+                $count++;
+            }
         }
+
         return $count;
     }
 
@@ -182,7 +193,7 @@ class StatsService
             ->groupBy('esfuerzo_tipo')
             ->get()
             ->pluck('avg_val', 'esfuerzo_tipo')
-            ->map(fn($v) => round((float) $v, 2))
+            ->map(fn ($v) => round((float) $v, 2))
             ->all();
 
         $avgPorTipo = [
@@ -227,7 +238,7 @@ class StatsService
             ->orderByDesc('n')
             ->limit(5)
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'ejercicio' => $r->ejercicio_nombre,
                 'sets' => (int) $r->n,
                 'avg' => round((float) $r->avg_val, 2),
@@ -260,7 +271,10 @@ class StatsService
     public function normalizeWindow($raw): string
     {
         $raw = (string) $raw;
-        if (in_array($raw, ['30', '90', '365', 'all'], true)) return $raw;
+        if (in_array($raw, ['30', '90', '365', 'all'], true)) {
+            return $raw;
+        }
+
         return '30';
     }
 
@@ -272,6 +286,7 @@ class StatsService
             '365' => ['key' => '365', 'days' => 365, 'label' => '1 año'],
             'all' => ['key' => 'all', 'days' => null, 'label' => 'Todo'],
         ];
+
         return $map[$window];
     }
 
@@ -294,14 +309,16 @@ class StatsService
         }
         $rows = $query->orderBy('fecha')->get(['fecha', 'esfuerzo_tipo', 'esfuerzo_valor']);
 
-        if ($rows->isEmpty()) return [];
+        if ($rows->isEmpty()) {
+            return [];
+        }
 
         // Agrupar por semana (lunes)
         $byWeek = [];
         foreach ($rows as $r) {
             $fecha = Carbon::parse($r->fecha);
             $weekStart = $fecha->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
-            if (!isset($byWeek[$weekStart])) {
+            if (! isset($byWeek[$weekStart])) {
                 $byWeek[$weekStart] = [
                     'rir_sum' => 0, 'rir_n' => 0,
                     'rpe_sum' => 0, 'rpe_n' => 0,
@@ -332,6 +349,7 @@ class StatsService
                 'sets' => $bucket['sets'],
             ];
         }
+
         return $out;
     }
 
@@ -339,7 +357,8 @@ class StatsService
     {
         // Ej: "25 ago" o "1 sep"
         $months = [1 => 'ene', 2 => 'feb', 3 => 'mar', 4 => 'abr', 5 => 'may', 6 => 'jun', 7 => 'jul', 8 => 'ago', 9 => 'sep', 10 => 'oct', 11 => 'nov', 12 => 'dic'];
-        return $date->day . ' ' . $months[(int) $date->month];
+
+        return $date->day.' '.$months[(int) $date->month];
     }
 
     /**
@@ -356,6 +375,7 @@ class StatsService
             if ($formula === 'lander') {
                 return (100 * $w) / (101.3 - 2.6712 * $r);
             }
+
             return $w * (1 + $r / 30);
         };
 
@@ -376,7 +396,9 @@ class StatsService
         foreach ($rows as $row) {
             $w = (float) $row->peso;
             $r = (int) $row->reps_realizadas;
-            if ($w <= 0 || $r <= 0) continue;
+            if ($w <= 0 || $r <= 0) {
+                continue;
+            }
             $est = round($calc($w, $r), 1);
 
             $timeline[] = [
@@ -443,7 +465,7 @@ class StatsService
         $corteAnterior = $now->copy()->subWeeks($windowWeeks + 2);
 
         // Traer todos los sets con peso del usuario en las últimas 6+ semanas
-        $rows = \App\Models\Historial::where('user_id', $userId)
+        $rows = Historial::where('user_id', $userId)
             ->where('completado', true)
             ->whereNotNull('peso')
             ->where('peso', '>', 0)
@@ -465,9 +487,9 @@ class StatsService
                 continue;
             }
 
-            $pesoReciente = $sets->filter(fn($s) => $s->fecha >= $corteReciente->toDateString())
+            $pesoReciente = $sets->filter(fn ($s) => $s->fecha >= $corteReciente->toDateString())
                 ->max('peso');
-            $pesoAnterior = $sets->filter(fn($s) => $s->fecha < $corteReciente->toDateString() && $s->fecha >= $corteAnterior->toDateString())
+            $pesoAnterior = $sets->filter(fn ($s) => $s->fecha < $corteReciente->toDateString() && $s->fecha >= $corteAnterior->toDateString())
                 ->max('peso');
 
             // Si no hay datos en ambas ventanas, no podemos comparar
@@ -502,11 +524,11 @@ class StatsService
         $mitad = $windowWeeks / 2;
         $corteMedio = now()->copy()->subWeeks((int) ceil($mitad));
 
-        $recientes = $sets->filter(fn($s) => $s->fecha >= $corteMedio->toDateString());
-        $anteriores = $sets->filter(fn($s) => $s->fecha < $corteMedio->toDateString());
+        $recientes = $sets->filter(fn ($s) => $s->fecha >= $corteMedio->toDateString());
+        $anteriores = $sets->filter(fn ($s) => $s->fecha < $corteMedio->toDateString());
 
-        $volumenReciente = $recientes->sum(fn($s) => (float) $s->peso * (int) ($s->reps_realizadas ?? 0));
-        $volumenAnterior = $anteriores->sum(fn($s) => (float) $s->peso * (int) ($s->reps_realizadas ?? 0));
+        $volumenReciente = $recientes->sum(fn ($s) => (float) $s->peso * (int) ($s->reps_realizadas ?? 0));
+        $volumenAnterior = $anteriores->sum(fn ($s) => (float) $s->peso * (int) ($s->reps_realizadas ?? 0));
 
         // Fatiga acumulada: volumen cayó >= 30% → deload
         if ($volumenAnterior > 0 && ($volumenReciente / $volumenAnterior) < 0.7) {
@@ -559,7 +581,7 @@ class StatsService
 
         // Sugerir acción
         $quick = 'empezar';
-        if (!$rutina) {
+        if (! $rutina) {
             $quick = 'nueva_rutina';
         } elseif ($diasDesdeUltimo === null) {
             $quick = 'empezar'; // primera vez
@@ -619,7 +641,8 @@ class StatsService
      */
     private function emptyDistribucion(): array
     {
-        $make = fn($v) => ['valor' => $v, 'count' => 0];
+        $make = fn ($v) => ['valor' => $v, 'count' => 0];
+
         return [
             'rir' => array_map($make, range(0, 5)),
             'rpe' => array_map($make, range(6, 10)),

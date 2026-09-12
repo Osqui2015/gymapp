@@ -80,12 +80,13 @@ class ProgresoPolicyTest extends TestCase
 
     private function makeProgreso(array $overrides = []): Progreso
     {
-        $p = new Progreso();
+        $p = new Progreso;
         $p->setRawAttributes(array_merge([
             'user_id' => 1,
             'fecha' => now()->toDateString(),
             'peso' => 80.0,
         ], $overrides));
+
         return $p;
     }
 }

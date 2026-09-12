@@ -27,23 +27,23 @@ class TdeeService
 {
     public const FACTORES_ACTIVIDAD = [
         'sedentario' => 1.2,
-        'ligero'     => 1.375,
-        'moderado'   => 1.55,
-        'activo'     => 1.725,
+        'ligero' => 1.375,
+        'moderado' => 1.55,
+        'activo' => 1.725,
         'muy_activo' => 1.9,
     ];
 
     public const AJUSTES_OBJETIVO = [
         // [delta_calorico_pct, proteina_g_kg, grasa_pct]
         'perder_grasa' => [-0.20, 2.0, 0.25],
-        'mantener'     => [ 0.00, 1.6, 0.30],
-        'ganar_masa'   => [ 0.15, 1.8, 0.25],
+        'mantener' => [0.00, 1.6, 0.30],
+        'ganar_masa' => [0.15, 1.8, 0.25],
     ];
 
     public const KCAL_POR_GRANO = [
-        'proteinas'     => 4,
+        'proteinas' => 4,
         'carbohidratos' => 4,
-        'grasas'        => 9,
+        'grasas' => 9,
     ];
 
     /**
@@ -59,13 +59,13 @@ class TdeeService
             ->first();
 
         return [
-            'sexo'    => $user->sexo,
-            'edad'    => $user->edad,
-            'peso'    => $ultimoProgreso?->peso,
-            'altura'  => $ultimoProgreso?->altura ?? $user->altura,
-            'nivel_actividad'      => $user->nivel_actividad,
+            'sexo' => $user->sexo,
+            'edad' => $user->edad,
+            'peso' => $ultimoProgreso?->peso,
+            'altura' => $ultimoProgreso?->altura ?? $user->altura,
+            'nivel_actividad' => $user->nivel_actividad,
             'objetivo_nutricional' => $user->objetivo_nutricional ?? 'mantener',
-            'ultimo_progreso_id'   => $ultimoProgreso?->id,
+            'ultimo_progreso_id' => $ultimoProgreso?->id,
             'ultimo_progreso_fecha' => $ultimoProgreso?->fecha?->toDateString(),
         ];
     }
@@ -75,11 +75,11 @@ class TdeeService
      */
     public function inputsCompletos(array $inputs): bool
     {
-        return !is_null($inputs['sexo'])
-            && !is_null($inputs['edad'])
-            && !is_null($inputs['peso'])
-            && !is_null($inputs['altura'])
-            && !is_null($inputs['nivel_actividad']);
+        return ! is_null($inputs['sexo'])
+            && ! is_null($inputs['edad'])
+            && ! is_null($inputs['peso'])
+            && ! is_null($inputs['altura'])
+            && ! is_null($inputs['nivel_actividad']);
     }
 
     /**
@@ -88,6 +88,7 @@ class TdeeService
     public function calcBmr(string $sexo, float $peso, float $altura, int $edad): float
     {
         $base = 10 * $peso + 6.25 * $altura - 5 * $edad;
+
         return $sexo === 'masculino'
             ? $base + 5
             : $base - 161;
@@ -99,6 +100,7 @@ class TdeeService
     public function calcTdee(float $bmr, string $nivelActividad): float
     {
         $factor = self::FACTORES_ACTIVIDAD[$nivelActividad] ?? 1.2;
+
         return $bmr * $factor;
     }
 
@@ -108,6 +110,7 @@ class TdeeService
     public function calcCaloriasTarget(float $tdee, string $objetivo): int
     {
         $ajuste = self::AJUSTES_OBJETIVO[$objetivo] ?? self::AJUSTES_OBJETIVO['mantener'];
+
         return (int) round($tdee * (1 + $ajuste[0]));
     }
 
@@ -157,13 +160,23 @@ class TdeeService
         $inputs = $this->resolverInputs($user);
         $completos = $this->inputsCompletos($inputs);
 
-        if (!$completos) {
+        if (! $completos) {
             $faltantes = [];
-            if (!$inputs['sexo']) $faltantes[] = 'sexo';
-            if (!$inputs['edad']) $faltantes[] = 'edad';
-            if (!$inputs['peso']) $faltantes[] = 'peso';
-            if (!$inputs['altura']) $faltantes[] = 'altura';
-            if (!$inputs['nivel_actividad']) $faltantes[] = 'nivel_actividad';
+            if (! $inputs['sexo']) {
+                $faltantes[] = 'sexo';
+            }
+            if (! $inputs['edad']) {
+                $faltantes[] = 'edad';
+            }
+            if (! $inputs['peso']) {
+                $faltantes[] = 'peso';
+            }
+            if (! $inputs['altura']) {
+                $faltantes[] = 'altura';
+            }
+            if (! $inputs['nivel_actividad']) {
+                $faltantes[] = 'nivel_actividad';
+            }
 
             return [
                 'inputs' => $inputs,
@@ -205,8 +218,8 @@ class TdeeService
             'factor_actividad' => self::FACTORES_ACTIVIDAD,
             'ajuste_objetivo' => [
                 'perder_grasa' => 'Déficit calórico del 20%, alta proteína (2g/kg) para preservar músculo.',
-                'mantener'     => 'Calorías de mantenimiento, proteína moderada (1.6g/kg).',
-                'ganar_masa'   => 'Superávit calórico del 15%, proteína alta (1.8g/kg) para construir músculo.',
+                'mantener' => 'Calorías de mantenimiento, proteína moderada (1.6g/kg).',
+                'ganar_masa' => 'Superávit calórico del 15%, proteína alta (1.8g/kg) para construir músculo.',
             ][$objetivo] ?? null,
         ];
     }

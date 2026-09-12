@@ -67,7 +67,7 @@ class MembresiaPolicyTest extends TestCase
 
     private function makeMembresia(array $overrides = []): Membresia
     {
-        $m = new Membresia();
+        $m = new Membresia;
         $m->setRawAttributes(array_merge([
             'user_id' => 1,
             'plan' => 'mensual',
@@ -75,6 +75,7 @@ class MembresiaPolicyTest extends TestCase
             'fecha_fin' => now()->addMonth()->toDateString(),
             'estado' => 'activa',
         ], $overrides));
+
         return $m;
     }
 }

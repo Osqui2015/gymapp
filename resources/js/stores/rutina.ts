@@ -40,7 +40,7 @@ export const useRutinaStore = defineStore('rutina', () => {
         try {
             const rawRutina = localStorage.getItem(STORAGE_KEY_RUTINA);
             const rawDia = localStorage.getItem(STORAGE_KEY_DIA);
-            seleccionada.value = rawRutina ? JSON.parse(rawRutina) as RutinaSeleccionada : null;
+            seleccionada.value = rawRutina ? (JSON.parse(rawRutina) as RutinaSeleccionada) : null;
             diaActual.value = rawDia || 'Día 1';
         } catch (e) {
             // localStorage puede tirar (modo privado, cuota llena, JSON malformado).

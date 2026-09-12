@@ -80,11 +80,13 @@ export function useFuzzySearch() {
         const idx = t.indexOf(q);
         if (idx === -1) return escapeHtml(stringText);
 
-        return escapeHtml(stringText.slice(0, idx)) +
-               '<mark class="bg-yellow-200 dark:bg-yellow-900/50 text-gray-900 dark:text-white px-0.5 rounded">' +
-               escapeHtml(stringText.slice(idx, idx + q.length)) +
-               '</mark>' +
-               escapeHtml(stringText.slice(idx + q.length));
+        return (
+            escapeHtml(stringText.slice(0, idx)) +
+            '<mark class="bg-yellow-200 dark:bg-yellow-900/50 text-gray-900 dark:text-white px-0.5 rounded">' +
+            escapeHtml(stringText.slice(idx, idx + q.length)) +
+            '</mark>' +
+            escapeHtml(stringText.slice(idx + q.length))
+        );
     };
 
     const escapeHtml = (s) => {

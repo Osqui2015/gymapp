@@ -55,7 +55,15 @@ describe('useAuthStore', () => {
 
     it('fetchUser cachea el resultado (no vuelve a pegarle al endpoint)', async () => {
         axios.get.mockResolvedValueOnce({
-            data: { id: 1, name: 'Test', nick: 'test', email: 't@e.com', role: 'trainer', trainer_id: null, has_trainer: false },
+            data: {
+                id: 1,
+                name: 'Test',
+                nick: 'test',
+                email: 't@e.com',
+                role: 'trainer',
+                trainer_id: null,
+                has_trainer: false,
+            },
         });
 
         const auth = useAuthStore();
@@ -72,7 +80,15 @@ describe('useAuthStore', () => {
 
     it('fetchUser({ force: true }) sí re-pega al endpoint', async () => {
         axios.get.mockResolvedValue({
-            data: { id: 1, name: 'Test', nick: 'test', email: 't@e.com', role: 'trainer', trainer_id: null, has_trainer: false },
+            data: {
+                id: 1,
+                name: 'Test',
+                nick: 'test',
+                email: 't@e.com',
+                role: 'trainer',
+                trainer_id: null,
+                has_trainer: false,
+            },
         });
 
         const auth = useAuthStore();

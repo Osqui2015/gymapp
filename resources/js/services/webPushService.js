@@ -69,9 +69,21 @@ export async function registerServiceWorker() {
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                     console.info('[sw] nueva versión instalada, lista para activarse');
+                    // Emitir evento para que la UI muestre un banner de "actualizar"
+                    window.dispatchEvent(new CustomEvent('sw:update-available'));
                 }
             });
         });
+
+        // Cuando el nuevo SW toma el control, recargar la pagina para que use el nuevo.
+        // Esto pasa despues de un skipWaiting automatico o un reload del user.
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+        });
+
         return registration;
     } catch (e) {
         console.warn('[sw] registro falló:', e);
@@ -116,7 +128,9 @@ export async function unsubscribeFromPush() {
             data: { endpoint: sub.endpoint },
             withCredentials: true,
         });
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
     return sub.unsubscribe();
 }
 

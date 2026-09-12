@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use App\Models\Membresia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -15,11 +14,14 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const ROLE_COMUN = 'comun';
+
     public const ROLE_ALUMNO = 'alumno';
+
     public const ROLE_TRAINER = 'trainer';
+
     public const ROLE_ADMINISTRADOR = 'administrador';
 
     protected $fillable = [
@@ -30,6 +32,7 @@ class User extends Authenticatable
         'password',
         'role',
         'suspended',
+        'motivo_suspension',
         'trainer_id',
         'altura',
         'peso_objetivo',
@@ -120,7 +123,7 @@ class User extends Authenticatable
      */
     public function notifications(): MorphMany
     {
-        return $this->morphMany(\App\Models\Notification::class, 'notifiable')
+        return $this->morphMany(Notification::class, 'notifiable')
             ->latest('created_at');
     }
 
@@ -150,6 +153,7 @@ class User extends Authenticatable
     public function getEstaVencido(): bool
     {
         $membresia = $this->getMembresiaActiva();
+
         return $membresia === null && $this->membresias()->exists();
     }
 

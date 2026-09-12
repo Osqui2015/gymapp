@@ -86,11 +86,15 @@ export function useHistorialFilters() {
     });
 
     // Watch para sincronizar state → URL
-    const stop = watch(state, (newVal) => {
-        for (const [k, v] of Object.entries(newVal)) {
-            filters.set(k, v);
-        }
-    }, { deep: true });
+    const stop = watch(
+        state,
+        (newVal) => {
+            for (const [k, v] of Object.entries(newVal)) {
+                filters.set(k, v);
+            }
+        },
+        { deep: true }
+    );
 
     const reset = () => {
         state.value = { alumno_id: null, from: null, to: null, rutina: null, ejercicio: null };

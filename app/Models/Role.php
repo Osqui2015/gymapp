@@ -18,9 +18,13 @@ class Role extends Model
     ];
 
     public const COMUN = 'comun';
+
     public const ADMINISTRADOR = 'administrador';
+
     public const TRAINER = 'trainer';
+
     public const RECEPCIONISTA = 'recepcionista';
+
     public const COORDINADOR = 'coordinador';
 
     public static function defaultRoles(): array

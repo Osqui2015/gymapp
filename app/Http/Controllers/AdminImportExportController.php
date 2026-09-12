@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Ejercicio;
-use App\Models\Rutina;
 use App\Models\AuditLog;
+use App\Models\Ejercicio;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AdminImportExportController extends Controller
 {
@@ -20,7 +19,7 @@ class AdminImportExportController extends Controller
 
         $csv = $this->arrayToCsv([
             ['ID', 'Nombre', 'Nick', 'Email', 'Rol', 'Teléfono', 'Trainer ID', 'Suspendido', 'Fecha Registro'],
-            ...$users->map(fn($u) => [
+            ...$users->map(fn ($u) => [
                 $u->id,
                 $u->name,
                 $u->nick,
@@ -30,12 +29,12 @@ class AdminImportExportController extends Controller
                 $u->trainer_id,
                 $u->suspended ? 'Sí' : 'No',
                 $u->created_at->format('Y-m-d'),
-            ])->toArray()
+            ])->toArray(),
         ]);
 
         return response()->streamDownload(
-            fn () => print($csv),
-            'usuarios_export_' . now()->format('Y-m-d') . '.csv',
+            fn () => print ($csv),
+            'usuarios_export_'.now()->format('Y-m-d').'.csv',
             ['Content-Type' => 'text/csv']
         );
     }
@@ -49,19 +48,19 @@ class AdminImportExportController extends Controller
 
         $csv = $this->arrayToCsv([
             ['ID', 'Nombre', 'Grupo Muscular', 'Equipamiento', 'Visible', 'Descripción'],
-            ...$ejercicios->map(fn($e) => [
+            ...$ejercicios->map(fn ($e) => [
                 $e->id,
                 $e->nombre,
                 $e->grupo_muscular,
                 $e->equipamiento,
                 $e->visibilidad ? 'Sí' : 'No',
                 $e->descripcion,
-            ])->toArray()
+            ])->toArray(),
         ]);
 
         return response()->streamDownload(
-            fn () => print($csv),
-            'ejercicios_export_' . now()->format('Y-m-d') . '.csv',
+            fn () => print ($csv),
+            'ejercicios_export_'.now()->format('Y-m-d').'.csv',
             ['Content-Type' => 'text/csv']
         );
     }
@@ -74,7 +73,7 @@ class AdminImportExportController extends Controller
 
         $file = $request->file('archivo');
         $handle = fopen($file->getRealPath(), 'r');
-        
+
         $headers = fgetcsv($handle);
         $rowCount = 0;
         $errors = [];
@@ -84,38 +83,42 @@ class AdminImportExportController extends Controller
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 $rowCount++;
-                
+
                 // Skip empty rows
-                if (empty(array_filter($row))) continue;
+                if (empty(array_filter($row))) {
+                    continue;
+                }
 
                 try {
                     $data = $this->mapRowToUsers($headers, $row);
-                    
+
                     if (empty($data['name']) || empty($data['email'])) {
                         $errors[] = "Fila {$rowCount}: Nombre y email son requeridos";
+
                         continue;
                     }
 
                     // Generar nick si no existe
                     if (empty($data['nick'])) {
-                        $data['nick'] = strtolower(str_replace(' ', '.', $data['name'])) . $rowCount;
+                        $data['nick'] = strtolower(str_replace(' ', '.', $data['name'])).$rowCount;
                     }
 
                     // Generar password aleatorio seguro (12 chars) - debe resetearse en primer login
-                    $data['password'] = bcrypt(\Illuminate\Support\Str::random(12));
+                    $data['password'] = bcrypt(Str::random(12));
 
                     User::create($data);
                     $created++;
                 } catch (\Exception $e) {
-                    $errors[] = "Fila {$rowCount}: " . $e->getMessage();
+                    $errors[] = "Fila {$rowCount}: ".$e->getMessage();
                 }
             }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'error' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                'error' => 'Error al procesar el archivo: '.$e->getMessage(),
                 'errors' => $errors,
             ], 422);
         }
@@ -138,7 +141,7 @@ class AdminImportExportController extends Controller
 
         $file = $request->file('archivo');
         $handle = fopen($file->getRealPath(), 'r');
-        
+
         $headers = fgetcsv($handle);
         $rowCount = 0;
         $errors = [];
@@ -148,29 +151,33 @@ class AdminImportExportController extends Controller
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 $rowCount++;
-                
-                if (empty(array_filter($row))) continue;
+
+                if (empty(array_filter($row))) {
+                    continue;
+                }
 
                 try {
                     $data = $this->mapRowToEjercicios($headers, $row);
-                    
+
                     if (empty($data['nombre']) || empty($data['grupo_muscular'])) {
                         $errors[] = "Fila {$rowCount}: Nombre y grupo muscular son requeridos";
+
                         continue;
                     }
 
                     Ejercicio::create($data);
                     $created++;
                 } catch (\Exception $e) {
-                    $errors[] = "Fila {$rowCount}: " . $e->getMessage();
+                    $errors[] = "Fila {$rowCount}: ".$e->getMessage();
                 }
             }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'error' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                'error' => 'Error al procesar el archivo: '.$e->getMessage(),
                 'errors' => $errors,
             ], 422);
         }
@@ -191,8 +198,10 @@ class AdminImportExportController extends Controller
         foreach ($headers as $i => $header) {
             $key = strtolower(trim($header));
             $value = trim($row[$i] ?? '');
-            
-            if (empty($value)) continue;
+
+            if (empty($value)) {
+                continue;
+            }
 
             switch ($key) {
                 case 'nombre':
@@ -207,8 +216,8 @@ class AdminImportExportController extends Controller
                     break;
                 case 'rol':
                 case 'role':
-                    $data['role'] = in_array(strtolower($value), ['admin', 'administrador']) ? 'administrador' : 
-                                   (in_array(strtolower($value), ['trainer', 'entrenador']) ? 'trainer' : 
+                    $data['role'] = in_array(strtolower($value), ['admin', 'administrador']) ? 'administrador' :
+                                   (in_array(strtolower($value), ['trainer', 'entrenador']) ? 'trainer' :
                                    (in_array(strtolower($value), ['alumno', 'student']) ? 'alumno' : 'comun'));
                     break;
                 case 'teléfono':
@@ -217,7 +226,7 @@ class AdminImportExportController extends Controller
                     break;
                 case 'trainer id':
                 case 'trainer_id':
-                    $data['trainer_id'] = is_numeric($value) ? (int)$value : null;
+                    $data['trainer_id'] = is_numeric($value) ? (int) $value : null;
                     break;
             }
         }
@@ -231,8 +240,10 @@ class AdminImportExportController extends Controller
         foreach ($headers as $i => $header) {
             $key = strtolower(trim($header));
             $value = trim($row[$i] ?? '');
-            
-            if (empty($value)) continue;
+
+            if (empty($value)) {
+                continue;
+            }
 
             switch ($key) {
                 case 'nombre':
@@ -261,15 +272,15 @@ class AdminImportExportController extends Controller
     private function arrayToCsv(array $data): string
     {
         $output = fopen('php://temp', 'r+');
-        
+
         foreach ($data as $row) {
             fputcsv($output, $row);
         }
-        
+
         rewind($output);
         $csv = stream_get_contents($output);
         fclose($output);
-        
+
         return $csv;
     }
 }

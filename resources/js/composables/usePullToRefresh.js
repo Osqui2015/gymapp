@@ -27,16 +27,12 @@
 
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
-const THRESHOLD = 70;            // px a arrastrar para disparar refresh
-const MAX_PULL = 120;            // tope duro para evitar stretching infinito
-const RESISTANCE = 0.4;          // damping: cada px de dedo → 0.4px de offset
+const THRESHOLD = 70; // px a arrastrar para disparar refresh
+const MAX_PULL = 120; // tope duro para evitar stretching infinito
+const RESISTANCE = 0.4; // damping: cada px de dedo → 0.4px de offset
 
 export function usePullToRefresh(target, onRefresh, options = {}) {
-    const {
-        threshold = THRESHOLD,
-        maxPull = MAX_PULL,
-        resistance = RESISTANCE,
-    } = options;
+    const { threshold = THRESHOLD, maxPull = MAX_PULL, resistance = RESISTANCE } = options;
 
     // Normalizar target: aceptar ref o window directo
     const isWindow = target === window;
@@ -52,9 +48,9 @@ export function usePullToRefresh(target, onRefresh, options = {}) {
     const progress = computed(() => Math.min(pullOffset.value / threshold, 1));
 
     const reducedMotion = () =>
-        typeof window !== 'undefined'
-        && window.matchMedia
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        typeof window !== 'undefined' &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const setOffset = (raw) => {
         const next = Math.max(0, Math.min(maxPull, raw * resistance));

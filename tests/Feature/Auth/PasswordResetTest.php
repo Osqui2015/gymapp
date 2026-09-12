@@ -113,6 +113,7 @@ class PasswordResetTest extends TestCase
             ]);
 
             $response->assertSessionHasErrors('password');
+
             return true;
         });
     }

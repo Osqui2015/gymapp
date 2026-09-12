@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use phpseclib3\Crypt\RSA; // fallback si minish/web-push no está disponible
+// fallback si minish/web-push no está disponible
 use Illuminate\Support\Facades\File;
 
 class GenerateVapidKeys extends Command
 {
     protected $signature = 'webpush:vapid {--show : Only print existing keys without regenerating}';
+
     protected $description = 'Generate VAPID keys for Web Push notifications (RFC 8292)';
 
     public function handle(): int
@@ -20,8 +21,9 @@ class GenerateVapidKeys extends Command
             $this->info('Current VAPID keys in .env:');
             foreach (['VAPID_SUBJECT', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as $key) {
                 $value = $this->getEnvValue($env, $key);
-                $this->line("  {$key}=" . ($value ?: '(not set)'));
+                $this->line("  {$key}=".($value ?: '(not set)'));
             }
+
             return self::SUCCESS;
         }
 
@@ -37,7 +39,7 @@ class GenerateVapidKeys extends Command
         // (C:\Program Files\Common Files\SSL\openssl.cnf) is missing.
         // As a fallback, look for a bundled copy under Git/usr/ssl/ which
         // ships with Laragon's Git for Windows.
-        if (!getenv('OPENSSL_CONF')) {
+        if (! getenv('OPENSSL_CONF')) {
             $candidates = [
                 'C:\\Program Files\\Git\\usr\\ssl\\openssl.cnf',
                 'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\openssl.cnf',
@@ -53,12 +55,13 @@ class GenerateVapidKeys extends Command
         }
 
         $res = openssl_pkey_new($config);
-        if (!$res) {
+        if (! $res) {
             $this->error('No se pudo generar el par de claves EC P-256. ¿OpenSSL disponible?');
             $this->error('Si el error es de config, seteá la env var OPENSSL_CONF apuntando a un openssl.cnf válido.');
             while ($msg = openssl_error_string()) {
-                $this->line('  - ' . $msg);
+                $this->line('  - '.$msg);
             }
+
             return self::FAILURE;
         }
 
@@ -100,13 +103,13 @@ class GenerateVapidKeys extends Command
 
         // En OpenSSL, EC public key viene como 'ec' con 'x' e 'y' en decimal/hex
         // Construimos manualmente el punto 0x04 || X(32) || Y(32)
-        if (!isset($details['ec']['x'], $details['ec']['y'])) {
+        if (! isset($details['ec']['x'], $details['ec']['y'])) {
             throw new \RuntimeException('No se pudo extraer coordenadas EC.');
         }
 
         $x = $this->bigIntTo32Bytes($details['ec']['x']);
         $y = $this->bigIntTo32Bytes($details['ec']['y']);
-        $point = "\x04" . $x . $y;
+        $point = "\x04".$x.$y;
 
         return $this->base64UrlEncode($point);
     }
@@ -116,7 +119,7 @@ class GenerateVapidKeys extends Command
         $res = openssl_pkey_get_private($pem);
         $details = openssl_pkey_get_details($res);
 
-        if (!isset($details['ec']['d'])) {
+        if (! isset($details['ec']['d'])) {
             throw new \RuntimeException('No se pudo extraer la clave privada EC.');
         }
 
@@ -132,6 +135,7 @@ class GenerateVapidKeys extends Command
             $hex = substr($hex, -64);
         }
         $hex = str_pad($hex, 64, '0', STR_PAD_LEFT);
+
         return hex2bin($hex);
     }
 
@@ -191,12 +195,13 @@ class GenerateVapidKeys extends Command
                     $quotient .= (string) $q;
                 }
             }
-            $hex = dechex($carry) . $hex;
+            $hex = dechex($carry).$hex;
             $dec = $quotient;
             if ($dec === '') {
                 $dec = '0';
             }
         }
+
         return $hex === '' ? '0' : $hex;
     }
 
@@ -210,6 +215,7 @@ class GenerateVapidKeys extends Command
         if (preg_match("/^{$key}=(.*)$/m", $env, $m)) {
             return trim($m[1], "\"' ");
         }
+
         return null;
     }
 
@@ -220,9 +226,10 @@ class GenerateVapidKeys extends Command
             if (preg_match("/^{$key}=.*$/m", $env)) {
                 $env = preg_replace("/^{$key}=.*$/m", $line, $env);
             } else {
-                $env .= PHP_EOL . $line;
+                $env .= PHP_EOL.$line;
             }
         }
+
         return $env;
     }
 }

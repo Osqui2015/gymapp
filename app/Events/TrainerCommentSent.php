@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Models\TrainerComment;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -23,7 +22,7 @@ class TrainerCommentSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('trainer-comments.' . $this->comment->alumno_id),
+            new PrivateChannel('trainer-comments.'.$this->comment->alumno_id),
         ];
     }
 
@@ -35,6 +34,7 @@ class TrainerCommentSent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         $comment = $this->comment->loadMissing('trainer:id,name,nick');
+
         return [
             'id' => $comment->id,
             'trainer' => [

@@ -1,10 +1,9 @@
 <template>
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Breadcrumbs :items="[
-                { label: 'Inicio', href: '/dashboard' },
-                { label: 'Configuración' },
-            ]" />
+            <Breadcrumbs
+                :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Configuración' }]"
+            />
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Configuración</h1>
 
             <!-- Tabs -->
@@ -237,7 +236,12 @@ const guardarEdicion = async (payload) => {
         cerrarModal();
         showToast('Usuario actualizado correctamente', 'success');
     } catch (error) {
-        showToast(error.response?.data?.message || error.response?.data?.error || 'Error al guardar cambios', 'error');
+        showToast(
+            error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Error al guardar cambios',
+            'error'
+        );
     } finally {
         guardando.value = false;
     }
@@ -247,7 +251,10 @@ const toggleSuspend = async (user) => {
     const accion = user.suspended ? 'activar' : 'suspender';
     const confirmed = await toast.confirm(
         `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} al usuario "${user.name}"?`,
-        { title: `${accion.charAt(0).toUpperCase() + accion.slice(1)} usuario`, confirmLabel: `Sí, ${accion}` }
+        {
+            title: `${accion.charAt(0).toUpperCase() + accion.slice(1)} usuario`,
+            confirmLabel: `Sí, ${accion}`,
+        }
     );
     if (!confirmed) return;
     try {
@@ -255,7 +262,12 @@ const toggleSuspend = async (user) => {
         user.suspended = !user.suspended;
         showToast(`Usuario ${user.suspended ? 'suspendido' : 'activado'} correctamente`, 'success');
     } catch (error) {
-        showToast(error.response?.data?.message || error.response?.data?.error || 'Error al cambiar estado', 'error');
+        showToast(
+            error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Error al cambiar estado',
+            'error'
+        );
     }
 };
 
@@ -270,7 +282,12 @@ const eliminarUsuario = async (user) => {
         await cargarDatos();
         showToast('Usuario eliminado correctamente', 'success');
     } catch (error) {
-        showToast(error.response?.data?.message || error.response?.data?.error || 'Error al eliminar usuario', 'error');
+        showToast(
+            error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Error al eliminar usuario',
+            'error'
+        );
     }
 };
 

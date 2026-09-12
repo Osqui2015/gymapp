@@ -1,125 +1,253 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 pb-28 md:py-8 md:pb-8">
-    <Breadcrumbs :items="[{ label: 'Inicio' }]" class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" />
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 pb-28 md:py-8 md:pb-8">
+        <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
+        <Breadcrumbs
+            :items="[{ label: 'Inicio' }]"
+            class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+        />
 
-    <!-- Indicador pull-to-refresh (mobile) -->
-    <div
-      v-show="pullOffset > 4 || isRefreshing"
-      :style="{ height: pullOffset + 'px' }"
-      class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-6xl mx-auto"
-      aria-live="polite"
-      role="status"
-    >
-      <div class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
-        <svg class="w-5 h-5 animate-spin text-indigo-600" v-if="isRefreshing" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-        </svg>
-        <svg class="w-5 h-5 text-indigo-600" v-else fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-        <span>{{ isRefreshing ? 'Actualizando…' : 'Deslizá hacia abajo' }}</span>
-      </div>
-    </div>
-
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <template v-if="rutinaStore.seleccionada">
-        <div data-tour="home-hero" class="mb-4">
-          <HomeHero />
-        </div>
-
-        <div data-tour="rutina-header">
-          <DashboardRutinaHeader
-            :nivel="rutinaStore.seleccionada.nivel"
-            :dias="rutinaStore.seleccionada.dias"
-            :dia-actual="diaActual"
-            @cambiar="cambiarRutina"
-          />
-        </div>
-
-        <div data-tour="stats">
-          <DashboardStats
-            :series-totales="seriesTotales"
-            :series-completadas="seriesCompletadas"
-            :series-pendientes="seriesPendientes"
-            :peso-registrado="pesoRegistrado"
-            :peso-promedio="pesoPromedio"
-            :reps-registradas="repsRegistradas"
-            :progreso-dia="progresoDia"
-          />
-        </div>
-
-        <!-- Day selector -->
-        <div class="mb-6" data-tour="day-selector">
-          <div class="flex flex-wrap gap-2 mb-4">
-            <button
-              v-for="dia in todosLosDias"
-              :key="dia"
-              @click="cambiarDia(dia)"
-              :class="[
-                'px-4 py-2 rounded-lg font-medium transition-all',
-                diaActual === dia
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-              ]"
+        <!-- Indicador pull-to-refresh (mobile) -->
+        <div
+            v-show="pullOffset > 4 || isRefreshing"
+            :style="{ height: pullOffset + 'px' }"
+            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-6xl mx-auto"
+            aria-live="polite"
+            role="status"
+        >
+            <div
+                class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400"
             >
-              {{ dia }}
-            </button>
-          </div>
+                <svg
+                    class="w-5 h-5 animate-spin text-indigo-600"
+                    v-if="isRefreshing"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                    ></circle>
+                    <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    ></path>
+                </svg>
+                <svg
+                    class="w-5 h-5 text-indigo-600"
+                    v-else
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                    />
+                </svg>
+                <span>{{ isRefreshing ? 'Actualizando…' : 'Deslizá hacia abajo' }}</span>
+            </div>
         </div>
 
-        <div data-tour="series-list">
-          <DashboardSeriesList
-            :filas-serie="filasSerie"
-            :dia-index="diaIndex"
-            :texto-boton-siguiente="textoBotonSiguiente"
-            :boton-siguiente-class="botonSiguienteClass"
-            @guardar="guardarFila"
-            @dia-anterior="diaAnterior"
-            @guardar-sesion="guardarSesion"
-            @siguiente-dia="siguienteDia"
-          />
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <template v-if="rutinaStore.seleccionada">
+                <div data-tour="home-hero" class="mb-4">
+                    <HomeHero />
+                </div>
+
+                <!-- Banner de Sesión de Entrenamiento Activa -->
+                <div
+                    v-if="session.isActive"
+                    class="mb-4 bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-indigo-900/90 border border-emerald-500/40 rounded-2xl p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+                >
+                    <div class="flex items-center gap-3">
+                        <span class="relative flex h-3.5 w-3.5">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                            ></span>
+                            <span
+                                class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
+                            ></span>
+                        </span>
+                        <div>
+                            <p class="text-sm font-black tracking-tight flex items-center gap-2">
+                                <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
+                                <span
+                                    v-if="session.isPaused"
+                                    class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
+                                    >Pausado</span
+                                >
+                            </p>
+                            <p class="text-xs text-emerald-200/80">
+                                {{ session.currentEjercicio?.nombre || 'Sesión iniciada' }} ·
+                                {{ session.totalSeriesCompletadas }}/{{
+                                    session.totalSeriesObjetivo
+                                }}
+                                series
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            @click="abrirModoEntrenamiento"
+                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md cursor-pointer transition-all active:scale-95"
+                        >
+                            ⚡ Continuar
+                        </button>
+                        <button
+                            type="button"
+                            @click="descartarSesion"
+                            class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-rose-300 text-xs font-semibold cursor-pointer transition-all"
+                        >
+                            Descartar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CTA Card Modo Entrenamiento Activo -->
+                <div
+                    v-else
+                    class="mb-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                >
+                    <div>
+                        <h3
+                            class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                        >
+                            <span>⚡ Modo Entrenamiento Activo</span>
+                            <span
+                                class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+                                >Focus Mode</span
+                            >
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            Seguimiento guiado serie por serie, botones táctiles aumentados y
+                            descanso automático.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="abrirModoEntrenamiento"
+                        class="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                    >
+                        <span>▶ Iniciar Sesión de Hoy</span>
+                    </button>
+                </div>
+
+                <div data-tour="rutina-header">
+                    <DashboardRutinaHeader
+                        :nivel="rutinaStore.seleccionada.nivel"
+                        :dias="rutinaStore.seleccionada.dias"
+                        :dia-actual="diaActual"
+                        @cambiar="cambiarRutina"
+                    />
+                </div>
+
+                <div data-tour="stats">
+                    <DashboardStats
+                        :series-totales="seriesTotales"
+                        :series-completadas="seriesCompletadas"
+                        :series-pendientes="seriesPendientes"
+                        :peso-registrado="pesoRegistrado"
+                        :peso-promedio="pesoPromedio"
+                        :reps-registradas="repsRegistradas"
+                        :progreso-dia="progresoDia"
+                    />
+                </div>
+
+                <!-- Day selector -->
+                <div class="mb-6" data-tour="day-selector">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button
+                            v-for="dia in todosLosDias"
+                            :key="dia"
+                            @click="cambiarDia(dia)"
+                            :class="[
+                                'px-4 py-2 rounded-lg font-medium transition-all',
+                                diaActual === dia
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+                            ]"
+                        >
+                            {{ dia }}
+                        </button>
+                    </div>
+                </div>
+
+                <div data-tour="series-list">
+                    <DashboardSeriesList
+                        :filas-serie="filasSerie"
+                        :dia-index="diaIndex"
+                        :texto-boton-siguiente="textoBotonSiguiente"
+                        :boton-siguiente-class="botonSiguienteClass"
+                        @guardar="guardarFila"
+                        @dia-anterior="diaAnterior"
+                        @guardar-sesion="guardarSesion"
+                        @siguiente-dia="siguienteDia"
+                    />
+                </div>
+
+                <!-- Botón "Guardar sesión" fijo abajo en mobile -->
+                <div
+                    class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-gray-700 bg-gray-950/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]"
+                >
+                    <div class="max-w-6xl mx-auto px-4 py-3">
+                        <button
+                            @click="guardarSesion"
+                            class="w-full rounded-xl bg-slate-700 hover:bg-slate-800 text-white px-4 py-3 text-sm font-semibold shadow-lg shadow-slate-950/30"
+                        >
+                            Guardar sesión
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <EmptyStateIllustrated
+                v-else
+                variant="no-rutinas"
+                title="No hay rutina seleccionada"
+                description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
+                cta-text="Seleccionar Rutina"
+                cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                @cta="window.location.href = '/rutinas'"
+            />
+
+            <DashboardHeatmap :historial="historialRutina" class="mt-6" data-tour="heatmap" />
+
+            <!-- Gráfico semanal de peso (Chart.js) -->
+            <DashboardWeeklyChart
+                :historial="historialRutina"
+                class="mt-6"
+                data-tour="weekly-chart"
+            />
         </div>
 
-        <!-- Botón "Guardar sesión" fijo abajo en mobile -->
-        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-gray-700 bg-gray-950/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
-          <div class="max-w-6xl mx-auto px-4 py-3">
-            <button
-              @click="guardarSesion"
-              class="w-full rounded-xl bg-slate-700 hover:bg-slate-800 text-white px-4 py-3 text-sm font-semibold shadow-lg shadow-slate-950/30"
-            >
-              Guardar sesión
-            </button>
-          </div>
-        </div>
-      </template>
+        <!-- Onboarding tour (auto-start en primera visita) -->
+        <OnboardingTour :tour="onboarding" />
 
-      <EmptyStateIllustrated
-        v-else
-        variant="no-rutinas"
-        title="No hay rutina seleccionada"
-        description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
-        cta-text="Seleccionar Rutina"
-        cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
-        @cta="window.location.href = '/rutinas'"
-      />
+        <!-- Modales de Modo Entrenamiento Activo (Nivel 4) -->
+        <ActiveWorkoutModal
+            :open="showActiveWorkoutModal"
+            @minimize="showActiveWorkoutModal = false"
+            @finish="onFinishActiveWorkout"
+        />
 
-      <DashboardHeatmap :historial="historialRutina" class="mt-6" data-tour="heatmap" />
-
-      <!-- Gráfico semanal de peso (Chart.js) -->
-      <DashboardWeeklyChart :historial="historialRutina" class="mt-6" data-tour="weekly-chart" />
+        <WorkoutSummaryModal
+            :open="showWorkoutSummaryModal"
+            @cancel="
+                showWorkoutSummaryModal = false;
+                showActiveWorkoutModal = true;
+            "
+            @saved="onWorkoutSummarySaved"
+        />
     </div>
-
-    <!-- Onboarding tour (auto-start en primera visita) -->
-    <OnboardingTour :tour="onboarding" />
-
-    <DashboardRestTimer
-      :model-value="timer"
-      @pausar-reanudar="pausarReanudarTemporizador"
-      @agregar-30s="agregarTiempoTemporizador"
-      @saltar="saltarTemporizador"
-    />
-  </div>
 </template>
 
 <script setup>
@@ -129,6 +257,10 @@ import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
 import { useOnboarding } from '../composables/useOnboarding';
+import { useOfflineSeries } from '@/composables/useOfflineSeries';
+import { useWakeLock } from '@/composables/useWakeLock';
+import { useTrainingSessionStore } from '@/stores/trainingSession';
+import SyncBadge from './training/SyncBadge.vue';
 import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyStateIllustrated gradualmente
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
@@ -140,9 +272,27 @@ import DashboardStats from './dashboard/DashboardStats.vue';
 import DashboardSeriesList from './dashboard/DashboardSeriesList.vue';
 import DashboardHeatmap from './dashboard/DashboardHeatmap.vue';
 import DashboardWeeklyChart from './dashboard/DashboardWeeklyChart.vue';
-import DashboardRestTimer from './dashboard/DashboardRestTimer.vue';
+import { useRestTimerStore } from '../stores/restTimer';
+import ActiveWorkoutModal from './training/ActiveWorkoutModal.vue';
+import WorkoutSummaryModal from './training/WorkoutSummaryModal.vue';
 
 const rutinaStore = useRutinaStore();
+
+// === Modo entrenamiento (Oleada 1) ===
+// - useOfflineSeries: registra series online/offline con sync automatico
+// - useWakeLock: mantiene la pantalla encendida durante el entrenamiento
+// - useTrainingSessionStore: persistencia de la sesion actual (recovery al cerrar)
+// - SyncBadge: indicador visual de estado
+const offline = useOfflineSeries();
+const wake = useWakeLock();
+const session = useTrainingSessionStore();
+
+onMounted(() => {
+    // Solo pedimos wake lock si el user tiene una sesion activa (entrenando).
+    if (session.isActive && wake.supported) {
+        wake.request();
+    }
+});
 
 // Onboarding tour: 5 steps por el dashboard, se muestra la primera vez
 const onboarding = useOnboarding('dashboard-tour', [
@@ -187,6 +337,92 @@ const historialRutina = ref([]);
 const diaActual = ref('Día 1');
 const todosLosDias = ref([]);
 
+const showActiveWorkoutModal = ref(false);
+const showWorkoutSummaryModal = ref(false);
+
+const formattedActiveTime = computed(() => {
+    const s = session.elapsed;
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    if (hrs > 0) {
+        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+});
+
+const abrirModoEntrenamiento = async () => {
+    if (!session.isActive) {
+        // Agrupar filasSerie por ejercicio único
+        const exercisesMap = new Map();
+        filasSerie.value.forEach((f) => {
+            if (!exercisesMap.has(f.ejercicio_nombre)) {
+                exercisesMap.set(f.ejercicio_nombre, {
+                    nombre: f.ejercicio_nombre,
+                    series_objetivo: 0,
+                    reps_min: f.reps_min,
+                    reps_max: f.reps_max,
+                    descanso_min: f.descanso_min,
+                    superserie_grupo: f.superserie_grupo,
+                });
+            }
+            exercisesMap.get(f.ejercicio_nombre).series_objetivo += 1;
+        });
+
+        const ejerciciosList = Array.from(exercisesMap.values());
+
+        session.start({
+            rutina_nombre: getRutinaNombre(),
+            dia: diaActual.value,
+            ejercicios: ejerciciosList,
+        });
+
+        try {
+            await axios.post('/api/sesiones/iniciar', {
+                uuid: session.session.id,
+                rutina_nombre: getRutinaNombre(),
+                dia: diaActual.value,
+                started_at: session.session.startedAt,
+                series_totales: filasSerie.value.length,
+            });
+        } catch (e) {
+            console.warn('Sesión iniciada offline:', e);
+        }
+    }
+    showActiveWorkoutModal.value = true;
+};
+
+const onFinishActiveWorkout = () => {
+    showActiveWorkoutModal.value = false;
+    showWorkoutSummaryModal.value = true;
+};
+
+const onWorkoutSummarySaved = async (resumen) => {
+    showWorkoutSummaryModal.value = false;
+    showSuccess('🎉 ¡Sesión guardada exitosamente!');
+    await fetchHistorialRutina();
+    await fetchRutinasDelDia();
+};
+
+const descartarSesion = async () => {
+    const ok = await toast.confirm(
+        '¿Seguro que querés descartar la sesión actual? Se perderá el tiempo y progreso activo de esta sesión.',
+        { confirmLabel: 'Sí, descartar', cancelLabel: 'Continuar' }
+    );
+    if (!ok) return;
+
+    const uuid = session.session.id;
+    session.discard();
+    try {
+        if (uuid) {
+            await axios.delete(`/api/sesiones/${uuid}`);
+        }
+    } catch (e) {
+        // Silencioso si no hay red
+    }
+    showWarning('Sesión descartada.');
+};
+
 const diaIndex = computed(() => todosLosDias.value.indexOf(diaActual.value));
 const esUltimoDia = computed(() => diaIndex.value === todosLosDias.value.length - 1);
 
@@ -194,34 +430,47 @@ const seriesTotales = computed(() => filasSerie.value.length);
 const seriesCompletadas = computed(() => filasSerie.value.filter((f) => f.completado).length);
 const seriesPendientes = computed(() => Math.max(seriesTotales.value - seriesCompletadas.value, 0));
 
-const pesoRegistrado = computed(() => filasSerie.value.reduce((t, f) => {
-    const p = Number(f.peso);
-    return Number.isFinite(p) ? t + p : t;
-}, 0).toFixed(1));
+const pesoRegistrado = computed(() =>
+    filasSerie.value
+        .reduce((t, f) => {
+            const p = Number(f.peso);
+            return Number.isFinite(p) ? t + p : t;
+        }, 0)
+        .toFixed(1)
+);
 
 const pesoPromedio = computed(() => {
-    const pesos = filasSerie.value.map((f) => Number(f.peso)).filter((p) => Number.isFinite(p) && p > 0);
+    const pesos = filasSerie.value
+        .map((f) => Number(f.peso))
+        .filter((p) => Number.isFinite(p) && p > 0);
     if (!pesos.length) return '0.0';
     return (pesos.reduce((t, p) => t + p, 0) / pesos.length).toFixed(1);
 });
 
-const repsRegistradas = computed(() => filasSerie.value.reduce((t, f) => {
-    const r = Number(f.reps_realizadas);
-    return Number.isFinite(r) ? t + r : t;
-}, 0));
+const repsRegistradas = computed(() =>
+    filasSerie.value.reduce((t, f) => {
+        const r = Number(f.reps_realizadas);
+        return Number.isFinite(r) ? t + r : t;
+    }, 0)
+);
 
-const progresoDia = computed(() => seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0);
+const progresoDia = computed(() =>
+    seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0
+);
 
 const textoBotonSiguiente = computed(() => {
     if (esUltimoDia.value) {
-        return seriesCompletadas.value === seriesTotales.value ? '🎉 Finalizar Rutina' : '⚠️ Terminar e Iniciar';
+        return seriesCompletadas.value === seriesTotales.value
+            ? '🎉 Finalizar Rutina'
+            : '⚠️ Terminar e Iniciar';
     }
     return seriesPendientes.value > 0 ? '⚠️ Siguiente Día →' : 'Siguiente Día →';
 });
 
 const botonSiguienteClass = computed(() => {
     if (esUltimoDia.value && seriesPendientes.value > 0) return 'bg-orange-500 hover:bg-orange-600';
-    if (!esUltimoDia.value && seriesPendientes.value > 0) return 'bg-yellow-500 hover:bg-yellow-600';
+    if (!esUltimoDia.value && seriesPendientes.value > 0)
+        return 'bg-yellow-500 hover:bg-yellow-600';
     return 'bg-green-600 hover:bg-green-700';
 });
 
@@ -284,8 +533,14 @@ const construirFilasSerie = (rutinasDelDia) => {
         if (rutina.superserie_grupo) {
             if (!processedSuperseries.has(rutina.superserie_grupo)) {
                 processedSuperseries.add(rutina.superserie_grupo);
-                const supersetExercises = filteredRutinas.filter((r) => r.superserie_grupo === rutina.superserie_grupo);
-                blocks.push({ isSuperset: true, grupo: rutina.superserie_grupo, exercises: supersetExercises });
+                const supersetExercises = filteredRutinas.filter(
+                    (r) => r.superserie_grupo === rutina.superserie_grupo
+                );
+                blocks.push({
+                    isSuperset: true,
+                    grupo: rutina.superserie_grupo,
+                    exercises: supersetExercises,
+                });
             }
         } else {
             blocks.push({ isSuperset: false, exercise: rutina });
@@ -306,7 +561,8 @@ const construirFilasSerie = (rutinasDelDia) => {
                     dia: diaActual.value,
                     ejercicio_nombre: rutina.ejercicio_nombre,
                     series_numero: serieNumero,
-                    series_completadas: registro?.series_completadas ?? (registro?.completado ? 1 : 0),
+                    series_completadas:
+                        registro?.series_completadas ?? (registro?.completado ? 1 : 0),
                     reps_min: rutina.reps_min,
                     reps_max: rutina.reps_max,
                     reps_realizadas: registro?.reps_realizadas ?? null,
@@ -335,7 +591,8 @@ const construirFilasSerie = (rutinasDelDia) => {
                             dia: diaActual.value,
                             ejercicio_nombre: rutina.ejercicio_nombre,
                             series_numero: serieNumero,
-                            series_completadas: registro?.series_completadas ?? (registro?.completado ? 1 : 0),
+                            series_completadas:
+                                registro?.series_completadas ?? (registro?.completado ? 1 : 0),
                             reps_min: rutina.reps_min,
                             reps_max: rutina.reps_max,
                             reps_realizadas: registro?.reps_realizadas ?? null,
@@ -374,7 +631,12 @@ const fetchRutinasDelDia = async () => {
 
 const guardarFila = async (fila, silencioso = false) => {
     try {
-        await axios.post('/api/historial/guardar', {
+        // === Modo offline (Oleada 1) ===
+        // Antes: axios.post directo, fallaba si no habia red.
+        // Ahora: usa useOfflineSeries, que encola en IndexedDB si no hay red y
+        // sincroniza automaticamente al volver online.
+        const result = await offline.recordSet({
+            fecha: new Date().toISOString().split('T')[0],
             rutina_nombre: fila.rutina_nombre,
             dia: fila.dia,
             ejercicio_nombre: fila.ejercicio_nombre,
@@ -382,7 +644,10 @@ const guardarFila = async (fila, silencioso = false) => {
             series_completadas: fila.completado ? 1 : 0,
             reps_min: fila.reps_min,
             reps_max: fila.reps_max,
-            reps_realizadas: fila.reps_realizadas === '' || fila.reps_realizadas == null ? null : Number(fila.reps_realizadas),
+            reps_realizadas:
+                fila.reps_realizadas === '' || fila.reps_realizadas == null
+                    ? null
+                    : Number(fila.reps_realizadas),
             descanso_min: fila.descanso_min,
             peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
             completado: fila.completado,
@@ -391,6 +656,15 @@ const guardarFila = async (fila, silencioso = false) => {
             esfuerzo_tipo: fila.esfuerzo_tipo || null,
             esfuerzo_valor: fila.esfuerzo_valor ?? null,
         });
+        if (result.status === 'queued' && !silencioso) {
+            showError?.(
+                'Sin conexion: guardado en este dispositivo, se sincroniza al volver online.'
+            );
+        } else if (result.status === 'lost' && !silencioso) {
+            showError?.(
+                'No se pudo guardar: estas sin conexion y tu navegador no soporta guardado offline.'
+            );
+        }
         if (!silencioso && fila.completado && deberiaIniciarTemporizador(fila)) {
             iniciarTemporizador(fila);
         }
@@ -508,12 +782,15 @@ onMounted(async () => {
     }
 });
 
-watch(() => rutinaStore.seleccionada, (newVal) => {
-    if (newVal) {
-        fetchHistorialRutina();
-        fetchRutinasDelDia();
+watch(
+    () => rutinaStore.seleccionada,
+    (newVal) => {
+        if (newVal) {
+            fetchHistorialRutina();
+            fetchRutinasDelDia();
+        }
     }
-});
+);
 
 // === Mejora 1.9: Pull-to-refresh ===
 const refreshDashboard = async () => {
@@ -525,80 +802,27 @@ const refreshDashboard = async () => {
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, refreshDashboard);
 
-// === Timer de descanso (estado y controles; UI en DashboardRestTimer.vue) ===
-const timer = ref({
-    activo: false,
-    totalSegundos: 0,
-    segundosRestantes: 0,
-    ejercicioNombre: '',
-    timerId: null,
-    pausado: false,
-});
+// === Timer de descanso global (Pinia useRestTimerStore) ===
+const restTimer = useRestTimerStore();
 
 const deberiaIniciarTemporizador = (fila) => {
     if (!fila.superserie_grupo) return true;
     const setsEnRonda = filasSerie.value.filter(
-        (f) => f.superserie_grupo === fila.superserie_grupo && f.series_numero === fila.series_numero
+        (f) =>
+            f.superserie_grupo === fila.superserie_grupo && f.series_numero === fila.series_numero
     );
     return setsEnRonda.every((f) => f.completado);
 };
 
 const iniciarTemporizador = (fila) => {
-    if (timer.value.timerId) clearInterval(timer.value.timerId);
     const descansoMinutos = parseFloat(fila.descanso_min) || 1.5;
     const totalSegundos = Math.round(descansoMinutos * 60);
-    const nombreLabel = fila.superserie_grupo ? `Descanso Superserie ${fila.superserie_grupo}` : fila.ejercicio_nombre;
-    timer.value = { activo: true, totalSegundos, segundosRestantes: totalSegundos, ejercicioNombre: nombreLabel, pausado: false, timerId: null };
-    runTimer();
+    const nombreLabel = fila.superserie_grupo
+        ? `Descanso Superserie ${fila.superserie_grupo}`
+        : fila.ejercicio_nombre;
+    restTimer.start({
+        exerciseName: nombreLabel,
+        durationSeconds: totalSegundos,
+    });
 };
-
-const runTimer = () => {
-    timer.value.timerId = setInterval(() => {
-        if (!timer.value.pausado) {
-            if (timer.value.segundosRestantes > 0) timer.value.segundosRestantes--;
-            else finalizarTemporizador();
-        }
-    }, 1000);
-};
-
-const pausarReanudarTemporizador = () => { timer.value.pausado = !timer.value.pausado; };
-const agregarTiempoTemporizador = () => { timer.value.segundosRestantes += 30; timer.value.totalSegundos += 30; };
-const saltarTemporizador = () => {
-    if (timer.value.timerId) clearInterval(timer.value.timerId);
-    timer.value.activo = false;
-};
-
-const finalizarTemporizador = () => {
-    if (timer.value.timerId) clearInterval(timer.value.timerId);
-    timer.value.activo = false;
-    reproducirBeep();
-};
-
-const reproducirBeep = () => {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const playBeep = (time, frequency, duration) => {
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = frequency;
-            gainNode.gain.setValueAtTime(0, time);
-            gainNode.gain.linearRampToValueAtTime(0.3, time + 0.05);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            osc.start(time);
-            osc.stop(time + duration);
-        };
-        const now = audioCtx.currentTime;
-        playBeep(now, 880, 0.4);
-        playBeep(now + 0.5, 880, 0.4);
-    } catch (e) {
-        console.error('AudioContext no soportado o bloqueado:', e);
-    }
-};
-
-onUnmounted(() => {
-    if (timer.value.timerId) clearInterval(timer.value.timerId);
-});
 </script>

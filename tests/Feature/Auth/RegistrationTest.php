@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,7 +32,7 @@ class RegistrationTest extends TestCase
 
     public function test_email_must_be_unique_on_registration(): void
     {
-        \App\Models\User::factory()->create(['email' => 'taken@example.com']);
+        User::factory()->create(['email' => 'taken@example.com']);
 
         $response = $this->post('/register', [
             'name' => 'Test User',

@@ -79,7 +79,10 @@ describe('useRutinaStore', () => {
     describe('hidratar()', () => {
         it('lee del localStorage y popula el state', () => {
             // Simular que ya hay datos guardados
-            localStorage.setItem('rutina_seleccionada', JSON.stringify({ nivel: 'Persistido', dias: 'L X' }));
+            localStorage.setItem(
+                'rutina_seleccionada',
+                JSON.stringify({ nivel: 'Persistido', dias: 'L X' })
+            );
             localStorage.setItem('rutina_dia', 'Día 5');
 
             rutina.hidratar();

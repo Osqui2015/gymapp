@@ -34,6 +34,7 @@ class AuditLog extends Model
         if ($this->model_type) {
             return $this->model_type::find($this->model_id);
         }
+
         return null;
     }
 
@@ -63,7 +64,7 @@ class AuditLog extends Model
     {
         return self::log(
             $action,
-            class_basename($model) . ' ' . $action,
+            class_basename($model).' '.$action,
             auth()->id(),
             get_class($model),
             $model->id ?? null,

@@ -33,11 +33,14 @@ class PushService
     public function sendToUser(int $userId, string $title, string $body, array $data = []): int
     {
         $subs = PushSubscription::where('user_id', $userId)->get();
-        if ($subs->isEmpty()) return 0;
+        if ($subs->isEmpty()) {
+            return 0;
+        }
 
         $client = $this->getClient();
         if ($client === null) {
             Log::warning('[push] VAPID keys no configuradas, no se enviaron notificaciones');
+
             return 0;
         }
 
@@ -69,9 +72,9 @@ class PushService
                     $statusCode = $report->getResponse()->getStatusCode();
                     if (in_array($statusCode, [404, 410], true)) {
                         $sub->delete();
-                        Log::info("[push] endpoint expirado (HTTP {$statusCode}), eliminado: " . substr($sub->endpoint, 0, 80));
+                        Log::info("[push] endpoint expirado (HTTP {$statusCode}), eliminado: ".substr($sub->endpoint, 0, 80));
                     } else {
-                        Log::warning("[push] fallo enviando (HTTP {$statusCode}): " . substr($sub->endpoint, 0, 80));
+                        Log::warning("[push] fallo enviando (HTTP {$statusCode}): ".substr($sub->endpoint, 0, 80));
                     }
                 }
             } catch (\Throwable $e) {
@@ -91,13 +94,15 @@ class PushService
      */
     private function getClient(): ?WebPush
     {
-        if ($this->webPush !== null) return $this->webPush;
+        if ($this->webPush !== null) {
+            return $this->webPush;
+        }
 
         $publicKey = config('services.webpush.vapid_public');
         $privateKey = config('services.webpush.vapid_private');
         $subject = config('services.webpush.subject');
 
-        if (!$publicKey || !$privateKey) {
+        if (! $publicKey || ! $privateKey) {
             return null;
         }
 

@@ -9,7 +9,7 @@
  */
 export function useDebounce<TArgs extends unknown[]>(
     fn: (...args: TArgs) => void,
-    delay = 300,
+    delay = 300
 ): (...args: TArgs) => void {
     let timer: ReturnType<typeof setTimeout> | null = null;
     return function debounced(...args: TArgs) {
@@ -40,7 +40,9 @@ export function useDebouncedRef<T>(initial: T, delay = 300): DebouncedRef<T> {
     let timer: ReturnType<typeof setTimeout> | null = null;
     watch(value, (val) => {
         if (timer) clearTimeout(timer);
-        timer = setTimeout(() => { debounced.value = val; }, delay);
+        timer = setTimeout(() => {
+            debounced.value = val;
+        }, delay);
     });
 
     return { value, debounced };

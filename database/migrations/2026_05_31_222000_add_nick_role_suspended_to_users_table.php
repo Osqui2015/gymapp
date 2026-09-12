@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'nick')) {
+            if (! Schema::hasColumn('users', 'nick')) {
                 $table->string('nick')->unique()->after('id');
             }
-            if (!Schema::hasColumn('users', 'role')) {
+            if (! Schema::hasColumn('users', 'role')) {
                 $table->string('role')->default('user')->after('password');
             }
-            if (!Schema::hasColumn('users', 'suspended')) {
+            if (! Schema::hasColumn('users', 'suspended')) {
                 $table->boolean('suspended')->default(false)->after('role');
             }
         });

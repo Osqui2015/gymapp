@@ -17,9 +17,9 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 
 const DEFAULTS = {
-    threshold: 50,   // px mínimos en el eje dominante
-    timeout: 800,    // ms máximos entre touchstart y touchend
-    restraint: 75,   // px tolerados en el eje perpendicular
+    threshold: 50, // px mínimos en el eje dominante
+    timeout: 800, // ms máximos entre touchstart y touchend
+    restraint: 75, // px tolerados en el eje perpendicular
 };
 
 export function useSwipe(targetRef, options = {}) {
@@ -99,10 +99,18 @@ export function useSwipe(targetRef, options = {}) {
     onBeforeUnmount(detach);
 
     return {
-        onSwipeLeft: (fn) => { handlers.left = fn; },
-        onSwipeRight: (fn) => { handlers.right = fn; },
-        onSwipeUp: (fn) => { handlers.up = fn; },
-        onSwipeDown: (fn) => { handlers.down = fn; },
+        onSwipeLeft: (fn) => {
+            handlers.left = fn;
+        },
+        onSwipeRight: (fn) => {
+            handlers.right = fn;
+        },
+        onSwipeUp: (fn) => {
+            handlers.up = fn;
+        },
+        onSwipeDown: (fn) => {
+            handlers.down = fn;
+        },
         detach,
         attach,
     };

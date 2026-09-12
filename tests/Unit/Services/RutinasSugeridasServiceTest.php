@@ -20,7 +20,7 @@ class RutinasSugeridasServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RutinasSugeridasService();
+        $this->service = new RutinasSugeridasService;
     }
 
     public function test_user_sin_historial_recibe_sugerencias_principiantes(): void

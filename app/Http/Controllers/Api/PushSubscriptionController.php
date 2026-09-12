@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PushSubscriptionController extends Controller
 {
@@ -60,6 +59,7 @@ class PushSubscriptionController extends Controller
     public function publicKey()
     {
         $key = config('services.webpush.vapid_public');
+
         return response()->json(['vapid_public_key' => $key]);
     }
 }

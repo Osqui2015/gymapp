@@ -7,7 +7,9 @@
     - Click: detalle del día (emite evento)
 -->
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5"
+    >
         <!-- Header con navegación de mes -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white capitalize">
@@ -20,7 +22,12 @@
                     aria-label="Mes anterior"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 19l-7-7 7-7"
+                        />
                     </svg>
                 </button>
                 <button
@@ -35,7 +42,12 @@
                     aria-label="Mes siguiente"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                        />
                     </svg>
                 </button>
             </div>
@@ -44,8 +56,19 @@
         <!-- Loading -->
         <div v-if="loading" class="flex items-center justify-center py-12 text-sm text-gray-500">
             <svg class="animate-spin w-5 h-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                ></circle>
+                <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                ></path>
             </svg>
             Cargando sesiones...
         </div>
@@ -73,26 +96,27 @@
                         cell.empty
                             ? 'cursor-default'
                             : cell.future
-                                ? 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/30'
-                                : cell.hasSession
-                                    ? `${intensityClass(cell.count)} hover:scale-105 shadow-sm`
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30',
-                        cell.today ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-gray-800' : '',
+                              ? 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/30'
+                              : cell.hasSession
+                                ? `${intensityClass(cell.count)} hover:scale-105 shadow-sm`
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/30',
+                        cell.today
+                            ? 'ring-2 ring-indigo-500 ring-offset-1 dark:ring-offset-gray-800'
+                            : '',
                     ]"
                     @click="!cell.empty && selectDay(cell)"
                 >
                     <span class="font-semibold">{{ cell.day }}</span>
-                    <span
-                        v-if="cell.hasSession"
-                        class="text-[10px] font-bold opacity-90"
-                    >
+                    <span v-if="cell.hasSession" class="text-[10px] font-bold opacity-90">
                         {{ cell.count }} ej
                     </span>
                 </div>
             </div>
 
             <!-- Leyenda -->
-            <div class="flex items-center justify-end gap-3 mt-4 text-[10px] text-gray-500 dark:text-gray-400">
+            <div
+                class="flex items-center justify-end gap-3 mt-4 text-[10px] text-gray-500 dark:text-gray-400"
+            >
                 <span class="flex items-center gap-1">
                     <span class="w-2 h-2 rounded-sm bg-gray-200 dark:bg-gray-700"></span>
                     Sin sesión
@@ -132,7 +156,20 @@ const loading = ref(false);
 const counts = ref({}); // { '2026-08-15': 3 }
 
 const monthName = computed(() => {
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = [
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
+    ];
     return meses[month.value - 1];
 });
 
@@ -154,9 +191,10 @@ const cells = computed(() => {
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year.value}-${String(month.value).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const count = counts.value[dateStr] || 0;
-        const isToday = d === today.getDate() &&
-                        month.value === (today.getMonth() + 1) &&
-                        year.value === today.getFullYear();
+        const isToday =
+            d === today.getDate() &&
+            month.value === today.getMonth() + 1 &&
+            year.value === today.getFullYear();
         const isFuture = new Date(year.value, month.value - 1, d) > today;
 
         cells.push({
@@ -174,8 +212,10 @@ const cells = computed(() => {
 
 const intensityClass = (count) => {
     if (count <= 0) return 'bg-gray-100 dark:bg-gray-700/50 text-gray-500';
-    if (count <= 2) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200';
-    if (count <= 5) return 'bg-emerald-300 dark:bg-emerald-700/50 text-emerald-900 dark:text-emerald-100';
+    if (count <= 2)
+        return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200';
+    if (count <= 5)
+        return 'bg-emerald-300 dark:bg-emerald-700/50 text-emerald-900 dark:text-emerald-100';
     return 'bg-emerald-500 dark:bg-emerald-600 text-white';
 };
 

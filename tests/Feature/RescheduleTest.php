@@ -45,6 +45,7 @@ class RescheduleTest extends TestCase
             'rutina_id' => $rutina->id,
             'dia_actual' => $diaActual,
         ]);
+
         return $user;
     }
 

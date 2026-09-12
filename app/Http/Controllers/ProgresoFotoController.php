@@ -60,7 +60,7 @@ class ProgresoFotoController extends Controller
 
         // Guardamos en storage/app/public/progreso_fotos/{user_id}/{timestamp}.{ext}
         $ext = $request->file('foto')->getClientOriginalExtension();
-        $filename = "progreso_fotos/{$user->id}/" . now()->format('Ymd_His') . '_' . substr(uniqid(), -6) . ".{$ext}";
+        $filename = "progreso_fotos/{$user->id}/".now()->format('Ymd_His').'_'.substr(uniqid(), -6).".{$ext}";
 
         $request->file('foto')->storeAs(dirname($filename), basename($filename), 'public');
 

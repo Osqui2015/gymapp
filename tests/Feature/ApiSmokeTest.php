@@ -21,7 +21,9 @@ class ApiSmokeTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private User $admin;
+
     private array $errors = [];
 
     protected function setUp(): void
@@ -87,11 +89,11 @@ class ApiSmokeTest extends TestCase
         foreach ($endpoints as [$method, $url]) {
             $response = $this->json($method, $url);
             if ($response->status() === 500) {
-                $this->errors[] = "GET $url => 500 (body: " . substr(json_encode($response->json()), 0, 200) . ")";
+                $this->errors[] = "GET $url => 500 (body: ".substr(json_encode($response->json()), 0, 200).')';
             }
         }
 
-        $this->assertEmpty($this->errors, "Endpoints que devolvieron 500:\n  " . implode("\n  ", $this->errors));
+        $this->assertEmpty($this->errors, "Endpoints que devolvieron 500:\n  ".implode("\n  ", $this->errors));
     }
 
     public function test_smoke_endpoints_post_comunes_no_devuelven_500(): void
@@ -112,11 +114,11 @@ class ApiSmokeTest extends TestCase
         foreach ($endpoints as [$method, $url, $body]) {
             $response = $this->json($method, $url, $body);
             if ($response->status() === 500) {
-                $this->errors[] = "$method $url => 500 (body: " . substr(json_encode($response->json()), 0, 200) . ")";
+                $this->errors[] = "$method $url => 500 (body: ".substr(json_encode($response->json()), 0, 200).')';
             }
         }
 
-        $this->assertEmpty($this->errors, "Endpoints POST que devolvieron 500:\n  " . implode("\n  ", $this->errors));
+        $this->assertEmpty($this->errors, "Endpoints POST que devolvieron 500:\n  ".implode("\n  ", $this->errors));
     }
 
     public function test_smoke_endpoints_admin_no_devuelven_500(): void
@@ -141,7 +143,7 @@ class ApiSmokeTest extends TestCase
             }
         }
 
-        $this->assertEmpty($this->errors, "Endpoints admin que devolvieron 500:\n  " . implode("\n  ", $this->errors));
+        $this->assertEmpty($this->errors, "Endpoints admin que devolvieron 500:\n  ".implode("\n  ", $this->errors));
     }
 
     public function test_smoke_user_rutina_dia_no_500_con_relacion_no_cargada(): void
@@ -153,7 +155,7 @@ class ApiSmokeTest extends TestCase
         $response = $this->postJson('/api/user-rutina/dia', [
             'dia_actual' => 'Día 1 (Torso)',
         ]);
-        $this->assertNotEquals(500, $response->status(), "Body: " . $response->getContent());
+        $this->assertNotEquals(500, $response->status(), 'Body: '.$response->getContent());
         $this->assertSame(200, $response->status());
         $response->assertJsonPath('nivel', 'Intermedio');
         $response->assertJsonPath('modalidad', '3 Días');
@@ -163,7 +165,7 @@ class ApiSmokeTest extends TestCase
     {
         $this->actingAs($this->user);
         $response = $this->getJson('/api/user-rutina');
-        $this->assertNotEquals(500, $response->status(), "Body: " . $response->getContent());
+        $this->assertNotEquals(500, $response->status(), 'Body: '.$response->getContent());
         $this->assertSame(200, $response->status());
         $response->assertJsonPath('nivel', 'Intermedio');
         $response->assertJsonPath('modalidad', '3 Días');
@@ -181,6 +183,6 @@ class ApiSmokeTest extends TestCase
     {
         $this->actingAs($this->user);
         $response = $this->getJson('/api/body-map/muscle/pectoral_major/exercises');
-        $this->assertNotEquals(500, $response->status(), "Body: " . $response->getContent());
+        $this->assertNotEquals(500, $response->status(), 'Body: '.$response->getContent());
     }
 }

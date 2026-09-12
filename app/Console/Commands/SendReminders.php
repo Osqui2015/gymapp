@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
 class SendReminders extends Command
 {
     protected $signature = 'reminders:send {--days=7 : Días de anticipación para membresías}';
+
     protected $description = 'Envía recordatorios de membresías por vencer + usuarios inactivos';
 
     public function handle(NotificationService $notifService, PushService $pushService): int
@@ -34,6 +35,7 @@ class SendReminders extends Command
         $sent += $this->remindInactiveUsers($notifService, $pushService);
 
         $this->info("Recordatorios enviados: {$sent}");
+
         return self::SUCCESS;
     }
 
@@ -59,8 +61,12 @@ class SendReminders extends Command
                 ->get();
 
             foreach ($membresias as $m) {
-                if (! $m->user) continue;
-                if ($this->notifiedToday($m->user, 'membership_expiring')) continue;
+                if (! $m->user) {
+                    continue;
+                }
+                if ($this->notifiedToday($m->user, 'membership_expiring')) {
+                    continue;
+                }
 
                 $titulo = $dias === 1
                     ? '⚠️ Tu membresía vence mañana'
@@ -100,8 +106,12 @@ class SendReminders extends Command
         })->get();
 
         foreach ($usersInactivos as $user) {
-            if ($this->notifiedToday($user, 'inactive_reminder')) continue;
-            if ($this->notifiedToday($user, 'membership_expiring')) continue;
+            if ($this->notifiedToday($user, 'inactive_reminder')) {
+                continue;
+            }
+            if ($this->notifiedToday($user, 'membership_expiring')) {
+                continue;
+            }
 
             $titulo = '💪 ¿Volvemos a entrenar?';
             $body = 'Llevás varios días sin registrar series. Mantené la constancia y vení a darle.';

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ejercicio;
 use App\Models\Historial;
 use App\Models\Musculo;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -61,7 +63,7 @@ class BodyMapController extends Controller
 
             // Catálogo de músculos para que el frontend pueda mapear slug→label
             $musculos = Musculo::orderBy('orden')->get(['id', 'slug', 'nombre_es', 'nombre_en', 'body_part'])
-                ->map(fn($m) => [
+                ->map(fn ($m) => [
                     'slug' => $m->slug,
                     'nombre_es' => $m->nombre_es,
                     'nombre_en' => $m->nombre_en,
@@ -104,8 +106,9 @@ class BodyMapController extends Controller
 
             $hoy = now()->startOfDay();
             $recency = $rows->map(function ($r) use ($hoy) {
-                $last = \Carbon\Carbon::parse($r->last_trained_at)->startOfDay();
+                $last = Carbon::parse($r->last_trained_at)->startOfDay();
                 $days = (int) $last->diffInDays($hoy, false);
+
                 return [
                     'slug' => $r->slug,
                     'nombre_es' => $r->nombre_es,
@@ -122,20 +125,23 @@ class BodyMapController extends Controller
 
         return response()->json($payload);
     }
+
     public function ejerciciosPorMusculo(Request $request, string $slug)
     {
         $userId = $request->user()->id;
         $tipo = $request->input('tipo'); // 'primario' | 'secundario' | null
 
-        $musculo = \App\Models\Musculo::where('slug', $slug)->first();
-        if (!$musculo) {
+        $musculo = Musculo::where('slug', $slug)->first();
+        if (! $musculo) {
             return response()->json(['error' => 'Músculo no encontrado'], 404);
         }
 
-        $query = \App\Models\Ejercicio::query()
+        $query = Ejercicio::query()
             ->whereHas('musculos', function ($q) use ($musculo, $tipo) {
                 $q->where('musculos.id', $musculo->id);
-                if ($tipo) $q->where('ejercicio_musculos.tipo', $tipo);
+                if ($tipo) {
+                    $q->where('ejercicio_musculos.tipo', $tipo);
+                }
             })
             ->where('visibilidad', true);
 
@@ -143,7 +149,7 @@ class BodyMapController extends Controller
 
         // Volumen por ejercicio en últimos 30d
         $desde = now()->subDays(30);
-        $setsPorEj = \App\Models\Historial::where('user_id', $userId)
+        $setsPorEj = Historial::where('user_id', $userId)
             ->where('completado', true)
             ->whereDate('fecha', '>=', $desde)
             ->whereIn('ejercicio_id', $ejercicios->pluck('id'))
@@ -154,6 +160,7 @@ class BodyMapController extends Controller
 
         $rows = $ejercicios->map(function ($e) use ($setsPorEj) {
             $s = $setsPorEj[$e->id] ?? null;
+
             return [
                 'id' => $e->id,
                 'nombre' => $e->nombre,
@@ -163,8 +170,8 @@ class BodyMapController extends Controller
                 'max_peso_30d' => $s && $s->max_peso ? (float) $s->max_peso : null,
             ];
         })
-        ->sortByDesc('sets_30d')
-        ->values();
+            ->sortByDesc('sets_30d')
+            ->values();
 
         return response()->json([
             'musculo' => [

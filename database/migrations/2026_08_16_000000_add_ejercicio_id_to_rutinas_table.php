@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -25,7 +26,7 @@ return new class extends Migration
     {
         // Idempotente: si la columna ya existe (porque una corrida anterior
         // falló a mitad), no intentamos crearla de nuevo.
-        if (!Schema::hasColumn('rutinas', 'ejercicio_id')) {
+        if (! Schema::hasColumn('rutinas', 'ejercicio_id')) {
             Schema::table('rutinas', function (Blueprint $table) {
                 $table->unsignedBigInteger('ejercicio_id')->nullable()->after('ejercicio_nombre');
                 $table->index('ejercicio_id');
@@ -40,8 +41,8 @@ return new class extends Migration
             // falló en el UPDATE (no en el ALTER), la FK YA está aplicada.
             // Si solo se creó la columna sin FK, esto no la puede agregar.
             // En ese caso, logueamos para que el user lo arregle manualmente.
-            \Illuminate\Support\Facades\Log::info(
-                '[migration] rutinas.ejercicio_id ya existe. ' .
+            Log::info(
+                '[migration] rutinas.ejercicio_id ya existe. '.
                 'Saltando ALTER TABLE. Si la FK no se aplicó, ver migración manual.'
             );
         }
@@ -75,9 +76,9 @@ return new class extends Migration
                 ->take(50)
                 ->toArray();
 
-            \Illuminate\Support\Facades\Log::warning(
-                "[migration] {$unmatched} rutinas sin match en ejercicios. " .
-                "Primeros nombres: " . implode(', ', $nombresSinMatch)
+            Log::warning(
+                "[migration] {$unmatched} rutinas sin match en ejercicios. ".
+                'Primeros nombres: '.implode(', ', $nombresSinMatch)
             );
         }
     }

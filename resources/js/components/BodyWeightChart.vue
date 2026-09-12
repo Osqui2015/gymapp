@@ -15,23 +15,38 @@
     - update:goal  (newValue)  cuando el usuario edita el peso objetivo
 -->
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
+    >
         <!-- Header con peso actual + edit del goal -->
         <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
             <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Peso corporal</p>
                 <div v-if="latest" class="flex items-baseline gap-2 mt-1">
-                    <span class="text-4xl font-black text-gray-900 dark:text-white">{{ latest.peso.toFixed(1) }}</span>
+                    <span class="text-4xl font-black text-gray-900 dark:text-white">{{
+                        latest.peso.toFixed(1)
+                    }}</span>
                     <span class="text-lg font-semibold text-gray-500">kg</span>
                     <span
                         v-if="totalChange !== null"
-                        :class="['text-sm font-semibold ml-2', totalChange < 0 ? 'text-emerald-600' : totalChange > 0 ? 'text-rose-600' : 'text-gray-500']"
+                        :class="[
+                            'text-sm font-semibold ml-2',
+                            totalChange < 0
+                                ? 'text-emerald-600'
+                                : totalChange > 0
+                                  ? 'text-rose-600'
+                                  : 'text-gray-500',
+                        ]"
                     >
                         {{ totalChange > 0 ? '+' : '' }}{{ totalChange.toFixed(1) }} kg
                     </span>
                 </div>
-                <p v-if="!latest" class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sin registros aún</p>
-                <p v-if="latest" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(latest.fecha) }}</p>
+                <p v-if="!latest" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Sin registros aún
+                </p>
+                <p v-if="latest" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ formatDate(latest.fecha) }}
+                </p>
             </div>
 
             <div class="flex flex-col items-end gap-1">
@@ -57,13 +72,39 @@
                     </button>
                 </div>
                 <p v-if="delta !== null" class="text-xs font-semibold mt-1" :class="deltaClass">
-                    <span v-if="direction === 'down' && delta < 0">↓ {{ Math.abs(delta).toFixed(1) }} kg perdido</span>
-                    <span v-else-if="direction === 'down' && delta > 0">{{ delta.toFixed(1) }} kg por perder</span>
-                    <span v-else-if="direction === 'up' && delta > 0">↑ {{ delta.toFixed(1) }} kg ganado</span>
-                    <span v-else-if="direction === 'up' && delta < 0">{{ Math.abs(delta).toFixed(1) }} kg por ganar</span>
+                    <span v-if="direction === 'down' && delta < 0"
+                        >↓ {{ Math.abs(delta).toFixed(1) }} kg perdido</span
+                    >
+                    <span v-else-if="direction === 'down' && delta > 0"
+                        >{{ delta.toFixed(1) }} kg por perder</span
+                    >
+                    <span v-else-if="direction === 'up' && delta > 0"
+                        >↑ {{ delta.toFixed(1) }} kg ganado</span
+                    >
+                    <span v-else-if="direction === 'up' && delta < 0"
+                        >{{ Math.abs(delta).toFixed(1) }} kg por ganar</span
+                    >
                     <span v-else-if="delta === 0">¡Objetivo logrado!</span>
                 </p>
             </div>
+        </div>
+
+        <!-- Selector de período -->
+        <div v-if="props.data.length > 1" class="flex items-center justify-end gap-1 mb-3">
+            <button
+                v-for="p in periodOptions"
+                :key="p.value"
+                type="button"
+                @click="selectedPeriod = p.value"
+                :class="[
+                    'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
+                    selectedPeriod === p.value
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700',
+                ]"
+            >
+                {{ p.label }}
+            </button>
         </div>
 
         <!-- Chart (Chart.js, lazy-loaded) -->
@@ -73,7 +114,9 @@
 
         <div v-else class="text-center py-12 text-gray-400 text-sm">
             <p>No hay registros de peso todavía.</p>
-            <p class="mt-1 text-xs">Anotá tu primer peso en la sección de Progreso y vas a ver tu evolución acá.</p>
+            <p class="mt-1 text-xs">
+                Anotá tu primer peso en la sección de Progreso y vas a ver tu evolución acá.
+            </p>
         </div>
     </div>
 </template>
@@ -97,10 +140,36 @@ const chartCanvas = ref(null);
 let chartInstance = null;
 let chartConstructor = null;
 
-watch(() => props.goal, (v) => { goalLocal.value = v; });
+const selectedPeriod = ref('all');
+
+const periodOptions = [
+    { label: '7D', value: '7d' },
+    { label: '30D', value: '30d' },
+    { label: '90D', value: '90d' },
+    { label: 'Todo', value: 'all' },
+];
+
+const filteredData = computed(() => {
+    if (!props.data || props.data.length === 0) return [];
+    if (selectedPeriod.value === 'all') return props.data;
+
+    const days = selectedPeriod.value === '7d' ? 7 : selectedPeriod.value === '30d' ? 30 : 90;
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    const filtered = props.data.filter((d) => new Date(d.fecha + 'T00:00:00') >= cutoff);
+    return filtered.length > 0 ? filtered : props.data.slice(-2);
+});
+
+watch(
+    () => props.goal,
+    (v) => {
+        goalLocal.value = v;
+    }
+);
 
 const chartData = computed(() => {
-    return props.data.map(d => ({
+    return filteredData.value.map((d) => ({
         fecha: d.fecha,
         peso: d.peso,
     }));
@@ -108,7 +177,7 @@ const chartData = computed(() => {
 
 const yDomain = computed(() => {
     if (chartData.value.length === 0) return [0, 100];
-    const pesos = chartData.value.map(d => d.peso);
+    const pesos = chartData.value.map((d) => d.peso);
     if (props.goal) pesos.push(props.goal);
     const min = Math.min(...pesos);
     const max = Math.max(...pesos);
@@ -128,7 +197,11 @@ const deltaClass = computed(() => {
 function formatDate(iso) {
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
-    return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+    return new Intl.DateTimeFormat('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    }).format(d);
 }
 
 function formatTick(iso) {
@@ -148,13 +221,11 @@ function onGoalBlur() {
 function buildChart() {
     if (!chartCanvas.value || chartData.value.length === 0) return;
 
-    const labels = chartData.value.map(d => formatTick(d.fecha));
-    const pesos = chartData.value.map(d => d.peso);
+    const labels = chartData.value.map((d) => formatTick(d.fecha));
+    const pesos = chartData.value.map((d) => d.peso);
 
     // Línea horizontal del goal: misma cantidad de puntos que el dataset principal
-    const goalLine = props.goal
-        ? labels.map(() => props.goal)
-        : null;
+    const goalLine = props.goal ? labels.map(() => props.goal) : null;
 
     const datasets = [
         {
@@ -227,7 +298,7 @@ function buildChart() {
     if (chartInstance) {
         chartInstance.destroy();
     }
-        chartInstance = new chartConstructor(chartCanvas.value, config);
+    chartInstance = new chartConstructor(chartCanvas.value, config);
 }
 
 async function initChart() {

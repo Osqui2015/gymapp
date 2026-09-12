@@ -20,12 +20,23 @@
     - close: emite cuando el user quiere cerrar el panel
 -->
 <template>
-    <div :class="['flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden', !embedded && 'h-[600px]']">
+    <div
+        :class="[
+            'flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden',
+            !embedded && 'h-[600px]',
+        ]"
+    >
         <!-- Header -->
-        <div v-if="!embedded" class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+        <div
+            v-if="!embedded"
+            class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30"
+        >
             <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 💬 Mensajes
-                <span v-if="store.totalUnread > 0" class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white">
+                <span
+                    v-if="store.totalUnread > 0"
+                    class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white"
+                >
                     {{ store.totalUnread }}
                 </span>
             </h3>
@@ -36,7 +47,12 @@
                 aria-label="Cerrar"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
                 </svg>
             </button>
         </div>
@@ -44,7 +60,12 @@
         <!-- Body: lista + chat -->
         <div class="flex-1 flex min-h-0">
             <!-- Lista de conversaciones -->
-            <div :class="['border-r border-gray-200 dark:border-gray-700 flex flex-col', showChat ? 'hidden md:flex md:w-72' : 'flex w-full md:w-72']">
+            <div
+                :class="[
+                    'border-r border-gray-200 dark:border-gray-700 flex flex-col',
+                    showChat ? 'hidden md:flex md:w-72' : 'flex w-full md:w-72',
+                ]"
+            >
                 <div class="p-3 border-b border-gray-200 dark:border-gray-700">
                     <button
                         @click="refreshConversations"
@@ -54,16 +75,27 @@
                         {{ store.isLoading ? 'Cargando...' : '🔄 Actualizar' }}
                     </button>
                 </div>
-                <div v-if="store.isLoading && store.conversations.length === 0" class="p-4 text-center text-sm text-gray-500">
-                    <div class="animate-spin w-5 h-5 mx-auto mb-2 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                <div
+                    v-if="store.isLoading && store.conversations.length === 0"
+                    class="p-4 text-center text-sm text-gray-500"
+                >
+                    <div
+                        class="animate-spin w-5 h-5 mx-auto mb-2 border-2 border-indigo-600 border-t-transparent rounded-full"
+                    ></div>
                     Cargando...
                 </div>
-                <div v-else-if="store.conversations.length === 0" class="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div
+                    v-else-if="store.conversations.length === 0"
+                    class="p-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
                     <div class="text-3xl mb-2">💬</div>
                     <p>Sin conversaciones.</p>
                     <p class="text-xs mt-1">Los mensajes que recibas aparecerán acá.</p>
                 </div>
-                <ul v-else class="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                <ul
+                    v-else
+                    class="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700"
+                >
                     <li
                         v-for="conv in store.conversations"
                         :key="conv.other_user.id"
@@ -75,13 +107,20 @@
                                 : 'hover:bg-gray-50 dark:hover:bg-gray-700/30',
                         ]"
                     >
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                        <div
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0"
+                        >
                             {{ (conv.other_user.name || '?').charAt(0).toUpperCase() }}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <p class="font-semibold text-gray-900 dark:text-white truncate">{{ conv.other_user.name }}</p>
-                                <span v-if="conv.unread_count > 0" class="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white flex-shrink-0">
+                                <p class="font-semibold text-gray-900 dark:text-white truncate">
+                                    {{ conv.other_user.name }}
+                                </p>
+                                <span
+                                    v-if="conv.unread_count > 0"
+                                    class="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white flex-shrink-0"
+                                >
                                     {{ conv.unread_count }}
                                 </span>
                             </div>
@@ -95,7 +134,10 @@
 
             <!-- Chat activo -->
             <div :class="['flex-1 flex flex-col min-w-0', !showChat && 'hidden md:flex']">
-                <div v-if="!store.activeUserId" class="flex-1 flex items-center justify-center p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div
+                    v-if="!store.activeUserId"
+                    class="flex-1 flex items-center justify-center p-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
                     <div>
                         <div class="text-5xl mb-3">💬</div>
                         <p class="font-medium">Seleccioná una conversación</p>
@@ -104,25 +146,47 @@
                 </div>
                 <template v-else>
                     <!-- Header del chat -->
-                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 bg-white dark:bg-gray-800">
+                    <div
+                        class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 bg-white dark:bg-gray-800"
+                    >
                         <button
                             @click="backToList"
                             class="md:hidden p-1 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
                             aria-label="Volver a la lista"
                         >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 19l-7-7 7-7"
+                                />
                             </svg>
                         </button>
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm">
+                        <div
+                            class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm"
+                        >
                             {{ otherUserInitial }}
                         </div>
-                        <p class="font-semibold text-gray-900 dark:text-white">{{ otherUserName }}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">
+                            {{ otherUserName }}
+                        </p>
                     </div>
 
                     <!-- Mensajes -->
-                    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-gray-900/30">
-                        <div v-if="store.activeMessages.length === 0" class="text-center text-sm text-gray-500 py-12">
+                    <div
+                        ref="messagesContainer"
+                        class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-gray-900/30"
+                    >
+                        <div
+                            v-if="store.activeMessages.length === 0"
+                            class="text-center text-sm text-gray-500 py-12"
+                        >
                             <div class="text-4xl mb-2">👋</div>
                             <p>¡Decile algo a {{ otherUserName }}!</p>
                         </div>
@@ -140,7 +204,12 @@
                                 ]"
                             >
                                 <p class="whitespace-pre-line break-words">{{ msg.body }}</p>
-                                <p :class="['text-[10px] mt-1', isMine(msg) ? 'text-indigo-100' : 'text-gray-400']">
+                                <p
+                                    :class="[
+                                        'text-[10px] mt-1',
+                                        isMine(msg) ? 'text-indigo-100' : 'text-gray-400',
+                                    ]"
+                                >
                                     {{ formatTime(msg.created_at) }}
                                     <span v-if="isMine(msg) && msg.read_at"> · leído</span>
                                 </p>
@@ -149,7 +218,10 @@
                     </div>
 
                     <!-- Input -->
-                    <form @submit.prevent="send" class="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-end gap-2">
+                    <form
+                        @submit.prevent="send"
+                        class="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-end gap-2"
+                    >
                         <textarea
                             v-model="newMessage"
                             @keydown.enter.exact.prevent="send"
@@ -211,9 +283,7 @@ const formatTime = (iso) => {
     if (!iso) return '';
     const d = new Date(iso);
     const today = new Date().toDateString() === d.toDateString();
-    return today
-        ? formatTime(d)
-        : formatDateShort(d);
+    return today ? formatTime(d) : formatDateShort(d);
 };
 
 const lastMessagePreview = (msg) => {

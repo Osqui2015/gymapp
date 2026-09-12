@@ -23,12 +23,18 @@ class HistorialPolicy
 
     public function view(User $user, Historial $historial): bool
     {
-        if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) return true;
-        if ($historial->user_id === $user->id) return true;
+        if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) {
+            return true;
+        }
+        if ($historial->user_id === $user->id) {
+            return true;
+        }
         if ($user->hasRole(User::ROLE_TRAINER)) {
-            $owner = \App\Models\User::find($historial->user_id);
+            $owner = User::find($historial->user_id);
+
             return $owner && $owner->trainer_id === $user->id;
         }
+
         return false;
     }
 
@@ -41,7 +47,10 @@ class HistorialPolicy
     public function update(User $user, Historial $historial): bool
     {
         // Solo el dueño puede editar SU propio historial
-        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) return true;
+        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            return true;
+        }
+
         return $historial->user_id === $user->id;
     }
 

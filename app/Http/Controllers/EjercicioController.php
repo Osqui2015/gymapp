@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ejercicio;
-use App\Models\Musculo;
 use App\Models\AuditLog;
+use App\Models\Ejercicio;
+use App\Models\EjercicioFavorito;
+use App\Models\Historial;
+use App\Models\Musculo;
 use Illuminate\Http\Request;
 
 class EjercicioController extends Controller
@@ -26,9 +28,9 @@ class EjercicioController extends Controller
 
         if ($request->has('busqueda') && $request->busqueda) {
             $busqueda = $request->busqueda;
-            $query->where(function($q) use ($busqueda) {
-                $q->where('nombre', 'like', '%' . $busqueda . '%')
-                  ->orWhere('equipamiento', 'like', '%' . $busqueda . '%');
+            $query->where(function ($q) use ($busqueda) {
+                $q->where('nombre', 'like', '%'.$busqueda.'%')
+                    ->orWhere('equipamiento', 'like', '%'.$busqueda.'%');
             });
         }
 
@@ -38,6 +40,10 @@ class EjercicioController extends Controller
 
         if ($request->has('equipamiento') && $request->equipamiento) {
             $query->where('equipamiento', $request->equipamiento);
+        }
+
+        if ($request->has('dificultad') && $request->dificultad) {
+            $query->where('dificultad', $request->dificultad);
         }
 
         // Filtro por músculo (usado cuando el usuario hace click en una
@@ -86,6 +92,7 @@ class EjercicioController extends Controller
         if ($userId) {
             $ejercicios->getCollection()->transform(function ($ej) {
                 $ej->is_favorite = (bool) $ej->is_favorite;
+
                 return $ej;
             });
         }
@@ -124,7 +131,7 @@ class EjercicioController extends Controller
     {
         $musculos = Musculo::orderBy('orden')
             ->get(['id', 'slug', 'nombre_es', 'nombre_en', 'body_part', 'orden'])
-            ->map(fn($m) => [
+            ->map(fn ($m) => [
                 'slug' => $m->slug,
                 'nombre_es' => $m->nombre_es,
                 'nombre_en' => $m->nombre_en,
@@ -147,6 +154,7 @@ class EjercicioController extends Controller
             'visibilidad' => 'boolean',
             'grupo_muscular' => 'nullable|string|max:255',
             'descripcion' => 'nullable|string',
+            'dificultad' => 'nullable|string|in:principiante,intermedio,avanzado',
         ]);
 
         $ejercicio = Ejercicio::create($data);
@@ -179,16 +187,17 @@ class EjercicioController extends Controller
         $ejercicio = Ejercicio::findOrFail($id);
         $userId = $request->user()->id;
 
-        $favorito = \App\Models\EjercicioFavorito::where('user_id', $userId)
+        $favorito = EjercicioFavorito::where('user_id', $userId)
             ->where('ejercicio_id', $ejercicio->id)
             ->first();
 
         if ($favorito) {
             $favorito->delete();
+
             return response()->json(['is_favorite' => false]);
         }
 
-        \App\Models\EjercicioFavorito::create([
+        EjercicioFavorito::create([
             'user_id' => $userId,
             'ejercicio_id' => $ejercicio->id,
         ]);
@@ -210,10 +219,10 @@ class EjercicioController extends Controller
         $userId = $request->user()->id;
 
         // Mapear día de la semana al string corto que usa la tabla
-        $dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+        $dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         $hoy = $dias[now()->dayOfWeekIso - 1]; // 1=lunes, 7=domingo
 
-        $historial = \App\Models\Historial::create([
+        $historial = Historial::create([
             'user_id' => $userId,
             'ejercicio_id' => $ejercicio->id,
             'ejercicio_nombre' => $ejercicio->nombre,

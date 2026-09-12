@@ -1,124 +1,161 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/40 py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <Breadcrumbs :items="[
-        { label: 'Inicio', href: '/dashboard' },
-        { label: 'Progreso & Evolución' },
-      ]" />
-      <!-- Header -->
-      <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-            <span>📊</span> Progreso & Evolución
-          </h1>
-          <p class="mt-2 text-gray-600 dark:text-gray-400">Controla tus medidas, metas personales y logros desbloqueados</p>
+    <div
+        class="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/40 py-8"
+    >
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Breadcrumbs
+                :items="[
+                    { label: 'Inicio', href: '/dashboard' },
+                    { label: 'Progreso & Evolución' },
+                ]"
+            />
+            <!-- Header -->
+            <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1
+                        class="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2"
+                    >
+                        <span>📊</span> Progreso & Evolución
+                    </h1>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400">
+                        Controla tus medidas, metas personales y logros desbloqueados
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        @click="exportarProgresoPdf"
+                        :disabled="exportandoPdf"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        :title="exportandoPdf ? 'Generando PDF...' : 'Descargar reporte en PDF'"
+                    >
+                        <svg
+                            v-if="!exportandoPdf"
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                        </svg>
+                        <svg
+                            v-else
+                            class="w-5 h-5 animate-spin"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8"
+                            />
+                        </svg>
+                        {{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}
+                    </button>
+                    <a
+                        href="/dashboard"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm shadow-sm transition-all"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                            />
+                        </svg>
+                        Volver al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Body weight chart con goal line (Fase 1.2) -->
+            <div class="mb-6">
+                <BodyWeightChart
+                    :data="weightChart.data"
+                    :goal="weightChart.goal"
+                    :latest="weightChart.latest"
+                    :delta="weightChart.delta"
+                    :direction="weightChart.direction"
+                    :total-change="weightChart.totalChange"
+                    @update:goal="onUpdateGoal"
+                />
+            </div>
+
+            <!-- Tabs -->
+            <div
+                class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide"
+            >
+                <button
+                    v-for="tab in tabs"
+                    :key="tab.id"
+                    @click="activeTab = tab.id"
+                    :class="[
+                        activeTab === tab.id
+                            ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
+                        'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
+                    ]"
+                >
+                    <span>{{ tab.emoji }}</span> {{ tab.label }}
+                </button>
+            </div>
+
+            <!-- Medidas -->
+            <div v-show="activeTab === 'medidas'">
+                <MedidasTab
+                    :progresos="progresos"
+                    :ultimoRegistro="ultimoRegistro"
+                    :puedeRegistrar="puedeRegistrar"
+                    :diasRestantesParaRegistrar="diasRestantesParaRegistrar"
+                    :guardando="guardando"
+                    :form="form"
+                    :metricaGrafica="metricaGrafica"
+                    :formatFecha="formatFecha"
+                    @save="guardarProgreso"
+                    @ver-detalle="verDetalle"
+                    @update:metricaGrafica="metricaGrafica = $event"
+                />
+            </div>
+
+            <!-- Metas -->
+            <MetasTab
+                v-show="activeTab === 'metas'"
+                :metas="metas"
+                :creandoMeta="creandoMeta"
+                @crear="crearMeta"
+                @toggle="toggleMetaCompletada"
+                @eliminar="eliminarMeta"
+            />
+
+            <!-- Fotos de progreso (galería cronológica) -->
+            <div v-show="activeTab === 'fotos'">
+                <FotosTab />
+            </div>
+
+            <!-- Logros -->
+            <LogrosTab
+                v-show="activeTab === 'logros'"
+                :logros="logros"
+                :logrosStats="logrosStats"
+                :formatFechaMedalla="formatFechaMedalla"
+            />
+
+            <!-- Modal de Detalle -->
+            <DetalleMedidaModal
+                :modal="modalDetalle"
+                :formatFecha="formatFecha"
+                @cerrar="cerrarModal"
+            />
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            @click="exportarProgresoPdf"
-            :disabled="exportandoPdf"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            :title="exportandoPdf ? 'Generando PDF...' : 'Descargar reporte en PDF'"
-          >
-            <svg v-if="!exportandoPdf" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <svg v-else class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8" />
-            </svg>
-            {{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}
-          </button>
-          <a
-            href="/dashboard"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm shadow-sm transition-all"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Dashboard
-          </a>
-        </div>
-      </div>
-
-      <!-- Body weight chart con goal line (Fase 1.2) -->
-      <div class="mb-6">
-        <BodyWeightChart
-          :data="weightChart.data"
-          :goal="weightChart.goal"
-          :latest="weightChart.latest"
-          :delta="weightChart.delta"
-          :direction="weightChart.direction"
-          :total-change="weightChart.totalChange"
-          @update:goal="onUpdateGoal"
-        />
-      </div>
-
-      <!-- Tabs -->
-      <div class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="[
-            activeTab === tab.id
-              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-            'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
-          ]"
-        >
-          <span>{{ tab.emoji }}</span> {{ tab.label }}
-        </button>
-      </div>
-
-      <!-- Medidas -->
-      <div v-show="activeTab === 'medidas'">
-        <MedidasTab
-          :progresos="progresos"
-          :ultimoRegistro="ultimoRegistro"
-          :puedeRegistrar="puedeRegistrar"
-          :diasRestantesParaRegistrar="diasRestantesParaRegistrar"
-          :guardando="guardando"
-          :form="form"
-          :metricaGrafica="metricaGrafica"
-          :formatFecha="formatFecha"
-          @save="guardarProgreso"
-          @ver-detalle="verDetalle"
-          @update:metricaGrafica="metricaGrafica = $event"
-        />
-      </div>
-
-      <!-- Metas -->
-      <MetasTab
-        v-show="activeTab === 'metas'"
-        :metas="metas"
-        :creandoMeta="creandoMeta"
-        @crear="crearMeta"
-        @toggle="toggleMetaCompletada"
-        @eliminar="eliminarMeta"
-      />
-
-      <!-- Fotos de progreso (galería cronológica) -->
-      <div v-show="activeTab === 'fotos'">
-        <FotosTab />
-      </div>
-
-      <!-- Logros -->
-      <LogrosTab
-        v-show="activeTab === 'logros'"
-        :logros="logros"
-        :logrosStats="logrosStats"
-        :formatFechaMedalla="formatFechaMedalla"
-      />
-
-      <!-- Modal de Detalle -->
-      <DetalleMedidaModal
-        :modal="modalDetalle"
-        :formatFecha="formatFecha"
-        @cerrar="cerrarModal"
-      />
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -142,9 +179,7 @@ const { formatDateLong, formatDateMedium, formatDateShort } = useFormatters();
 // BodyWeightChart carga chart.js dinámicamente (vendor-chart, ya cacheado
 // por otros componentes). Lo cargamos async para que ProgresoContent no
 // arrastre vendor-chart en su grafo eager.
-const BodyWeightChart = defineAsyncComponent(
-    () => import('./BodyWeightChart.vue')
-);
+const BodyWeightChart = defineAsyncComponent(() => import('./BodyWeightChart.vue'));
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
@@ -203,7 +238,8 @@ const onUpdateGoal = async (newGoal) => {
         if (latest && newGoal) {
             const delta = Math.round((latest.peso - newGoal) * 100) / 100;
             weightChart.value.delta = delta;
-            weightChart.value.direction = newGoal < latest.peso ? 'down' : newGoal > latest.peso ? 'up' : null;
+            weightChart.value.direction =
+                newGoal < latest.peso ? 'down' : newGoal > latest.peso ? 'up' : null;
         } else {
             weightChart.value.delta = null;
             weightChart.value.direction = null;
@@ -217,6 +253,7 @@ const onUpdateGoal = async (newGoal) => {
 
 const form = ref({
     peso: '',
+    grasa_corporal: '',
     altura: '',
     edad: '',
     sexo: '',
@@ -238,9 +275,9 @@ const modalDetalle = ref({
 
 const tabs = [
     { id: 'medidas', emoji: '📏', label: 'Medidas Corporales' },
-    { id: 'metas',   emoji: '🎯', label: 'Metas Personales' },
-    { id: 'fotos',   emoji: '📸', label: 'Galería' },
-    { id: 'logros',  emoji: '🏆', label: 'Medallas y Logros' },
+    { id: 'metas', emoji: '🎯', label: 'Metas Personales' },
+    { id: 'fotos', emoji: '📸', label: 'Galería' },
+    { id: 'logros', emoji: '🏆', label: 'Medallas y Logros' },
 ];
 
 // === Confetti (deprecated local; ahora viene de useConfetti) ===
@@ -335,7 +372,10 @@ const guardarProgreso = async (formData) => {
 
         if (response.data.new_medals && response.data.new_medals.length > 0) {
             response.data.new_medals.forEach((medal) => {
-                showNotification(`🏆 ¡Felicidades! Desbloqueaste la medalla: ${medal.nombre}`, 'success');
+                showNotification(
+                    `🏆 ¡Felicidades! Desbloqueaste la medalla: ${medal.nombre}`,
+                    'success'
+                );
             });
             bigCelebration(); // 🎉 celebración grande por medalla nueva
         } else {
@@ -346,7 +386,10 @@ const guardarProgreso = async (formData) => {
         await cargarLogros();
     } catch (error) {
         console.error('Error:', error);
-        showNotification(error.response?.data?.message || 'Error al guardar el progreso corporal.', 'error');
+        showNotification(
+            error.response?.data?.message || 'Error al guardar el progreso corporal.',
+            'error'
+        );
     } finally {
         guardando.value = false;
     }
@@ -392,7 +435,10 @@ const toggleMetaCompletada = async (meta) => {
 
         if (response.data.new_medals && response.data.new_medals.length > 0) {
             response.data.new_medals.forEach((medal) => {
-                showNotification(`🏆 ¡Felicidades! Desbloqueaste la medalla: ${medal.nombre}`, 'success');
+                showNotification(
+                    `🏆 ¡Felicidades! Desbloqueaste la medalla: ${medal.nombre}`,
+                    'success'
+                );
             });
             bigCelebration();
         } else if (response.data.meta.completada) {
@@ -408,20 +454,21 @@ const toggleMetaCompletada = async (meta) => {
 };
 
 const eliminarMeta = async (id) => {
-    const confirmed = await toast.confirm(
-        '¿Eliminar esta meta?',
-        { title: 'Eliminar meta', confirmLabel: 'Sí, eliminar', type: 'error' }
-    );
+    const confirmed = await toast.confirm('¿Eliminar esta meta?', {
+        title: 'Eliminar meta',
+        confirmLabel: 'Sí, eliminar',
+        type: 'error',
+    });
     if (!confirmed) return;
 
     // Snapshot + posición original para restaurar en el mismo lugar
-    const idx = metas.value.findIndex(m => m.id === id);
+    const idx = metas.value.findIndex((m) => m.id === id);
     const snapshot = idx >= 0 ? { ...metas.value[idx] } : null;
 
     const { cancelled } = await useUndoable({
         message: 'Meta eliminada',
         apply: () => {
-            metas.value = metas.value.filter(m => m.id !== id);
+            metas.value = metas.value.filter((m) => m.id !== id);
         },
         undo: () => {
             if (!snapshot) return;
@@ -480,23 +527,25 @@ const initChart = async () => {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: key,
-                data: dataValues,
-                borderColor: '#6366f1',
-                borderWidth: 3,
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.35,
-                pointBackgroundColor: '#6366f1',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                pointHoverBackgroundColor: '#4f46e5',
-                pointHoverBorderColor: '#ffffff',
-                pointHoverBorderWidth: 3,
-            }],
+            datasets: [
+                {
+                    label: key,
+                    data: dataValues,
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#4f46e5',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 3,
+                },
+            ],
         },
         options: {
             responsive: true,
@@ -516,15 +565,23 @@ const initChart = async () => {
                 },
             },
             scales: {
-                y: { grid: { color: gridColor, drawBorder: false }, ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } } },
-                x: { grid: { display: false }, ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } } },
+                y: {
+                    grid: { color: gridColor, drawBorder: false },
+                    ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } },
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } },
+                },
             },
         },
     });
 };
 
 watch(metricaGrafica, () => nextTick(() => initChart()));
-watch(activeTab, (newTab) => { if (newTab === 'medidas') nextTick(() => initChart()); });
+watch(activeTab, (newTab) => {
+    if (newTab === 'medidas') nextTick(() => initChart());
+});
 
 onMounted(() => {
     cargarProgresos();
@@ -573,17 +630,23 @@ const exportarProgresoPdf = async () => {
 
 <style scoped>
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 .animate-fadeIn {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 </style>

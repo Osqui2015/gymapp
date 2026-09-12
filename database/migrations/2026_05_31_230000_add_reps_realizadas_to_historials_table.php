@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('historials', function (Blueprint $table) {
-            if (!Schema::hasColumn('historials', 'reps_realizadas')) {
+            if (! Schema::hasColumn('historials', 'reps_realizadas')) {
                 $table->integer('reps_realizadas')->nullable()->after('reps_max');
             }
         });

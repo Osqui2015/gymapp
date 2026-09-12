@@ -7,7 +7,9 @@
     - color: 'gray' | 'indigo' | 'emerald' | 'amber' | 'red' (color del valor)
 -->
 <template>
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
+    >
         <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             {{ label }}
         </p>
@@ -31,12 +33,14 @@ const props = defineProps({
 });
 
 const valueClass = computed(() => {
-    return {
-        gray: 'text-gray-900 dark:text-white',
-        indigo: 'text-indigo-600 dark:text-indigo-400',
-        emerald: 'text-emerald-600 dark:text-emerald-400',
-        amber: 'text-amber-600 dark:text-amber-400',
-        red: 'text-red-600 dark:text-red-400',
-    }[props.color] || 'text-gray-900 dark:text-white';
+    return (
+        {
+            gray: 'text-gray-900 dark:text-white',
+            indigo: 'text-indigo-600 dark:text-indigo-400',
+            emerald: 'text-emerald-600 dark:text-emerald-400',
+            amber: 'text-amber-600 dark:text-amber-400',
+            red: 'text-red-600 dark:text-red-400',
+        }[props.color] || 'text-gray-900 dark:text-white'
+    );
 });
 </script>

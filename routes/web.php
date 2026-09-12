@@ -98,10 +98,11 @@ Route::middleware(['auth', 'membership'])->group(function () {
 
     Route::get('/api/user-info', function () {
         $user = auth()->user();
+
         return response()->json([
             'role' => $user->normalizedRole(),
             'trainer_id' => $user->trainer_id,
-            'has_trainer' => !empty($user->trainer_id),
+            'has_trainer' => ! empty($user->trainer_id),
         ]);
     })->name('user.info');
 });

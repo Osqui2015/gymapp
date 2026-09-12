@@ -59,7 +59,14 @@ describe('EmptyStateIllustrated', () => {
     });
 
     it('cambia la ilustración según la variant', () => {
-        const variants = ['no-data', 'no-results', 'no-rutinas', 'no-historial', 'error', 'welcome'];
+        const variants = [
+            'no-data',
+            'no-results',
+            'no-rutinas',
+            'no-historial',
+            'error',
+            'welcome',
+        ];
         for (const variant of variants) {
             const wrapper = mount(EmptyStateIllustrated, {
                 props: { variant, title: 'X' },

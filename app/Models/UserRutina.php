@@ -82,6 +82,7 @@ class UserRutina extends Model
                 if (! $fkId) {
                     return null;
                 }
+
                 return $this->rutina?->nivel;
             },
         );
@@ -95,6 +96,7 @@ class UserRutina extends Model
                 if (! $fkId) {
                     return null;
                 }
+
                 return $this->rutina?->modalidad;
             },
         );

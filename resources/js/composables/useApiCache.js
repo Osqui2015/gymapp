@@ -87,7 +87,8 @@ export function getCacheStats() {
  * Omite el cache si la URL contiene `?_t=` (timestamp) o `cache=false`.
  */
 export async function cachedAxiosGet(url, config = {}, options = {}) {
-    const { ttl = DEFAULT_TTL, skipCache = url.includes('cache=false') || url.includes('_t=') } = options;
+    const { ttl = DEFAULT_TTL, skipCache = url.includes('cache=false') || url.includes('_t=') } =
+        options;
 
     if (!skipCache) {
         const cached = getCached(url);

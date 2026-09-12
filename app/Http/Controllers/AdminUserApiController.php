@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AdminUserApiController extends Controller
 {
@@ -23,9 +24,9 @@ class AdminUserApiController extends Controller
         if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('nick', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('role', 'like', "%{$search}%");
+                    ->orWhere('nick', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('role', 'like', "%{$search}%");
             });
         }
 
@@ -59,7 +60,8 @@ class AdminUserApiController extends Controller
             'telefono' => ['nullable', 'string', 'max:255'],
             'role' => ['required', 'string', 'in:comun,alumno,trainer,administrador'],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
-            'password' => ['nullable', 'string', 'min:6'],
+            // Endurecido (Oleada 2 - seguridad): antes min:6, ahora Password::defaults()
+            'password' => ['nullable', Password::defaults()],
         ]);
 
         $updateData = [
@@ -83,7 +85,7 @@ class AdminUserApiController extends Controller
                 if (! $trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
                     return response()->json([
                         'message' => 'El usuario seleccionado no es trainer.',
-                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']]
+                        'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']],
                     ], 422);
                 }
             }
@@ -110,13 +112,35 @@ class AdminUserApiController extends Controller
 
         $this->authorize('suspend', $user);
 
+        $data = $request->validate([
+            'motivo' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $oldSuspended = $user->suspended;
-        $user->update(['suspended' => ! $user->suspended]);
+        $willSuspend = ! $user->suspended;
 
-        $action = $user->suspended ? 'suspended' : 'unsuspended';
-        AuditLog::log($action, "{$action} al usuario {$user->name}", auth()->id(), User::class, $user->id, ['suspended' => $oldSuspended], ['suspended' => $user->suspended]);
+        $user->update([
+            'suspended' => $willSuspend,
+            // Guardamos el motivo al suspender; lo limpiamos al reactivar.
+            'motivo_suspension' => $willSuspend ? ($data['motivo'] ?? null) : null,
+        ]);
 
-        return response()->json(['success' => true, 'suspended' => $user->suspended]);
+        $action = $willSuspend ? 'suspended' : 'unsuspended';
+        AuditLog::log(
+            $action,
+            "{$action} al usuario {$user->name}".($willSuspend && ! empty($data['motivo']) ? " — Motivo: {$data['motivo']}" : ''),
+            auth()->id(),
+            User::class,
+            $user->id,
+            ['suspended' => $oldSuspended, 'motivo_suspension' => $user->getOriginal('motivo_suspension')],
+            ['suspended' => $user->suspended, 'motivo_suspension' => $user->motivo_suspension]
+        );
+
+        return response()->json([
+            'success' => true,
+            'suspended' => $user->suspended,
+            'motivo_suspension' => $user->motivo_suspension,
+        ]);
     }
 
     public function destroy(Request $request, int $id)
@@ -161,7 +185,7 @@ class AdminUserApiController extends Controller
     {
         $trainer = User::findOrFail($trainerId);
 
-        if (!$trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+        if (! $trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
             return response()->json(['error' => 'El usuario seleccionado no es un entrenador válido'], 422);
         }
 
@@ -172,7 +196,7 @@ class AdminUserApiController extends Controller
 
         $alumnoIds = $data['alumno_ids'] ?? [];
 
-        if (!empty($alumnoIds)) {
+        if (! empty($alumnoIds)) {
             $invalidCount = User::whereIn('id', $alumnoIds)
                 ->where('role', '!=', User::ROLE_ALUMNO)
                 ->count();
@@ -181,18 +205,18 @@ class AdminUserApiController extends Controller
             }
         }
 
-        \DB::transaction(function () use ($trainerId, $alumnoIds, $trainer) {
+        \DB::transaction(function () use ($trainerId, $alumnoIds) {
             User::where('trainer_id', $trainerId)
                 ->whereNotIn('id', $alumnoIds)
                 ->update(['trainer_id' => null]);
 
-            if (!empty($alumnoIds)) {
+            if (! empty($alumnoIds)) {
                 User::whereIn('id', $alumnoIds)
                     ->update(['trainer_id' => $trainerId]);
             }
         });
 
-        $count = !empty($alumnoIds) ? count($alumnoIds) : 0;
+        $count = ! empty($alumnoIds) ? count($alumnoIds) : 0;
         AuditLog::log('assigned_trainer', "Asignó {$count} alumnos a {$trainer->name}", auth()->id(), User::class, $trainerId);
 
         return response()->json([

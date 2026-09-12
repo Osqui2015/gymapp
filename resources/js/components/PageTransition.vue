@@ -33,7 +33,9 @@ onMounted(() => {
 <style scoped>
 /* Transición de página: fade + slight slide */
 .page-enter-active {
-    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+    transition:
+        opacity 0.25s ease-out,
+        transform 0.25s ease-out;
 }
 .page-leave-active {
     transition: opacity 0.15s ease-in;

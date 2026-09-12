@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('historials', function (Blueprint $table) {
             // Nota libre del usuario por set: "sentí el bíceps", "dolor lumbar", "fácil", etc.
             // Complementa comentario_trainer (que es la devolución del trainer).
-            if (!Schema::hasColumn('historials', 'nota_user')) {
+            if (! Schema::hasColumn('historials', 'nota_user')) {
                 $table->text('nota_user')->nullable()->after('comentario_trainer');
             }
         });

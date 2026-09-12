@@ -103,7 +103,7 @@ class MetaPolicyTest extends TestCase
 
     private function makeMeta(array $overrides = []): Meta
     {
-        $m = new Meta();
+        $m = new Meta;
         $m->setRawAttributes(array_merge([
             'user_id' => 1,
             'tipo' => 'otro',
@@ -111,6 +111,7 @@ class MetaPolicyTest extends TestCase
             'valor_objetivo' => 1,
             'completada' => false,
         ], $overrides));
+
         return $m;
     }
 }

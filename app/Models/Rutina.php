@@ -90,6 +90,7 @@ class Rutina extends Model
                     // Si querés el nombre actualizado, hacé ->load('ejercicioRef') antes.
                     return $this->attributes['ejercicio_nombre'] ?? null;
                 }
+
                 return $this->attributes['ejercicio_nombre'] ?? null;
             },
         );

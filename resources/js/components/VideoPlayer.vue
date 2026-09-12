@@ -12,21 +12,30 @@
     <VideoPlayer :src="ejercicio.url_video" :title="ejercicio.nombre" />
 -->
 <template>
-    <div class="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <div
+        class="rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+    >
         <!-- YouTube -->
-        <div v-if="kind === 'youtube'" class="relative" style="padding-bottom: 56.25%;">
+        <div v-if="kind === 'youtube'" class="relative" style="padding-bottom: 56.25%">
             <iframe
                 :src="embedUrl"
                 :title="title"
                 class="absolute inset-0 w-full h-full"
                 frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="
+                    accelerometer;
+                    autoplay;
+                    clipboard-write;
+                    encrypted-media;
+                    gyroscope;
+                    picture-in-picture;
+                "
                 allowfullscreen
             ></iframe>
         </div>
 
         <!-- Vimeo -->
-        <div v-else-if="kind === 'vimeo'" class="relative" style="padding-bottom: 56.25%;">
+        <div v-else-if="kind === 'vimeo'" class="relative" style="padding-bottom: 56.25%">
             <iframe
                 :src="embedUrl"
                 :title="title"
@@ -50,10 +59,7 @@
         </video>
 
         <!-- Placeholder cuando no hay video -->
-        <div
-            v-else
-            class="flex flex-col items-center justify-center py-12 px-4 text-center"
-        >
+        <div v-else class="flex flex-col items-center justify-center py-12 px-4 text-center">
             <div class="text-5xl mb-2 opacity-50">🎬</div>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 {{ title ? `Sin video para "${title}"` : 'Sin video disponible' }}

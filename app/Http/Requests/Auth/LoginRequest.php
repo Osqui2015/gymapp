@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -50,13 +51,48 @@ class LoginRequest extends FormRequest
             ->first();
 
         if ($user?->suspended) {
+            // Mostramos el motivo de suspensión si está disponible. Esto evita
+            // que el usuario tenga que contactar al admin a ciegas.
+            $motivo = trim((string) $user->motivo_suspension);
+            $message = $motivo !== ''
+                ? 'Tu cuenta se encuentra suspendida: '.$motivo
+                : 'Tu cuenta se encuentra suspendida.';
+
+            // Log de intento sobre cuenta suspendida: es un evento de seguridad
+            // relevante (alguien insiste en entrar a una cuenta bloqueada).
+            AuditLog::log(
+                'login_attempt_suspended',
+                "Intento de login en cuenta suspendida: {$nick}",
+                null,
+                User::class,
+                $user->id,
+                null,
+                ['ip' => $this->ip(), 'user_agent' => $this->userAgent()]
+            );
+
             throw ValidationException::withMessages([
-                'nick' => 'Tu cuenta se encuentra suspendida.',
+                'nick' => $message,
             ]);
         }
 
         if (! Auth::attempt(['nick' => $nick, 'password' => (string) $this->string('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+
+            // Intento fallido de autenticación. Logueamos con IP y user-agent
+            // para detectar patrones de brute-force o credential stuffing.
+            AuditLog::log(
+                'login_failed',
+                "Intento de login fallido para nick: {$nick}",
+                null,
+                null,
+                null,
+                null,
+                [
+                    'ip' => $this->ip(),
+                    'user_agent' => $this->userAgent(),
+                    'nick' => $nick,
+                ]
+            );
 
             throw ValidationException::withMessages([
                 'nick' => trans('auth.failed'),
@@ -78,6 +114,21 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        // Log crítico: lockout por exceso de intentos. Es señal de ataque.
+        AuditLog::log(
+            'login_lockout',
+            'Bloqueo por exceso de intentos: '.$this->throttleKey(),
+            null,
+            null,
+            null,
+            null,
+            [
+                'ip' => $this->ip(),
+                'user_agent' => $this->userAgent(),
+                'available_in_seconds' => RateLimiter::availableIn($this->throttleKey()),
+            ]
+        );
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

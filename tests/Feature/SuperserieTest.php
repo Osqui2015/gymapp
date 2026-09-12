@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Rutina;
-use App\Models\Historial;
 use App\Models\User;
 use App\Models\UserRutina;
 use Illuminate\Foundation\Testing\RefreshDatabase;

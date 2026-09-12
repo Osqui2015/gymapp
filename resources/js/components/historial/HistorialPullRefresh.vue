@@ -11,13 +11,17 @@
         :aria-live="refreshing ? 'assertive' : 'polite'"
         role="status"
     >
-        <div class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+        <div
+            class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400"
+        >
             <svg
                 class="w-6 h-6"
                 :class="[
-                    refreshing ? 'animate-spin text-indigo-600' :
-                    release ? 'text-indigo-600 rotate-180' :
-                    'text-gray-400',
+                    refreshing
+                        ? 'animate-spin text-indigo-600'
+                        : release
+                          ? 'text-indigo-600 rotate-180'
+                          : 'text-gray-400',
                 ]"
                 fill="none"
                 stroke="currentColor"

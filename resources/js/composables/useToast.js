@@ -33,17 +33,18 @@ export function useToast() {
 
         // Helpers comunes
         apiError(error, fallback = 'Ocurrió un error inesperado') {
-            const message = error?.response?.data?.message
-                || error?.response?.data?.error
-                || error?.message
-                || fallback;
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.error ||
+                error?.message ||
+                fallback;
             return store.error(message);
         },
 
         validationError(errors) {
             // errors es un objeto { field: [msg1, msg2] }
             const first = Object.values(errors || {})[0];
-            const message = Array.isArray(first) ? first[0] : (first || 'Datos inválidos');
+            const message = Array.isArray(first) ? first[0] : first || 'Datos inválidos';
             return store.error(message);
         },
 
@@ -128,11 +129,13 @@ export function setupGlobalToastListeners() {
     window.addEventListener('validation:error', (e) => {
         const errors = e.detail || {};
         const first = Object.values(errors)[0];
-        const message = Array.isArray(first) ? first[0] : (first || 'Datos inválidos');
+        const message = Array.isArray(first) ? first[0] : first || 'Datos inválidos';
         handle('error', message);
     });
 
     window.addEventListener('server:error', (e) => {
-        handle('error', e.detail?.message || 'Error del servidor. Por favor intenta de nuevo.', { duration: 6000 });
+        handle('error', e.detail?.message || 'Error del servidor. Por favor intenta de nuevo.', {
+            duration: 6000,
+        });
     });
 }

@@ -13,6 +13,7 @@ class MessageTest extends TestCase
     use RefreshDatabase;
 
     protected User $trainer;
+
     protected User $alumno;
 
     protected function setUp(): void

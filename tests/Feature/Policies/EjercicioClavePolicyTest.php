@@ -116,13 +116,14 @@ class EjercicioClavePolicyTest extends TestCase
 
     private function makeEjercicioClave(array $overrides = []): EjercicioClave
     {
-        $e = new EjercicioClave();
+        $e = new EjercicioClave;
         $e->setRawAttributes(array_merge([
             'user_id' => 1,
             'trainer_id' => 1,
             'ejercicio_nombre' => 'Test Ejercicio',
             'notas_trainer' => 'Notas',
         ], $overrides));
+
         return $e;
     }
 }

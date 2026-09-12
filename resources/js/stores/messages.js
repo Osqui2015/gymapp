@@ -27,7 +27,10 @@ export const useMessagesStore = defineStore('messages', {
             try {
                 const { data } = await axios.get('/api/messages/conversations');
                 this.conversations = data.conversations || [];
-                this.totalUnread = this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+                this.totalUnread = this.conversations.reduce(
+                    (sum, c) => sum + (c.unread_count || 0),
+                    0
+                );
             } catch (e) {
                 console.error('[messages] fetch conversations error:', e);
             } finally {
@@ -68,7 +71,9 @@ export const useMessagesStore = defineStore('messages', {
 
         refreshConversationInList(message) {
             const idx = this.conversations.findIndex(
-                (c) => c.other_user.id === message.sender_id || c.other_user.id === message.recipient_id
+                (c) =>
+                    c.other_user.id === message.sender_id ||
+                    c.other_user.id === message.recipient_id
             );
             if (idx >= 0) {
                 this.conversations[idx].last_message = message;
@@ -85,7 +90,10 @@ export const useMessagesStore = defineStore('messages', {
                 const conv = this.conversations.find((c) => c.other_user.id === userId);
                 if (conv) {
                     conv.unread_count = 0;
-                    this.totalUnread = this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+                    this.totalUnread = this.conversations.reduce(
+                        (sum, c) => sum + (c.unread_count || 0),
+                        0
+                    );
                 }
             } catch (e) {
                 console.error('[messages] mark read error:', e);

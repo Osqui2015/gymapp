@@ -49,10 +49,13 @@ class RutinaPolicy
      */
     public function update(User $user, Rutina $rutina): bool
     {
-        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) return true;
+        if ($user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            return true;
+        }
         if ($user->hasRole([User::ROLE_TRAINER, 'coordinador'])) {
             return $rutina->created_by === null || $rutina->created_by === $user->id;
         }
+
         return false;
     }
 
@@ -71,13 +74,19 @@ class RutinaPolicy
      */
     public function assignTo(User $user, Rutina $rutina, ?int $alumnoId): bool
     {
-        if (! $this->update($user, $rutina)) return false;
-        if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) return true;
+        if (! $this->update($user, $rutina)) {
+            return false;
+        }
+        if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) {
+            return true;
+        }
         // trainer: validar que el alumno le pertenece
         if ($user->hasRole(User::ROLE_TRAINER) && $alumnoId) {
-            $alumno = \App\Models\User::find($alumnoId);
+            $alumno = User::find($alumnoId);
+
             return $alumno && $alumno->trainer_id === $user->id;
         }
+
         return false;
     }
 }

@@ -69,8 +69,8 @@ class AdminStatsService
         $hace30Dias = Carbon::now()->subDays(30)->toDateString();
 
         $enRiesgo = User::whereHas('membresias', function ($q) {
-                $q->whereIn('estado', ['activo', 'por_vencer']);
-            })
+            $q->whereIn('estado', ['activo', 'por_vencer']);
+        })
             ->whereDoesntHave('historials', function ($q) use ($hace14Dias) {
                 $q->where('fecha', '>=', $hace14Dias);
             })
@@ -117,10 +117,15 @@ class AdminStatsService
         foreach ($sesionesPorUser as $row) {
             $suma += $row->dias;
             $count++;
-            if ($row->dias >= 20) $distribucion['diario']++;
-            elseif ($row->dias >= 12) $distribucion['frecuente']++;
-            elseif ($row->dias >= 6) $distribucion['regular']++;
-            else $distribucion['ocasional']++;
+            if ($row->dias >= 20) {
+                $distribucion['diario']++;
+            } elseif ($row->dias >= 12) {
+                $distribucion['frecuente']++;
+            } elseif ($row->dias >= 6) {
+                $distribucion['regular']++;
+            } else {
+                $distribucion['ocasional']++;
+            }
         }
 
         // Sumar los que no entrenaron al grupo "inactivo"
@@ -146,8 +151,8 @@ class AdminStatsService
             ->join('users', 'users.id', '=', 'historials.user_id')
             ->where('historials.fecha', '>=', $hace30)
             ->select('users.id', 'users.name', 'users.nick',
-                     DB::raw('COUNT(DISTINCT historials.fecha) as dias_entrenados'),
-                     DB::raw('COUNT(*) as series_totales'))
+                DB::raw('COUNT(DISTINCT historials.fecha) as dias_entrenados'),
+                DB::raw('COUNT(*) as series_totales'))
             ->groupBy('users.id', 'users.name', 'users.nick')
             ->orderByDesc('dias_entrenados')
             ->limit(10)
@@ -169,12 +174,12 @@ class AdminStatsService
 
         $usuarios = User::select(
             DB::raw("$dateExpr as mes"),
-            DB::raw("COUNT(*) as total")
+            DB::raw('COUNT(*) as total')
         )
-        ->where('created_at', '>=', $seisMesesAtras)
-        ->groupBy(DB::raw($dateExpr))
-        ->orderBy('mes')
-        ->get();
+            ->where('created_at', '>=', $seisMesesAtras)
+            ->groupBy(DB::raw($dateExpr))
+            ->orderBy('mes')
+            ->get();
 
         // Rellenar meses sin usuarios
         $meses = [];
@@ -206,18 +211,18 @@ class AdminStatsService
         if ($driver === 'sqlite') {
             $hourExpr = "strftime('%H', fecha)";
         } else {
-            $hourExpr = "HOUR(fecha)";
+            $hourExpr = 'HOUR(fecha)';
         }
 
         $horas = Historial::select(
             DB::raw("$hourExpr as hora"),
-            DB::raw("COUNT(*) as total")
+            DB::raw('COUNT(*) as total')
         )
-        ->where('fecha', '>=', $ultimoMes)
-        ->whereNotNull('fecha')
-        ->groupBy(DB::raw($hourExpr))
-        ->orderBy('hora')
-        ->get();
+            ->where('fecha', '>=', $ultimoMes)
+            ->whereNotNull('fecha')
+            ->groupBy(DB::raw($hourExpr))
+            ->orderBy('hora')
+            ->get();
 
         $todasHoras = [];
         for ($i = 5; $i <= 23; $i++) {
@@ -240,24 +245,24 @@ class AdminStatsService
     {
         return Historial::select(
             'ejercicio_nombre',
-            DB::raw("COUNT(*) as veces_usado"),
-            DB::raw("AVG(peso) as peso_promedio"),
-            DB::raw("SUM(reps_realizadas) as reps_totales")
+            DB::raw('COUNT(*) as veces_usado'),
+            DB::raw('AVG(peso) as peso_promedio'),
+            DB::raw('SUM(reps_realizadas) as reps_totales')
         )
-        ->whereNotNull('ejercicio_nombre')
-        ->where('completado', true)
-        ->groupBy('ejercicio_nombre')
-        ->orderByDesc('veces_usado')
-        ->limit(15)
-        ->get()
-        ->map(function ($item) {
-            return [
-                'ejercicio' => $item->ejercicio_nombre,
-                'veces_usado' => $item->veces_usado,
-                'peso_promedio' => round($item->peso_promedio ?? 0, 1),
-                'reps_totales' => $item->reps_totales ?? 0,
-            ];
-        });
+            ->whereNotNull('ejercicio_nombre')
+            ->where('completado', true)
+            ->groupBy('ejercicio_nombre')
+            ->orderByDesc('veces_usado')
+            ->limit(15)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'ejercicio' => $item->ejercicio_nombre,
+                    'veces_usado' => $item->veces_usado,
+                    'peso_promedio' => round($item->peso_promedio ?? 0, 1),
+                    'reps_totales' => $item->reps_totales ?? 0,
+                ];
+            });
     }
 
     public function getResumenGeneral()

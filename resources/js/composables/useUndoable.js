@@ -33,18 +33,12 @@ import { useToast } from './useToast';
  */
 export function useUndoable(opts) {
     const toast = useToast();
-    const {
-        message,
-        undoLabel = 'Deshacer',
-        apply,
-        undo,
-        commit,
-        onError,
-        duration = 5000,
-    } = opts;
+    const { message, undoLabel = 'Deshacer', apply, undo, commit, onError, duration = 5000 } = opts;
 
     if (typeof apply !== 'function' || typeof undo !== 'function' || typeof commit !== 'function') {
-        throw new Error('[useUndoable] apply, undo y commit son obligatorios y deben ser funciones.');
+        throw new Error(
+            '[useUndoable] apply, undo y commit son obligatorios y deben ser funciones.'
+        );
     }
 
     // 1) Aplicar inmediatamente (optimistic)
@@ -85,7 +79,11 @@ export function useUndoable(opts) {
                 // Falló el server: revertimos el cambio visual
                 executed = false;
                 cancelled = true;
-                try { undo(); } catch (_) { /* noop */ }
+                try {
+                    undo();
+                } catch (_) {
+                    /* noop */
+                }
                 if (typeof onError === 'function') onError(err);
                 else toast.apiError(err, 'No se pudo completar la acción');
             } finally {
