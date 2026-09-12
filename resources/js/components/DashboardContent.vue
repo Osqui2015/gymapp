@@ -247,6 +247,129 @@
             "
             @saved="onWorkoutSummarySaved"
         />
+
+        <!-- #4 Resumen al cambiar de día -->
+        <Teleport to="body">
+            <Transition name="fade">
+                <div
+                    v-if="showDaySummary"
+                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    @click.self="showDaySummary = false"
+                >
+                    <div
+                        class="w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                    >
+                        <!-- Header con confeti -->
+                        <div
+                            class="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-5 text-white"
+                        >
+                            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90">
+                                <span>✓</span>
+                                <span>Día completado</span>
+                            </div>
+                            <h3 class="mt-1 text-2xl font-black">
+                                {{ daySummary.diaLabel }}
+                            </h3>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="px-6 py-5 space-y-4">
+                            <div class="grid grid-cols-3 gap-3 text-center">
+                                <div class="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
+                                    >
+                                        Series
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-indigo-700 dark:text-indigo-300 tabular-nums"
+                                    >
+                                        {{ daySummary.completadas }}/{{ daySummary.total }}
+                                    </p>
+                                </div>
+                                <div class="rounded-xl bg-amber-50 dark:bg-amber-950/30 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400"
+                                    >
+                                        Volumen
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums"
+                                    >
+                                        {{ formatVolumen(daySummary.volumen) }}
+                                    </p>
+                                    <p class="text-[10px] text-amber-600/80 dark:text-amber-400/80">
+                                        kg totales
+                                    </p>
+                                </div>
+                                <div class="rounded-xl bg-rose-50 dark:bg-rose-950/30 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400"
+                                    >
+                                        PRs
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-rose-700 dark:text-rose-300 tabular-nums"
+                                    >
+                                        {{ daySummary.prs }}
+                                    </p>
+                                    <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80">
+                                        récords
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Mejor set -->
+                            <div
+                                v-if="daySummary.mejorSet"
+                                class="rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-3"
+                            >
+                                <div class="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                                    <span>🏆</span>
+                                    <span>Mejor set</span>
+                                </div>
+                                <p class="mt-1 text-base font-bold text-gray-900 dark:text-white">
+                                    {{ daySummary.mejorSet.ejercicio }}
+                                </p>
+                                <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                                    {{ daySummary.mejorSet.peso }} kg ×
+                                    {{ daySummary.mejorSet.reps }} reps
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div
+                            class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex gap-3"
+                        >
+                            <button
+                                type="button"
+                                @click="showDaySummary = false"
+                                class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Quedarme acá
+                            </button>
+                            <button
+                                v-if="daySummary.tieneSiguiente"
+                                type="button"
+                                @click="avanzarAlSiguienteDia"
+                                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-md transition-all"
+                            >
+                                Ir al {{ daySummary.siguienteLabel }} →
+                            </button>
+                            <button
+                                v-else
+                                type="button"
+                                @click="finalizarRutinaDesdeResumen"
+                                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-md transition-all"
+                            >
+                                🎉 Finalizar rutina
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </div>
 </template>
 
@@ -531,6 +654,30 @@ const construirFilasSerie = (rutinasDelDia) => {
         ? historialRutina.value.filter((r) => (r.fecha || '').slice(0, 10) >= cicloInicio.value)
         : historialRutina.value;
 
+    // === Lookup del registro anterior (para placeholders "Anterior: …") ===
+    // Busca el registro MÁS RECIENTE para cada (ejercicio, serie) del ciclo
+    // PASADO (fecha < ciclo_inicio). Si no hay ciclo_inicio, no hay "anterior".
+    // Se usa en DashboardSeriesList para mostrar "Anterior: 60 kg" como
+    // placeholder cuando el input está vacío en el ciclo nuevo.
+    const registrosAnteriores = cicloInicio.value
+        ? new Map(
+              historialRutina.value
+                  .filter((r) => r.dia === diaActual.value)
+                  .filter((r) => (r.fecha || '').slice(0, 10) < cicloInicio.value)
+                  .sort((a, b) => {
+                      const fa = (a.fecha || '').slice(0, 10);
+                      const fb = (b.fecha || '').slice(0, 10);
+                      if (fa !== fb) return fb.localeCompare(fa); // más reciente primero
+                      return (b.id || 0) - (a.id || 0);
+                  })
+                  .reduce((acc, r) => {
+                      const key = `${r.ejercicio_nombre}-${r.series_numero}`;
+                      if (!acc.has(key)) acc.set(key, r);
+                      return acc;
+                  }, new Map())
+          )
+        : new Map();
+
     const registros = new Map(
         historialCicloActual
             .filter((r) => r.dia === diaActual.value)
@@ -567,6 +714,9 @@ const construirFilasSerie = (rutinasDelDia) => {
             for (let index = 0; index < totalSeries; index++) {
                 const serieNumero = index + 1;
                 const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
+                const anterior = registrosAnteriores.get(
+                    `${rutina.ejercicio_nombre}-${serieNumero}`
+                );
                 allSets.push({
                     uid: `${rutina.id}-${diaActual.value}-${serieNumero}`,
                     rutina_nombre: getRutinaNombre(),
@@ -586,6 +736,15 @@ const construirFilasSerie = (rutinasDelDia) => {
                     esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                     esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                     notas: rutina.notas || null,
+                    // Placeholder "Anterior: …" cuando el input está vacío.
+                    previous_record: anterior
+                        ? {
+                              peso: anterior.peso ?? null,
+                              reps_realizadas: anterior.reps_realizadas ?? null,
+                              esfuerzo_tipo: anterior.esfuerzo_tipo ?? null,
+                              esfuerzo_valor: anterior.esfuerzo_valor ?? null,
+                          }
+                        : null,
                 });
             }
         } else {
@@ -597,6 +756,9 @@ const construirFilasSerie = (rutinasDelDia) => {
                     const totalSeries = Number(rutina.series) || 1;
                     if (serieNumero <= totalSeries) {
                         const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
+                        const anterior = registrosAnteriores.get(
+                            `${rutina.ejercicio_nombre}-${serieNumero}`
+                        );
                         allSets.push({
                             uid: `${rutina.id}-${diaActual.value}-${serieNumero}`,
                             rutina_nombre: getRutinaNombre(),
@@ -616,6 +778,15 @@ const construirFilasSerie = (rutinasDelDia) => {
                             esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                             esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                             notas: rutina.notas || null,
+                            // Placeholder "Anterior: …" cuando el input está vacío.
+                            previous_record: anterior
+                                ? {
+                                      peso: anterior.peso ?? null,
+                                      reps_realizadas: anterior.reps_realizadas ?? null,
+                                      esfuerzo_tipo: anterior.esfuerzo_tipo ?? null,
+                                      esfuerzo_valor: anterior.esfuerzo_valor ?? null,
+                                  }
+                                : null,
                         });
                     }
                 });
@@ -680,6 +851,40 @@ const guardarFila = async (fila, silencioso = false) => {
         if (!silencioso && fila.completado && deberiaIniciarTemporizador(fila)) {
             iniciarTemporizador(fila);
         }
+
+        // === #3 PR celebration ===
+        // Detecta si el peso guardado supera el máximo histórico del ejercicio.
+        // Excluye registros del ciclo actual (sólo miramos el pasado), y la
+        // propia fila que acabamos de guardar (porque ya está en historialRutina
+        // si vino del fetch anterior — evitamos falsos positivos).
+        if (!silencioso && fila.completado && fila.peso && Number(fila.peso) > 0) {
+            const pesoActual = Number(fila.peso);
+            const maxHistorico = historialRutina.value
+                .filter(
+                    (r) =>
+                        r.ejercicio_nombre === fila.ejercicio_nombre &&
+                        r.completado &&
+                        r.peso &&
+                        Number(r.peso) > 0
+                )
+                // Excluímos registros del ciclo actual para que el "PR" mida
+                // contra el pasado, no contra la fila que acabás de guardar
+                // en este mismo ciclo.
+                .filter((r) => {
+                    if (!cicloInicio.value) return true;
+                    return (r.fecha || '').slice(0, 10) < cicloInicio.value;
+                })
+                .reduce((max, r) => Math.max(max, Number(r.peso) || 0), 0);
+
+            if (pesoActual > maxHistorico) {
+                const repsTxt =
+                    fila.reps_realizadas != null ? ` × ${fila.reps_realizadas} reps` : '';
+                showSuccess?.(
+                    `🏆 ¡NUEVO PR en ${fila.ejercicio_nombre}! ${pesoActual} kg${repsTxt}`
+                );
+                triggerConfetti();
+            }
+        }
     } catch (error) {
         if (!silencioso) {
             console.error('Error:', error);
@@ -717,13 +922,100 @@ const siguienteDia = async () => {
         );
         if (!ok) return;
     }
-    if (diaIndex.value < todosLosDias.value.length - 1) {
-        diaActual.value = todosLosDias.value[diaIndex.value + 1];
+    // #4: Calcular resumen del día actual y mostrar modal antes de avanzar.
+    // Si el usuario confirma el modal, recién ahí cambiamos de día.
+    prepararResumenDelDia();
+    showDaySummary.value = true;
+};
+
+// === #4 Helpers del resumen de día ===
+const showDaySummary = ref(false);
+const daySummary = ref({
+    diaLabel: '',
+    siguienteLabel: '',
+    tieneSiguiente: false,
+    completadas: 0,
+    total: 0,
+    volumen: 0,
+    prs: 0,
+    mejorSet: null,
+});
+
+const formatVolumen = (v) => {
+    if (!v) return '0';
+    return v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v).toString();
+};
+
+const prepararResumenDelDia = () => {
+    const idxActual = todosLosDias.value.indexOf(diaActual.value);
+    const esUltimo = idxActual === todosLosDias.value.length - 1;
+    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
+    const completadas = filasDelDia.filter((f) => f.completado);
+    const volumen = completadas.reduce((t, f) => {
+        const p = Number(f.peso) || 0;
+        const r = Number(f.reps_realizadas) || 0;
+        return t + p * r;
+    }, 0);
+
+    // PRs del día: ejercicios cuyo peso en este día supera el máximo histórico
+    // previo al ciclo actual.
+    let prsCount = 0;
+    if (cicloInicio.value) {
+        completadas.forEach((f) => {
+            if (!f.peso) return;
+            const maxAntes = historialRutina.value
+                .filter(
+                    (r) =>
+                        r.ejercicio_nombre === f.ejercicio_nombre &&
+                        r.completado &&
+                        r.peso &&
+                        Number(r.peso) > 0 &&
+                        (r.fecha || '').slice(0, 10) < cicloInicio.value
+                )
+                .reduce((max, r) => Math.max(max, Number(r.peso) || 0), 0);
+            if (Number(f.peso) > maxAntes) prsCount++;
+        });
+    }
+
+    // Mejor set: el de mayor volumen (peso × reps) entre las completadas
+    let mejor = null;
+    completadas.forEach((f) => {
+        const vol = (Number(f.peso) || 0) * (Number(f.reps_realizadas) || 0);
+        if (!mejor || vol > mejor.vol) {
+            mejor = {
+                ejercicio: f.ejercicio_nombre,
+                peso: f.peso,
+                reps: f.reps_realizadas,
+                vol,
+            };
+        }
+    });
+
+    daySummary.value = {
+        diaLabel: diaActual.value,
+        siguienteLabel: esUltimo ? '' : todosLosDias.value[idxActual + 1],
+        tieneSiguiente: !esUltimo,
+        completadas: completadas.length,
+        total: filasDelDia.length,
+        volumen,
+        prs: prsCount,
+        mejorSet: mejor,
+    };
+};
+
+const avanzarAlSiguienteDia = async () => {
+    showDaySummary.value = false;
+    const idxActual = todosLosDias.value.indexOf(diaActual.value);
+    if (idxActual < todosLosDias.value.length - 1) {
+        diaActual.value = todosLosDias.value[idxActual + 1];
         await guardarProgreso();
         fetchRutinasDelDia();
-    } else {
-        await finalizarRutina();
     }
+};
+
+const finalizarRutinaDesdeResumen = async () => {
+    showDaySummary.value = false;
+    await finalizarRutina();
 };
 
 const diaAnterior = async () => {
@@ -838,3 +1130,15 @@ const iniciarTemporizador = (fila) => {
     });
 };
 </script>
+
+<style scoped>
+/* #4 Transition para el modal de resumen de día */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>

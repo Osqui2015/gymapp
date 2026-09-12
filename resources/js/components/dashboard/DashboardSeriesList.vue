@@ -89,6 +89,16 @@
                                 >
                                     Superserie {{ ejercicio.superserie_grupo }}
                                 </span>
+                                <!-- #2: Repetir valores del ciclo anterior (1-tap) -->
+                                <button
+                                    v-if="ejercicioTieneAnterior(ejercicio)"
+                                    type="button"
+                                    @click.stop="repetirCicloAnterior(ejercicio)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-500/30 dark:hover:bg-amber-950/60 transition-colors"
+                                    title="Copia peso y reps del ciclo anterior a todas las series"
+                                >
+                                    ↻ Repetir
+                                </button>
                             </div>
 
                             <!-- Nota técnica si existe (RIR, Rest-pause, etc.) -->
@@ -190,7 +200,7 @@
                                                 type="number"
                                                 min="0"
                                                 step="1"
-                                                placeholder="0"
+                                                :placeholder="placeholderReps(fila)"
                                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-center text-gray-900 dark:text-white font-semibold focus:border-indigo-500 focus:ring-indigo-500"
                                             />
                                         </div>
@@ -203,9 +213,17 @@
                                                 type="number"
                                                 min="0"
                                                 step="0.5"
-                                                placeholder="Kg"
+                                                :placeholder="placeholderPeso(fila)"
                                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-center text-gray-900 dark:text-white font-semibold focus:border-indigo-500 focus:ring-indigo-500"
                                             />
+                                            <!-- #1 Hint de progresivo overload (solo si input vacío y hay anterior) -->
+                                            <div
+                                                v-if="sugerenciaPeso(fila)"
+                                                class="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                                                :title="`Basado en tu performance del ciclo pasado`"
+                                            >
+                                                ↑ intentá {{ sugerenciaPeso(fila) }} kg
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
@@ -265,6 +283,18 @@
                                                     {{ opt }}
                                                 </button>
                                             </div>
+                                            <!-- Hint: esfuerzo del ciclo anterior -->
+                                            <span
+                                                v-if="
+                                                    !fila.esfuerzo_tipo &&
+                                                    !fila.esfuerzo_valor &&
+                                                    fila.previous_record?.esfuerzo_valor
+                                                "
+                                                class="text-[9px] font-medium text-gray-400 dark:text-gray-500"
+                                                :title="`Esfuerzo registrado en el ciclo anterior`"
+                                            >
+                                                ant: {{ formatEsfuerzo(fila.previous_record) }}
+                                            </span>
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
@@ -356,7 +386,7 @@
                                             type="number"
                                             min="0"
                                             step="1"
-                                            placeholder="0"
+                                            :placeholder="placeholderReps(fila)"
                                             class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
                                         />
                                     </div>
@@ -377,9 +407,16 @@
                                             type="number"
                                             min="0"
                                             step="0.5"
-                                            placeholder="0"
+                                            :placeholder="placeholderPeso(fila)"
                                             class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
                                         />
+                                    </div>
+                                    <!-- #1 Hint de progresivo overload (mobile) -->
+                                    <div
+                                        v-if="sugerenciaPeso(fila)"
+                                        class="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 text-center tabular-nums"
+                                    >
+                                        ↑ intentá {{ sugerenciaPeso(fila) }} kg
                                     </div>
                                 </div>
                             </div>
@@ -527,6 +564,78 @@ const ejerciciosAgrupados = computed(() => {
 
     return list;
 });
+
+// === Placeholders "Anterior: …" para el ciclo nuevo ===
+// Solo se muestra si:
+//   1. El input está vacío (no hay valor en el ciclo actual)
+//   2. Hay un valor del ciclo anterior guardado en `previous_record`
+// El formato es corto para que entre en inputs angostos.
+const placeholderReps = (fila) => {
+    if (fila.reps_realizadas !== null && fila.reps_realizadas !== undefined) return '0';
+    const prev = fila.previous_record?.reps_realizadas;
+    return prev ? `antes: ${prev}` : '0';
+};
+
+const placeholderPeso = (fila) => {
+    if (fila.peso !== null && fila.peso !== undefined) return 'Kg';
+    const prev = fila.previous_record?.peso;
+    return prev ? `antes: ${prev}` : 'Kg';
+};
+
+// === #1 Sugerencia de progresivo overload ===
+// Solo se muestra si el input está vacío y hay un registro anterior.
+// Regla:
+//   - Si en el ciclo anterior completaste todas las reps (>= reps_max) → +2.5 kg
+//   - Si NO completaste todas las reps → mantené el mismo peso
+// Devuelve un número o null (si no aplica mostrar).
+const sugerenciaPeso = (fila) => {
+    if (fila.peso !== null && fila.peso !== undefined && fila.peso !== '') return null;
+    const prev = fila.previous_record;
+    if (!prev || !prev.peso) return null;
+
+    const repsHechas = Number(prev.reps_realizadas) || 0;
+    const repsMax = Number(fila.reps_max) || 0;
+    const limpio = repsHechas >= repsMax && repsMax > 0;
+
+    return limpio ? prev.peso + 2.5 : prev.peso;
+};
+
+const formatEsfuerzo = (prev) => {
+    if (!prev) return '';
+    const tipo = (prev.esfuerzo_tipo || '').toUpperCase();
+    return `${tipo} ${prev.esfuerzo_valor}`;
+};
+
+// === #2 Repetir valores del ciclo anterior (1-tap) ===
+// Si el ejercicio tiene al menos una serie con previous_record, muestra el botón.
+// Al click, copia peso/reps/esfuerzo de previous_record a todas las series
+// vacías del ejercicio y emite 'guardar' para persistir.
+const ejercicioTieneAnterior = (ejercicio) => {
+    return ejercicio.series.some((f) => f.previous_record);
+};
+
+const repetirCicloAnterior = (ejercicio) => {
+    let cantidadCopiadas = 0;
+    ejercicio.series.forEach((fila) => {
+        const prev = fila.previous_record;
+        if (!prev) return;
+
+        // Solo copia si la fila actual está vacía (no pisar lo que ya tipeó el user)
+        const isEmpty =
+            (fila.peso === null || fila.peso === undefined) &&
+            (fila.reps_realizadas === null || fila.reps_realizadas === undefined);
+
+        if (!isEmpty) return;
+
+        if (prev.peso) fila.peso = prev.peso;
+        if (prev.reps_realizadas) fila.reps_realizadas = prev.reps_realizadas;
+        if (prev.esfuerzo_tipo) fila.esfuerzo_tipo = prev.esfuerzo_tipo;
+        if (prev.esfuerzo_valor) fila.esfuerzo_valor = prev.esfuerzo_valor;
+        cantidadCopiadas++;
+        emit('guardar', fila);
+    });
+    return cantidadCopiadas;
+};
 
 // === Estado de acordeón por ejercicio (colapsados por defecto) ===
 const ejerciciosAbiertos = ref({});
