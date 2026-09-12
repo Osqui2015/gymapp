@@ -1,36 +1,44 @@
 <template>
     <div>
-        <!-- Stats grid -->
-        <div class="grid gap-4 md:grid-cols-3 mb-6">
+        <!-- Stats grid: mobile = 2 columnas compactas, desktop = 3 columnas -->
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 mb-6">
             <div
-                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 md:p-4 shadow-sm"
             >
-                <p class="text-sm text-gray-500 dark:text-gray-400">Series totales</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Series totales</p>
+                <p
+                    class="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tabular-nums"
+                >
                     {{ seriesTotales }}
                 </p>
             </div>
             <div
-                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 md:p-4 shadow-sm"
             >
-                <p class="text-sm text-gray-500 dark:text-gray-400">Series completadas</p>
-                <p class="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Completadas</p>
+                <p
+                    class="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                >
                     {{ seriesCompletadas }}
                 </p>
             </div>
             <div
-                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 md:p-4 shadow-sm"
             >
-                <p class="text-sm text-gray-500 dark:text-gray-400">Peso registrado</p>
-                <p class="mt-2 text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Peso registrado</p>
+                <p
+                    class="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums"
+                >
                     {{ pesoRegistrado }} kg
                 </p>
             </div>
             <div
-                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm md:col-span-3"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 md:p-4 shadow-sm"
             >
-                <p class="text-sm text-gray-500 dark:text-gray-400">Repeticiones registradas</p>
-                <p class="mt-2 text-3xl font-bold text-orange-600 dark:text-orange-400">
+                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">Repeticiones</p>
+                <p
+                    class="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-orange-600 dark:text-orange-400 tabular-nums"
+                >
                     {{ repsRegistradas }}
                 </p>
             </div>
