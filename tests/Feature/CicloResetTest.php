@@ -100,4 +100,56 @@ class CicloResetTest extends TestCase
 
         Carbon::setTestNow(); // reset
     }
+
+    /**
+     * FIX bug: cuando los días tienen nombres con sufijo (ej. "Día 1 (Torso)"),
+     * el fallback hardcodeado `'Día 1'` rompía el match con el pill del dashboard
+     * al cerrar el ciclo. Ahora el fallback usa el primer día REAL de la rutina.
+     */
+    public function test_finalizar_ultimo_dia_con_nombres_compuestos_vuelve_al_primer_dia_real(): void
+    {
+        Carbon::setTestNow('2026-09-12 18:00:00');
+
+        $user = User::factory()->create();
+
+        // Rutina con nombres compuestos, como las personalizadas con body part
+        $rutinas = [];
+        foreach (['Día 1 (Torso)', 'Día 2 (Pierna)', 'Día 3 (Full Body)'] as $i => $dia) {
+            $rutinas[] = Rutina::create([
+                'nivel' => 'Personalizada',
+                'modalidad' => '3 Días Compuestos',
+                'dia' => $dia,
+                'ejercicio_nombre' => "Ej {$dia}",
+                'series' => 1,
+                'reps_min' => '8',
+                'reps_max' => '12',
+                'descanso_min' => 1.0,
+                'orden' => $i + 1,
+                'created_by' => $user->id,
+            ]);
+        }
+
+        UserRutina::create([
+            'user_id' => $user->id,
+            'rutina_id' => $rutinas[0]->id,
+            'dia_actual' => 'Día 3 (Full Body)',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->postJson('/api/historial/finalizar-rutina', [
+                'nivel' => 'Personalizada',
+                'modalidad' => '3 Días Compuestos',
+            ]);
+
+        $response->assertStatus(200);
+
+        // El fix: debe volver al primer día REAL, no al fallback hardcodeado
+        $this->assertDatabaseHas('user_rutinas', [
+            'user_id' => $user->id,
+            'dia_actual' => 'Día 1 (Torso)',
+            'ciclo_inicio' => '2026-09-12',
+        ]);
+
+        Carbon::setTestNow(); // reset
+    }
 }

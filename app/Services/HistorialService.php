@@ -139,7 +139,14 @@ class HistorialService
             ->pluck('dia')
             ->toArray();
 
-        $diaSiguiente = 'Día 1';
+        // FIX: el fallback hardcodeado `'Día 1'` no matchea con nombres de
+        // día reales como `'Día 1 (Torso)'`, `'Día 1 (Empuje)'`, etc.
+        // Cuando el usuario finaliza el ÚLTIMO día, caíamos en el fallback
+        // y `dia_actual` quedaba con un nombre que no existe en la rutina,
+        // rompiendo el match con el pill del dashboard. Usamos el primer día
+        // real de la rutina como fallback (que también es el inicio del
+        // nuevo ciclo).
+        $diaSiguiente = $diasDisponibles[0] ?? 'Día 1';
         $indiceActual = array_search($diaActual, $diasDisponibles, true);
 
         if ($indiceActual !== false && isset($diasDisponibles[$indiceActual + 1])) {
