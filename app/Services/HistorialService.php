@@ -150,6 +150,15 @@ class HistorialService
             'dia_actual' => $diaSiguiente,
         ]);
 
+        // Si cerramos el último día (volvió a Día 1 = nuevo ciclo), marcamos
+        // `ciclo_inicio` para que el dashboard filtre el historial viejo y
+        // muestre el ciclo actual con todo desmarcado.
+        if ($diaSiguiente === ($diasDisponibles[0] ?? 'Día 1') && $diaActual !== $diaSiguiente) {
+            $userRutina->update([
+                'ciclo_inicio' => Carbon::now()->toDateString(),
+            ]);
+        }
+
         return [
             'dia_actual' => $diaSiguiente,
             'rutina_nombre' => $rutinaNombre,

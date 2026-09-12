@@ -335,6 +335,7 @@ const showWarning = (m) => toast.warning(m);
 const filasSerie = ref([]);
 const historialRutina = ref([]);
 const diaActual = ref('Día 1');
+const cicloInicio = ref(null); // fecha (YYYY-MM-DD) que marca el inicio del ciclo actual. null = legacy
 const todosLosDias = ref([]);
 
 const showActiveWorkoutModal = ref(false);
@@ -494,6 +495,9 @@ const fetchUserRutina = async () => {
             const nivelCompleto = `${response.data.nivel} ${response.data.modalidad}`;
             rutinaStore.seleccionar(nivelCompleto, 'Todos los días');
             diaActual.value = response.data.dia_actual || 'Día 1';
+            // Fecha de inicio del ciclo actual. Si viene null (legacy o
+            // nunca terminó un ciclo completo), no se filtra historial.
+            cicloInicio.value = response.data.ciclo_inicio || null;
         } else {
             rutinaStore.limpiar();
         }
@@ -519,8 +523,16 @@ const fetchHistorialRutina = async () => {
 };
 
 const construirFilasSerie = (rutinasDelDia) => {
+    // Filtra registros del ciclo actual: sólo los con fecha >= ciclo_inicio.
+    // Así, cuando el usuario arranca el ciclo 2, las marcas del ciclo 1
+    // quedan ocultas y arranca con todo desmarcado.
+    // Heatmap y gráfico usan `historialRutina` sin filtrar → muestran todo el histórico.
+    const historialCicloActual = cicloInicio.value
+        ? historialRutina.value.filter((r) => (r.fecha || '').slice(0, 10) >= cicloInicio.value)
+        : historialRutina.value;
+
     const registros = new Map(
-        historialRutina.value
+        historialCicloActual
             .filter((r) => r.dia === diaActual.value)
             .map((r) => [`${r.ejercicio_nombre}-${r.series_numero}`, r])
     );

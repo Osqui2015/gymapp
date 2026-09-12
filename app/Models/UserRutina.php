@@ -34,12 +34,18 @@ class UserRutina extends Model
         'rutina_id',
         'assigned_by',
         'dia_actual',
+        'ciclo_inicio',
     ];
 
     protected $casts = [
         'user_id' => 'integer',
         'rutina_id' => 'integer',
         'assigned_by' => 'integer',
+        // 'ciclo_inicio' NO se castea a `date` a propósito: el cast agrega
+        // hora 00:00:00 y rompe comparaciones estrictas contra strings Y-m-d
+        // (tanto en el assertDatabaseHas de los tests como en el filter del
+        // frontend, que compara `(r.fecha || '').slice(0,10) >= ciclo_inicio`).
+        // Lo manejamos como string plano 'YYYY-MM-DD'.
     ];
 
     /**

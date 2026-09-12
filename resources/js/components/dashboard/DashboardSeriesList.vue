@@ -528,13 +528,13 @@ const ejerciciosAgrupados = computed(() => {
     return list;
 });
 
-// === Estado de acordeón por ejercicio (abiertos por defecto) ===
-const ejerciciosColapsados = ref({});
+// === Estado de acordeón por ejercicio (colapsados por defecto) ===
+const ejerciciosAbiertos = ref({});
 
-const estaAbierto = (nombre) => !ejerciciosColapsados.value[nombre];
+const estaAbierto = (nombre) => !!ejerciciosAbiertos.value[nombre];
 
 const toggleEjercicio = (nombre) => {
-    ejerciciosColapsados.value[nombre] = !ejerciciosColapsados.value[nombre];
+    ejerciciosAbiertos.value[nombre] = !ejerciciosAbiertos.value[nombre];
 };
 
 const todosAbiertos = computed(() => {
@@ -543,12 +543,12 @@ const todosAbiertos = computed(() => {
 });
 
 const toggleTodos = () => {
-    const colapsar = todosAbiertos.value;
+    const expandir = !todosAbiertos.value;
     const newState = {};
     ejerciciosAgrupados.value.forEach((e) => {
-        newState[e.nombre] = colapsar;
+        newState[e.nombre] = expandir;
     });
-    ejerciciosColapsados.value = newState;
+    ejerciciosAbiertos.value = newState;
 };
 
 // === Estadísticas y progreso ===

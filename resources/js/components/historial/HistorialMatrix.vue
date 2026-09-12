@@ -3,15 +3,35 @@
         <div
             class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden"
         >
-            <div
-                class="flex flex-col gap-3 bg-gradient-to-r from-slate-900 to-indigo-900 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+            <button
+                type="button"
+                @click="isExpanded = !isExpanded"
+                class="w-full flex flex-col gap-3 bg-gradient-to-r from-slate-900 to-indigo-900 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 cursor-pointer select-none transition-opacity hover:opacity-95"
+                :aria-expanded="isExpanded"
+                :aria-controls="matrixContentId"
             >
                 <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg
+                        :class="{ 'rotate-180': isExpanded }"
+                        class="w-5 h-5 text-white/80 transition-transform duration-200 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 9l-7 7-7-7"
+                        />
+                    </svg>
                     <svg
                         class="w-5 h-5 text-indigo-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                     >
                         <path
                             stroke-linecap="round"
@@ -22,15 +42,25 @@
                     </svg>
                     Matriz de Cargas por Fecha
                 </h2>
-                <button
-                    @click="$emit('toggle-sort')"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white transition-colors"
+                <span
+                    @click.stop="$emit('toggle-sort')"
+                    :class="[
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors cursor-pointer',
+                        dateSortAsc
+                            ? 'bg-white/10 hover:bg-white/15 border border-white/10'
+                            : 'bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/30',
+                    ]"
+                    role="button"
+                    tabindex="0"
+                    @keydown.enter.stop="$emit('toggle-sort')"
+                    @keydown.space.prevent.stop="$emit('toggle-sort')"
                 >
                     <svg
                         class="w-4 h-4 text-indigo-300"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                     >
                         <path
                             stroke-linecap="round"
@@ -40,10 +70,14 @@
                         />
                     </svg>
                     {{ dateSortAsc ? 'Cronológico' : 'Últimos primero' }}
-                </button>
-            </div>
+                </span>
+            </button>
 
-            <div class="p-4 sm:p-6">
+            <div
+                v-show="isExpanded"
+                :id="matrixContentId"
+                class="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700"
+            >
                 <div
                     class="hidden overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 md:block max-h-[70vh] overflow-y-auto"
                 >
@@ -168,6 +202,8 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
+
 const props = defineProps({
     pivotData: { type: Object, required: true }, // { dates: [], rows: [] }
     dateSortAsc: { type: Boolean, required: true },
@@ -181,6 +217,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggle-sort', 'cell-click']);
+
+const isExpanded = ref(false);
+const matrixContentId = 'historial-matrix-content';
 
 const prKey = (ejercicio, date) => `${ejercicio}|||${date}`;
 

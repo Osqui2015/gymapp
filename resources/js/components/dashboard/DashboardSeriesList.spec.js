@@ -83,23 +83,28 @@ describe('DashboardSeriesList.vue (Acordeón por ejercicio)', () => {
         expect(wrapper.text()).toContain('✓ 1/1 series');
     });
 
-    it('permite colapsar y expandir un ejercicio al hacer clic en su cabecera', async () => {
+    it('empieza con los ejercicios colapsados y permite expandir/colapsar al hacer clic en su cabecera', async () => {
         const wrapper = mount(DashboardSeriesList, { props: defaultProps });
 
         const firstAccordionBtn = wrapper.findAll('button[aria-expanded]')[0];
-        expect(firstAccordionBtn.attributes('aria-expanded')).toBe('true');
-
-        // Clic para colapsar
-        await firstAccordionBtn.trigger('click');
         expect(firstAccordionBtn.attributes('aria-expanded')).toBe('false');
 
-        // Clic para volver a abrir
+        // Clic para expandir
         await firstAccordionBtn.trigger('click');
         expect(firstAccordionBtn.attributes('aria-expanded')).toBe('true');
+
+        // Clic para volver a colapsar
+        await firstAccordionBtn.trigger('click');
+        expect(firstAccordionBtn.attributes('aria-expanded')).toBe('false');
     });
 
     it('emite guardar al marcar una serie como completada', async () => {
         const wrapper = mount(DashboardSeriesList, { props: defaultProps });
+
+        // Como ahora los acordeones arrancan colapsados, primero expandimos el primero
+        // para que el checkbox sea accesible en el DOM.
+        const firstAccordionBtn = wrapper.findAll('button[aria-expanded]')[0];
+        await firstAccordionBtn.trigger('click');
 
         const checkbox = wrapper.find('input[type="checkbox"]');
         await checkbox.setValue(true);
