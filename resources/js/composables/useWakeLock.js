@@ -6,15 +6,15 @@
  * devuelve `{ supported: false }` y es un no-op silencioso.
  *
  * Comportamiento:
- *   - request() pide el wake lock. Devuelve true si lo obtuvo.
+ *   - requestWakeLock() pide el wake lock. Devuelve true si lo obtuvo.
  *   - Si el user cambia de tab/app, el wake lock se libera automaticamente
  *     y lo re-pide cuando vuelve (visibility change).
- *   - release() suelta el lock manualmente.
+ *   - releaseWakeLock() suelta el lock manualmente.
  *
  * Uso:
  *   const wake = useWakeLock();
- *   onMounted(() => wake.request());
- *   onBeforeUnmount(() => wake.release());
+ *   onMounted(() => wake.requestWakeLock());
+ *   onBeforeUnmount(() => wake.releaseWakeLock());
  */
 import { onBeforeUnmount, ref } from 'vue';
 
@@ -45,7 +45,7 @@ export function useWakeLock() {
         }
     };
 
-    const release = async () => {
+    const releaseWakeLock = async () => {
         if (sentinel) {
             try {
                 await sentinel.release();
@@ -68,7 +68,7 @@ export function useWakeLock() {
      * Pide el wake lock. Devuelve true si lo obtuvo.
      * Si la pestana esta oculta, espera a que vuelva visible.
      */
-    const request = async () => {
+    const requestWakeLock = async () => {
         reAcquiring = true;
         if (document.visibilityState === 'visible') {
             return acquire();
@@ -86,13 +86,13 @@ export function useWakeLock() {
         if (typeof document !== 'undefined') {
             document.removeEventListener('visibilitychange', handleVisibility);
         }
-        release();
+        releaseWakeLock();
     });
 
     return {
         supported,
         active,
-        request,
-        release,
+        requestWakeLock,
+        releaseWakeLock,
     };
 }

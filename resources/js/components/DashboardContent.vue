@@ -413,7 +413,7 @@ const session = useTrainingSessionStore();
 onMounted(() => {
     // Solo pedimos wake lock si el user tiene una sesion activa (entrenando).
     if (session.isActive && wake.supported) {
-        wake.request();
+        wake.requestWakeLock();
     }
 });
 
