@@ -28,7 +28,7 @@
         "postcss": "^8.4.31",
         "prettier": "^3.9.6",
         "tailwindcss": "^4.3.0",
-        "typescript": "^6.0.3",
+        "typescript": "^7.0.2",
         "vite": "^7.0.7",
         "vitest": "^4.1.10"
     },
