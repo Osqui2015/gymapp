@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="font-sans antialiased bg-gray-50 dark:bg-[var(--color-obsidian-base)] text-gray-900 dark:text-gray-100">
     <div id="app" data-component="rutina-publica">
         <div class="min-h-screen flex items-center justify-center">
             <div class="text-center">

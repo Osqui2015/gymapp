@@ -509,7 +509,7 @@
                                                 'px-2 py-0.5 font-bold transition-colors cursor-pointer',
                                                 fila.esfuerzo_tipo === 'rir'
                                                     ? 'bg-emerald-500 text-white'
-                                                    : 'bg-gray-50 dark:bg-gray-900 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750',
+                                                    : 'bg-gray-50 dark:bg-[var(--color-obsidian-base)] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750',
                                             ]"
                                             @click="toggleEsfuerzoTipo(fila, 'rir')"
                                         >
@@ -521,7 +521,7 @@
                                                 'px-2 py-0.5 font-bold transition-colors cursor-pointer',
                                                 fila.esfuerzo_tipo === 'rpe'
                                                     ? 'bg-amber-500 text-white'
-                                                    : 'bg-gray-50 dark:bg-gray-900 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750',
+                                                    : 'bg-gray-50 dark:bg-[var(--color-obsidian-base)] text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-750',
                                             ]"
                                             @click="toggleEsfuerzoTipo(fila, 'rpe')"
                                         >
@@ -557,7 +557,7 @@
             <!-- Empty state si no hay ejercicios -->
             <div
                 v-if="!ejerciciosAgrupados.length"
-                class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-8 text-center text-gray-500 dark:text-gray-400"
+                class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[var(--color-obsidian-base)] p-8 text-center text-gray-500 dark:text-gray-400"
             >
                 No hay ejercicios para este día.
             </div>

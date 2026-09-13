@@ -50,7 +50,7 @@
         x-transition:leave="transition ease-in duration-200 transform"
         x-transition:leave-start="translate-y-0"
         x-transition:leave-end="translate-y-full"
-        class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto"
+        class="fixed bottom-0 left-0 right-0 bg-white dark:bg-[var(--color-obsidian-surface)] rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-[var(--color-obsidian-border-strong)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.7)] max-h-[85vh] overflow-y-auto"
         style="display: none;"
     >
         {{-- Handle visual --}}
@@ -59,13 +59,14 @@
         </div>
 
         <div class="px-4 pt-2 pb-20">
-            {{-- Header del usuario --}}
-            <div class="flex items-center gap-3 p-3 mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl">
-                <div class="w-11 h-11 bg-white/20 rounded-full flex items-center justify-center">
+            {{-- Header del usuario (Kinetic Obsidian gradient) --}}
+            <div class="flex items-center gap-3 p-3 mb-4 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] rounded-2xl relative overflow-hidden">
+                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_50%)]"></div>
+                <div class="relative w-11 h-11 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                     <span class="text-white font-bold text-lg">{{ substr($user->name, 0, 1) }}</span>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-white truncate">{{ $user->name }}</p>
+                <div class="relative flex-1 min-w-0">
+                    <p class="text-sm font-bold text-white truncate">{{ $user->name }}</p>
                     <p class="text-xs text-white/80 capitalize">{{ $user->normalizedRole() }}</p>
                 </div>
             </div>
@@ -172,23 +173,24 @@
     </div>
 
     {{-- Barra inferior (4 tabs + Menú) --}}
-    <nav class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]">
+    <nav class="bg-white/90 dark:bg-[var(--color-obsidian-base)]/85 backdrop-blur-xl border-t border-gray-200 dark:border-[var(--color-obsidian-border)] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] pb-[env(safe-area-inset-bottom)]">
         <ul class="grid grid-cols-5 h-16">
             @foreach ($primary as $item)
                 @php $isActive = request()->routeIs($item['match']); @endphp
                 <li>
                     <a
                         href="{{ route($item['route']) }}"
-                        class="group flex flex-col items-center justify-center h-full gap-0.5 transition-all {{ $isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400' }}"
-                        :class="{ 'text-indigo-600 dark:text-indigo-400': true }"
+                        class="group flex flex-col items-center justify-center h-full gap-1 transition-all {{ $isActive ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 dark:text-gray-400' }}"
+                        :class="{ 'text-violet-600 dark:text-violet-300': true }"
                     >
                         <span class="relative">
-                            <svg class="w-6 h-6 transition-transform group-active:scale-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
                             @if ($isActive)
-                                <span class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-full"></span>
+                                {{-- Dot indicator prominente del tab activo (Kinetic Obsidian) --}}
+                                <span class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full shadow-[0_0_8px_var(--color-violet-glow)]"></span>
                             @endif
+                            <svg class="w-6 h-6 transition-transform group-active:scale-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
                         </span>
-                        <span class="text-[10px] font-semibold leading-none">{{ $item['label'] }}</span>
+                        <span class="text-[10px] font-bold leading-none tracking-tight">{{ $item['label'] }}</span>
                     </a>
                 </li>
             @endforeach
@@ -197,14 +199,14 @@
             <li>
                 <button
                     @click="menuOpen = !menuOpen"
-                    class="w-full h-full flex flex-col items-center justify-center gap-0.5 transition-all"
-                    :class="menuOpen ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'"
+                    class="w-full h-full flex flex-col items-center justify-center gap-1 transition-all"
+                    :class="menuOpen ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 dark:text-gray-400'"
                 >
                     <span class="relative">
                         @if ($user->hasRole('administrador'))
-                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-800"></span>
+                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
                         @elseif ($isStaff)
-                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-white dark:ring-gray-800"></span>
+                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-violet-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
                         @endif
                         <svg x-show="!menuOpen" class="w-6 h-6 transition-transform" :class="menuOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -213,7 +215,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </span>
-                    <span class="text-[10px] font-semibold leading-none">Menú</span>
+                    <span class="text-[10px] font-bold leading-none tracking-tight">Menú</span>
                 </button>
             </li>
         </ul>

@@ -2,7 +2,7 @@
     <component
         :is="tag"
         :class="[
-            'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700',
+            shellClass,
             paddingClass,
             shadowClass,
             hoverClass,
@@ -26,7 +26,12 @@
         <slot />
         <footer
             v-if="$slots.footer"
-            class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700"
+            :class="[
+                'mt-4 pt-4 border-t',
+                variant === 'obsidian'
+                    ? 'border-[var(--color-obsidian-border)]'
+                    : 'border-gray-100 dark:border-gray-700',
+            ]"
         >
             <slot name="footer" />
         </footer>
@@ -51,6 +56,19 @@ const props = defineProps({
         validator: (v) => ['none', 'sm', 'md', 'lg'].includes(v),
     },
     hover: { type: Boolean, default: false },
+    variant: {
+        type: String,
+        default: 'default',
+        validator: (v) => ['default', 'obsidian'].includes(v),
+    },
+});
+
+const shellClass = computed(() => {
+    if (props.variant === 'obsidian') {
+        // Esquinas más grandes (rounded-2xl) y borde sutil obsidian
+        return 'rounded-2xl border bg-white border-gray-200/70 shadow-sm dark:bg-[var(--color-obsidian-surface)] dark:border-[var(--color-obsidian-border)]';
+    }
+    return 'rounded-xl border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700';
 });
 
 const paddingClass = computed(
@@ -63,15 +81,25 @@ const paddingClass = computed(
         })[props.padding]
 );
 
-const shadowClass = computed(
-    () =>
-        ({
+const shadowClass = computed(() => {
+    if (props.variant === 'obsidian') {
+        // Sombras obsidian reemplazan a las utilities de Tailwind
+        return (
+            {
+                none: '',
+                sm: 'dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)]',
+                md: 'dark:shadow-[0_8px_24px_rgba(0,0,0,0.45)]',
+                lg: 'dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)]',
+            })[props.shadow];
+    }
+    return (
+        {
             none: '',
             sm: 'shadow-sm',
             md: 'shadow-md',
             lg: 'shadow-lg',
-        })[props.shadow]
-);
+        })[props.shadow];
+});
 
 const hoverClass = computed(() =>
     props.hover

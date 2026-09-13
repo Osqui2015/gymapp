@@ -1,25 +1,25 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
         <Breadcrumbs
             :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Panel del Trainer' }]"
             class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
         />
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-8">
+            <!-- Header (Kinetic Obsidian) -->
+            <div class="flex justify-between items-center mb-5 md:mb-7 mt-3 flex-wrap gap-3">
                 <div>
-                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">
+                    <h2 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                         Dashboard del Trainer
                     </h2>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1">
+                    <p class="text-sm obs-text-secondary mt-1">
                         Gestiona y monitorea a tus alumnos
                     </p>
                 </div>
                 <a
                     href="/dashboard"
-                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-all flex items-center gap-2"
+                    class="obs-cta-secondary text-xs md:text-sm"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                             stroke-linecap="round"
                             stroke-linejoin="round"
@@ -619,7 +619,7 @@
                                         <div
                                             v-for="sesion in detalleAlumno.tonelaje_sesiones"
                                             :key="sesion.fecha"
-                                            class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                            class="flex justify-between items-center p-3 bg-gray-50 dark:bg-[var(--color-obsidian-base)] rounded-lg"
                                         >
                                             <span class="text-gray-700 dark:text-gray-300">{{
                                                 sesion.fecha

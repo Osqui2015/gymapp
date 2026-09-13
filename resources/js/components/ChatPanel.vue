@@ -181,7 +181,7 @@
                     <!-- Mensajes -->
                     <div
                         ref="messagesContainer"
-                        class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-gray-900/30"
+                        class="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/30"
                     >
                         <div
                             v-if="store.activeMessages.length === 0"

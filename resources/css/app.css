@@ -8,6 +8,40 @@
 
 @theme {
     --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+
+    /* === Kinetic Obsidian: design tokens ===
+       Paleta centralizada para que toda la app (cards, pills, headers,
+       charts, bottom-nav) consuma los mismos valores. Mobile-first dark
+       con acentos en violeta. La estética funciona también en light mode
+       con cards blancas, solo cambia el valor de los tokens. */
+    --color-obsidian-base: #0B0B14;
+    --color-obsidian-surface: #14141F;
+    --color-obsidian-elevated: #1C1C2B;
+    --color-obsidian-overlay: rgba(255, 255, 255, 0.04);
+    --color-obsidian-border: rgba(255, 255, 255, 0.06);
+    --color-obsidian-border-strong: rgba(255, 255, 255, 0.12);
+
+    --color-violet-primary: #8B5CF6;
+    --color-violet-light: #A78BFA;
+    --color-violet-deep: #6D28D9;
+    --color-violet-darker: #5B21B6;
+    --color-violet-soft: rgba(139, 92, 246, 0.15);
+    --color-violet-glow: rgba(139, 92, 246, 0.35);
+
+    --color-emerald-accent: #10B981;
+    --color-emerald-soft: rgba(16, 185, 129, 0.15);
+
+    --color-streak-orange: #F97316;
+    --color-streak-soft: rgba(249, 115, 22, 0.15);
+
+    --color-text-primary-dark: #FFFFFF;
+    --color-text-secondary-dark: #9CA3AF;
+    --color-text-tertiary-dark: #6B7280;
+
+    --radius-obsidian-sm: 0.75rem;
+    --radius-obsidian-md: 1.25rem;
+    --radius-obsidian-lg: 1.5rem;
+    --radius-obsidian-xl: 2rem;
 }
 
 :root {
@@ -33,8 +67,8 @@ body {
 
 .dark body,
 .dark {
-    background-color: #111827;
-    color: #f9fafb;
+    background-color: var(--color-obsidian-base);
+    color: var(--color-text-primary-dark);
 }
 
 /* === Dark mode: usar :where() con specificity 0 ===
@@ -79,6 +113,231 @@ a:focus-visible,
     outline: 2px solid rgb(99, 102, 241);
     outline-offset: 2px;
     border-radius: 0.375rem;
+}
+
+/* === Kinetic Obsidian: utility classes de componentes ===
+   Clases shell reutilizables para que las 4 pantallas (Dashboard,
+   Progreso, Historial, Rutinas) tengan el mismo lenguaje visual.
+   En light mode las cards quedan blancas con acento violeta; en dark
+   mode se vuelven las "obsidian" profundas de los mockups. */
+
+@layer components {
+    /* Card base (mobile-first, esquinas grandes, borde sutil) */
+    .obs-card {
+        @apply rounded-2xl border border-gray-200/70 bg-white shadow-sm
+               dark:bg-[var(--color-obsidian-surface)] dark:border-[var(--color-obsidian-border)]
+               dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)];
+    }
+
+    /* Card elevada (con más contraste, ideal para headers y stats) */
+    .obs-card-elevated {
+        @apply rounded-2xl border border-gray-200 bg-white shadow-md
+               dark:bg-[var(--color-obsidian-elevated)] dark:border-[var(--color-obsidian-border-strong)]
+               dark:shadow-[0_8px_28px_rgba(0,0,0,0.5)];
+    }
+
+    /* Hero header de página (gradiente violeta profundo, texto blanco) */
+    .obs-hero {
+        @apply rounded-2xl text-white p-5 md:p-7 relative overflow-hidden
+               bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)];
+    }
+
+    .obs-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18), transparent 35%),
+            radial-gradient(circle at 80% 80%, rgba(0,0,0,0.25), transparent 40%);
+        pointer-events: none;
+    }
+
+    /* Pill / Badge (chips para "Personalizada 3 Días", "Focus Mode", etc.) */
+    .obs-pill {
+        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold
+               border border-transparent whitespace-nowrap;
+    }
+
+    .obs-pill-violet {
+        @apply bg-violet-100 text-violet-700 border-violet-200
+               dark:bg-[var(--color-violet-soft)] dark:text-violet-300 dark:border-[var(--color-violet-primary)];
+    }
+
+    .obs-pill-emerald {
+        @apply bg-emerald-100 text-emerald-700 border-emerald-200
+               dark:bg-[var(--color-emerald-soft)] dark:text-emerald-300 dark:border-emerald-500/40;
+    }
+
+    .obs-pill-orange {
+        @apply bg-orange-100 text-orange-700 border-orange-200
+               dark:bg-[var(--color-streak-soft)] dark:text-orange-300 dark:border-orange-500/40;
+    }
+
+    .obs-pill-amber {
+        @apply bg-amber-100 text-amber-700 border-amber-200
+               dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30;
+    }
+
+    .obs-pill-neutral {
+        @apply bg-gray-100 text-gray-700 border-gray-200
+               dark:bg-white/5 dark:text-gray-300 dark:border-white/10;
+    }
+
+    .obs-pill-ghost {
+        @apply bg-transparent text-gray-500 border-gray-200
+               dark:bg-transparent dark:text-gray-400 dark:border-white/10;
+    }
+
+    /* Tab pill (tabs estilo segmento, mobile-first) */
+    .obs-tab {
+        @apply px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap
+               border border-transparent;
+    }
+
+    .obs-tab-active {
+        @apply bg-[var(--color-violet-primary)] text-white border-[var(--color-violet-primary)]
+               shadow-[0_4px_14px_var(--color-violet-glow)];
+    }
+
+    .obs-tab-inactive {
+        @apply text-gray-600 bg-transparent border-gray-200
+               dark:text-gray-400 dark:border-white/10;
+    }
+
+    /* CTA primario violeta */
+    .obs-cta-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold
+               bg-[var(--color-violet-primary)] text-white
+               hover:bg-[var(--color-violet-light)] active:scale-[0.98]
+               shadow-[0_8px_24px_var(--color-violet-glow)] transition-all;
+    }
+
+    /* CTA secundario (outline) */
+    .obs-cta-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold
+               border border-gray-300 text-gray-700 bg-white
+               hover:bg-gray-50 active:scale-[0.98] transition-all
+               dark:border-white/10 dark:text-gray-200 dark:bg-[var(--color-obsidian-elevated)] dark:hover:bg-[var(--color-obsidian-overlay)];
+    }
+
+    /* Texto secundario / terciario (jerarquía en dark mode) */
+    .obs-text-secondary {
+        @apply text-gray-500 dark:text-[var(--color-text-secondary-dark)];
+    }
+
+    .obs-text-tertiary {
+        @apply text-gray-400 dark:text-[var(--color-text-tertiary-dark)];
+    }
+
+    /* Dot indicator para sesiones del calendario semanal */
+    .obs-week-dot {
+        @apply w-1.5 h-1.5 rounded-full bg-[var(--color-violet-primary)];
+    }
+
+    /* Número de ejercicio (círculo numerado) */
+    .obs-exercise-index {
+        @apply w-8 h-8 shrink-0 rounded-full flex items-center justify-center
+               text-xs font-bold
+               bg-gray-100 text-gray-700 border border-gray-200
+               dark:bg-[var(--color-obsidian-overlay)] dark:text-gray-300 dark:border-white/10;
+    }
+
+    /* Input obsidian (forms del Progreso) */
+    .obs-input {
+        @apply w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm
+               focus:outline-none focus:ring-2 focus:ring-[var(--color-violet-primary)] focus:border-transparent
+               dark:border-white/10 dark:bg-[var(--color-obsidian-elevated)] dark:text-white
+               dark:placeholder:text-gray-500;
+    }
+
+    /* Header sticky (translucido, como el bottom-nav) */
+    .obs-sticky-header {
+        @apply sticky top-0 z-30 backdrop-blur-md
+               bg-white/85 border-b border-gray-200
+               dark:bg-[var(--color-obsidian-base)]/80 dark:border-[var(--color-obsidian-border)];
+    }
+
+    /* Sección / divider */
+    .obs-divider {
+        @apply h-px bg-gray-200 dark:bg-[var(--color-obsidian-border)];
+    }
+
+    /* Gradiente sutil de fondo (para secciones grandes) */
+    .obs-bg-aurora {
+        background:
+            radial-gradient(circle at 0% 0%, var(--color-violet-soft), transparent 40%),
+            radial-gradient(circle at 100% 0%, var(--color-emerald-soft), transparent 40%);
+    }
+
+    /* Card de plan/día activo (con borde violeta lateral) */
+    .obs-day-card {
+        @apply relative overflow-hidden rounded-2xl border shadow-md;
+        background-color: white;
+        border-color: rgb(229 231 235);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    .dark .obs-day-card {
+        background-color: var(--color-obsidian-elevated);
+        border-color: var(--color-obsidian-border-strong);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    }
+
+    .obs-day-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 1.5rem;
+        bottom: 1.5rem;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: linear-gradient(to bottom, var(--color-violet-light), var(--color-violet-deep));
+    }
+
+    /* Progress bar obsidian */
+    .obs-progress-track {
+        @apply h-2 rounded-full bg-gray-200 overflow-hidden
+               dark:bg-[var(--color-obsidian-overlay)];
+    }
+
+    .obs-progress-fill {
+        @apply h-full rounded-full bg-gradient-to-r from-[var(--color-violet-deep)] to-[var(--color-violet-light)]
+               transition-all duration-500;
+    }
+
+    /* Botón de "Siguiente día" / "Guardar registro" (footer CTA) */
+    .obs-cta-footer {
+        @apply w-full rounded-2xl px-5 py-4 text-sm font-bold flex items-center justify-center gap-2
+               bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border-strong)]
+               text-white hover:bg-[var(--color-obsidian-elevated)] active:scale-[0.99]
+               transition-all
+               dark:bg-[var(--color-obsidian-elevated)] dark:hover:bg-[var(--color-violet-deep)];
+    }
+
+    /* Chip de racha (la "2 DÍAS" del header) */
+    .obs-streak-chip {
+        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold
+               bg-[var(--color-streak-soft)] text-orange-700
+               border border-orange-300
+               dark:bg-[var(--color-streak-soft)] dark:text-orange-300 dark:border-orange-500/40;
+    }
+}
+
+@layer utilities {
+    /* Hide scrollbars pero permitir scroll (mobile-friendly) */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* Tabular numbers (para métricas) */
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
 }
 
 .custom-scrollbar::-webkit-scrollbar {

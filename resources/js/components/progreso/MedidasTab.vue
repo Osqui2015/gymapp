@@ -99,7 +99,7 @@
             </div>
 
             <div
-                class="relative w-full bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 min-h-[300px]"
+                class="relative w-full bg-gray-50 dark:bg-[var(--color-obsidian-base)]/30 rounded-xl p-4 min-h-[300px]"
             >
                 <canvas id="progresoChart" class="w-full max-h-[300px]"></canvas>
             </div>

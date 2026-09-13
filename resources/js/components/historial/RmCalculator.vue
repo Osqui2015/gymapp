@@ -95,7 +95,7 @@
                         <div
                             v-for="p in percentages1RM"
                             :key="p.percentage"
-                            class="flex justify-between p-2 bg-gray-50 dark:bg-gray-900/50 rounded"
+                            class="flex justify-between p-2 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 rounded"
                         >
                             <span class="font-bold text-gray-500 font-mono"
                                 >{{ p.percentage }}%</span

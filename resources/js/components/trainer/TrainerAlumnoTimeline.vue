@@ -53,7 +53,7 @@
                 </div>
                 <!-- Card -->
                 <div
-                    class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                    class="bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
                 >
                     <div class="flex items-start justify-between gap-2">
                         <p class="text-sm font-medium text-gray-900 dark:text-white">

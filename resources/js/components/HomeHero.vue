@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
+import ObsidianPill from './common/obsidian/ObsidianPill.vue';
 
 const data = ref(null);
 const loading = ref(true);
@@ -22,7 +23,7 @@ onMounted(fetchData);
 
 const greeting = computed(() => {
     if (!data.value) return '';
-    return `${data.value.hoy.saludo}${data.value.hoy.nombre ? ', ' + data.value.hoy.nombre.split(' ')[0] : ''}`;
+    return `${data.value.hoy.saludo}${data.value.hoy.nombre ? ', ' + data.value.hoy.nombre.split(' ')[0] : ''}!`;
 });
 
 const quickLabel = computed(() => {
@@ -61,97 +62,102 @@ const goHistorial = () => {
 <template>
     <div
         v-if="!loading && data"
-        class="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 p-5 text-white shadow-md dark:border-indigo-900"
+        class="obs-hero relative"
     >
-        <div class="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
-        <div
-            class="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-purple-500/30 blur-2xl"
-        ></div>
-
-        <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0 flex-1">
-                <p class="text-xs font-semibold uppercase tracking-wider text-indigo-200">
+        <div class="relative z-10 flex flex-col gap-4">
+            <div class="flex items-center gap-2 flex-wrap">
+                <ObsidianPill variant="neutral" icon="📅">
                     {{ data.hoy.dia_semana_es }}
-                </p>
-                <h2 class="mt-0.5 truncate text-2xl font-bold">{{ greeting }}</h2>
-
-                <div
-                    v-if="data.rutina"
-                    class="mt-2 flex flex-wrap items-center gap-2 text-sm text-indigo-100"
+                </ObsidianPill>
+                <ObsidianPill
+                    v-if="data.stats.streak > 0"
+                    variant="orange"
+                    icon="🔥"
                 >
-                    <span
-                        class="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold backdrop-blur"
+                    {{ data.stats.streak }} {{ data.stats.streak === 1 ? 'día' : 'días' }}
+                </ObsidianPill>
+            </div>
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-2xl md:text-3xl font-black tracking-tight truncate">
+                        {{ greeting }}
+                    </h2>
+
+                    <div
+                        v-if="data.rutina"
+                        class="mt-2 flex flex-wrap items-center gap-2"
                     >
-                        {{ data.rutina.nombre }}
-                    </span>
-                    <span
-                        class="inline-flex items-center rounded-full bg-amber-400/90 px-2.5 py-0.5 text-xs font-bold text-amber-950"
-                    >
-                        {{ data.rutina.dia_actual }}
-                    </span>
-                    <span
-                        v-if="data.stats.streak > 0"
-                        class="inline-flex items-center gap-1 text-xs font-semibold"
-                    >
-                        <span>🔥</span> {{ data.stats.streak }} día{{
-                            data.stats.streak > 1 ? 's' : ''
-                        }}
-                    </span>
+                        <ObsidianPill variant="violet" icon="🏋️">
+                            {{ data.rutina.nombre }}
+                        </ObsidianPill>
+                        <ObsidianPill variant="emerald" icon="🎯">
+                            {{ data.rutina.dia_actual }}
+                        </ObsidianPill>
+                    </div>
+                    <p v-else class="mt-2 text-sm text-white/80">
+                        No tenés una rutina activa. Empezá eligiendo una.
+                    </p>
                 </div>
-                <p v-else class="mt-2 text-sm text-indigo-100">
-                    No tenés una rutina activa. Empezá eligiendo una.
-                </p>
+
+                <div class="flex shrink-0 flex-col gap-2 sm:items-end">
+                    <button
+                        type="button"
+                        @click="startWorkout"
+                        :class="[
+                            'inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-colors backdrop-blur-sm',
+                            quickColor,
+                        ]"
+                    >
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                d="M6.4 4.6A1 1 0 005 6v8a1 1 0 001.6.8l5-4a1 1 0 000-1.6l-5-4a1 1 0 00-.2-.2zM14 5a1 1 0 10-2 0v10a1 1 0 102 0V5z"
+                            />
+                        </svg>
+                        {{ quickLabel }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="goHistorial"
+                        class="rounded-lg px-3 py-1.5 text-xs font-semibold text-white/80 transition-colors hover:bg-white/10"
+                    >
+                        Ver historial →
+                    </button>
+                </div>
             </div>
 
-            <div class="flex shrink-0 flex-col gap-2 sm:items-end">
-                <button
-                    type="button"
-                    @click="startWorkout"
-                    :class="[
-                        'inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-colors',
-                        quickColor,
-                    ]"
-                >
-                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            d="M6.4 4.6A1 1 0 005 6v8a1 1 0 001.6.8l5-4a1 1 0 000-1.6l-5-4a1 1 0 00-.2-.2zM14 5a1 1 0 10-2 0v10a1 1 0 102 0V5z"
-                        />
-                    </svg>
-                    {{ quickLabel }}
-                </button>
-                <button
-                    type="button"
-                    @click="goHistorial"
-                    class="rounded-lg px-3 py-1.5 text-xs font-semibold text-indigo-100 transition-colors hover:bg-white/10"
-                >
-                    Ver historial →
-                </button>
-            </div>
-        </div>
-
-        <div
-            v-if="data.rutina && data.stats.total_sets_30d > 0"
-            class="relative mt-4 grid grid-cols-3 gap-3 border-t border-white/15 pt-3 text-center"
-        >
-            <div>
-                <p class="text-[10px] uppercase tracking-wider text-indigo-200">Sets 30d</p>
-                <p class="mt-0.5 text-lg font-bold">{{ data.stats.total_sets_30d }}</p>
-            </div>
-            <div>
-                <p class="text-[10px] uppercase tracking-wider text-indigo-200">Último</p>
-                <p class="mt-0.5 text-lg font-bold">
-                    {{
-                        data.stats.days_since_last_workout === 0
-                            ? 'Hoy'
-                            : data.stats.days_since_last_workout === 1
-                              ? 'Ayer'
-                              : `Hace ${data.stats.days_since_last_workout}d`
-                    }}
-                </p>
-            </div>
-            <div>
-                <p class="text-[10px] uppercase tracking-wider text-indigo-200">Racha</p>
-                <p class="mt-0.5 text-lg font-bold">🔥 {{ data.stats.streak }}</p>
+            <div
+                v-if="data.rutina && data.stats.total_sets_30d > 0"
+                class="grid grid-cols-3 gap-3 border-t border-white/20 pt-3 text-center"
+            >
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.12em] font-bold text-white/60">
+                        Sets 30d
+                    </p>
+                    <p class="mt-0.5 text-lg font-black tabular-nums">
+                        {{ data.stats.total_sets_30d }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.12em] font-bold text-white/60">
+                        Último
+                    </p>
+                    <p class="mt-0.5 text-lg font-black">
+                        {{
+                            data.stats.days_since_last_workout === 0
+                                ? 'Hoy'
+                                : data.stats.days_since_last_workout === 1
+                                  ? 'Ayer'
+                                  : `Hace ${data.stats.days_since_last_workout}d`
+                        }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-[10px] uppercase tracking-[0.12em] font-bold text-white/60">
+                        Racha
+                    </p>
+                    <p class="mt-0.5 text-lg font-black">🔥 {{ data.stats.streak }}</p>
+                </div>
             </div>
         </div>
     </div>

@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-8 px-4">
         <div class="max-w-3xl mx-auto">
             <!-- Header público -->
             <div class="text-center mb-8">

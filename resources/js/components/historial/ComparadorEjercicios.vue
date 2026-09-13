@@ -83,7 +83,7 @@
                 período seleccionado.
             </div>
             <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="rounded-xl bg-gray-50 dark:bg-gray-900/40 p-4 text-center">
+                <div class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40 p-4 text-center">
                     <p
                         class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold mb-1"
                     >
@@ -123,7 +123,7 @@
                     </p>
                 </div>
 
-                <div class="rounded-xl bg-gray-50 dark:bg-gray-900/40 p-4 text-center">
+                <div class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40 p-4 text-center">
                     <p
                         class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold mb-1"
                     >
@@ -163,7 +163,7 @@
                     </p>
                 </div>
 
-                <div class="rounded-xl bg-gray-50 dark:bg-gray-900/40 p-4 text-center">
+                <div class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40 p-4 text-center">
                     <p
                         class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold mb-1"
                     >

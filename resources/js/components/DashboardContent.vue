@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 pb-28 md:py-8 md:pb-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 pb-28 md:py-8 md:pb-8">
         <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
         <Breadcrumbs
             :items="[{ label: 'Inicio' }]"
@@ -62,11 +62,12 @@
                     <HomeHero />
                 </div>
 
-                <!-- Banner de Sesión de Entrenamiento Activa -->
+                <!-- Banner de Sesión de Entrenamiento Activa (Kinetic Obsidian) -->
                 <div
                     v-if="session.isActive"
-                    class="mb-4 bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-indigo-900/90 border border-emerald-500/40 rounded-2xl p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+                    class="mb-4 relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
                 >
+                    <div class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"></div>
                     <div class="flex items-center gap-3">
                         <span class="relative flex h-3.5 w-3.5">
                             <span
@@ -112,10 +113,10 @@
                     </div>
                 </div>
 
-                <!-- CTA Card Modo Entrenamiento Activo -->
+                <!-- CTA Card Modo Entrenamiento Activo (Kinetic Obsidian) -->
                 <div
                     v-else
-                    class="mb-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    class="mb-4 obs-card-elevated p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                 >
                     <div>
                         <h3
@@ -164,7 +165,7 @@
 
                 <!-- Day selector (sticky en mobile para que quede visible al scrollear ejercicios) -->
                 <div
-                    class="mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-gray-900/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
+                    class="mb-5 md:mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-[var(--color-obsidian-base)]/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-[var(--color-obsidian-base)]/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
                     data-tour="day-selector"
                 >
                     <div class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
@@ -173,10 +174,10 @@
                             :key="dia"
                             @click="cambiarDia(dia)"
                             :class="[
-                                'shrink-0 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
+                                'shrink-0 px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap text-sm',
                                 diaActual === dia
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+                                    ? 'bg-[var(--color-violet-primary)] text-white shadow-[0_4px_14px_var(--color-violet-glow)]'
+                                    : 'bg-white dark:bg-[var(--color-obsidian-elevated)] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[var(--color-obsidian-surface)] border border-gray-200 dark:border-[var(--color-obsidian-border)]',
                             ]"
                         >
                             {{ dia }}
@@ -204,14 +205,14 @@
                     />
                 </div>
 
-                <!-- Botón "Guardar sesión" fijo abajo en mobile -->
+                <!-- Botón "Guardar sesión" fijo abajo en mobile (Kinetic Obsidian) -->
                 <div
-                    class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-gray-700 bg-gray-950/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]"
+                    class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-base)]/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]"
                 >
                     <div class="max-w-6xl mx-auto px-4 py-3">
                         <button
                             @click="guardarSesion"
-                            class="w-full rounded-xl bg-slate-700 hover:bg-slate-800 text-white px-4 py-3 text-sm font-semibold shadow-lg shadow-slate-950/30"
+                            class="w-full rounded-xl bg-[var(--color-violet-primary)] hover:bg-[var(--color-violet-light)] text-white px-4 py-3 text-sm font-bold shadow-lg shadow-[var(--color-violet-glow)] active:scale-[0.99] transition-all"
                         >
                             Guardar sesión
                         </button>
@@ -355,7 +356,7 @@
 
                         <!-- Botones -->
                         <div
-                            class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
+                            class="px-6 py-4 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
                         >
                             <button
                                 type="button"

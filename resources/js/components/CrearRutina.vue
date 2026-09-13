@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <Breadcrumbs
                 :items="[
@@ -8,23 +8,25 @@
                     { label: 'Crear nueva' },
                 ]"
             />
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Crear Nueva Rutina</h2>
-                <div class="flex gap-3">
+            <div class="flex justify-between items-center mb-5 md:mb-7 mt-3 flex-wrap gap-3">
+                <h2 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                    Crear Nueva Rutina
+                </h2>
+                <div class="flex gap-2">
                     <a
                         href="/rutinas"
-                        class="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-all"
+                        class="obs-cta-secondary text-xs md:text-sm"
                     >
                         Cancelar
                     </a>
                     <button
                         @click="guardarRutina"
                         :disabled="!esValida"
-                        class="ripple px-6 py-3 rounded-lg font-semibold transition-all shadow-md"
+                        class="ripple px-5 md:px-6 py-2.5 md:py-3 rounded-xl font-bold transition-all shadow-md text-sm"
                         :class="
                             esValida
-                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] text-white hover:brightness-110 shadow-[0_8px_24px_var(--color-violet-glow)]'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-[var(--color-obsidian-overlay)]'
                         "
                     >
                         Guardar Rutina
@@ -32,26 +34,24 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 md:gap-6">
                 <div class="lg:col-span-1 space-y-4">
-                    <div
-                        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-gray-700"
-                    >
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">
+                    <div class="obs-card p-4 md:p-5">
+                        <h3 class="text-base md:text-lg font-black text-gray-900 dark:text-white mb-4">
                             Configuración
                         </h3>
 
                         <div class="space-y-4">
                             <div>
                                 <label
-                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2"
                                     >Nombre de la Rutina</label
                                 >
                                 <input
                                     v-model="rutina.nombre"
                                     type="text"
                                     placeholder="Ej. Mi Rutina de Fuerza"
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
+                                    class="obs-input"
                                     required
                                 />
                             </div>

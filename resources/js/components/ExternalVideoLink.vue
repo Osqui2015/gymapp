@@ -73,7 +73,7 @@
     <!-- Placeholder si no hay URL -->
     <div
         v-else
-        class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-8 text-center"
+        class="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[var(--color-obsidian-base)] px-4 py-8 text-center"
     >
         <div class="text-4xl mb-2 opacity-40">🎬</div>
         <p class="text-sm text-gray-500 dark:text-gray-400">Sin video para "{{ title }}"</p>

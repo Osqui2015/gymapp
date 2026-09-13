@@ -3,6 +3,9 @@
   Muestra la racha actual de días consecutivos con al menos 1 set completado.
   Permite ocultar/minimizar la gamificación si el usuario prefiere una UI limpia.
 
+  Look Kinetic Obsidian: fondo oscuro con acento naranja, esquinas 2xl,
+  jerarquía tipográfica fuerte. Mantiene data-testids para no romper tests.
+
   Props:
     - data: { current_streak, longest_streak, this_week, this_month, total_workouts, total_sets }
 -->
@@ -11,7 +14,7 @@
     <div
         v-if="hidden"
         data-testid="streak-card-minimized"
-        class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between transition-all"
+        class="obs-card p-4 flex items-center justify-between transition-all"
     >
         <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <span>🏆</span>
@@ -21,7 +24,7 @@
             type="button"
             data-testid="streak-show-button"
             @click="toggleGamification"
-            class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 underline"
+            class="text-xs font-bold text-violet-600 hover:text-violet-800 underline dark:text-violet-400 dark:hover:text-violet-300"
         >
             Mostrar
         </button>
@@ -31,20 +34,26 @@
     <div
         v-else
         data-testid="streak-card-expanded"
-        class="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl border border-orange-200 dark:border-orange-800 p-5 shadow-sm transition-all"
+        class="relative overflow-hidden rounded-2xl border border-orange-300/40 bg-gradient-to-br from-orange-500/15 via-orange-400/10 to-rose-500/15 p-5 transition-all shadow-sm dark:border-orange-500/30 dark:shadow-[0_8px_28px_rgba(249,115,22,0.15)]"
     >
-        <div class="flex items-start justify-between gap-3">
+        <!-- Decoración de fondo (kinetic blur naranja) -->
+        <div
+            class="pointer-events-none absolute -right-12 -top-12 w-40 h-40 rounded-full bg-orange-500/20 blur-3xl"
+            aria-hidden="true"
+        ></div>
+
+        <div class="relative flex items-start justify-between gap-3">
             <div>
                 <p
-                    class="text-xs font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300"
+                    class="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300"
                 >
                     Racha actual
                 </p>
-                <div class="flex items-baseline gap-1.5 mt-1">
-                    <span class="text-4xl font-black text-orange-600 dark:text-orange-400">{{
-                        data?.current_streak ?? 0
-                    }}</span>
-                    <span class="text-sm font-semibold text-orange-700 dark:text-orange-300">
+                <div class="flex items-baseline gap-1.5 mt-1.5">
+                    <span class="text-4xl md:text-5xl font-black text-orange-600 dark:text-orange-400 tabular-nums">
+                        {{ data?.current_streak ?? 0 }}
+                    </span>
+                    <span class="text-sm font-bold text-orange-700 dark:text-orange-300">
                         {{ data?.current_streak === 1 ? 'día' : 'días' }}
                     </span>
                 </div>
@@ -57,7 +66,7 @@
                     type="button"
                     data-testid="streak-hide-button"
                     @click="toggleGamification"
-                    class="opacity-60 hover:opacity-100 transition-opacity p-1.5 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 text-xs"
+                    class="opacity-60 hover:opacity-100 transition-opacity p-1.5 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-500/20 text-xs"
                     title="Ocultar racha y gamificación"
                     aria-label="Ocultar racha y gamificación"
                 >
@@ -74,9 +83,9 @@
             </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-3 gap-1.5 text-center sm:gap-2">
-            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
-                <p class="text-lg font-bold text-gray-900 dark:text-white">
+        <div class="relative mt-4 grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+            <div class="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-[var(--color-obsidian-elevated)]/60 dark:backdrop-blur-sm">
+                <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
                     {{ data?.this_week ?? 0 }}
                 </p>
                 <p
@@ -85,8 +94,8 @@
                     Esta semana
                 </p>
             </div>
-            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
-                <p class="text-lg font-bold text-gray-900 dark:text-white">
+            <div class="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-[var(--color-obsidian-elevated)]/60 dark:backdrop-blur-sm">
+                <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
                     {{ data?.this_month ?? 0 }}
                 </p>
                 <p
@@ -95,8 +104,8 @@
                     Este mes
                 </p>
             </div>
-            <div class="min-w-0 rounded-lg bg-white/60 p-2 dark:bg-gray-800/40">
-                <p class="text-lg font-bold text-gray-900 dark:text-white">
+            <div class="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-[var(--color-obsidian-elevated)]/60 dark:backdrop-blur-sm">
+                <p class="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
                     {{ data?.longest_streak ?? 0 }}
                 </p>
                 <p
@@ -108,7 +117,7 @@
         </div>
 
         <div
-            class="mt-3 pt-3 border-t border-orange-200/60 dark:border-orange-800/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-orange-700/80 dark:text-orange-300/80"
+            class="relative mt-3 pt-3 border-t border-orange-300/40 dark:border-orange-500/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-orange-700/80 dark:text-orange-300/80 font-semibold"
         >
             <span>📊 {{ data?.total_workouts ?? 0 }} entrenamientos totales</span>
             <span>💪 {{ data?.total_sets ?? 0 }} sets</span>

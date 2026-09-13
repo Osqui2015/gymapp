@@ -1,23 +1,27 @@
 <template>
     <div
         v-if="open"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="summary-title"
     >
         <div
-            class="relative w-full max-w-lg bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-white text-center"
+            class="relative w-full max-w-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border-strong)] rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.6)] space-y-5 text-white text-center overflow-hidden"
         >
+            <!-- Decoración de fondo (kinetic blur violeta/emerald) -->
+            <div class="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-violet-500/15 blur-3xl" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-emerald-500/15 blur-3xl" aria-hidden="true"></div>
+
             <!-- Badge / Icono -->
             <div
-                class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30 text-3xl"
+                class="relative mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] flex items-center justify-center shadow-[0_12px_32px_var(--color-violet-glow)] text-3xl border border-white/10"
             >
                 🏆
             </div>
 
             <!-- Título -->
-            <div>
+            <div class="relative">
                 <h2
                     id="summary-title"
                     class="text-2xl sm:text-3xl font-black tracking-tight text-white"
@@ -25,97 +29,96 @@
                     ¡Entrenamiento Completado!
                 </h2>
                 <p class="text-sm text-gray-400 mt-1">
-                    {{ store.session.rutina_nombre }} · {{ store.session.dia }}
+                    {{ store.session.rutina_nombre }} ·
+                    <span class="text-violet-300 font-bold">{{ store.session.dia }}</span>
                 </p>
             </div>
 
-            <!-- Grilla de Estadísticas -->
-            <div class="grid grid-cols-2 gap-3 text-left">
+            <!-- Grilla de Estadísticas (Kinetic Obsidian) -->
+            <div class="relative grid grid-cols-2 gap-2.5 text-left">
                 <!-- Duración -->
-                <div class="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4">
-                    <span class="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                <div class="bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] rounded-2xl p-4">
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-400 flex items-center gap-1">
                         ⏱ Duración
                     </span>
-                    <p class="text-xl font-bold text-white mt-1">
+                    <p class="text-xl font-black text-white mt-1.5 tabular-nums">
                         {{ duracionTexto }}
                     </p>
                 </div>
 
                 <!-- Volumen / Tonelaje -->
-                <div class="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4">
-                    <span class="text-xs font-semibold text-gray-400 flex items-center gap-1">
-                        🏋️‍♂️ Tonelaje Total
+                <div class="bg-[var(--color-obsidian-elevated)] border border-emerald-500/20 rounded-2xl p-4 relative overflow-hidden">
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300 flex items-center gap-1">
+                        🏋️ Tonelaje
                     </span>
-                    <p class="text-xl font-bold text-emerald-400 mt-1">
+                    <p class="text-xl font-black text-emerald-300 mt-1.5 tabular-nums">
                         {{ store.volumenTotal.toLocaleString() }}
-                        <span class="text-xs text-gray-400 font-normal">kg</span>
+                        <span class="text-xs text-gray-400 font-bold">kg</span>
                     </p>
                 </div>
 
                 <!-- Series Completadas -->
-                <div class="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4">
-                    <span class="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                <div class="bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] rounded-2xl p-4">
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-gray-400 flex items-center gap-1">
                         🔢 Series
                     </span>
-                    <p class="text-xl font-bold text-white mt-1">
+                    <p class="text-xl font-black text-white mt-1.5 tabular-nums">
                         {{ store.totalSeriesCompletadas }}
-                        <span class="text-xs text-gray-400 font-normal"
-                            >/ {{ store.totalSeriesObjetivo }}</span
-                        >
+                        <span class="text-xs text-gray-400 font-bold">/ {{ store.totalSeriesObjetivo }}</span>
                     </p>
                 </div>
 
-                <!-- Récords Personales (si hubo o placeholder) -->
-                <div class="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4">
-                    <span class="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                <!-- Récords Personales -->
+                <div class="bg-[var(--color-obsidian-elevated)] border border-amber-500/20 rounded-2xl p-4">
+                    <span class="text-[10px] font-black uppercase tracking-[0.14em] text-amber-300 flex items-center gap-1">
                         ⭐ PRs Superados
                     </span>
-                    <p class="text-xl font-bold text-amber-400 mt-1">
-                        {{ prsCount > 0 ? `${prsCount} récord(s)` : 'Constancia' }}
+                    <p class="text-xl font-black text-amber-300 mt-1.5">
+                        {{ prsCount > 0 ? `${prsCount} récord${prsCount === 1 ? '' : 's'}` : 'Constancia' }}
                     </p>
                 </div>
             </div>
 
-            <!-- Nuevas Medallas (si desbloqueó alguna) -->
+            <!-- Nuevas Medallas -->
             <div
                 v-if="newMedals.length > 0"
-                class="bg-indigo-950/40 border border-indigo-800/60 rounded-2xl p-3 text-left space-y-2"
+                class="relative bg-gradient-to-br from-violet-500/15 to-violet-700/10 border border-violet-500/30 rounded-2xl p-3.5 text-left space-y-2"
             >
-                <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                <span class="text-xs font-black text-violet-200 uppercase tracking-[0.14em]">
                     🎖️ ¡Nuevas Medallas Ganadas!
                 </span>
                 <div class="flex flex-wrap gap-2">
                     <span
                         v-for="m in newMedals"
                         :key="m.slug || m.nombre"
-                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-900/60 text-xs font-bold text-indigo-200 border border-indigo-700/50"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-obsidian-elevated)] text-xs font-bold text-violet-200 border border-violet-500/30"
                     >
-                        <span>{{ m.icono || '🎖️' }}</span>
+                        <span class="text-base">{{ m.icono || '🎖️' }}</span>
                         <span>{{ m.nombre }}</span>
                     </span>
                 </div>
             </div>
 
             <!-- Notas de la sesión -->
-            <div class="text-left space-y-1.5">
-                <label class="text-xs font-semibold text-gray-400">
+            <div class="relative text-left space-y-1.5">
+                <label class="text-xs font-bold text-gray-300">
                     Notas de la sesión (opcional):
                 </label>
                 <textarea
                     v-model="notas"
                     rows="2"
                     placeholder="¿Cómo te sentiste hoy? (ej: excelente energía, aumenté peso en banca)"
-                    class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    class="w-full bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] rounded-xl p-3 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 ></textarea>
             </div>
 
             <!-- Botones de Acción -->
-            <div class="space-y-2 pt-2">
+            <div class="relative space-y-2 pt-1">
                 <button
                     type="button"
                     @click="guardarYSalir"
                     :disabled="guardando"
-                    class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-base shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                    class="w-full py-4 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white font-black text-base shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
                 >
                     <span v-if="!guardando">Guardar y Finalizar Sesión</span>
                     <span v-else class="animate-pulse">Guardando sesión...</span>
@@ -124,7 +127,7 @@
                 <button
                     type="button"
                     @click="$emit('cancel')"
-                    class="w-full py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
+                    class="w-full py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-colors cursor-pointer"
                 >
                     Volver al entrenamiento
                 </button>

@@ -44,11 +44,11 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
+    <body class="font-sans antialiased bg-gray-50 dark:bg-[var(--color-obsidian-base)] text-gray-900 dark:text-gray-100 overflow-x-hidden">
         {{-- Skip to content (a11y: 6.3) --}}
         <a
             href="#main-content"
-            class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:font-semibold"
+            class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-4 focus:py-2 focus:bg-violet-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:font-semibold"
         >
             Saltar al contenido principal
         </a>
@@ -57,7 +57,7 @@
             @include('layouts.navigation')
 
             @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
+                <header class="bg-white dark:bg-[var(--color-obsidian-base)] border-b border-gray-200 dark:border-[var(--color-obsidian-border)]">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>

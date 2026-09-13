@@ -199,7 +199,7 @@
                 </div>
 
                 <div
-                    class="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-200 dark:divide-gray-700 max-h-[450px] overflow-y-auto bg-gray-50 dark:bg-gray-900/40"
+                    class="border border-gray-200 dark:border-gray-700 rounded-xl divide-y divide-gray-200 dark:divide-gray-700 max-h-[450px] overflow-y-auto bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40"
                 >
                     <label
                         v-for="a in filteredAlumnos"

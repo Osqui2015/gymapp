@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-8">
         <Breadcrumbs
             :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Estadísticas' }]"
             class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
@@ -175,7 +175,7 @@
                     <div class="overflow-x-auto hidden md:block">
                         <table class="w-full text-sm">
                             <thead>
-                                <tr class="bg-gray-50 dark:bg-gray-900">
+                                <tr class="bg-gray-50 dark:bg-[var(--color-obsidian-base)]">
                                     <th
                                         class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400"
                                     >

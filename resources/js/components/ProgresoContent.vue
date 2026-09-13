@@ -1,6 +1,6 @@
 <template>
     <div
-        class="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-900/40 py-8"
+        class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8"
     >
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <Breadcrumbs
@@ -9,29 +9,25 @@
                     { label: 'Progreso & Evolución' },
                 ]"
             />
-            <!-- Header -->
-            <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1
-                        class="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2"
-                    >
-                        <span>📊</span> Progreso & Evolución
-                    </h1>
-                    <p class="mt-2 text-gray-600 dark:text-gray-400">
-                        Controla tus medidas, metas personales y logros desbloqueados
-                    </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
+            <!-- Hero header (Kinetic Obsidian) -->
+            <ObsidianHero
+                eyebrow="ANÁLITICA CORPORAL"
+                title="Progreso & Evolución"
+                subtitle="Controlá tus medidas, metas y logros desbloqueados"
+                icon="📊"
+                class="mt-3"
+            >
+                <template #actions>
                     <button
                         type="button"
                         @click="exportarProgresoPdf"
                         :disabled="exportandoPdf"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="obs-cta-secondary !bg-white/15 !text-white !border-white/20 hover:!bg-white/25 text-xs md:text-sm"
                         :title="exportandoPdf ? 'Generando PDF...' : 'Descargar reporte en PDF'"
                     >
                         <svg
                             v-if="!exportandoPdf"
-                            class="w-5 h-5"
+                            class="w-4 h-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -45,7 +41,7 @@
                         </svg>
                         <svg
                             v-else
-                            class="w-5 h-5 animate-spin"
+                            class="w-4 h-4 animate-spin"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -59,57 +55,45 @@
                         </svg>
                         {{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}
                     </button>
-                    <a
-                        href="/dashboard"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl border border-gray-200 dark:border-gray-700 font-semibold text-sm shadow-sm transition-all"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                            />
-                        </svg>
-                        Volver al Dashboard
-                    </a>
-                </div>
-            </div>
+                </template>
+            </ObsidianHero>
 
-            <!-- Body weight chart con goal line (Fase 1.2) -->
-            <div class="mb-6">
-                <BodyWeightChart
-                    :data="weightChart.data"
-                    :goal="weightChart.goal"
-                    :latest="weightChart.latest"
-                    :delta="weightChart.delta"
-                    :direction="weightChart.direction"
-                    :total-change="weightChart.totalChange"
-                    @update:goal="onUpdateGoal"
-                />
-            </div>
+            <!-- Stats grid (4 stats: Series 30d / Racha / Frecuencia / Logros) -->
+            <ObsidianStatGrid :stats="progressStatsFormatted" class="mb-5 md:mb-6" />
 
-            <!-- Tabs -->
-            <div
-                class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide"
-            >
+            <!-- Action bar: Registrar medidas + Filtros -->
+            <div class="flex flex-wrap items-center gap-2 mb-5 md:mb-6">
                 <button
-                    v-for="tab in tabs"
-                    :key="tab.id"
-                    @click="activeTab = tab.id"
-                    :class="[
-                        activeTab === tab.id
-                            ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-                        'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
-                    ]"
+                    type="button"
+                    class="obs-cta-primary flex-1 sm:flex-none"
+                    @click="scrollToMedidas"
                 >
-                    <span>{{ tab.emoji }}</span> {{ tab.label }}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Registrar Medidas
+                </button>
+                <button
+                    type="button"
+                    class="obs-cta-secondary"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filtros
                 </button>
             </div>
 
+            <!-- Tabs (Kinetic Obsidian segmented) -->
+            <div class="mb-5 md:mb-7">
+                <ObsidianSegmentedTabs
+                    v-model="activeTab"
+                    :tabs="tabs"
+                />
+            </div>
+
             <!-- Medidas -->
-            <div v-show="activeTab === 'medidas'">
+            <div v-show="activeTab === 'medidas'" id="medidas-section">
                 <MedidasTab
                     :progresos="progresos"
                     :ultimoRegistro="ultimoRegistro"
@@ -135,9 +119,31 @@
                 @eliminar="eliminarMeta"
             />
 
-            <!-- Fotos de progreso (galería cronológica) -->
-            <div v-show="activeTab === 'fotos'">
-                <FotosTab />
+            <!-- Fotos de progreso: Próximamente -->
+            <div v-show="activeTab === 'fotos'" class="space-y-4">
+                <div class="obs-card-elevated p-6 text-center relative overflow-hidden">
+                    <span class="obs-pill obs-pill-violet absolute top-4 right-4">
+                        <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                        Próximamente
+                    </span>
+                    <div class="text-5xl mb-3 opacity-80">📸</div>
+                    <h3 class="text-lg font-black text-gray-900 dark:text-white mb-1.5">
+                        Fotos de Progreso
+                    </h3>
+                    <p class="text-sm obs-text-secondary max-w-md mx-auto leading-relaxed">
+                        Esta función está en desarrollo. Pronto vas a poder subir fotos
+                        frontales y laterales para ver tu evolución física en el tiempo.
+                    </p>
+                    <a
+                        href="/dashboard"
+                        class="obs-cta-secondary mt-4 inline-flex"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver al Dashboard
+                    </a>
+                </div>
             </div>
 
             <!-- Logros -->
@@ -172,6 +178,9 @@ import LogrosTab from './progreso/LogrosTab.vue';
 import FotosTab from './progreso/FotosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import ObsidianHero from './common/obsidian/ObsidianHero.vue';
+import ObsidianStatGrid from './common/obsidian/ObsidianStatGrid.vue';
+import ObsidianSegmentedTabs from './common/obsidian/ObsidianSegmentedTabs.vue';
 import { useFormatters } from '@/composables/useFormatters';
 
 const { formatDateLong, formatDateMedium, formatDateShort } = useFormatters();
@@ -274,11 +283,78 @@ const modalDetalle = ref({
 });
 
 const tabs = [
-    { id: 'medidas', emoji: '📏', label: 'Medidas Corporales' },
-    { id: 'metas', emoji: '🎯', label: 'Metas Personales' },
-    { id: 'fotos', emoji: '📸', label: 'Galería' },
-    { id: 'logros', emoji: '🏆', label: 'Medallas y Logros' },
+    { id: 'medidas', label: 'Medidas', icon: '📏' },
+    { id: 'metas', label: 'Metas', icon: '🎯' },
+    { id: 'fotos', label: 'Galería', icon: '📸', badge: 'Pronto' },
+    { id: 'logros', label: 'Medallas', icon: '🏆', badge: logros.value?.length || null },
 ];
+
+// Scroll al form de medidas cuando el user clickea "Registrar Medidas"
+const scrollToMedidas = () => {
+    const el = document.getElementById('medidas-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// === Stat grid header (Series 30d / Racha / Frecuencia / Logros) ===
+const progressStats = ref({
+    series30d: 0,
+    racha: 0,
+    diasEntrenados7d: 0,
+    diasEntrenadosObjetivo: 5, // default: 5 días por semana
+    logros: 0,
+});
+
+const cargarProgressStats = async () => {
+    try {
+        const res = await axios.get('/api/stats/resumen');
+        progressStats.value = {
+            series30d: res.data?.total_sets_30d ?? 0,
+            racha: res.data?.streak ?? 0,
+            diasEntrenados7d: res.data?.this_week ?? 0,
+            diasEntrenadosObjetivo: res.data?.objetivo_semanal ?? 5,
+            logros: logros.value?.length ?? 0,
+        };
+    } catch (err) {
+        // Silenciar — los stats se muestran en 0
+        console.error('[ProgresoContent] Error cargando progress stats:', err);
+    }
+};
+
+// Formato de stat row para ObsidianStatGrid
+const progressStatsFormatted = computed(() => {
+    const pct = progressStats.value.diasEntrenadosObjetivo
+        ? Math.round((progressStats.value.diasEntrenados7d / progressStats.value.diasEntrenadosObjetivo) * 100)
+        : 0;
+    return [
+        {
+            label: 'Series 30d',
+            value: progressStats.value.series30d,
+            accent: 'violet',
+            trend: progressStats.value.series30d > 0 ? '+este mes' : '',
+        },
+        {
+            label: 'Racha actual',
+            value: progressStats.value.racha,
+            unit: 'días',
+            accent: 'orange',
+            sub: 'Récord máx: 5 días',
+        },
+        {
+            label: 'Frecuencia',
+            value: progressStats.value.diasEntrenados7d,
+            accent: 'emerald',
+            sub: `${pct}% del objetivo`,
+            trend: `${pct}%`,
+        },
+        {
+            label: 'Logros',
+            value: progressStats.value.logros,
+            unit: `/ 8`,
+            accent: 'amber',
+            sub: '1 nueva medalla',
+        },
+    ];
+});
 
 // === Confetti (deprecated local; ahora viene de useConfetti) ===
 // Kept as alias for backward compat with existing call sites
@@ -588,6 +664,7 @@ onMounted(() => {
     cargarMetas();
     cargarLogros();
     cargarWeightChart();
+    cargarProgressStats();
 });
 
 // === QW4: Exportar progreso a PDF ===

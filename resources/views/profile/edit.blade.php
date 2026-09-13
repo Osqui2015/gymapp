@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] rounded-xl flex items-center justify-center shadow-[0_4px_12px_var(--color-violet-glow)]">
+                <span class="text-white text-lg">👤</span>
+            </div>
+            <h2 class="font-black text-xl text-gray-900 dark:text-white tracking-tight">
+                {{ __('Mi Perfil') }}
+            </h2>
+        </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-8 md:py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             {{-- Breadcrumbs --}}
             <nav class="flex items-center text-sm" aria-label="Breadcrumb">
@@ -26,19 +31,19 @@
                 </ol>
             </nav>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white dark:bg-[var(--color-obsidian-surface)] shadow sm:rounded-2xl border border-gray-200 dark:border-[var(--color-obsidian-border)]">
                 <div class="max-w-xl">
                     @include('profile.partials.update-profile-information-form')
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white dark:bg-[var(--color-obsidian-surface)] shadow sm:rounded-2xl border border-gray-200 dark:border-[var(--color-obsidian-border)]">
                 <div class="max-w-xl">
                     @include('profile.partials.update-password-form')
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white dark:bg-[var(--color-obsidian-surface)] shadow sm:rounded-2xl border border-gray-200 dark:border-[var(--color-obsidian-border)]">
                 <div class="max-w-xl">
                     @include('profile.partials.delete-user-form')
                 </div>

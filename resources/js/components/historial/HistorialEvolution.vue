@@ -319,7 +319,7 @@
 
                 <div class="space-y-4">
                     <div
-                        class="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4"
+                        class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)] border border-gray-200 dark:border-gray-700 p-4"
                     >
                         <p class="text-sm text-gray-500 dark:text-gray-400">
                             Detalles del ejercicio
@@ -353,7 +353,7 @@
                     </div>
 
                     <div
-                        class="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4"
+                        class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)] border border-gray-200 dark:border-gray-700 p-4"
                     >
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Sesiones</p>
                         <div class="space-y-3 max-h-72 overflow-auto pr-1">

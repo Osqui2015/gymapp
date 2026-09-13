@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
         <Breadcrumbs
             :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Ejercicios' }]"
             class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
@@ -49,7 +49,7 @@
                         <!-- Mobile: altura fija con cuerpo completo de pies a cabeza.
                  Desktop: ambos lados (frente + espalda) lado a lado. -->
                         <div
-                            class="bg-gray-50 dark:bg-gray-900/40 h-[300px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden flex items-center justify-center p-2"
+                            class="bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40 h-[300px] md:h-auto md:max-h-[calc(100vh-7rem)] overflow-hidden flex items-center justify-center p-2"
                         >
                             <!-- Mobile: solo frente -->
                             <BodyMap

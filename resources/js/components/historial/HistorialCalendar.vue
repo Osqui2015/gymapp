@@ -86,25 +86,25 @@
 
             <!-- Resumen -->
             <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div class="text-center p-3 bg-gray-50 dark:bg-[var(--color-obsidian-base)] rounded-lg">
                     <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                         {{ totalSeries }}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Series totales</p>
                 </div>
-                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div class="text-center p-3 bg-gray-50 dark:bg-[var(--color-obsidian-base)] rounded-lg">
                     <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                         {{ diasEntrenados }}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Días entrenados</p>
                 </div>
-                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div class="text-center p-3 bg-gray-50 dark:bg-[var(--color-obsidian-base)] rounded-lg">
                     <p class="text-2xl font-black text-amber-600 dark:text-amber-400">
                         {{ rachaActual }}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Racha actual (días)</p>
                 </div>
-                <div class="text-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div class="text-center p-3 bg-gray-50 dark:bg-[var(--color-obsidian-base)] rounded-lg">
                     <p class="text-2xl font-black text-rose-600 dark:text-rose-400">
                         {{ rachaMax }}
                     </p>

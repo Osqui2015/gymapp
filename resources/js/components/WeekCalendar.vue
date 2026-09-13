@@ -123,7 +123,7 @@ const goToHistorial = () => {
                                 : 'bg-emerald-50 dark:bg-emerald-950/30'
                             : d.es_hoy
                               ? 'bg-gray-100 ring-1 ring-gray-300 dark:bg-gray-700'
-                              : 'bg-gray-50 dark:bg-gray-900/40',
+                              : 'bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40',
                     ]"
                     :title="
                         d.completado ? `${d.sets} sets · ${d.ejercicios.join(', ')}` : 'Descanso'

@@ -147,7 +147,7 @@
                     <!-- Ejercicios -->
                     <div v-if="resultados.ejercicios?.length">
                         <p
-                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700"
+                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 border-b border-gray-200 dark:border-gray-700"
                         >
                             🏋️ Ejercicios ({{ resultados.ejercicios.length }})
                         </p>
@@ -193,7 +193,7 @@
                     <!-- Rutinas -->
                     <div v-if="resultados.rutinas?.length">
                         <p
-                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700"
+                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 border-b border-gray-200 dark:border-gray-700"
                         >
                             📋 Rutinas ({{ resultados.rutinas.length }})
                         </p>
@@ -229,7 +229,7 @@
                     <!-- Alumnos -->
                     <div v-if="resultados.alumnos?.length">
                         <p
-                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700"
+                            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 border-b border-gray-200 dark:border-gray-700"
                         >
                             👥 Alumnos ({{ resultados.alumnos.length }})
                         </p>
@@ -268,7 +268,7 @@
 
                 <!-- Footer hint -->
                 <div
-                    class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between"
+                    class="px-4 py-2 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 flex items-center justify-between"
                 >
                     <span>↑↓ navegar · ↵ abrir · esc cerrar</span>
                     <span v-if="totalResultados" class="font-mono"

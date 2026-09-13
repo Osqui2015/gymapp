@@ -101,8 +101,11 @@ describe('ActiveWorkoutModal', () => {
             props: { open: true },
         });
 
-        const btnCompletar = wrapper.find('button.shadow-emerald-950\\/60');
-        expect(btnCompletar.exists()).toBe(true);
+        // Kinetic Obsidian: el botón COMPLETAR SERIE ahora usa shadow-violet-glow
+        const btnCompletar = wrapper.findAll('button').find((b) =>
+            b.text().includes('COMPLETAR SERIE')
+        );
+        expect(btnCompletar).toBeDefined();
 
         await btnCompletar.trigger('click');
 

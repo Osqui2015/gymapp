@@ -1,13 +1,14 @@
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+<nav x-data="{ open: false }" class="bg-white/85 dark:bg-[var(--color-obsidian-base)]/85 backdrop-blur-md border-b border-gray-200 dark:border-[var(--color-obsidian-border)] sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold text-sm">G</span>
+                        {{-- Logo Kinetic Obsidian: gradiente violeta-púrpura más vibrante --}}
+                        <div class="w-9 h-9 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] rounded-xl flex items-center justify-center shadow-[0_4px_12px_var(--color-violet-glow)]">
+                            <span class="text-white font-black text-base">G</span>
                         </div>
-                        <span class="text-xl font-bold text-gray-800 dark:text-white">GymApp</span>
+                        <span class="text-xl font-black text-gray-900 dark:text-white tracking-tight">GymApp</span>
                     </a>
                 </div>
 
@@ -133,9 +134,9 @@
                 <x-dark-mode-toggle />
 
                 <div x-data="{ userOpen: false }" @click.away="userOpen = false" class="relative">
-                    <button @click="userOpen = !userOpen" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <span class="text-white text-sm font-semibold">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                    <button @click="userOpen = !userOpen" class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[var(--color-obsidian-elevated)] transition-colors">
+                        <div class="w-8 h-8 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] rounded-full flex items-center justify-center shadow-[0_2px_8px_var(--color-violet-glow)]">
+                            <span class="text-white text-sm font-bold">{{ substr(Auth::user()->name, 0, 1) }}</span>
                         </div>
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ Auth::user()->name }}</span>
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,14 +155,15 @@
                          class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
                          style="display: none;">
 
-                        <!-- Header con usuario -->
-                        <div class="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <!-- Header con usuario (Kinetic Obsidian) -->
+                        <div class="px-4 py-3 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] relative overflow-hidden">
+                            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.18),transparent_50%)]"></div>
+                            <div class="relative flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                                     <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 1) }}</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-semibold text-white">{{ Auth::user()->name }}</p>
+                                    <p class="text-sm font-bold text-white">{{ Auth::user()->name }}</p>
                                     <p class="text-xs text-white/70">{{ Auth::user()->email }}</p>
                                 </div>
                             </div>

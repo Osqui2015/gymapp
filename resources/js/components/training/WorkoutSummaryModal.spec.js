@@ -77,7 +77,9 @@ describe('WorkoutSummaryModal', () => {
             props: { open: true },
         });
 
-        const btnGuardar = wrapper.find('button.bg-gradient-to-r');
+        const btnGuardar = wrapper.findAll('button').find((b) =>
+            b.text().includes('Guardar y Finalizar')
+        );
         await btnGuardar.trigger('click');
 
         expect(axios.post).toHaveBeenCalledWith(

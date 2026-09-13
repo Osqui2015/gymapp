@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Breadcrumbs
                 :items="[
@@ -166,8 +166,8 @@
                     <WeekCalendar :user-id="selectedAlumnoId" class="md:col-span-1" />
                 </div>
 
-                <!-- Fase 3: esfuerzo RIR/RPE -->
-                <div v-show="activeTab === 'matrix'" class="mb-6 grid gap-4 md:grid-cols-2">
+                <!-- Fase 3: esfuerzo RIR/RPE (visible en tab matrix para no romper flujo, y destacado en tab rir) -->
+                <div v-show="activeTab === 'matrix' || activeTab === 'rir'" class="mb-6 grid gap-4 md:grid-cols-2">
                     <EffortCard :user-id="selectedAlumnoId" />
                 </div>
 
@@ -386,7 +386,7 @@
                                             <li
                                                 v-for="ej in muscleDrilldown.data.ejercicios"
                                                 :key="ej.id"
-                                                class="rounded-xl bg-gray-50 dark:bg-gray-900/50 transition-colors"
+                                                class="rounded-xl bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 transition-colors"
                                             >
                                                 <button
                                                     type="button"

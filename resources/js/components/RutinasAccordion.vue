@@ -1,14 +1,14 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
         <SyncBadge :pending="offlinePending" :syncing="offlineSyncing" />
         <Breadcrumbs
             :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Rutinas' }]"
             class="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
         />
-        <!-- FAB (mobile only): crear nueva rutina -->
+        <!-- FAB (mobile only): crear nueva rutina (Kinetic Obsidian) -->
         <a
             href="/rutinas/crear"
-            class="md:hidden fixed bottom-20 right-4 z-30 inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform"
+            class="md:hidden fixed bottom-20 right-4 z-30 inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] text-white shadow-[0_8px_24px_var(--color-violet-glow)] active:scale-95 transition-transform"
             aria-label="Crear nueva rutina"
             title="Crear nueva rutina"
         >
@@ -93,70 +93,66 @@
             <!-- Vista para Alumnos -->
             <RutinasAlumnoView v-if="isAlumno" :user-rutina="userRutina" class="mb-8" />
             <div v-else>
-                <div
-                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4"
+                <!-- Hero header (Kinetic Obsidian) -->
+                <ObsidianHero
+                    eyebrow="GESTIÓN DE RUTINAS"
+                    title="Explorar Rutinas"
+                    subtitle="Selecciona, comparte o importa planes de entrenamiento estructurados."
+                    class="mb-5 md:mb-7"
                 >
-                    <div>
-                        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">
-                            Explorar Rutinas
-                        </h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Selecciona, comparte o importa planes de entrenamiento
-                        </p>
-                    </div>
-                    <a
-                        href="/rutinas/crear"
-                        class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-5 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <template #actions>
+                        <a
+                            href="/rutinas/crear"
+                            class="obs-cta-secondary !bg-white/15 !text-white !border-white/20 hover:!bg-white/25"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Crear Nueva Rutina
+                        </a>
+                    </template>
+                </ObsidianHero>
+
+                <!-- Search bar + CTA full width (mobile) -->
+                <div class="flex flex-col sm:flex-row items-stretch gap-2 mb-5 md:mb-6">
+                    <div class="relative flex-1">
+                        <svg
+                            class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
                             <path
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
                             />
+                        </svg>
+                        <input
+                            type="search"
+                            placeholder="Buscar rutina, músculo o ejercicio…"
+                            class="obs-input pl-10"
+                        />
+                    </div>
+                    <a href="/rutinas/crear" class="obs-cta-primary sm:hidden">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                         Crear Nueva Rutina
                     </a>
                 </div>
 
-                <!-- Navigation Tabs -->
-                <div
-                    class="flex border-b border-gray-200 dark:border-gray-700 mb-8 gap-6 overflow-x-auto scrollbar-hide"
-                >
-                    <button
-                        @click="catalogoTab = 'predeterminadas'"
-                        :class="[
-                            catalogoTab === 'predeterminadas'
-                                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-                            'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
+                <!-- Navigation Tabs (Kinetic Obsidian segmented) -->
+                <div class="mb-5 md:mb-7">
+                    <ObsidianSegmentedTabs
+                        v-model="catalogoTab"
+                        :tabs="[
+                            { id: 'predeterminadas', label: 'Rutinas Oficiales', icon: '📋' },
+                            { id: 'personalizadas', label: 'Mis Rutinas', icon: '👤' },
+                            { id: 'comunitarias', label: 'Catálogo Comunitario', icon: '🌎' },
                         ]"
-                    >
-                        <span>📋</span> Rutinas Oficiales
-                    </button>
-                    <button
-                        @click="catalogoTab = 'personalizadas'"
-                        :class="[
-                            catalogoTab === 'personalizadas'
-                                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-                            'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
-                        ]"
-                    >
-                        <span>👤</span> Mis Rutinas Personalizadas
-                    </button>
-                    <button
-                        @click="catalogoTab = 'comunitarias'"
-                        :class="[
-                            catalogoTab === 'comunitarias'
-                                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-                            'pb-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap',
-                        ]"
-                    >
-                        <span>🌎</span> Catálogo Comunitario
-                    </button>
+                    />
                 </div>
 
                 <!-- TAB: Rutinas Predeterminadas (Oficiales) -->
@@ -424,6 +420,8 @@ import Breadcrumbs from './Breadcrumbs.vue';
 import RutinasAlumnoView from './rutinas/RutinasAlumnoView.vue';
 import RutinaAcordeon from './rutinas/RutinaAcordeon.vue';
 import MobileQuickSeriesInput from './rutinas/MobileQuickSeriesInput.vue';
+import ObsidianHero from './common/obsidian/ObsidianHero.vue';
+import ObsidianSegmentedTabs from './common/obsidian/ObsidianSegmentedTabs.vue';
 
 const toast = useToast();
 

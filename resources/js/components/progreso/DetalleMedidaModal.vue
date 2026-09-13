@@ -57,7 +57,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 <div
                                     v-if="modal.progreso.peso"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500">Peso:</span>
                                     <div class="flex items-center gap-2">
@@ -78,7 +78,7 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.grasa_corporal"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500">% Grasa:</span>
                                     <div class="flex items-center gap-2">
@@ -106,7 +106,7 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.altura"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500">Altura:</span>
                                     <span class="font-bold font-mono"
@@ -115,7 +115,7 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.edad"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500">Edad:</span>
                                     <span class="font-bold font-mono"
@@ -124,7 +124,7 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.sexo"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500">Sexo:</span>
                                     <span class="font-bold capitalize">{{
@@ -146,7 +146,7 @@
                                     v-for="campo in camposMedidas"
                                     :key="campo"
                                     v-show="modal.comparacion[campo]"
-                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                                    class="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50"
                                 >
                                     <span class="text-gray-500 capitalize"
                                         >{{ labelCampos[campo] }}:</span

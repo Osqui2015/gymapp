@@ -83,7 +83,7 @@
 
             <div
                 v-if="inputs.peso"
-                class="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 rounded-lg p-3"
+                class="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40 rounded-lg p-3"
             >
                 Usando peso y altura de tu último registro de Progreso del
                 <strong>{{ inputs.ultimo_progreso_fecha || '—' }}</strong>
