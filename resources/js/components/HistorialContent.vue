@@ -1,11 +1,19 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] md:py-8 relative">
+        <!-- Top bar mobile (sticky) -->
+        <ObsidianMobileTopBar
+            :racha="statsResumen?.current_streak ?? 0"
+            :user-initials="userInitials"
+            class="md:hidden"
+        />
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-0">
             <Breadcrumbs
                 :items="[
                     { label: 'Inicio', href: '/dashboard' },
                     { label: 'Historial de entrenamiento' },
                 ]"
+                class="hidden md:block"
             />
             <HistorialHeader
                 :isTrainerOrAdmin="isTrainerOrAdmin"
@@ -97,15 +105,179 @@
             </div>
 
             <div v-else class="space-y-6 animate-fadeIn">
-                <!-- Filtros avanzados de Historial -->
-                <HistorialFilters
-                    v-model="filtros"
-                    :rutinas-disponibles="rutinasDisponibles"
-                    :dias-disponibles="diasDisponibles"
-                    :total-filtrados="filteredHistorial.length"
-                    :total-original="historial.length"
-                    @limpiar="limpiarFiltros"
-                />
+                <!-- ===== MOBILE LAYOUT (mockup Figma) ===== -->
+                <div class="md:hidden space-y-4">
+                    <!-- Search bar + pill de días -->
+                    <div class="space-y-3">
+                        <div class="relative">
+                            <svg
+                                class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                            </svg>
+                            <input
+                                v-model="searchSesion"
+                                type="search"
+                                placeholder="Buscar ejercicio (ej. Press banca, Sentadilla…)"
+                                class="obs-input pl-10"
+                            />
+                        </div>
+
+                        <!-- Pills de días -->
+                        <div class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+                            <button
+                                v-for="(d, i) in diasParaFiltroMobile"
+                                :key="i"
+                                type="button"
+                                @click="filtroDiaMobile = d.id"
+                                :class="[
+                                    'shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border',
+                                    filtroDiaMobile === d.id
+                                        ? 'bg-[var(--color-violet-primary)] text-white border-[var(--color-violet-primary)] shadow-[0_4px_14px_var(--color-violet-glow)]'
+                                        : 'bg-white dark:bg-[var(--color-obsidian-elevated)] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-[var(--color-obsidian-border)]',
+                                ]"
+                            >
+                                {{ d.label }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Racha + calendario semanal -->
+                    <div class="obs-card-elevated p-4">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-2xl">🔥</span>
+                                    <p class="text-2xl md:text-3xl font-black text-white tabular-nums">
+                                        {{ statsResumen?.current_streak ?? 0 }}
+                                        <span class="text-sm font-bold text-orange-300">días</span>
+                                    </p>
+                                </div>
+                                <p class="obs-pill obs-pill-emerald">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Racha activa
+                                </p>
+                                <p class="text-[11px] obs-text-secondary mt-1">
+                                    Con al menos 1 serie ejecutada · Récord:
+                                    <strong class="text-white tabular-nums">{{ statsResumen?.longest_streak ?? 0 }} d</strong>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="obs-pill obs-pill-violet shrink-0"
+                                aria-label="Ver calendario completo"
+                            >
+                                <span>📅</span>
+                            </button>
+                        </div>
+                        <!-- Week calendar -->
+                        <WeekCalendar :user-id="selectedAlumnoId" class="md:col-span-1" />
+                        <p class="mt-3 text-[10px] obs-text-tertiary text-center">
+                            Semana actual ·
+                            <strong class="text-emerald-400 tabular-nums">{{ statsResumen?.this_week ?? 0 }}</strong>
+                            sesiones
+                        </p>
+                    </div>
+
+                    <!-- Sesiones registradas -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between px-1">
+                            <h3 class="text-base md:text-lg font-black text-white">
+                                Sesiones Registradas
+                            </h3>
+                            <span class="text-xs obs-text-secondary font-bold">
+                                {{ sesionesRecientes.length }} {{ sesionesRecientes.length === 1 ? 'esta semana' : 'total' }}
+                            </span>
+                        </div>
+
+                        <div v-if="!sesionesRecientes.length" class="obs-card p-6 text-center">
+                            <p class="text-sm obs-text-secondary">
+                                Aún no registraste sesiones esta semana.
+                            </p>
+                        </div>
+
+                        <HistorialSesionCard
+                            v-for="(s, i) in sesionesRecientes.slice(0, 5)"
+                            :key="i"
+                            :fecha="s.fecha"
+                            :fecha-highlight="s.fechaHighlight"
+                            :duracion="s.duracion"
+                            :series="s.series"
+                            :tonelaje="s.tonelaje"
+                            :ejercicios="s.ejercicios"
+                            :expanded="i === 0"
+                            :show-actions="i === 0"
+                            @ver-detalles="verDetalleSesion(s)"
+                            @repetir-sesion="repetirSesion(s)"
+                        />
+                    </div>
+
+                    <!-- Esfuerzo y RIR Promedio -->
+                    <div class="obs-card-elevated p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-[10px] font-black uppercase tracking-[0.18em] obs-text-secondary">
+                                INTENSIDAD REGISTRADA
+                            </p>
+                            <ObsidianPill variant="emerald" dot>Óptimo</ObsidianPill>
+                        </div>
+                        <h3 class="text-lg md:text-xl font-black text-white mb-1">
+                            Esfuerzo y RIR Promedio
+                        </h3>
+                        <div class="flex items-baseline gap-2 mb-3">
+                            <span class="text-3xl md:text-4xl font-black text-white tabular-nums">
+                                {{ rirPromedio ?? '0.96' }}
+                            </span>
+                            <span class="obs-pill obs-pill-emerald">
+                                {{ rirPorcentajeAltaIntensidad ?? '100%' }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] obs-text-secondary mb-3">
+                            RIR Promedio (Repeticiones en Reserva)
+                        </p>
+
+                        <!-- Distribución RIR con barras -->
+                        <div class="space-y-2.5">
+                            <p class="text-[10px] font-black uppercase tracking-wider obs-text-secondary">
+                                DISTRIBUCIÓN DE SERIES POR RIR
+                            </p>
+                            <div
+                                v-for="(b, idx) in distribucionRIR"
+                                :key="idx"
+                                class="space-y-1"
+                            >
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-white">RIR {{ b.label }}</span>
+                                    <span class="obs-text-secondary tabular-nums">
+                                        <strong class="text-white">{{ b.value }}</strong> sets
+                                        <span class="obs-text-tertiary">({{ b.porcentaje }}%)</span>
+                                    </span>
+                                </div>
+                                <div class="obs-progress-track h-2">
+                                    <div
+                                        class="h-full rounded-full transition-all duration-500"
+                                        :class="b.color"
+                                        :style="{ width: b.porcentaje + '%' }"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== DESKTOP LAYOUT (todo el historial completo) ===== -->
+                <div class="hidden md:block space-y-6">
+                    <!-- Filtros avanzados de Historial -->
+                    <HistorialFilters
+                        v-model="filtros"
+                        :rutinas-disponibles="rutinasDisponibles"
+                        :dias-disponibles="diasDisponibles"
+                        :total-filtrados="filteredHistorial.length"
+                        :total-original="historial.length"
+                        @limpiar="limpiarFiltros"
+                    />
 
                 <div
                     v-if="filteredHistorial.length === 0"
@@ -285,6 +457,8 @@
                         </div>
                     </div>
                 </div>
+                </div>
+                <!-- /DESKTOP -->
 
                 <!-- Drilldown: modal con los ejercicios que trabajan el músculo clickeado -->
                 <Teleport to="body">
@@ -482,6 +656,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import axios from 'axios';
 
 import HistorialHeader from './historial/HistorialHeader.vue';
+import HistorialSesionCard from './historial/HistorialSesionCard.vue';
+import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
+import ObsidianPill from './common/obsidian/ObsidianPill.vue';
 import HistorialFilters from './historial/HistorialFilters.vue';
 import HistorialMatrix from './historial/HistorialMatrix.vue';
 import EditHistorialModal from './historial/EditHistorialModal.vue';
@@ -636,6 +813,110 @@ const filteredHistorial = computed(() => {
 const statsResumen = ref({});
 const statsHeatmap = ref({ days: [] });
 const userRutina = ref(null);
+
+// Iniciales del user para el avatar del top bar mobile
+const userInitials = computed(() => {
+    try {
+        // auth store expone user con .name o .nick
+        const u = window.__user || {};
+        if (u.name) return String(u.name).slice(0, 1).toUpperCase();
+        if (u.nick) return String(u.nick).slice(0, 1).toUpperCase();
+    } catch {
+        // ignore
+    }
+    return 'U';
+});
+
+// Sesiones recientes formateadas para el HistorialSesionCard (mockup mobile)
+// Agrupa el historial por fecha+rutina+dia y arma los ejercicios con sus sets.
+const sesionesRecientes = computed(() => {
+    if (!historial.value || !historial.value.length) return [];
+
+    const groups = new Map();
+    historial.value.forEach((h) => {
+        const key = `${h.fecha}|${h.rutina_nombre || ''}|${h.dia || ''}`;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                fecha: h.fecha,
+                rutina: h.rutina_nombre,
+                dia: h.dia,
+                series: [],
+                ejerciciosMap: new Map(),
+            });
+        }
+        const g = groups.get(key);
+        g.series.push(h);
+        if (h.ejercicio_nombre) {
+            if (!g.ejerciciosMap.has(h.ejercicio_nombre)) {
+                g.ejerciciosMap.set(h.ejercicio_nombre, {
+                    nombre: h.ejercicio_nombre,
+                    meta: h.musculo || h.equipamiento || '',
+                    sets: [],
+                });
+            }
+            g.ejerciciosMap.get(h.ejercicio_nombre).sets.push({
+                label: `${h.peso ?? 0} × ${h.reps_realizadas ?? 0}${h.unidad_peso === 'lb' ? 'lb' : 'kg'}`,
+                esPR: h.es_pr === true,
+            });
+        }
+    });
+
+    // Ordenar por fecha descendente (más recientes primero) y formatear
+    return Array.from(groups.values())
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 10)
+        .map((g) => {
+            const ejercicios = Array.from(g.ejerciciosMap.values());
+            const fechaDate = new Date(g.fecha);
+            const hoy = new Date();
+            const diffDays = Math.round((hoy - fechaDate) / (1000 * 60 * 60 * 24));
+            let fechaLabel = fechaDate.toLocaleDateString('es-AR', {
+                day: 'numeric',
+                month: 'short',
+            });
+            let fechaHighlight = '';
+            if (diffDays === 0) {
+                fechaLabel = 'Hoy';
+                fechaHighlight = 'Hoy';
+            } else if (diffDays === 1) {
+                fechaLabel = 'Ayer';
+                fechaHighlight = 'Ayer';
+            } else if (diffDays < 7) {
+                fechaLabel = fechaDate.toLocaleDateString('es-AR', { weekday: 'long' });
+            } else {
+                fechaLabel = fechaDate
+                    .toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+                    .toUpperCase();
+            }
+
+            const tonelaje = g.series.reduce(
+                (acc, s) => acc + Number(s.peso || 0) * Number(s.reps_realizadas || 0),
+                0
+            );
+            const tonelajeStr = tonelaje >= 1000
+                ? `${(tonelaje / 1000).toFixed(1)} t total`
+                : `${tonelaje.toFixed(0)} kg total`;
+
+            // Si el día está etiquetado, agregarlo al highlight
+            const meta = g.dia ? `Día ${g.dia.split(' ').pop() || ''}` : '';
+
+            return {
+                fecha: fechaLabel.charAt(0).toUpperCase() + fechaLabel.slice(1),
+                fechaHighlight,
+                fechaRaw: g.fecha,
+                duracion: g.series[0]?.duracion || '',
+                series: g.series.length,
+                tonelaje: tonelajeStr,
+                meta,
+                ejercicios: ejercicios.slice(0, 8).map((ej) => ({
+                    nombre: ej.nombre,
+                    meta: ej.meta || meta,
+                    cantSeries: ej.sets.length,
+                    sets: ej.sets.slice(0, 6),
+                })),
+            };
+        });
+});
 
 const loadUserRutina = async () => {
     try {
@@ -907,6 +1188,88 @@ const saveEditingNotes = async ({ ej, value }) => {
 // === EditHistorialModal: estado y handlers (Nivel 6) ===
 const showEditModal = ref(false);
 const editingSerie = ref(null);
+
+// Mobile: search + filtro de día (mockup)
+const searchSesion = ref('');
+const filtroDiaMobile = ref('todas');
+
+// Días disponibles para las pills mobile (mockup)
+// Usa los días del store de filtros si existen; fallback a defaults
+const diasParaFiltroMobile = computed(() => {
+    const base = [{ id: 'todas', label: 'Todas' }];
+    if (diasDisponibles && diasDisponibles.value && diasDisponibles.value.length) {
+        diasDisponibles.value.forEach((d, i) => {
+            base.push({ id: `d${i}`, label: d.label || d });
+        });
+    } else {
+        base.push({ id: 'd1', label: 'Día 1 (Torso)' });
+        base.push({ id: 'd2', label: 'Día 2 (Pierna)' });
+        base.push({ id: 'd3', label: 'Día 3 (Full Body)' });
+    }
+    return base;
+});
+
+// Esfuerzo / RIR para la card mobile (mockup)
+const rirPromedio = ref(null);
+const rirPorcentajeAltaIntensidad = ref(null);
+const distribucionRIR = ref([
+    { label: 0, value: 0, porcentaje: 0, color: 'bg-gradient-to-r from-violet-500 to-violet-300' },
+    { label: 1, value: 0, porcentaje: 0, color: 'bg-gradient-to-r from-violet-500 to-emerald-400' },
+    { label: 2, value: 0, porcentaje: 0, color: 'bg-gradient-to-r from-emerald-500 to-emerald-300' },
+]);
+
+const cargarEsfuerzoRIR = async () => {
+    try {
+        const res = await axios.get('/api/stats/esfuerzo-rir', {
+            params: selectedAlumnoId.value ? { user_id: selectedAlumnoId.value } : {},
+        });
+        if (res.data) {
+            rirPromedio.value = res.data.promedio ?? rirPromedio.value;
+            rirPorcentajeAltaIntensidad.value =
+                res.data.porcentaje_alta_intensidad ?? rirPorcentajeAltaIntensidad.value;
+            if (Array.isArray(res.data.distribucion)) {
+                distribucionRIR.value = res.data.distribucion.map((d, i) => ({
+                    label: d.label ?? d.rir ?? i,
+                    value: d.value ?? d.sets ?? 0,
+                    porcentaje: d.porcentaje ?? d.porcentaje ?? 0,
+                    color:
+                        i === 0
+                            ? 'bg-gradient-to-r from-violet-500 to-violet-300'
+                            : i === 1
+                              ? 'bg-gradient-to-r from-violet-500 to-emerald-400'
+                              : 'bg-gradient-to-r from-emerald-500 to-emerald-300',
+                }));
+            }
+        }
+    } catch (err) {
+        // Silenciar — mantenemos los defaults
+        console.warn('[HistorialContent] esfuerzo-rir no disponible:', err);
+    }
+};
+
+// Acciones del HistorialSesionCard mobile
+const verDetalleSesion = (sesion) => {
+    // Por ahora navega al dashboard con query string de la sesión;
+    // más adelante podemos hacer drilldown con el id.
+    if (sesion?.fechaRaw) {
+        window.location.href = `/dashboard?fecha=${sesion.fechaRaw}`;
+    }
+};
+
+const repetirSesion = (sesion) => {
+    if (!sesion?.fechaRaw) return;
+    if (!window.confirm('¿Cargar esta rutina como nuevo entrenamiento?')) return;
+    // Llamada simple al backend para arrancar nueva sesión copiando sets
+    axios
+        .post('/api/sesiones/repetir', { fecha_origen: sesion.fechaRaw })
+        .then(() => {
+            toast.success('Sesión copiada. Iniciá el entrenamiento desde el Dashboard.');
+        })
+        .catch((err) => {
+            console.error(err);
+            toast.error('No se pudo copiar la sesión.');
+        });
+};
 
 const onMatrixCellClick = ({ ejercicio, fecha }) => {
     // Buscar la primera serie que matchea (ejercicio, fecha).
@@ -1251,6 +1614,7 @@ const exportarPDF = async () => {
 // Usamos window como target: la página scrollea en window, no en un div interno.
 const loadHistorialWithFeedback = async () => {
     await loadHistorial();
+    await cargarEsfuerzoRIR();
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadHistorialWithFeedback);
 
