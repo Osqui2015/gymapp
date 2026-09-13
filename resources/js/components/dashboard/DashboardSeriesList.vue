@@ -193,29 +193,69 @@
                                         {{ fila.reps_min }} - {{ fila.reps_max }}
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <div class="max-w-[100px] mx-auto">
-                                            <input
-                                                v-model.number="fila.reps_realizadas"
-                                                @change="$emit('guardar', fila)"
-                                                type="number"
-                                                min="0"
-                                                step="1"
-                                                :placeholder="placeholderReps(fila)"
-                                                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-center text-gray-900 dark:text-white font-semibold focus:border-indigo-500 focus:ring-indigo-500"
-                                            />
+                                        <div class="max-w-[140px] mx-auto">
+                                            <div
+                                                class="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 overflow-hidden"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    @click="ajustarReps(fila, -1)"
+                                                    :aria-label="`Restar 1 rep a la serie ${fila.series_numero}`"
+                                                    class="shrink-0 w-9 h-9 flex items-center justify-center text-lg font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 transition-colors"
+                                                >
+                                                    −
+                                                </button>
+                                                <input
+                                                    v-model.number="fila.reps_realizadas"
+                                                    @change="$emit('guardar', fila)"
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    :placeholder="placeholderReps(fila)"
+                                                    class="flex-1 min-w-0 bg-transparent px-1 py-1.5 text-center text-gray-900 dark:text-white font-semibold outline-none tabular-nums"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    @click="ajustarReps(fila, 1)"
+                                                    :aria-label="`Sumar 1 rep a la serie ${fila.series_numero}`"
+                                                    class="shrink-0 w-9 h-9 flex items-center justify-center text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 active:bg-indigo-100 transition-colors"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <div class="max-w-[110px] mx-auto">
-                                            <input
-                                                v-model.number="fila.peso"
-                                                @change="$emit('guardar', fila)"
-                                                type="number"
-                                                min="0"
-                                                step="0.5"
-                                                :placeholder="placeholderPeso(fila)"
-                                                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-center text-gray-900 dark:text-white font-semibold focus:border-indigo-500 focus:ring-indigo-500"
-                                            />
+                                        <div class="max-w-[150px] mx-auto">
+                                            <div
+                                                class="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 overflow-hidden"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    @click="ajustarPeso(fila, -0.5)"
+                                                    :aria-label="`Restar 0.5 kg a la serie ${fila.series_numero}`"
+                                                    class="shrink-0 w-9 h-9 flex items-center justify-center text-lg font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 transition-colors"
+                                                >
+                                                    −
+                                                </button>
+                                                <input
+                                                    v-model.number="fila.peso"
+                                                    @change="$emit('guardar', fila)"
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.5"
+                                                    :placeholder="placeholderPeso(fila)"
+                                                    class="flex-1 min-w-0 bg-transparent px-1 py-1.5 text-center text-gray-900 dark:text-white font-semibold outline-none tabular-nums"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    @click="ajustarPeso(fila, 0.5)"
+                                                    :aria-label="`Sumar 0.5 kg a la serie ${fila.series_numero}`"
+                                                    class="shrink-0 w-9 h-9 flex items-center justify-center text-lg font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 active:bg-indigo-100 transition-colors"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                             <!-- #1 Hint de progresivo overload (solo si input vacío y hay anterior) -->
                                             <div
                                                 v-if="sugerenciaPeso(fila)"
@@ -378,8 +418,16 @@
                                         Reps hechas
                                     </label>
                                     <div
-                                        class="relative rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500"
+                                        class="flex items-center rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 overflow-hidden"
                                     >
+                                        <button
+                                            type="button"
+                                            @click="ajustarReps(fila, -1)"
+                                            :aria-label="`Restar 1 rep a la serie ${fila.series_numero}`"
+                                            class="shrink-0 w-10 h-11 flex items-center justify-center text-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 transition-colors"
+                                        >
+                                            −
+                                        </button>
                                         <input
                                             v-model.number="fila.reps_realizadas"
                                             @change="$emit('guardar', fila)"
@@ -387,8 +435,16 @@
                                             min="0"
                                             step="1"
                                             :placeholder="placeholderReps(fila)"
-                                            class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
+                                            class="flex-1 min-w-0 bg-transparent px-1 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none tabular-nums"
                                         />
+                                        <button
+                                            type="button"
+                                            @click="ajustarReps(fila, 1)"
+                                            :aria-label="`Sumar 1 rep a la serie ${fila.series_numero}`"
+                                            class="shrink-0 w-10 h-11 flex items-center justify-center text-xl font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 active:bg-indigo-100 transition-colors"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                 </div>
 
@@ -399,8 +455,16 @@
                                         Peso (Kg)
                                     </label>
                                     <div
-                                        class="relative rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500"
+                                        class="flex items-center rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-900/60 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 overflow-hidden"
                                     >
+                                        <button
+                                            type="button"
+                                            @click="ajustarPeso(fila, -0.5)"
+                                            :aria-label="`Restar 0.5 kg a la serie ${fila.series_numero}`"
+                                            class="shrink-0 w-10 h-11 flex items-center justify-center text-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 transition-colors"
+                                        >
+                                            −
+                                        </button>
                                         <input
                                             v-model.number="fila.peso"
                                             @change="$emit('guardar', fila)"
@@ -408,8 +472,16 @@
                                             min="0"
                                             step="0.5"
                                             :placeholder="placeholderPeso(fila)"
-                                            class="w-full bg-transparent px-3 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none"
+                                            class="flex-1 min-w-0 bg-transparent px-1 py-2 text-center text-base font-bold text-gray-900 dark:text-white outline-none tabular-nums"
                                         />
+                                        <button
+                                            type="button"
+                                            @click="ajustarPeso(fila, 0.5)"
+                                            :aria-label="`Sumar 0.5 kg a la serie ${fila.series_numero}`"
+                                            class="shrink-0 w-10 h-11 flex items-center justify-center text-xl font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 active:bg-indigo-100 transition-colors"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                     <!-- #1 Hint de progresivo overload (mobile) -->
                                     <div
@@ -635,6 +707,23 @@ const repetirCicloAnterior = (ejercicio) => {
         emit('guardar', fila);
     });
     return cantidadCopiadas;
+};
+
+// === #2 Steppers +/- para inputs de peso y reps ===
+// Ajustan el valor en el step correspondiente y emiten 'guardar' para persistir.
+// Si el input está vacío/null, el stepper arranca desde 0.
+const ajustarPeso = (fila, delta) => {
+    const actual = Number(fila.peso) || 0;
+    const nuevo = Math.max(0, Math.round((actual + delta) * 2) / 2); // redondea a 0.5
+    fila.peso = nuevo;
+    emit('guardar', fila);
+};
+
+const ajustarReps = (fila, delta) => {
+    const actual = Number(fila.reps_realizadas) || 0;
+    const nuevo = Math.max(0, Math.round(actual + delta));
+    fila.reps_realizadas = nuevo;
+    emit('guardar', fila);
 };
 
 // === Estado de acordeón por ejercicio (colapsados por defecto) ===

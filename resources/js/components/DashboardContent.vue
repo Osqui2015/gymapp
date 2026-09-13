@@ -162,15 +162,18 @@
                     />
                 </div>
 
-                <!-- Day selector -->
-                <div class="mb-6" data-tour="day-selector">
-                    <div class="flex flex-wrap gap-2 mb-4">
+                <!-- Day selector (sticky en mobile para que quede visible al scrollear ejercicios) -->
+                <div
+                    class="mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-gray-900/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
+                    data-tour="day-selector"
+                >
+                    <div class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
                         <button
                             v-for="dia in todosLosDias"
                             :key="dia"
                             @click="cambiarDia(dia)"
                             :class="[
-                                'px-4 py-2 rounded-lg font-medium transition-all',
+                                'shrink-0 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
                                 diaActual === dia
                                     ? 'bg-indigo-600 text-white shadow-md'
                                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
@@ -182,7 +185,14 @@
                 </div>
 
                 <div data-tour="series-list">
+                    <!-- #3 Skeleton: mientras carga el primer fetch, mostramos esqueletos -->
+                    <div v-if="isInitialLoading" class="space-y-3 mb-6">
+                        <SkeletonLoader variant="card" />
+                        <SkeletonLoader variant="card" />
+                        <SkeletonLoader variant="card" />
+                    </div>
                     <DashboardSeriesList
+                        v-else
                         :filas-serie="filasSerie"
                         :dia-index="diaIndex"
                         :texto-boton-siguiente="textoBotonSiguiente"
@@ -248,17 +258,22 @@
             @saved="onWorkoutSummarySaved"
         />
 
-        <!-- #4 Resumen al cambiar de día -->
+        <!-- #4 Resumen al cambiar de día (bottom sheet en mobile, modal en desktop) -->
         <Teleport to="body">
-            <Transition name="fade">
+            <Transition name="sheet-fade">
                 <div
                     v-if="showDaySummary"
-                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
                     @click.self="showDaySummary = false"
                 >
                     <div
-                        class="w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                        class="sheet-content w-full sm:max-w-md bg-white dark:bg-gray-800 sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] flex flex-col"
                     >
+                        <!-- Drag handle (solo mobile) -->
+                        <div class="sm:hidden pt-2 pb-1 flex justify-center">
+                            <div class="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                        </div>
+
                         <!-- Header con confeti -->
                         <div
                             class="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-5 text-white"
@@ -273,7 +288,7 @@
                         </div>
 
                         <!-- Stats -->
-                        <div class="px-6 py-5 space-y-4">
+                        <div class="px-6 py-5 space-y-4 overflow-y-auto">
                             <div class="grid grid-cols-3 gap-3 text-center">
                                 <div class="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 px-3 py-3">
                                     <p
@@ -340,7 +355,7 @@
 
                         <!-- Botones -->
                         <div
-                            class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex gap-3"
+                            class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
                         >
                             <button
                                 type="button"
@@ -395,6 +410,7 @@ import DashboardStats from './dashboard/DashboardStats.vue';
 import DashboardSeriesList from './dashboard/DashboardSeriesList.vue';
 import DashboardHeatmap from './dashboard/DashboardHeatmap.vue';
 import DashboardWeeklyChart from './dashboard/DashboardWeeklyChart.vue';
+import SkeletonLoader from './common/SkeletonLoader.vue';
 import { useRestTimerStore } from '../stores/restTimer';
 import ActiveWorkoutModal from './training/ActiveWorkoutModal.vue';
 import WorkoutSummaryModal from './training/WorkoutSummaryModal.vue';
@@ -463,6 +479,7 @@ const todosLosDias = ref([]);
 
 const showActiveWorkoutModal = ref(false);
 const showWorkoutSummaryModal = ref(false);
+const isInitialLoading = ref(true); // #3 Skeleton: true hasta el primer fetch completo
 
 const formattedActiveTime = computed(() => {
     const s = session.elapsed;
@@ -809,6 +826,9 @@ const fetchRutinasDelDia = async () => {
         construirFilasSerie(response.data);
     } catch (error) {
         console.error('Error:', error);
+    } finally {
+        // #3 Skeleton: termina el loading inicial después del primer fetch
+        isInitialLoading.value = false;
     }
 };
 
@@ -1132,13 +1152,31 @@ const iniciarTemporizador = (fila) => {
 </script>
 
 <style scoped>
-/* #4 Transition para el modal de resumen de día */
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s ease;
+/* #4 Bottom sheet: slide-up desde abajo en mobile, fade en desktop */
+.sheet-fade-enter-active,
+.sheet-fade-leave-active {
+    transition: opacity 0.25s ease;
 }
-.fade-enter-from,
-.fade-leave-to {
+.sheet-fade-enter-from,
+.sheet-fade-leave-to {
     opacity: 0;
+}
+
+/* El contenido se desliza desde abajo */
+.sheet-fade-enter-active .sheet-content,
+.sheet-fade-leave-active .sheet-content {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sheet-fade-enter-from .sheet-content,
+.sheet-fade-leave-to .sheet-content {
+    transform: translateY(100%);
+}
+
+/* En desktop (sm:) el slide es solo fade (centrado) */
+@media (min-width: 640px) {
+    .sheet-fade-enter-from .sheet-content,
+    .sheet-fade-leave-to .sheet-content {
+        transform: translateY(0) scale(0.96);
+    }
 }
 </style>
