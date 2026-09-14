@@ -1,24 +1,22 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 pb-28 md:py-8 md:pb-8">
+    <div
+        class="min-h-screen bg-[#090D16] text-gray-100 py-0 pb-28 md:py-6 md:pb-8 overflow-x-hidden"
+    >
         <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
-        <Breadcrumbs
-            :items="[{ label: 'Inicio' }]"
-            class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
-        />
 
         <!-- Indicador pull-to-refresh (mobile) -->
         <div
             v-show="pullOffset > 4 || isRefreshing"
             :style="{ height: pullOffset + 'px' }"
-            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-6xl mx-auto"
+            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-md mx-auto"
             aria-live="polite"
             role="status"
         >
             <div
-                class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400"
+                class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-400"
             >
                 <svg
-                    class="w-5 h-5 animate-spin text-indigo-600"
+                    class="w-5 h-5 animate-spin text-[#6366F1]"
                     v-if="isRefreshing"
                     fill="none"
                     stroke="currentColor"
@@ -39,7 +37,7 @@
                     ></path>
                 </svg>
                 <svg
-                    class="w-5 h-5 text-indigo-600"
+                    class="w-5 h-5 text-[#6366F1]"
                     v-else
                     fill="none"
                     stroke="currentColor"
@@ -56,194 +54,749 @@
             </div>
         </div>
 
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <template v-if="rutinaStore.seleccionada">
-                <div data-tour="home-hero" class="mb-4">
-                    <HomeHero />
-                </div>
-
-                <!-- Banner de Sesión de Entrenamiento Activa (Kinetic Obsidian) -->
-                <div
-                    v-if="session.isActive"
-                    class="mb-4 relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+        <template v-if="rutinaStore.seleccionada">
+            <!-- ============================================================ -->
+            <!-- MOBILE-FIRST: shell exacto del mockup Figma Kinetic Obsidian -->
+            <!-- ============================================================ -->
+            <div class="md:hidden w-full">
+                <!-- BEGIN: TopBar (sticky) -->
+                <header
+                    class="sticky top-0 z-40 bg-[#090D16]/90 backdrop-blur-md px-5 pt-3 pb-3 border-b border-[#232F4D]/60 flex items-center justify-between"
                 >
-                    <div class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"></div>
+                    <!-- Brand + saludo -->
                     <div class="flex items-center gap-3">
-                        <span class="relative flex h-3.5 w-3.5">
-                            <span
-                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
-                            ></span>
-                            <span
-                                class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
-                            ></span>
-                        </span>
+                        <div
+                            class="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex items-center justify-center shadow-lg shadow-[#6366F1]/25 ring-1 ring-white/20"
+                        >
+                            <span class="text-white font-extrabold text-xl tracking-tight">G</span>
+                        </div>
                         <div>
-                            <p class="text-sm font-black tracking-tight flex items-center gap-2">
-                                <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
-                                <span
-                                    v-if="session.isPaused"
-                                    class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
-                                    >Pausado</span
-                                >
-                            </p>
-                            <p class="text-xs text-emerald-200/80">
-                                {{ session.currentEjercicio?.nombre || 'Sesión iniciada' }} ·
-                                {{ session.totalSeriesCompletadas }}/{{
-                                    session.totalSeriesObjetivo
-                                }}
-                                series
-                            </p>
+                            <span
+                                class="text-[11px] font-bold tracking-widest text-[#8B5CF6] uppercase"
+                            >
+                                {{ diaSemanaEs }}, {{ fechaCorta }}
+                            </span>
+                            <h1 class="text-base font-bold text-white flex items-center gap-1.5">
+                                ¡A entrenar, {{ userFirstName }}!
+                            </h1>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <!-- Streak chip + bell -->
+                    <div class="flex items-center gap-2.5">
+                        <div
+                            v-if="stats.streak > 0"
+                            class="flex items-center gap-1.5 bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-3 py-1.5 rounded-full"
+                            title="Racha activa de entrenamientos"
+                        >
+                            <svg
+                                class="w-4 h-4 text-[#F59E0B] animate-pulse fill-current"
+                                viewbox="0 0 24 24"
+                            >
+                                <path
+                                    d="M12.7 1.8c-.4-.4-1.1-.3-1.3.2-.6 1.4-1.5 2.8-2.6 3.9C6.8 8.1 5 11.2 5 14.5 5 18.6 8.1 22 12 22s7-3.4 7-7.5c0-4.1-2.5-7.9-5-10.4-.6-.6-1-1.4-1.3-2.3zM12 20c-2.8 0-5-2.2-5-5 0-2.3 1.3-4.5 2.8-6.1.4-.4.8-.8 1.2-1.3.5 1.5 1.4 3 2.6 4.2 1.3 1.3 2.4 2.8 2.4 4.2 0 2.2-1.8 4-4 4z"
+                                ></path>
+                            </svg>
+                            <span class="text-xs font-black text-[#F59E0B]">{{ stats.streak }} DÍAS</span>
+                        </div>
+                        <button
+                            aria-label="Notificaciones"
+                            type="button"
+                            class="h-9 w-9 rounded-full bg-[#111726] border border-[#232F4D] flex items-center justify-center text-gray-300 hover:text-white transition-colors"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewbox="0 0 24 24"
+                            >
+                                <path
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+                </header>
+                <!-- END: TopBar -->
+
+                <!-- BEGIN: MainContent -->
+                <main class="px-4 pt-4 space-y-5 max-w-md mx-auto w-full pb-32">
+                    <!-- Active session banner -->
+                    <div
+                        v-if="session.isActive"
+                        class="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+                    >
+                        <div
+                            class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"
+                        ></div>
+                        <div class="flex items-center gap-3">
+                            <span class="relative flex h-3.5 w-3.5">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                                ></span>
+                                <span
+                                    class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
+                                ></span>
+                            </span>
+                            <div>
+                                <p
+                                    class="text-sm font-black tracking-tight flex items-center gap-2"
+                                >
+                                    <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
+                                    <span
+                                        v-if="session.isPaused"
+                                        class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
+                                        >Pausado</span
+                                    >
+                                </p>
+                                <p class="text-xs text-emerald-200/80">
+                                    {{
+                                        session.currentEjercicio?.nombre ||
+                                        'Sesión iniciada'
+                                    }}
+                                    · {{ session.totalSeriesCompletadas }}/{{
+                                        session.totalSeriesObjetivo
+                                    }}
+                                    series
+                                </p>
+                            </div>
+                        </div>
                         <button
                             type="button"
                             @click="abrirModoEntrenamiento"
-                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md cursor-pointer transition-all active:scale-95"
+                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md active:scale-95 transition-all"
                         >
                             ⚡ Continuar
                         </button>
+                    </div>
+
+                    <!-- BEGIN: HeroCard (Principal Routine CTA) -->
+                    <section
+                        class="relative overflow-hidden rounded-3xl border border-[#8B5CF6]/30 p-5 shadow-xl shadow-[#1c1f38]/40"
+                        style="
+                            background: radial-gradient(
+                                    circle at 80% 20%,
+                                    rgba(139, 92, 246, 0.22) 0%,
+                                    rgba(99, 102, 241, 0.05) 55%,
+                                    transparent 70%
+                                ),
+                                linear-gradient(180deg, #1c1f38 0%, #14182b 50%, #0f1424 100%);
+                        "
+                        data-purpose="active-workout-hero"
+                    >
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="space-y-1">
+                                <div
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6366F1]/20 border border-[#8B5CF6]/30 text-[11px] font-semibold text-[#A78BFA]"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]"></span>
+                                    {{ nombreRutina }}
+                                </div>
+                                <h2 class="text-2xl font-black text-white tracking-tight pt-1">
+                                    {{ diaActual }}: {{ diaActualGrupo }}
+                                </h2>
+                                <p
+                                    class="text-xs text-gray-300 font-medium flex items-center gap-2"
+                                >
+                                    <span>{{ ejerciciosDelDia.length }} ejercicios</span>
+                                    <span class="text-gray-600">•</span>
+                                    <span>{{ seriesTotales }} series</span>
+                                    <span class="text-gray-600">•</span>
+                                    <span>~{{ duracionEstimada }} min</span>
+                                </p>
+                            </div>
+                            <button
+                                v-if="!session.isActive"
+                                aria-pressed="true"
+                                type="button"
+                                class="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-400"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                </svg>
+                                Focus Mode
+                            </button>
+                        </div>
+
                         <button
                             type="button"
-                            @click="descartarSesion"
-                            class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-rose-300 text-xs font-semibold cursor-pointer transition-all"
+                            @click="abrirModoEntrenamiento"
+                            class="w-full mt-3 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#6366F1] via-[#6366F1] to-[#8B5CF6] text-white font-bold text-base shadow-lg shadow-[#6366F1]/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
                         >
-                            Descartar
+                            <div class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                                <svg
+                                    class="w-4 h-4 fill-white translate-x-0.5"
+                                    viewbox="0 0 24 24"
+                                >
+                                    <path d="M8 5v14l11-7z"></path>
+                                </svg>
+                            </div>
+                            <span>Comenzar entrenamiento</span>
                         </button>
-                    </div>
-                </div>
 
-                <!-- CTA Card Modo Entrenamiento Activo (Kinetic Obsidian) -->
-                <div
-                    v-else
-                    class="mb-4 obs-card-elevated p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                >
-                    <div>
-                        <h3
-                            class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                        <div
+                            class="mt-4 pt-3 border-t border-[#232F4D] flex items-center justify-between text-xs text-gray-400"
                         >
-                            <span>⚡ Modo Entrenamiento Activo</span>
-                            <span
-                                class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
-                                >Focus Mode</span
+                            <span class="font-medium text-gray-300">Progreso de la sesión</span>
+                            <span class="font-bold text-[#A78BFA]">
+                                {{ seriesCompletadas }} / {{ seriesTotales }} series
+                                ({{ progresoDia }}%)
+                            </span>
+                        </div>
+                        <div class="w-full h-1.5 bg-[#111726] rounded-full mt-1.5 overflow-hidden">
+                            <div
+                                class="h-full bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] rounded-full transition-all"
+                                :style="{ width: progresoDia + '%' }"
+                            ></div>
+                        </div>
+                    </section>
+                    <!-- END: HeroCard -->
+
+                    <!-- BEGIN: QuickStatsGrid -->
+                    <section class="grid grid-cols-3 gap-2.5">
+                        <div
+                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                        >
+                            <div
+                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
                             >
-                        </h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Seguimiento guiado serie por serie, botones táctiles aumentados y
-                            descanso automático.
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        @click="abrirModoEntrenamiento"
-                        class="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
-                    >
-                        <span>▶ Iniciar Sesión de Hoy</span>
-                    </button>
-                </div>
-
-                <div data-tour="rutina-header">
-                    <DashboardRutinaHeader
-                        :nivel="rutinaStore.seleccionada.nivel"
-                        :dias="rutinaStore.seleccionada.dias"
-                        :dia-actual="diaActual"
-                        @cambiar="cambiarRutina"
-                    />
-                </div>
-
-                <div data-tour="stats">
-                    <DashboardStats
-                        :series-totales="seriesTotales"
-                        :series-completadas="seriesCompletadas"
-                        :series-pendientes="seriesPendientes"
-                        :peso-registrado="pesoRegistrado"
-                        :peso-promedio="pesoPromedio"
-                        :reps-registradas="repsRegistradas"
-                        :progreso-dia="progresoDia"
-                    />
-                </div>
-
-                <!-- Day selector (sticky en mobile para que quede visible al scrollear ejercicios) -->
-                <div
-                    class="mb-5 md:mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-[var(--color-obsidian-base)]/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-[var(--color-obsidian-base)]/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
-                    data-tour="day-selector"
-                >
-                    <div class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
-                        <button
-                            v-for="dia in todosLosDias"
-                            :key="dia"
-                            @click="cambiarDia(dia)"
-                            :class="[
-                                'shrink-0 px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap text-sm',
-                                diaActual === dia
-                                    ? 'bg-[var(--color-violet-primary)] text-white shadow-[0_4px_14px_var(--color-violet-glow)]'
-                                    : 'bg-white dark:bg-[var(--color-obsidian-elevated)] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[var(--color-obsidian-surface)] border border-gray-200 dark:border-[var(--color-obsidian-border)]',
-                            ]"
+                                Sets 30 días
+                            </div>
+                            <div class="mt-1 flex items-baseline gap-1">
+                                <span class="text-xl font-extrabold text-white">
+                                    {{ stats.totalSets30d }}
+                                </span>
+                                <span
+                                    v-if="stats.trend30d !== 0"
+                                    class="text-[10px] font-semibold"
+                                    :class="
+                                        stats.trend30d > 0 ? 'text-emerald-400' : 'text-rose-400'
+                                    "
+                                >
+                                    {{ stats.trend30d > 0 ? '+' : '' }}{{ stats.trend30d }}%
+                                </span>
+                            </div>
+                            <div class="text-[10px] text-gray-300 mt-0.5">Volumen alto</div>
+                        </div>
+                        <div
+                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
                         >
-                            {{ dia }}
+                            <div
+                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                            >
+                                Último entreno
+                            </div>
+                            <div class="mt-1 text-lg font-extrabold text-white">
+                                {{ ultimoEntrenoLabel }}
+                            </div>
+                            <div class="text-[10px] text-gray-300 mt-0.5">
+                                {{ ultimoEntrenoSub }}
+                            </div>
+                        </div>
+                        <div
+                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                        >
+                            <div
+                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                            >
+                                Racha actual
+                            </div>
+                            <div class="mt-1 flex items-center gap-1">
+                                <span class="text-xl font-extrabold text-[#F59E0B]">
+                                    {{ stats.streak }}
+                                </span>
+                                <span class="text-xs">🔥</span>
+                            </div>
+                            <div class="text-[10px] text-gray-300 mt-0.5">
+                                Récord: {{ stats.longestStreak }} días
+                            </div>
+                        </div>
+                    </section>
+                    <!-- END: QuickStatsGrid -->
+
+                    <!-- BEGIN: DaySelectorTabs -->
+                    <section>
+                        <div class="flex items-center justify-between mb-2">
+                            <span
+                                class="text-xs font-bold uppercase tracking-wider text-gray-400"
+                                >Plan actual</span
+                            >
+                            <button
+                                type="button"
+                                @click="cambiarRutina"
+                                class="text-xs font-semibold text-[#A78BFA] hover:text-[#8B5CF6] transition-colors"
+                            >
+                                Cambiar rutina
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 overflow-x-auto pb-1" style="-ms-overflow-style: none; scrollbar-width: none;">
+                            <button
+                                v-for="dia in todosLosDias"
+                                :key="dia"
+                                @click="cambiarDia(dia)"
+                                type="button"
+                                :class="[
+                                    'px-4 py-2 rounded-xl text-xs shrink-0 whitespace-nowrap transition-colors',
+                                    diaActual === dia
+                                        ? 'bg-[#6366F1] text-white font-bold shadow-md shadow-[#6366F1]/30 ring-1 ring-[#A78BFA] flex items-center gap-1.5'
+                                        : 'bg-[#111726]/90 text-gray-400 hover:text-white border border-[#232F4D] font-semibold',
+                                ]"
+                            >
+                                <span
+                                    v-if="diaActual === dia"
+                                    class="w-2 h-2 rounded-full bg-white"
+                                ></span>
+                                {{ dia }}
+                                <span v-if="diaGrupoPara(dia)" class="opacity-80">
+                                    ({{ diaGrupoPara(dia) }})
+                                </span>
+                            </button>
+                        </div>
+                    </section>
+                    <!-- END: DaySelectorTabs -->
+
+                    <!-- BEGIN: ExerciseListSection -->
+                    <section class="space-y-3" data-purpose="todays-exercise-list">
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex items-baseline gap-2">
+                                <h3
+                                    class="text-sm font-bold text-white uppercase tracking-wider"
+                                >
+                                    Ejercicios de hoy
+                                </h3>
+                                <span class="text-xs font-semibold text-gray-300">
+                                    {{ ejerciciosCompletadosCount }}/{{
+                                        ejerciciosDelDia.length
+                                    }}
+                                    completados
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                @click="expandirTodos = !expandirTodos"
+                                class="text-xs font-medium text-gray-400 bg-[#111726] border border-[#232F4D] px-2.5 py-1 rounded-lg hover:text-white"
+                            >
+                                {{ expandirTodos ? 'Colapsar' : 'Expandir todos' }}
+                            </button>
+                        </div>
+
+                        <article
+                            v-for="(ej, idx) in ejerciciosDelDia"
+                            :key="ej.nombre"
+                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3.5 shadow-sm"
+                        >
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        :class="[
+                                            'w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs',
+                                            ej.estaCompleto
+                                                ? 'bg-[#10B981]/15 border border-[#10B981]/40 text-emerald-400'
+                                                : ej.tieneAlgunaCompletada
+                                                  ? 'bg-[#6366F1]/15 border border-[#6366F6]/40 text-[#A78BFA]'
+                                                  : 'bg-[#161F36] border border-[#232F4D] text-gray-300',
+                                        ]"
+                                    >
+                                        {{ idx + 1 }}
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">
+                                            {{ ej.nombre }}
+                                        </h4>
+                                        <p class="text-[11px] text-gray-300">
+                                            {{ ej.meta }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="text-xs font-bold px-2 py-0.5 rounded-md"
+                                    :class="
+                                        ej.estaCompleto
+                                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                                            : 'bg-[#161F36] border border-[#232F4D] text-[#A78BFA]'
+                                    "
+                                >
+                                    {{ ej.completadas }}/{{ ej.sets.length }} series
+                                </span>
+                            </div>
+                            <!-- Series pills -->
+                            <div
+                                v-if="expandirTodos || ej.estaCompleto"
+                                class="grid grid-cols-4 gap-1.5 pt-2"
+                            >
+                                <div
+                                    v-for="(set, sIdx) in ej.sets"
+                                    :key="sIdx"
+                                    :class="[
+                                        'rounded-lg py-1 text-center border',
+                                        set.completado
+                                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                                            : 'bg-[#161F36] border-[#232F4D]',
+                                    ]"
+                                >
+                                    <span
+                                        class="text-[10px] block font-mono"
+                                        :class="set.completado ? 'text-emerald-400' : 'text-gray-400'"
+                                        >S{{ sIdx + 1 }}</span
+                                    >
+                                    <span
+                                        class="text-xs font-bold"
+                                        :class="set.completado ? 'text-emerald-200' : 'text-gray-200'"
+                                    >
+                                        {{ formatSetLabel(set) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </article>
+                    </section>
+                    <!-- END: ExerciseListSection -->
+
+                    <!-- BEGIN: ProgressChartSection -->
+                    <section
+                        v-if="chartPoints.length > 0"
+                        class="bg-[#111726]/80 border border-[#232F4D] rounded-3xl p-4 space-y-3"
+                    >
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-base">📈</span>
+                                    <h3 class="text-sm font-bold text-white">
+                                        Peso máximo por día (30d)
+                                    </h3>
+                                </div>
+                                <p class="text-xs text-gray-400">
+                                    Progreso registrado en Press de banca
+                                </p>
+                            </div>
+                            <span
+                                class="text-xs font-bold text-[#A5B4FC] bg-[#1E1B4B]/60 border border-[#6366F1]/30 px-2.5 py-1 rounded-lg"
+                            >
+                                Max: {{ maxPesoChart }} kg
+                            </span>
+                        </div>
+                        <div class="pt-2">
+                            <div class="w-full h-36 relative">
+                                <svg
+                                    class="w-full h-full overflow-visible"
+                                    preserveaspectratio="none"
+                                    viewbox="0 0 320 120"
+                                >
+                                    <defs>
+                                        <lineargradient
+                                            id="chartGradient"
+                                            x1="0%"
+                                            x2="0%"
+                                            y1="0%"
+                                            y2="100%"
+                                        >
+                                            <stop
+                                                offset="0%"
+                                                stop-color="#8B5CF6"
+                                                stop-opacity="0.45"
+                                            ></stop>
+                                            <stop
+                                                offset="100%"
+                                                stop-color="#6366F1"
+                                                stop-opacity="0.0"
+                                            ></stop>
+                                        </lineargradient>
+                                    </defs>
+                                    <line
+                                        stroke="#2A354F"
+                                        stroke-dasharray="2 3"
+                                        stroke-width="0.75"
+                                        x1="0"
+                                        x2="320"
+                                        y1="20"
+                                        y2="20"
+                                    ></line>
+                                    <line
+                                        stroke="#2A354F"
+                                        stroke-dasharray="2 3"
+                                        stroke-width="0.75"
+                                        x1="0"
+                                        x2="320"
+                                        y1="60"
+                                        y2="60"
+                                    ></line>
+                                    <line
+                                        stroke="#2A354F"
+                                        stroke-dasharray="2 3"
+                                        stroke-width="0.75"
+                                        x1="0"
+                                        x2="320"
+                                        y1="100"
+                                        y2="100"
+                                    ></line>
+                                    <path :d="chartAreaPath" fill="url(#chartGradient)"></path>
+                                    <path
+                                        :d="chartLinePath"
+                                        fill="none"
+                                        stroke="#8B5CF6"
+                                        stroke-linecap="round"
+                                        stroke-width="3"
+                                    ></path>
+                                    <circle
+                                        v-for="(pt, i) in chartPoints"
+                                        :key="i"
+                                        :cx="pt.x"
+                                        :cy="pt.y"
+                                        :fill="pt.highlight ? '#A78BFA' : '#6366F1'"
+                                        :r="pt.highlight ? 5 : 4"
+                                        stroke="#ffffff"
+                                        :stroke-width="pt.highlight ? 2.5 : 2"
+                                    ></circle>
+                                </svg>
+                            </div>
+                            <div
+                                class="flex justify-between text-[10px] text-gray-500 font-mono pt-2 border-t border-[#232F4D]"
+                            >
+                                <span v-for="(l, i) in chartLabels" :key="i">{{ l }}</span>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- END: ProgressChartSection -->
+
+                    <!-- Footer CTA -->
+                    <div class="pt-1 pb-4">
+                        <button
+                            v-if="!esUltimoDia"
+                            type="button"
+                            @click="siguienteDia"
+                            class="w-full py-3 px-4 rounded-2xl bg-[#111726] border border-[#232F4D] text-gray-300 hover:text-white hover:border-[#2a354f] font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+                        >
+                            <span>
+                                Avanzar al siguiente día:
+                                <strong>{{ diasSiguienteLabel }}</strong>
+                            </span>
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewbox="0 0 24 24"
+                            >
+                                <path
+                                    d="M9 5l7 7-7 7"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                ></path>
+                            </svg>
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            @click="finalizarRutina"
+                            class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all"
+                        >
+                            🎉 Finalizar rutina
                         </button>
                     </div>
-                </div>
+                </main>
+                <!-- END: MainContent -->
 
-                <div data-tour="series-list">
-                    <!-- #3 Skeleton: mientras carga el primer fetch, mostramos esqueletos -->
-                    <div v-if="isInitialLoading" class="space-y-3 mb-6">
-                        <SkeletonLoader variant="card" />
-                        <SkeletonLoader variant="card" />
-                        <SkeletonLoader variant="card" />
-                    </div>
-                    <DashboardSeriesList
-                        v-else
-                        :filas-serie="filasSerie"
-                        :dia-index="diaIndex"
-                        :texto-boton-siguiente="textoBotonSiguiente"
-                        :boton-siguiente-class="botonSiguienteClass"
-                        @guardar="guardarFila"
-                        @dia-anterior="diaAnterior"
-                        @guardar-sesion="guardarSesion"
-                        @siguiente-dia="siguienteDia"
-                    />
-                </div>
-
-                <!-- Botón "Guardar sesión" fijo abajo en mobile (Kinetic Obsidian) -->
+                <!-- BEGIN: Bottom Fixed Save Button -->
                 <div
-                    class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200/80 dark:border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-base)]/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]"
+                    class="fixed inset-x-0 bottom-0 z-40 border-t border-[#232F4D] bg-[#090D16]/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
                 >
-                    <div class="max-w-6xl mx-auto px-4 py-3">
+                    <div class="max-w-md mx-auto px-4 py-3">
                         <button
                             @click="guardarSesion"
-                            class="w-full rounded-xl bg-[var(--color-violet-primary)] hover:bg-[var(--color-violet-light)] text-white px-4 py-3 text-sm font-bold shadow-lg shadow-[var(--color-violet-glow)] active:scale-[0.99] transition-all"
+                            class="w-full rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] text-white px-4 py-3 text-sm font-bold shadow-lg shadow-[#6366F1]/30 active:scale-[0.99] transition-all"
                         >
                             Guardar sesión
                         </button>
                     </div>
                 </div>
-            </template>
+                <!-- END: Bottom Fixed Save Button -->
+            </div>
 
-            <EmptyStateIllustrated
-                v-else
-                variant="no-rutinas"
-                title="No hay rutina seleccionada"
-                description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
-                cta-text="Seleccionar Rutina"
-                cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                @cta="window.location.href = '/rutinas'"
-            />
+            <!-- ============================================================ -->
+            <!-- DESKTOP: layout actual (preservado) -->
+            <!-- ============================================================ -->
+            <div class="hidden md:block">
+                <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <Breadcrumbs :items="[{ label: 'Inicio' }]" class="mb-3" />
 
-            <DashboardHeatmap :historial="historialRutina" class="mt-6" data-tour="heatmap" />
+                    <div data-tour="home-hero" class="mb-4">
+                        <HomeHero />
+                    </div>
 
-            <!-- Gráfico semanal de peso (Chart.js) -->
-            <DashboardWeeklyChart
-                :historial="historialRutina"
-                class="mt-6"
-                data-tour="weekly-chart"
-            />
-        </div>
+                    <!-- Banner de Sesión Activa -->
+                    <div
+                        v-if="session.isActive"
+                        class="mb-4 relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+                    >
+                        <div
+                            class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"
+                        ></div>
+                        <div class="flex items-center gap-3">
+                            <span class="relative flex h-3.5 w-3.5">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                                ></span>
+                                <span
+                                    class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
+                                ></span>
+                            </span>
+                            <div>
+                                <p
+                                    class="text-sm font-black tracking-tight flex items-center gap-2"
+                                >
+                                    <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
+                                    <span
+                                        v-if="session.isPaused"
+                                        class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
+                                        >Pausado</span
+                                    >
+                                </p>
+                                <p class="text-xs text-emerald-200/80">
+                                    {{
+                                        session.currentEjercicio?.nombre ||
+                                        'Sesión iniciada'
+                                    }}
+                                    · {{ session.totalSeriesCompletadas }}/{{
+                                        session.totalSeriesObjetivo
+                                    }}
+                                    series
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="abrirModoEntrenamiento"
+                                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md cursor-pointer transition-all active:scale-95"
+                            >
+                                ⚡ Continuar
+                            </button>
+                            <button
+                                type="button"
+                                @click="descartarSesion"
+                                class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-rose-300 text-xs font-semibold cursor-pointer transition-all"
+                            >
+                                Descartar
+                            </button>
+                        </div>
+                    </div>
 
-        <!-- Onboarding tour (auto-start en primera visita) -->
+                    <div
+                        v-else
+                        class="mb-4 obs-card-elevated p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    >
+                        <div>
+                            <h3
+                                class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                            >
+                                <span>⚡ Modo Entrenamiento Activo</span>
+                                <span
+                                    class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+                                    >Focus Mode</span
+                                >
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Seguimiento guiado serie por serie, botones táctiles aumentados y
+                                descanso automático.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="abrirModoEntrenamiento"
+                            class="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                        >
+                            <span>▶ Iniciar Sesión de Hoy</span>
+                        </button>
+                    </div>
+
+                    <div data-tour="rutina-header">
+                        <DashboardRutinaHeader
+                            :nivel="rutinaStore.seleccionada.nivel"
+                            :dias="rutinaStore.seleccionada.dias"
+                            :dia-actual="diaActual"
+                            @cambiar="cambiarRutina"
+                        />
+                    </div>
+
+                    <div data-tour="stats">
+                        <DashboardStats
+                            :series-totales="seriesTotales"
+                            :series-completadas="seriesCompletadas"
+                            :series-pendientes="seriesPendientes"
+                            :peso-registrado="pesoRegistrado"
+                            :peso-promedio="pesoPromedio"
+                            :reps-registradas="repsRegistradas"
+                            :progreso-dia="progresoDia"
+                        />
+                    </div>
+
+                    <div
+                        class="mb-5 md:mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-[var(--color-obsidian-base)]/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-[var(--color-obsidian-base)]/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
+                        data-tour="day-selector"
+                    >
+                        <div
+                            class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible"
+                        >
+                            <button
+                                v-for="dia in todosLosDias"
+                                :key="dia"
+                                @click="cambiarDia(dia)"
+                                :class="[
+                                    'shrink-0 px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap text-sm',
+                                    diaActual === dia
+                                        ? 'bg-[var(--color-violet-primary)] text-white shadow-[0_4px_14px_var(--color-violet-glow)]'
+                                        : 'bg-white dark:bg-[var(--color-obsidian-elevated)] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[var(--color-obsidian-surface)] border border-gray-200 dark:border-[var(--color-obsidian-border)]',
+                                ]"
+                            >
+                                {{ dia }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div data-tour="series-list">
+                        <div v-if="isInitialLoading" class="space-y-3 mb-6">
+                            <SkeletonLoader variant="card" />
+                            <SkeletonLoader variant="card" />
+                            <SkeletonLoader variant="card" />
+                        </div>
+                        <DashboardSeriesList
+                            v-else
+                            :filas-serie="filasSerie"
+                            :dia-index="diaIndex"
+                            :texto-boton-siguiente="textoBotonSiguiente"
+                            :boton-siguiente-class="botonSiguienteClass"
+                            @guardar="guardarFila"
+                            @dia-anterior="diaAnterior"
+                            @guardar-sesion="guardarSesion"
+                            @siguiente-dia="siguienteDia"
+                        />
+                    </div>
+                </div>
+
+                <DashboardHeatmap :historial="historialRutina" class="mt-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" data-tour="heatmap" />
+                <DashboardWeeklyChart
+                    :historial="historialRutina"
+                    class="mt-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+                    data-tour="weekly-chart"
+                />
+            </div>
+        </template>
+
+        <EmptyStateIllustrated
+            v-else
+            variant="no-rutinas"
+            title="No hay rutina seleccionada"
+            description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
+            cta-text="Seleccionar Rutina"
+            cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            @cta="window.location.href = '/rutinas'"
+        />
+
+        <!-- Onboarding tour -->
         <OnboardingTour :tour="onboarding" />
 
-        <!-- Modales de Modo Entrenamiento Activo (Nivel 4) -->
+        <!-- Modales de Modo Entrenamiento Activo -->
         <ActiveWorkoutModal
             :open="showActiveWorkoutModal"
             @minimize="showActiveWorkoutModal = false"
@@ -259,7 +812,7 @@
             @saved="onWorkoutSummarySaved"
         />
 
-        <!-- #4 Resumen al cambiar de día (bottom sheet en mobile, modal en desktop) -->
+        <!-- Bottom sheet: resumen al cambiar de día -->
         <Teleport to="body">
             <Transition name="sheet-fade">
                 <div
@@ -268,18 +821,18 @@
                     @click.self="showDaySummary = false"
                 >
                     <div
-                        class="sheet-content w-full sm:max-w-md bg-white dark:bg-gray-800 sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] flex flex-col"
+                        class="sheet-content w-full sm:max-w-md bg-[#161F36] sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-[#232F4D] overflow-hidden max-h-[90vh] flex flex-col"
                     >
-                        <!-- Drag handle (solo mobile) -->
                         <div class="sm:hidden pt-2 pb-1 flex justify-center">
-                            <div class="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                            <div class="w-10 h-1.5 rounded-full bg-[#2a354f]"></div>
                         </div>
 
-                        <!-- Header con confeti -->
                         <div
                             class="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-5 text-white"
                         >
-                            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90">
+                            <div
+                                class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90"
+                            >
                                 <span>✓</span>
                                 <span>Día completado</span>
                             </div>
@@ -288,80 +841,63 @@
                             </h3>
                         </div>
 
-                        <!-- Stats -->
                         <div class="px-6 py-5 space-y-4 overflow-y-auto">
                             <div class="grid grid-cols-3 gap-3 text-center">
-                                <div class="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400"
-                                    >
+                                <div class="rounded-xl bg-[#6366F1]/15 px-3 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA]">
                                         Series
                                     </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-indigo-700 dark:text-indigo-300 tabular-nums"
-                                    >
+                                    <p class="mt-0.5 text-2xl font-black text-[#A5B4FC] tabular-nums">
                                         {{ daySummary.completadas }}/{{ daySummary.total }}
                                     </p>
                                 </div>
-                                <div class="rounded-xl bg-amber-50 dark:bg-amber-950/30 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400"
-                                    >
+                                <div class="rounded-xl bg-[#F59E0B]/15 px-3 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#F59E0B]">
                                         Volumen
                                     </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums"
-                                    >
+                                    <p class="mt-0.5 text-2xl font-black text-[#FBBF24] tabular-nums">
                                         {{ formatVolumen(daySummary.volumen) }}
                                     </p>
-                                    <p class="text-[10px] text-amber-600/80 dark:text-amber-400/80">
-                                        kg totales
-                                    </p>
+                                    <p class="text-[10px] text-[#F59E0B]/80">kg totales</p>
                                 </div>
-                                <div class="rounded-xl bg-rose-50 dark:bg-rose-950/30 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400"
-                                    >
+                                <div class="rounded-xl bg-[#10B981]/15 px-3 py-3">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
                                         PRs
                                     </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-rose-700 dark:text-rose-300 tabular-nums"
-                                    >
+                                    <p class="mt-0.5 text-2xl font-black text-emerald-400 tabular-nums">
                                         {{ daySummary.prs }}
                                     </p>
-                                    <p class="text-[10px] text-rose-600/80 dark:text-rose-400/80">
-                                        récords
-                                    </p>
+                                    <p class="text-[10px] text-emerald-400/80">récords</p>
                                 </div>
                             </div>
 
-                            <!-- Mejor set -->
                             <div
                                 v-if="daySummary.mejorSet"
-                                class="rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-3"
+                                class="rounded-xl bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-700/40 px-4 py-3"
                             >
-                                <div class="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wider"
+                                >
                                     <span>🏆</span>
                                     <span>Mejor set</span>
                                 </div>
-                                <p class="mt-1 text-base font-bold text-gray-900 dark:text-white">
+                                <p class="mt-1 text-base font-bold text-white">
                                     {{ daySummary.mejorSet.ejercicio }}
                                 </p>
-                                <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                                <p class="text-sm font-semibold text-emerald-300 tabular-nums">
                                     {{ daySummary.mejorSet.peso }} kg ×
                                     {{ daySummary.mejorSet.reps }} reps
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Botones -->
                         <div
-                            class="px-6 py-4 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 border-t border-gray-200 dark:border-gray-700 flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
+                            class="px-6 py-4 bg-[#090D16]/60 border-t border-[#232F4D] flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
                         >
                             <button
                                 type="button"
                                 @click="showDaySummary = false"
-                                class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                class="flex-1 px-4 py-2.5 rounded-xl border border-[#232F4D] bg-[#111726] text-sm font-semibold text-gray-300 hover:bg-[#161F36] transition-colors"
                             >
                                 Quedarme acá
                             </button>
@@ -419,16 +955,11 @@ import WorkoutSummaryModal from './training/WorkoutSummaryModal.vue';
 const rutinaStore = useRutinaStore();
 
 // === Modo entrenamiento (Oleada 1) ===
-// - useOfflineSeries: registra series online/offline con sync automatico
-// - useWakeLock: mantiene la pantalla encendida durante el entrenamiento
-// - useTrainingSessionStore: persistencia de la sesion actual (recovery al cerrar)
-// - SyncBadge: indicador visual de estado
 const offline = useOfflineSeries();
 const wake = useWakeLock();
 const session = useTrainingSessionStore();
 
 onMounted(() => {
-    // Solo pedimos wake lock si el user tiene una sesion activa (entrenando).
     if (session.isActive && wake.supported) {
         wake.requestWakeLock();
     }
@@ -475,12 +1006,327 @@ const showWarning = (m) => toast.warning(m);
 const filasSerie = ref([]);
 const historialRutina = ref([]);
 const diaActual = ref('Día 1');
-const cicloInicio = ref(null); // fecha (YYYY-MM-DD) que marca el inicio del ciclo actual. null = legacy
+const cicloInicio = ref(null);
 const todosLosDias = ref([]);
 
 const showActiveWorkoutModal = ref(false);
 const showWorkoutSummaryModal = ref(false);
-const isInitialLoading = ref(true); // #3 Skeleton: true hasta el primer fetch completo
+const isInitialLoading = ref(true);
+
+// =====================================================================
+// === MOBILE-FIRST HELPERS (Kinetic Obsidian) ===
+// =====================================================================
+
+// === Topbar / Hero ===
+const userFirstName = computed(() => {
+    const n = (window.__user?.name || '').trim();
+    if (!n) return 'crack';
+    return n.split(' ')[0];
+});
+
+const diaSemanaEs = computed(() => {
+    if (dashboardToday.value?.hoy?.dia_semana_es) {
+        // viene como "Domingo" — perfecto
+        return dashboardToday.value.hoy.dia_semana_es;
+    }
+    // fallback: cálculo local
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return dias[new Date().getDay()];
+});
+
+const fechaCorta = computed(() => {
+    const d = dashboardToday.value?.hoy?.fecha
+        ? new Date(dashboardToday.value.hoy.fecha + 'T00:00:00')
+        : new Date();
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${d.getDate()} ${meses[d.getMonth()]}`;
+});
+
+const nombreRutina = computed(() => {
+    const r = dashboardToday.value?.rutina?.nombre;
+    return r || rutinaStore.seleccionada?.nivel || 'Personalizada';
+});
+
+// === Stats del hero ===
+const stats = ref({
+    streak: 0,
+    longestStreak: 0,
+    totalSets30d: 0,
+    trend30d: 0,
+});
+
+const dashboardToday = ref(null);
+
+const cargarDashboardToday = async () => {
+    try {
+        const r = await axios.get('/api/dashboard/today');
+        dashboardToday.value = r.data;
+        stats.value.streak = r.data?.stats?.streak ?? 0;
+        stats.value.totalSets30d = r.data?.stats?.total_sets_30d ?? 0;
+    } catch (e) {
+        console.warn('dashboard/today falló, fallback a /api/stats/resumen', e);
+    }
+    try {
+        const r2 = await axios.get('/api/stats/resumen');
+        stats.value.longestStreak = r2.data?.longest_streak ?? 0;
+        stats.value.streak = stats.value.streak || r2.data?.current_streak || 0;
+    } catch (e) {
+        console.warn('stats/resumen no se pudo cargar', e);
+    }
+};
+
+// Trend 30d: comparar sets 30d actuales vs. los 30 días anteriores
+const cargarTrend30d = async () => {
+    // Lo calculamos en cliente desde historialRutina si está disponible
+    const h = historialRutina.value || [];
+    if (!h.length) return;
+    const hoy = new Date();
+    const hace30 = new Date(hoy.getTime() - 30 * 86400000);
+    const hace60 = new Date(hoy.getTime() - 60 * 86400000);
+    const en30 = h.filter((r) => {
+        const f = new Date(r.fecha);
+        return f >= hace30 && f <= hoy && r.completado;
+    }).length;
+    const en30Prev = h.filter((r) => {
+        const f = new Date(r.fecha);
+        return f >= hace60 && f < hace30 && r.completado;
+    }).length;
+    if (en30Prev === 0) {
+        stats.value.trend30d = en30 > 0 ? 100 : 0;
+    } else {
+        stats.value.trend30d = Math.round(((en30 - en30Prev) / en30Prev) * 100);
+    }
+};
+
+// === "Último entreno" labels ===
+const ultimoEntrenoLabel = computed(() => {
+    const d = dashboardToday.value?.stats?.days_since_last_workout;
+    if (d === null || d === undefined) return '—';
+    if (d === 0) return 'Hoy';
+    if (d === 1) return 'Ayer';
+    if (d >= 2 && d < 7) return `Hace ${d}d`;
+    if (d >= 7 && d < 30) return `Hace ${Math.floor(d / 7)}sem`;
+    return `Hace ${Math.floor(d / 30)}m`;
+});
+
+const ultimoEntrenoSub = computed(() => {
+    const d = dashboardToday.value?.stats?.days_since_last_workout;
+    if (d === null || d === undefined) return 'Sin registros aún';
+    if (d === 0) return 'Entrenaste hoy 💪';
+    if (d === 1) return 'Día de descanso OK';
+    if (d >= 2 && d <= 3) return 'Volvé a la carga';
+    if (d >= 4 && d <= 6) return 'Pasaron varios días';
+    return 'Hacés rato que no entrás';
+});
+
+// === Día / grupo muscular ===
+// Mapea "Día 1" → "Torso" según los grupos musculares únicos del día
+const grupoDelDiaActual = computed(() => {
+    // Agrupa filasSerie por grupo muscular del día actual
+    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
+    if (!filasDelDia.length) return '';
+    // Sin un campo "grupo_muscular" directo en la tabla, usamos heurística:
+    // los nombres de ejercicio suelen tener el músculo al inicio (ej. "Press banca")
+    // y los días se nombran por grupo. Si el día es "Día 1" genérico,
+    // sacamos el grupo más frecuente como aproximación.
+    // Por simplicidad: devolver lo que diga el nombre del día si incluye paréntesis,
+    // si no, devolver string vacío.
+    return '';
+});
+
+// Grupo "Torso"/"Pierna"/etc para mostrar en el h2 del hero.
+// Lo derivamos del campo `notas` del ejercicio o del nombre del día
+// (muchas rutinas lo ponen en `rutina.dia_actual` con formato "Día 1: Torso").
+const diaActualGrupo = computed(() => {
+    // 1) Si el nombre del día actual ya trae un grupo entre paréntesis/":" lo usamos
+    const m = String(diaActual.value).match(/(?:\(|:)\s*([^)\:]+)\s*\)?/);
+    if (m) return m[1];
+    // 2) Mapeo por índice de día (heurística común: 1=Torso, 2=Pierna, 3=Full Body)
+    const i = diaIndex.value;
+    const fallback = ['', 'Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
+    return fallback[i] || '';
+});
+
+// Misma lógica para el nombre de un día cualquiera (usado en el pill "Día 1 (Torso)")
+const diaGrupoPara = (dia) => {
+    const m = String(dia).match(/(?:\(|:)\s*([^)\:]+)\s*\)?/);
+    if (m) return m[1];
+    const i = todosLosDias.value.indexOf(dia);
+    const fallback = ['', 'Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
+    return fallback[i] || '';
+};
+
+// === Ejercicios del día (agrupados por nombre) ===
+const ejerciciosDelDia = computed(() => {
+    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
+    const map = new Map();
+    filasDelDia.forEach((f) => {
+        if (!map.has(f.ejercicio_nombre)) {
+            map.set(f.ejercicio_nombre, []);
+        }
+        map.get(f.ejercicio_nombre).push(f);
+    });
+    return Array.from(map.entries()).map(([nombre, sets]) => {
+        sets.sort((a, b) => (a.series_numero || 0) - (b.series_numero || 0));
+        const completadas = sets.filter((s) => s.completado).length;
+        return {
+            nombre,
+            sets,
+            completadas,
+            total: sets.length,
+            estaCompleto: completadas === sets.length && sets.length > 0,
+            tieneAlgunaCompletada: completadas > 0,
+            meta: buildMeta(sets[0]),
+        };
+    });
+});
+
+const ejerciciosCompletadosCount = computed(
+    () => ejerciciosDelDia.value.filter((e) => e.estaCompleto).length
+);
+
+const buildMeta = (fila) => {
+    if (!fila) return '';
+    const partes = [];
+    if (fila.reps_min && fila.reps_max) partes.push(`${fila.reps_min}–${fila.reps_max} reps`);
+    if (fila.peso) partes.push(`Último: ${fila.peso} kg`);
+    return partes.join(' · ');
+};
+
+const formatSetLabel = (set) => {
+    const r = set.reps_realizadas ?? set.reps_min ?? '';
+    const p = set.peso ?? '';
+    if (r && p) return `${r} × ${p}kg`;
+    if (p) return `${p}kg`;
+    if (r) return `${r} reps`;
+    return '—';
+};
+
+// === Duración estimada ===
+const duracionEstimada = computed(() => {
+    const totalSets = filasSerie.value.filter((f) => f.dia === diaActual.value).length;
+    if (!totalSets) return 0;
+    // ~45s por serie + descanso promedio (1.5min) entre series
+    const mins = Math.round((totalSets * (45 + 90)) / 60);
+    return Math.max(mins, 10);
+});
+
+// === Día siguiente / último ===
+const diasSiguienteLabel = computed(() => {
+    const i = diaIndex.value;
+    if (i < 0 || i >= todosLosDias.value.length - 1) return '';
+    return todosLosDias.value[i + 1];
+});
+
+// === Expandir / colapsar todos los sets ===
+const expandirTodos = ref(true);
+
+// === Chart "Peso máximo por día (30d)" ===
+const maxPesoChart = computed(() => {
+    if (!chartPoints.value.length) return 0;
+    return Math.max(...chartPoints.value.map((p) => p.value || 0));
+});
+
+// Construimos puntos a partir del historialRutina: por día, max peso en
+// ejercicio "Press de banca" (o primer ejercicio con peso, como fallback).
+const chartSeries = computed(() => {
+    const h = historialRutina.value || [];
+    if (!h.length) return { points: [], labels: [] };
+    const hoy = new Date();
+    const desde = new Date(hoy.getTime() - 30 * 86400000);
+    // 7 puntos distribuidos entre hace30 y hoy
+    const N = 7;
+    const puntos = [];
+    for (let i = 0; i < N; i++) {
+        const f = new Date(desde.getTime() + ((hoy.getTime() - desde.getTime()) * i) / (N - 1));
+        puntos.push({ fecha: f, peso: 0 });
+    }
+    // Para cada punto, tomar el peso máximo registrado entre los 5 días previos
+    h.forEach((r) => {
+        if (!r.completado || !r.peso || Number(r.peso) <= 0) return;
+        const fr = new Date(r.fecha);
+        if (fr < desde || fr > hoy) return;
+        // Buscar el punto más cercano
+        let mejorI = 0;
+        let mejorDelta = Infinity;
+        for (let i = 0; i < N; i++) {
+            const delta = Math.abs(puntos[i].fecha - fr);
+            if (delta < mejorDelta) {
+                mejorDelta = delta;
+                mejorI = i;
+            }
+        }
+        puntos[mejorI].peso = Math.max(puntos[mejorI].peso, Number(r.peso));
+    });
+    // Si todos los puntos quedaron en 0 (sin datos), devolvemos array vacío
+    const max = Math.max(...puntos.map((p) => p.peso));
+    if (max === 0) return { points: [], labels: [] };
+    // Labels: dd/mm
+    const labels = puntos.map((p) => {
+        const dd = String(p.fecha.getDate()).padStart(2, '0');
+        const mm = String(p.fecha.getMonth() + 1).padStart(2, '0');
+        return `${dd}/${mm}`;
+    });
+    return { points: puntos, labels };
+});
+
+const chartPoints = computed(() => {
+    const { points, labels } = chartSeries.value;
+    if (!points.length) return [];
+    const W = 320;
+    const H = 120;
+    const max = Math.max(...points.map((p) => p.peso));
+    const min = Math.min(...points.map((p) => p.peso));
+    const rango = Math.max(max - min, 1);
+    return points.map((p, i) => {
+        const x = 15 + ((W - 30) * i) / (points.length - 1);
+        // Invertir Y (SVG: 0 arriba)
+        const y = 100 - ((p.peso - min) / rango) * 80 + 5;
+        return {
+            x: Math.round(x),
+            y: Math.round(y),
+            value: p.peso,
+            label: labels[i],
+            highlight: p.peso === max && max > 0,
+        };
+    });
+});
+
+const chartLinePath = computed(() => {
+    const pts = chartPoints.value;
+    if (!pts.length) return '';
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const cur = pts[i];
+        const cpx = (prev.x + cur.x) / 2;
+        d += ` Q ${cpx} ${prev.y} ${cur.x} ${cur.y}`;
+    }
+    return d;
+});
+
+const chartAreaPath = computed(() => {
+    const pts = chartPoints.value;
+    if (!pts.length) return '';
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const cur = pts[i];
+        const cpx = (prev.x + cur.x) / 2;
+        d += ` Q ${cpx} ${prev.y} ${cur.x} ${cur.y}`;
+    }
+    d += ` L ${pts[pts.length - 1].x} 115 L ${pts[0].x} 115 Z`;
+    return d;
+});
+
+const chartLabels = computed(() => {
+    const pts = chartPoints.value;
+    return pts.map((p) => p.label);
+});
+
+// =====================================================================
+// === FIN MOBILE-FIRST HELPERS ===
+// =====================================================================
 
 const formattedActiveTime = computed(() => {
     const s = session.elapsed;
@@ -495,7 +1341,6 @@ const formattedActiveTime = computed(() => {
 
 const abrirModoEntrenamiento = async () => {
     if (!session.isActive) {
-        // Agrupar filasSerie por ejercicio único
         const exercisesMap = new Map();
         filasSerie.value.forEach((f) => {
             if (!exercisesMap.has(f.ejercicio_nombre)) {
@@ -544,6 +1389,7 @@ const onWorkoutSummarySaved = async (resumen) => {
     showSuccess('🎉 ¡Sesión guardada exitosamente!');
     await fetchHistorialRutina();
     await fetchRutinasDelDia();
+    await cargarDashboardToday();
 };
 
 const descartarSesion = async () => {
@@ -636,8 +1482,6 @@ const fetchUserRutina = async () => {
             const nivelCompleto = `${response.data.nivel} ${response.data.modalidad}`;
             rutinaStore.seleccionar(nivelCompleto, 'Todos los días');
             diaActual.value = response.data.dia_actual || 'Día 1';
-            // Fecha de inicio del ciclo actual. Si viene null (legacy o
-            // nunca terminó un ciclo completo), no se filtra historial.
             cicloInicio.value = response.data.ciclo_inicio || null;
         } else {
             rutinaStore.limpiar();
@@ -664,19 +1508,10 @@ const fetchHistorialRutina = async () => {
 };
 
 const construirFilasSerie = (rutinasDelDia) => {
-    // Filtra registros del ciclo actual: sólo los con fecha >= ciclo_inicio.
-    // Así, cuando el usuario arranca el ciclo 2, las marcas del ciclo 1
-    // quedan ocultas y arranca con todo desmarcado.
-    // Heatmap y gráfico usan `historialRutina` sin filtrar → muestran todo el histórico.
     const historialCicloActual = cicloInicio.value
         ? historialRutina.value.filter((r) => (r.fecha || '').slice(0, 10) >= cicloInicio.value)
         : historialRutina.value;
 
-    // === Lookup del registro anterior (para placeholders "Anterior: …") ===
-    // Busca el registro MÁS RECIENTE para cada (ejercicio, serie) del ciclo
-    // PASADO (fecha < ciclo_inicio). Si no hay ciclo_inicio, no hay "anterior".
-    // Se usa en DashboardSeriesList para mostrar "Anterior: 60 kg" como
-    // placeholder cuando el input está vacío en el ciclo nuevo.
     const registrosAnteriores = cicloInicio.value
         ? new Map(
               historialRutina.value
@@ -685,7 +1520,7 @@ const construirFilasSerie = (rutinasDelDia) => {
                   .sort((a, b) => {
                       const fa = (a.fecha || '').slice(0, 10);
                       const fb = (b.fecha || '').slice(0, 10);
-                      if (fa !== fb) return fb.localeCompare(fa); // más reciente primero
+                      if (fa !== fb) return fb.localeCompare(fa);
                       return (b.id || 0) - (a.id || 0);
                   })
                   .reduce((acc, r) => {
@@ -750,11 +1585,9 @@ const construirFilasSerie = (rutinasDelDia) => {
                     peso: registro?.peso ?? null,
                     completado: registro?.completado ?? false,
                     superserie_grupo: null,
-                    // Fase 3
                     esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                     esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                     notas: rutina.notas || null,
-                    // Placeholder "Anterior: …" cuando el input está vacío.
                     previous_record: anterior
                         ? {
                               peso: anterior.peso ?? null,
@@ -792,11 +1625,9 @@ const construirFilasSerie = (rutinasDelDia) => {
                             peso: registro?.peso ?? null,
                             completado: registro?.completado ?? false,
                             superserie_grupo: block.grupo,
-                            // Fase 3
                             esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                             esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                             notas: rutina.notas || null,
-                            // Placeholder "Anterior: …" cuando el input está vacío.
                             previous_record: anterior
                                 ? {
                                       peso: anterior.peso ?? null,
@@ -825,20 +1656,16 @@ const fetchRutinasDelDia = async () => {
         todosLosDias.value = diasUnicos;
         await fetchHistorialRutina();
         construirFilasSerie(response.data);
+        cargarTrend30d();
     } catch (error) {
         console.error('Error:', error);
     } finally {
-        // #3 Skeleton: termina el loading inicial después del primer fetch
         isInitialLoading.value = false;
     }
 };
 
 const guardarFila = async (fila, silencioso = false) => {
     try {
-        // === Modo offline (Oleada 1) ===
-        // Antes: axios.post directo, fallaba si no habia red.
-        // Ahora: usa useOfflineSeries, que encola en IndexedDB si no hay red y
-        // sincroniza automaticamente al volver online.
         const result = await offline.recordSet({
             fecha: new Date().toISOString().split('T')[0],
             rutina_nombre: fila.rutina_nombre,
@@ -856,7 +1683,6 @@ const guardarFila = async (fila, silencioso = false) => {
             peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
             completado: fila.completado,
             superserie_grupo: fila.superserie_grupo,
-            // Fase 3: esfuerzo RIR/RPE
             esfuerzo_tipo: fila.esfuerzo_tipo || null,
             esfuerzo_valor: fila.esfuerzo_valor ?? null,
         });
@@ -873,11 +1699,6 @@ const guardarFila = async (fila, silencioso = false) => {
             iniciarTemporizador(fila);
         }
 
-        // === #3 PR celebration ===
-        // Detecta si el peso guardado supera el máximo histórico del ejercicio.
-        // Excluye registros del ciclo actual (sólo miramos el pasado), y la
-        // propia fila que acabamos de guardar (porque ya está en historialRutina
-        // si vino del fetch anterior — evitamos falsos positivos).
         if (!silencioso && fila.completado && fila.peso && Number(fila.peso) > 0) {
             const pesoActual = Number(fila.peso);
             const maxHistorico = historialRutina.value
@@ -888,9 +1709,6 @@ const guardarFila = async (fila, silencioso = false) => {
                         r.peso &&
                         Number(r.peso) > 0
                 )
-                // Excluímos registros del ciclo actual para que el "PR" mida
-                // contra el pasado, no contra la fila que acabás de guardar
-                // en este mismo ciclo.
                 .filter((r) => {
                     if (!cicloInicio.value) return true;
                     return (r.fecha || '').slice(0, 10) < cicloInicio.value;
@@ -917,10 +1735,6 @@ const guardarFila = async (fila, silencioso = false) => {
 
 const guardarProgreso = async () => {
     try {
-        // Esta funcion solo persiste el `dia_actual` (cambiaste de dia en el
-        // dashboard). NO re-selecciona la rutina, asi que usamos el endpoint
-        // dedicado en vez de /api/user-rutina (que pide rutina_id y source
-        // of truth es la FK, ver D1 migracion 2026_08_17).
         await axios.post('/api/user-rutina/dia', {
             dia_actual: diaActual.value,
         });
@@ -943,13 +1757,10 @@ const siguienteDia = async () => {
         );
         if (!ok) return;
     }
-    // #4: Calcular resumen del día actual y mostrar modal antes de avanzar.
-    // Si el usuario confirma el modal, recién ahí cambiamos de día.
     prepararResumenDelDia();
     showDaySummary.value = true;
 };
 
-// === #4 Helpers del resumen de día ===
 const showDaySummary = ref(false);
 const daySummary = ref({
     diaLabel: '',
@@ -978,8 +1789,6 @@ const prepararResumenDelDia = () => {
         return t + p * r;
     }, 0);
 
-    // PRs del día: ejercicios cuyo peso en este día supera el máximo histórico
-    // previo al ciclo actual.
     let prsCount = 0;
     if (cicloInicio.value) {
         completadas.forEach((f) => {
@@ -998,7 +1807,6 @@ const prepararResumenDelDia = () => {
         });
     }
 
-    // Mejor set: el de mayor volumen (peso × reps) entre las completadas
     let mejor = null;
     completadas.forEach((f) => {
         const vol = (Number(f.peso) || 0) * (Number(f.reps_realizadas) || 0);
@@ -1099,10 +1907,9 @@ onMounted(async () => {
         await fetchHistorialRutina();
         fetchRutinasDelDia();
     }
+    await cargarDashboardToday();
 
-    // Onboarding tour: solo se muestra la primera vez (localStorage)
     if (rutinaStore.seleccionada && onboarding.shouldShow()) {
-        // Pequeño delay para que el DOM termine de renderizar
         setTimeout(() => onboarding.start(), 600);
     }
 });
@@ -1117,17 +1924,16 @@ watch(
     }
 );
 
-// === Mejora 1.9: Pull-to-refresh ===
 const refreshDashboard = async () => {
     await fetchUserRutina();
     if (rutinaStore.seleccionada) {
         await fetchHistorialRutina();
         await fetchRutinasDelDia();
     }
+    await cargarDashboardToday();
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, refreshDashboard);
 
-// === Timer de descanso global (Pinia useRestTimerStore) ===
 const restTimer = useRestTimerStore();
 
 const deberiaIniciarTemporizador = (fila) => {

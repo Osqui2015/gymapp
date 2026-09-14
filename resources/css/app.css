@@ -9,34 +9,44 @@
 @theme {
     --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
 
-    /* === Kinetic Obsidian: design tokens ===
-       Paleta centralizada para que toda la app (cards, pills, headers,
-       charts, bottom-nav) consuma los mismos valores. Mobile-first dark
-       con acentos en violeta. La estética funciona también en light mode
-       con cards blancas, solo cambia el valor de los tokens. */
-    --color-obsidian-base: #0B0B14;
-    --color-obsidian-surface: #14141F;
-    --color-obsidian-elevated: #1C1C2B;
-    --color-obsidian-overlay: rgba(255, 255, 255, 0.04);
-    --color-obsidian-border: rgba(255, 255, 255, 0.06);
-    --color-obsidian-border-strong: rgba(255, 255, 255, 0.12);
+    /* === Kinetic Obsidian: design tokens (style guide oficial) ===
+       Paleta exacta del style guide "Kinetic Obsidian" provisto por design:
+       - Primary:   #6366F1 (indigo, botones y acentos principales)
+       - Secondary: #8B5CF6 (violeta, gradientes y hero)
+       - Tertiary:  #10B981 (esmeralda, success/positivo)
+       - Neutral:   #0B0F19 (gris oscuro, texto secundario)
+       - Background oscuro: #090D16 (fondo de la app dark)
+       - Surface:   #111726 (cards/superficies)
+       - Card:      #161F36 (cards elevadas)
+       - Border:    #232F4D (bordes sutiles)
 
-    --color-violet-primary: #8B5CF6;
+       Light mode usa cards blancas + acento violeta. Dark mode usa la paleta
+       Obsidian profunda. Todos los shells consumen los mismos tokens. */
+    --color-obsidian-base: #090D16;
+    --color-obsidian-surface: #111726;
+    --color-obsidian-elevated: #161F36;
+    --color-obsidian-overlay: rgba(255, 255, 255, 0.04);
+    --color-obsidian-border: #232F4D;
+    --color-obsidian-border-strong: rgba(255, 255, 255, 0.12);
+    --color-obsidian-text: #F1F5F9;
+
+    --color-violet-primary: #6366F1;
     --color-violet-light: #A78BFA;
-    --color-violet-deep: #6D28D9;
-    --color-violet-darker: #5B21B6;
+    --color-violet-secondary: #8B5CF6;
+    --color-violet-deep: #5B21B6;
     --color-violet-soft: rgba(139, 92, 246, 0.15);
-    --color-violet-glow: rgba(139, 92, 246, 0.35);
+    --color-violet-glow: rgba(139, 92, 246, 0.30);
+    --color-violet-glow-strong: rgba(99, 102, 241, 0.40);
 
     --color-emerald-accent: #10B981;
     --color-emerald-soft: rgba(16, 185, 129, 0.15);
 
-    --color-streak-orange: #F97316;
-    --color-streak-soft: rgba(249, 115, 22, 0.15);
+    --color-streak-orange: #F59E0B;
+    --color-streak-soft: rgba(245, 158, 11, 0.15);
 
     --color-text-primary-dark: #FFFFFF;
-    --color-text-secondary-dark: #9CA3AF;
-    --color-text-tertiary-dark: #6B7280;
+    --color-text-secondary-dark: #94A3B8;
+    --color-text-tertiary-dark: #64748B;
 
     --radius-obsidian-sm: 0.75rem;
     --radius-obsidian-md: 1.25rem;

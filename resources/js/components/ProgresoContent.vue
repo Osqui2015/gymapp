@@ -1,13 +1,19 @@
 <template>
-    <div
-        class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8"
-    >
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] md:py-8">
+        <!-- Top bar mobile (sticky) -->
+        <ObsidianMobileTopBar
+            :racha="progressStats.racha ?? 0"
+            :user-initials="userInitials"
+            class="md:hidden"
+        />
+
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-0">
             <Breadcrumbs
                 :items="[
                     { label: 'Inicio', href: '/dashboard' },
                     { label: 'Progreso & Evolución' },
                 ]"
+                class="hidden md:block"
             />
             <!-- Hero header (Kinetic Obsidian) -->
             <ObsidianHero
@@ -178,6 +184,7 @@ import LogrosTab from './progreso/LogrosTab.vue';
 import FotosTab from './progreso/FotosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
+import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
 import ObsidianHero from './common/obsidian/ObsidianHero.vue';
 import ObsidianStatGrid from './common/obsidian/ObsidianStatGrid.vue';
 import ObsidianSegmentedTabs from './common/obsidian/ObsidianSegmentedTabs.vue';
@@ -199,6 +206,18 @@ const { bigCelebration, celebrate, mini } = useConfetti();
 // datos para graficar. Aplaza ~206 kB del initial load de /progreso.
 
 const activeTab = ref('medidas');
+
+// === Topbar mobile (Kinetic Obsidian) ===
+const userInitials = computed(() => {
+    const n = (window.__user?.name || window.__user?.nick || '').trim();
+    if (!n) return 'U';
+    return n
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
+});
 const progresos = ref([]);
 const puedeRegistrar = ref(true);
 const ultimoRegistro = ref(null);

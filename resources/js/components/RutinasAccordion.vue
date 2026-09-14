@@ -1,9 +1,16 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] py-6 md:py-8">
+    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] md:py-8">
+        <!-- Top bar mobile (sticky) -->
+        <ObsidianMobileTopBar
+            :racha="rachaActual"
+            :user-initials="userInitials"
+            class="md:hidden"
+        />
+
         <SyncBadge :pending="offlinePending" :syncing="offlineSyncing" />
         <Breadcrumbs
             :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Rutinas' }]"
-            class="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
+            class="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto hidden md:block"
         />
         <!-- FAB (mobile only): crear nueva rutina (Kinetic Obsidian) -->
         <a
@@ -417,6 +424,7 @@ import SyncBadge from './training/SyncBadge.vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import Breadcrumbs from './Breadcrumbs.vue';
+import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
 import RutinasAlumnoView from './rutinas/RutinasAlumnoView.vue';
 import RutinaAcordeon from './rutinas/RutinaAcordeon.vue';
 import MobileQuickSeriesInput from './rutinas/MobileQuickSeriesInput.vue';
@@ -780,6 +788,7 @@ onMounted(() => {
     fetchUserInfo();
     fetchRutinas();
     fetchComunitarias();
+    cargarRacha();
 });
 
 // === Mejora 2.5: Mobile Quick Input ===
@@ -905,6 +914,29 @@ const loadAll = async () => {
     await Promise.all([fetchRutinas(), fetchComunitarias()]);
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadAll);
+
+// === Topbar mobile (Kinetic Obsidian) ===
+const userInitials = computed(() => {
+    const n = (window.__user?.name || window.__user?.nick || '').trim();
+    if (!n) return 'U';
+    return n
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0])
+        .join('')
+        .toUpperCase();
+});
+
+// Racha actual (best-effort desde stats/resumen, sin romper si falla)
+const rachaActual = ref(0);
+const cargarRacha = async () => {
+    try {
+        const r = await axios.get('/api/stats/resumen');
+        rachaActual.value = r.data?.current_streak ?? 0;
+    } catch (e) {
+        /* silencioso: racha queda en 0 */
+    }
+};
 
 // === Mejora 2.2: Swipe entre tabs en mobile ===
 const swipeRef = ref(null);

@@ -39,7 +39,11 @@
                 key: @json(config('services.broadcasting.pusher.key')),
                 cluster: @json(config('services.broadcasting.pusher.options.cluster')),
             };
-            window.__user = window.__user || { id: @json(auth()->id()) };
+            window.__user = window.__user || {
+                id: @json(auth()->id()),
+                name: @json(auth()->user()?->name ?? ''),
+                nick: @json(auth()->user()?->nick ?? ''),
+            };
         </script>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
