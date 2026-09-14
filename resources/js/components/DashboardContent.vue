@@ -163,13 +163,24 @@
                                 </p>
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            @click="abrirModoEntrenamiento"
-                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md active:scale-95 transition-all"
-                        >
-                            ⚡ Continuar
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="abrirModoEntrenamiento"
+                                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md active:scale-95 transition-all"
+                            >
+                                ⚡ Continuar
+                            </button>
+                            <button
+                                type="button"
+                                @click="descartarSesion"
+                                title="Descartar entrenamiento en curso"
+                                aria-label="Descartar entrenamiento en curso"
+                                class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-rose-500/30 text-gray-300 hover:text-rose-200 text-xs font-semibold border border-gray-700/50 hover:border-rose-500/50 transition-all"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
 
                     <!-- BEGIN: HeroCard (Principal Routine CTA) -->

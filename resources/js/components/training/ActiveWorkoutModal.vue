@@ -193,6 +193,59 @@
                     </div>
                 </div>
 
+                <!-- Referencia del ejercicio: última vez + recomendación -->
+                <div
+                    v-if="lastExerciseData && lastExerciseData.encontrado"
+                    class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-1.5"
+                >
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-violet-200 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Última vez
+                        </span>
+                        <span class="text-[10px] text-gray-400 font-semibold">
+                            {{ lastExerciseData.fecha }}
+                        </span>
+                    </div>
+                    <p class="text-sm font-bold text-white tabular-nums">
+                        Top:
+                        <span class="text-violet-200">{{ formatPeso(lastExerciseData.peso_top) }} kg</span>
+                        <span class="text-gray-500 mx-1">×</span>
+                        <span class="text-emerald-200">{{ lastExerciseData.reps_en_peso_top }} reps</span>
+                        <span
+                            v-if="lastExerciseData.ultimo_esfuerzo"
+                            class="ml-1.5 obs-pill"
+                            :class="
+                                lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
+                                    ? 'obs-pill-violet'
+                                    : 'obs-pill-orange'
+                            "
+                        >
+                            {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }}
+                            {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                        </span>
+                    </p>
+                    <p
+                        v-if="recomendacion"
+                        class="text-xs flex items-start gap-1.5"
+                        :class="recomendacion.colorClass"
+                    >
+                        <span class="font-black">{{ recomendacion.icon }}</span>
+                        <span>
+                            <span class="font-bold">Sugerencia:</span>
+                            {{ recomendacion.mensaje }}
+                            <span
+                                v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== lastExerciseData.peso_top"
+                                class="font-black tabular-nums"
+                            >
+                                ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
+                            </span>
+                        </span>
+                    </p>
+                </div>
+
                 <!-- Controles Glove Mode: PESO -->
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
@@ -513,6 +566,15 @@ const form = ref({
     nota_user: '',
 });
 
+// Datos de la última vez que el usuario hizo este ejercicio.
+// null mientras carga, {} sin encontrado=true si no hay histórico.
+const lastExerciseData = ref(null);
+let lastExerciseFetchToken = 0;
+
+// Setea true cuando ya pre-rellenamos el form con el último peso top,
+// para no pisar ediciones del usuario si vuelve a cambiar el ejercicio.
+let prefilledFromLast = false;
+
 // Opciones dinámicas de esfuerzo (RIR 0..5, RPE 6..10)
 const esfuerzoOptions = computed(() => {
     return form.value.esfuerzo_tipo === 'rir' ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10];
@@ -563,22 +625,151 @@ const togglePause = () => {
     }
 };
 
-// Mantener valores del set previo del ejercicio si no hay cargados
+// Mantener valores del set previo del ejercicio si no hay cargados.
+// Ademas trae el último histórico del ejercicio desde el backend para
+// mostrarle al usuario "última vez cargaste X" + sugerencia.
 watch(
     () => store.currentEjercicio,
-    (ej) => {
+    async (ej) => {
         if (!ej) return;
+
         if (ej.sets && ej.sets.length > 0) {
             const last = ej.sets[ej.sets.length - 1];
             form.value.peso = last.peso;
             form.value.reps = last.reps;
+            prefilledFromLast = true;
         } else {
             // Predeterminado según objetivo
             form.value.reps = Number(ej.reps_min) || 8;
         }
+
+        // Buscar la última sesión en la que el usuario trabajó este ejercicio.
+        lastExerciseData.value = null;
+        const token = ++lastExerciseFetchToken;
+        try {
+            const { data } = await window.axios.get('/api/historial/ultimo', {
+                params: { ejercicio: ej.nombre },
+            });
+            // Evitar race conditions si el usuario cambió de ejercicio.
+            if (token !== lastExerciseFetchToken) return;
+            lastExerciseData.value = data || null;
+
+            // Si todavía no se hizo ningún set en este ejercicio y el backend
+            // devolvió un peso top, lo usamos como valor inicial sugerido.
+            if (
+                data &&
+                data.encontrado &&
+                !prefilledFromLast &&
+                Number(form.value.peso) === 0 &&
+                data.peso_top
+            ) {
+                form.value.peso = Number(data.peso_top) || 0;
+                if (!Number(form.value.reps) && data.reps_en_peso_top) {
+                    form.value.reps = Number(data.reps_en_peso_top) || 0;
+                }
+            }
+        } catch (err) {
+            // Silencioso: si falla la red, el modal sigue funcionando sin la card.
+            if (token === lastExerciseFetchToken) {
+                lastExerciseData.value = null;
+            }
+        }
     },
     { immediate: true }
 );
+
+// Formateo amigable: 2.5, 60, 100 (sin decimales raros para enteros).
+const formatPeso = (val) => {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return '0';
+    return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '');
+};
+
+// Recomendación basada en el esfuerzo percibido del set top de la última vez.
+// Reglas conservadoras para principiantes / amateur:
+//   - RIR >= 3  o  RPE <= 7   → margen → subir peso (+2.5kg)
+//   - RIR 1..2  o  RPE 8..9   → zona óptima → mantener
+//   - RIR 0     o  RPE 10     → al fallo → bajar (-2.5kg) o repetir
+//   - sin esfuerzo registrado → mantener mismo peso
+const recomendacion = computed(() => {
+    const data = lastExerciseData.value;
+    if (!data || !data.encontrado || data.peso_top == null) return null;
+
+    const esf = data.ultimo_esfuerzo;
+    const pesoBase = Number(data.peso_top) || 0;
+    const repsBase = Number(data.reps_en_peso_top) || 0;
+
+    if (!esf) {
+        return {
+            icon: '🔁',
+            colorClass: 'text-gray-300',
+            pesoSugerido: pesoBase,
+            mensaje: `mantenés ${formatPeso(pesoBase)} kg × ${repsBase || '?'} reps como en la última sesión.`,
+        };
+    }
+
+    const tipo = (esf.tipo || '').toLowerCase();
+    const valor = Number(esf.valor);
+
+    if (tipo === 'rir') {
+        if (valor >= 3) {
+            return {
+                icon: '⬆️',
+                colorClass: 'text-emerald-300',
+                pesoSugerido: pesoBase + 2.5,
+                mensaje: `te quedaron ${valor} reps en reserva. Probá subir un poco para progresar.`,
+            };
+        }
+        if (valor === 0) {
+            return {
+                icon: '⚠️',
+                colorClass: 'text-amber-300',
+                pesoSugerido: Math.max(0, pesoBase - 2.5),
+                mensaje: 'la última vez llegaste al fallo. Bajá un poco o repetí el peso con mejor técnica.',
+            };
+        }
+        // RIR 1-2 → óptimo
+        return {
+            icon: '✅',
+            colorClass: 'text-emerald-300',
+            pesoSugerido: pesoBase,
+            mensaje: `estabas en la zona óptima (RIR ${valor}). Mantené el peso y buscá mejorar la técnica.`,
+        };
+    }
+
+    if (tipo === 'rpe') {
+        if (valor <= 7) {
+            return {
+                icon: '⬆️',
+                colorClass: 'text-emerald-300',
+                pesoSugerido: pesoBase + 2.5,
+                mensaje: `fue muy fácil (RPE ${valor}). Probá subir peso para desafiarte.`,
+            };
+        }
+        if (valor >= 10) {
+            return {
+                icon: '⚠️',
+                colorClass: 'text-amber-300',
+                pesoSugerido: Math.max(0, pesoBase - 2.5),
+                mensaje: 'la última vez fue al fallo absoluto (RPE 10). Bajá o repetí el peso.',
+            };
+        }
+        // RPE 8-9 → óptimo
+        return {
+            icon: '✅',
+            colorClass: 'text-emerald-300',
+            pesoSugerido: pesoBase,
+            mensaje: `rendimiento óptimo (RPE ${valor}). Mantené el peso.`,
+        };
+    }
+
+    return {
+        icon: '🔁',
+        colorClass: 'text-gray-300',
+        pesoSugerido: pesoBase,
+        mensaje: `repetí ${formatPeso(pesoBase)} kg × ${repsBase || '?'} reps como en la última sesión.`,
+    };
+});
 
 const completarSerie = async () => {
     const ej = store.currentEjercicio;

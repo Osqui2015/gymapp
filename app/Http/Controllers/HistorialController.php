@@ -362,4 +362,125 @@ class HistorialController extends Controller
 
         return response()->json($reporte);
     }
+
+    /**
+     * Devuelve la ultima sesion en la que el usuario trabajo un ejercicio,
+     * con todas sus series (efectivas + calentamiento). Usado por la pantalla
+     * de entrenamiento activo para mostrar "ultima vez: Xkg x Y reps" y
+     * sugerir carga para el set actual.
+     *
+     * GET /api/historial/ultimo?ejercicio=Press%20de%20banca
+     *
+     * Response 200:
+     *   {
+     *     "encontrado": true,
+     *     "ejercicio": "Press de banca",
+     *     "fecha": "2026-09-12",
+     *     "series": [ { peso, reps, tipo_serie, esfuerzo_tipo, esfuerzo_valor } ],
+     *     "peso_top": 60,        // peso mas alto usado en series efectivas
+     *     "reps_en_peso_top": 8, // reps realizadas a ese peso top
+     *     "ultimo_esfuerzo": { tipo: 'rir', valor: 2 } | null
+     *   }
+     */
+    public function ultimo(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'ejercicio' => 'required|string|max:255',
+        ]);
+
+        $nombre = trim($data['ejercicio']);
+        if ($nombre === '') {
+            return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
+        }
+
+        // Tomamos la fecha maxima en la que hay sets del ejercicio.
+        $ultimaFecha = Historial::where('user_id', $user->id)
+            ->where('ejercicio_nombre', $nombre)
+            ->where('completado', true)
+            ->max('fecha');
+
+        if (! $ultimaFecha) {
+            return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
+        }
+
+        $series = Historial::where('user_id', $user->id)
+            ->where('ejercicio_nombre', $nombre)
+            ->where('fecha', $ultimaFecha)
+            ->orderBy('series_numero')
+            ->get(['peso', 'reps_realizadas', 'tipo_serie', 'esfuerzo_tipo', 'esfuerzo_valor', 'series_numero']);
+
+        if ($series->isEmpty()) {
+            return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
+        }
+
+        // Calculamos el peso top entre las series EFECTIVAS (descartamos calentamiento,
+        // dropset y al_fallo porque no son representativas del "techo" de trabajo).
+        $efectivas = $series->filter(function ($s) {
+            $tipo = strtolower((string) ($s->tipo_serie ?? 'efectiva'));
+            return $tipo === '' || $tipo === 'efectiva';
+        });
+
+        if ($efectivas->isEmpty()) {
+            $efectivas = $series;
+        }
+
+        $pesoTop = null;
+        $repsEnPesoTop = null;
+        foreach ($efectivas as $s) {
+            $peso = (float) ($s->peso ?? 0);
+            if ($peso <= 0) {
+                continue;
+            }
+            if ($pesoTop === null || $peso > $pesoTop) {
+                $pesoTop = $peso;
+                $repsEnPesoTop = (int) ($s->reps_realizadas ?? 0);
+            }
+        }
+
+        // Si ninguna serie efectiva tuvo peso, caemos al primer registro con peso.
+        if ($pesoTop === null) {
+            foreach ($series as $s) {
+                $peso = (float) ($s->peso ?? 0);
+                if ($peso > 0) {
+                    $pesoTop = $peso;
+                    $repsEnPesoTop = (int) ($s->reps_realizadas ?? 0);
+                    break;
+                }
+            }
+        }
+
+        // Ultimo esfuerzo percibido del set mas pesado.
+        $ultimoEsfuerzo = null;
+        if ($pesoTop !== null) {
+            $setReferencia = $efectivas->first(function ($s) use ($pesoTop) {
+                return (float) ($s->peso ?? 0) === $pesoTop;
+            });
+            if ($setReferencia && $setReferencia->esfuerzo_tipo !== null && $setReferencia->esfuerzo_valor !== null) {
+                $ultimoEsfuerzo = [
+                    'tipo' => $setReferencia->esfuerzo_tipo,
+                    'valor' => (int) $setReferencia->esfuerzo_valor,
+                ];
+            }
+        }
+
+        return response()->json([
+            'encontrado' => true,
+            'ejercicio' => $nombre,
+            'fecha' => Carbon::parse($ultimaFecha)->toDateString(),
+            'series' => $series->map(function ($s) {
+                return [
+                    'peso' => (float) ($s->peso ?? 0),
+                    'reps' => (int) ($s->reps_realizadas ?? 0),
+                    'tipo_serie' => $s->tipo_serie ?? 'efectiva',
+                    'esfuerzo_tipo' => $s->esfuerzo_tipo,
+                    'esfuerzo_valor' => $s->esfuerzo_valor !== null ? (int) $s->esfuerzo_valor : null,
+                ];
+            })->values(),
+            'peso_top' => $pesoTop,
+            'reps_en_peso_top' => $repsEnPesoTop,
+            'ultimo_esfuerzo' => $ultimoEsfuerzo,
+        ]);
+    }
 }

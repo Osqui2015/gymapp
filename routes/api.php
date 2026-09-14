@@ -79,6 +79,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/historial/calendar', [HistorialController::class, 'calendar']);
     Route::get('/historial/week-summary', [HistorialController::class, 'weekSummary']);
     Route::get('/historial/comparar', [HistorialController::class, 'comparar']);
+    Route::get('/historial/ultimo', [HistorialController::class, 'ultimo']);
 
     // === Sesiones de Entrenamiento (Nivel 4) ===
     Route::post('/sesiones/iniciar', [WorkoutSessionController::class, 'iniciar']);
