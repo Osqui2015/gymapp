@@ -57,8 +57,12 @@
             @include('layouts.navigation')
 
             @isset($header)
-                <header class="hidden md:block bg-white dark:bg-[var(--color-obsidian-base)] border-b border-gray-200 dark:border-[var(--color-obsidian-border)]">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                {{-- Wrapper de header transparente y sin padding extra en mobile.
+                     Las pantallas con su propio top-bar mobile (Dashboard, Historial,
+                     Progreso, Rutinas) ocultan el contenido del slot con hidden md:block.
+                     Las pantallas sin top-bar (Profile, Ejercicios, etc.) lo muestran acá. --}}
+                <header class="bg-transparent dark:bg-transparent border-0">
+                    <div class="max-w-7xl mx-auto py-0 md:py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
                 </header>
