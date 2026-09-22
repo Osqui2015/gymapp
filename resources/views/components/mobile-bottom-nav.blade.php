@@ -6,20 +6,42 @@
 
     // Los 4 items principales del bottom nav (siempre visibles)
     $primary = [
-        ['route' => 'dashboard', 'match' => 'dashboard', 'label' => 'Inicio',  'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />'],
+        [
+            'route' => 'dashboard',
+            'match' => 'dashboard',
+            'label' => 'Inicio',
+            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />',
+            'ph_icon' => 'ph ph-house',
+            'ph_fill' => 'ph-fill ph-house',
+        ],
+        [
+            'route' => 'rutinas',
+            'match' => 'rutinas',
+            'label' => 'Rutinas',
+            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-3-8h3" />',
+            'ph_icon' => 'ph ph-clipboard-text',
+            'ph_fill' => 'ph-fill ph-clipboard-text',
+        ],
+        [
+            'route' => 'ejercicios',
+            'match' => 'ejercicios',
+            'label' => 'Ejercicios',
+            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />',
+            'ph_icon' => 'ph ph-barbell',
+            'ph_fill' => 'ph-fill ph-barbell',
+        ],
+        [
+            'route' => 'progreso',
+            'match' => 'progreso',
+            'label' => 'Progreso',
+            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />',
+            'ph_icon' => 'ph ph-chart-line-up',
+            'ph_fill' => 'ph-fill ph-chart-line-up',
+        ],
     ];
 
-    if (!$isAlumno) {
-        $primary[] = ['route' => 'rutinas', 'match' => 'rutinas', 'label' => 'Rutinas', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-3-8h3" />'];
-    } else {
-        $primary[] = ['route' => 'ejercicios', 'match' => 'ejercicios', 'label' => 'Ejercicios', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />'];
-    }
-
-    $primary[] = ['route' => 'historial', 'match' => 'historial', 'label' => 'Historial', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />'];
-    $primary[] = ['route' => 'progreso',  'match' => 'progreso',  'label' => 'Progreso',  'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />'];
-
     // Determinar el "match" para resaltar el tab activo
-    $currentRoute = request()->route()->getName();
+    $currentRoute = request()->route()?->getName();
 @endphp
 
 <div
@@ -80,7 +102,11 @@
                         @click="menuOpen = false"
                         class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs($item['match']) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
                     >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+                        @if (!empty($item['ph_icon']))
+                            <i class="{{ $item['ph_icon'] }} text-lg"></i>
+                        @elseif (!empty($item['icon']))
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+                        @endif
                         {{ $item['label'] }}
                         @if (request()->routeIs($item['match']))
                             <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
@@ -89,14 +115,15 @@
                 @endforeach
 
                 <a
-                    href="{{ route('ejercicios') }}"
+                    href="{{ route('historial') }}"
                     @click="menuOpen = false"
-                    class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('ejercicios') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
+                    class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('historial') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    Ejercicios
+                    <i class="ph ph-clock-counter-clockwise text-lg"></i>
+                    Historial
+                    @if (request()->routeIs('historial'))
+                        <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                    @endif
                 </a>
             </nav>
 
@@ -168,56 +195,54 @@
     </div>
 
     {{-- Toggle dark mode flotante sobre el bottom nav (solo mobile) --}}
-    <div class="md:hidden fixed bottom-20 right-3 z-40">
+    <div class="md:hidden fixed bottom-20 left-3 z-40">
         <x-dark-mode-toggle />
     </div>
 
-    {{-- Barra inferior (4 tabs + Menú) --}}
-    <nav class="bg-white/90 dark:bg-[var(--color-obsidian-base)]/85 backdrop-blur-xl border-t border-gray-200 dark:border-[var(--color-obsidian-border)] shadow-[0_-2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] pb-[env(safe-area-inset-bottom)]">
-        <ul class="grid grid-cols-5 h-16">
-            @foreach ($primary as $item)
-                @php $isActive = request()->routeIs($item['match']); @endphp
-                <li>
-                    <a
-                        href="{{ route($item['route']) }}"
-                        class="group flex flex-col items-center justify-center h-full gap-1 transition-all {{ $isActive ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 dark:text-gray-400' }}"
-                        :class="{ 'text-violet-600 dark:text-violet-300': true }"
-                    >
-                        <span class="relative">
-                            @if ($isActive)
-                                {{-- Dot indicator prominente del tab activo (Kinetic Obsidian) --}}
-                                <span class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full shadow-[0_0_8px_var(--color-violet-glow)]"></span>
-                            @endif
-                            <svg class="w-6 h-6 transition-transform group-active:scale-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
-                        </span>
-                        <span class="text-[10px] font-bold leading-none tracking-tight">{{ $item['label'] }}</span>
-                    </a>
-                </li>
-            @endforeach
+    {{-- Barra inferior persistente (Kinetic Obsidian glassmorphism) --}}
+    <nav class="glass-panel border-t border-white/[0.08] pb-safe" data-purpose="bottom-persistent-navigation">
+        <div class="max-w-md mx-auto px-4 py-2">
+            <div class="grid grid-cols-5 gap-1 items-center justify-items-center">
+                @foreach ($primary as $item)
+                    @php $isActive = request()->routeIs($item['match']); @endphp
+                    @if ($isActive)
+                        <a
+                            href="{{ route($item['route']) }}"
+                            class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-white relative group"
+                        >
+                            <!-- Active Highlight Glow Indicator -->
+                            <div class="absolute -top-2 w-8 h-1 rounded-full bg-neon-indigo shadow-glow-indigo"></div>
+                            <div class="w-9 h-8 rounded-lg bg-neon-indigo/20 border border-neon-indigo/40 flex items-center justify-center text-neon-indigo mb-0.5 shadow-glow-indigo">
+                                <i class="{{ $item['ph_fill'] }} text-xl"></i>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-white">{{ $item['label'] }}</span>
+                        </a>
+                    @else
+                        <a
+                            href="{{ route($item['route']) }}"
+                            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group"
+                        >
+                            <i class="{{ $item['ph_icon'] }} text-xl group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[10px] font-medium tracking-tight mt-0.5">{{ $item['label'] }}</span>
+                        </a>
+                    @endif
+                @endforeach
 
-            {{-- Botón "Menú" (abre el sheet) --}}
-            <li>
+                {{-- Botón "Menú" (abre el sheet) --}}
                 <button
                     @click="menuOpen = !menuOpen"
-                    class="w-full h-full flex flex-col items-center justify-center gap-1 transition-all"
-                    :class="menuOpen ? 'text-violet-600 dark:text-violet-300' : 'text-gray-500 dark:text-gray-400'"
+                    class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group relative"
+                    :class="menuOpen ? 'text-neon-indigo' : ''"
                 >
-                    <span class="relative">
-                        @if ($user->hasRole('administrador'))
-                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
-                        @elseif ($isStaff)
-                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-violet-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
-                        @endif
-                        <svg x-show="!menuOpen" class="w-6 h-6 transition-transform" :class="menuOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                        <svg x-show="menuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </span>
-                    <span class="text-[10px] font-bold leading-none tracking-tight">Menú</span>
+                    @if ($user->hasRole('administrador'))
+                        <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
+                    @elseif ($isStaff)
+                        <span class="absolute top-1 right-2 w-2 h-2 bg-neon-violet rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
+                    @endif
+                    <i class="ph ph-list text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-medium tracking-tight mt-0.5">Menú</span>
                 </button>
-            </li>
-        </ul>
+            </div>
+        </div>
     </nav>
 </div>

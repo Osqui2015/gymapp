@@ -495,7 +495,7 @@
                                     viewbox="0 0 320 120"
                                 >
                                     <defs>
-                                        <lineargradient
+                                        <linearGradient
                                             id="chartGradient"
                                             x1="0%"
                                             x2="0%"
@@ -512,7 +512,7 @@
                                                 stop-color="#6366F1"
                                                 stop-opacity="0.0"
                                             ></stop>
-                                        </lineargradient>
+                                        </linearGradient>
                                     </defs>
                                     <line
                                         stroke="#2A354F"

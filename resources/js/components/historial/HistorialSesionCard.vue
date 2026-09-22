@@ -1,158 +1,136 @@
-<!--
-  HistorialSesionCard — card de sesión del historial con la lista de ejercicios.
-
-  Replica exactamente el card expandible del mockup Figma de Historial:
-    - Header con fecha destacada + día de rutina (eyebrow)
-    - Metadata (duración · series · tonelaje)
-    - Lista de ejercicios con nombre + meta + PR badge (si tiene) + cant series
-    - Pills de series (10 × 50kg, 8 × 55kg, etc.) — pill verde si es PR
-    - Footer con botones "Detalles completos" / "Repetir sesión" (CTA violeta)
-
-  Props:
-    - fecha: string (ej "Ayer, 23 Oct" o "21 OCTUBRE")
-    - fechaLabel: string opcional (subtítulo, ej "Día 1 (Torso)")
-    - duracion: string (ej "52 min")
-    - series: number|string
-    - tonelaje: string opcional (ej "4.8 t total")
-    - ejercicios: Array<{
-          nombre, meta, sets: [{label, esPR?}], cantSeries, esActual?
-      }>
-    - expanded: boolean (default true)
-    - isActive: boolean (si es la sesión actual/en curso)
-    - prCount: number (PRs superados en la sesión)
-
-  Emits:
-    - toggle(): cuando se hace click en el header
-    - verDetalles(): botón "Detalles completos"
-    - repetirSesion(): botón "Repetir sesión"
--->
 <template>
-    <div class="obs-card-elevated overflow-hidden">
-        <!-- Header clickable -->
-        <button
-            type="button"
-            @click="$emit('toggle')"
-            class="w-full px-4 md:px-5 py-3.5 md:py-4 flex items-center justify-between gap-3 hover:bg-[var(--color-obsidian-overlay)] transition-colors text-left"
-        >
-            <div class="min-w-0">
-                <div class="flex items-center gap-2 mb-1">
+    <!-- Card Expandida (Estilo Card 1 del mockup) -->
+    <div
+        v-if="expanded"
+        class="bg-[#171b26] rounded-xl p-3.5 sm:p-4 flex flex-col gap-3 shadow-md border border-slate-800/60"
+    >
+        <!-- Header con fecha y toggler -->
+        <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
                     <span
                         v-if="fechaHighlight"
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-wider border border-violet-500/30"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#8083ff] text-[#0d0096] text-xs font-bold"
                     >
                         {{ fechaHighlight }}
                     </span>
-                    <p class="text-base md:text-lg font-black text-white truncate">
-                        {{ fecha }}
-                    </p>
+                    <span class="text-sm font-bold text-white font-display">
+                        {{ fechaLabel || fecha }}
+                    </span>
                 </div>
-                <div class="flex items-center gap-2 text-[11px] md:text-xs obs-text-secondary">
-                    <span v-if="duracion" class="flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                <p class="text-xs text-[#c7c4d7] flex items-center gap-2 flex-wrap">
+                    <span v-if="duracion" class="inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">schedule</span>
                         {{ duracion }}
                     </span>
-                    <span v-if="duracion && series" class="obs-text-tertiary">·</span>
-                    <span v-if="series">
-                        💪 <strong class="text-white font-bold tabular-nums">{{ series }}</strong> series
+                    <span v-if="duracion && series" class="text-slate-600">•</span>
+                    <span v-if="series" class="inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">fitness_center</span>
+                        {{ series }} series
                     </span>
-                    <span v-if="series && tonelaje" class="obs-text-tertiary">·</span>
-                    <span v-if="tonelaje">
-                        <strong class="text-white font-bold tabular-nums">{{ tonelaje }}</strong>
-                    </span>
-                </div>
+                    <span v-if="tonelaje" class="text-slate-600">•</span>
+                    <span v-if="tonelaje">{{ tonelaje }}</span>
+                </p>
             </div>
-            <svg
-                :class="['w-5 h-5 obs-text-tertiary transition-transform shrink-0', expanded ? 'rotate-180' : '']"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+            <button
+                type="button"
+                @click="$emit('toggle')"
+                class="w-8 h-8 rounded-full bg-[#262a35] flex items-center justify-center text-[#c7c4d7] hover:text-white hover:bg-[#313540] transition-colors shrink-0"
+                aria-label="Colapsar sesión"
             >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-        </button>
+                <span class="material-symbols-outlined text-[20px]">expand_less</span>
+            </button>
+        </div>
 
-        <!-- Lista de ejercicios (solo si expanded) -->
-        <div
-            v-if="expanded && ejercicios && ejercicios.length"
-            class="border-t border-[var(--color-obsidian-border)] divide-y divide-[var(--color-obsidian-border)]"
-        >
+        <!-- Lista de ejercicios de la sesión -->
+        <div v-if="ejercicios && ejercicios.length" class="flex flex-col gap-2 mt-0.5">
             <div
                 v-for="(ej, i) in ejercicios"
                 :key="i"
-                class="px-4 md:px-5 py-3.5 space-y-2"
+                class="bg-[#1c1f2a] p-3 rounded-lg flex flex-col gap-1.5"
             >
-                <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm md:text-base font-bold text-white truncate">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-sm font-bold text-white truncate">
                             {{ ej.nombre }}
-                        </p>
-                        <p class="text-[11px] obs-text-secondary mt-0.5 truncate">
-                            {{ ej.meta }}
-                        </p>
-                    </div>
-                    <div class="shrink-0 flex items-center gap-1.5">
+                        </span>
                         <span
                             v-if="ej.prBadge"
-                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-black border border-amber-500/30"
+                            class="inline-flex items-center gap-0.5 bg-[#571bc1] text-[#c4abff] px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0"
                         >
                             ⭐ PR {{ ej.prBadge }}
                         </span>
-                        <span class="obs-pill obs-pill-neutral">
-                            {{ ej.cantSeries }} {{ ej.cantSeries === 1 ? 'serie' : 'series' }}
-                        </span>
                     </div>
+                    <span class="text-xs font-bold text-[#c0c1ff] shrink-0">
+                        {{ ej.cantSeries }} {{ ej.cantSeries === 1 ? 'serie' : 'series' }}
+                    </span>
                 </div>
-                <!-- Pills de series -->
-                <div
-                    v-if="ej.sets && ej.sets.length"
-                    class="flex flex-wrap gap-1.5"
-                >
+
+                <!-- Chips de series -->
+                <div v-if="ej.sets && ej.sets.length" class="flex items-center gap-1.5 flex-wrap">
                     <span
                         v-for="(s, idx) in ej.sets"
                         :key="idx"
                         :class="[
-                            'inline-block rounded-lg px-2.5 py-1 text-[11px] font-bold tabular-nums',
-                            s.esPR
-                                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                                : 'bg-[var(--color-obsidian-surface)] text-gray-300 border border-[var(--color-obsidian-border)]',
+                            'px-2 py-0.5 rounded text-[11px] font-medium transition-colors',
+                            s.esPR || (s.label && s.label.includes('RIR 0'))
+                                ? 'bg-[#262a35] text-[#4edea3] font-bold border border-[#4edea3]/30'
+                                : 'bg-[#262a35] text-white'
                         ]"
                     >
                         {{ s.label }}
                     </span>
                 </div>
             </div>
-
-            <!-- Footer con botones -->
-            <div
-                v-if="showActions"
-                class="px-4 md:px-5 py-3 bg-[var(--color-obsidian-surface)] border-t border-[var(--color-obsidian-border)] flex items-center gap-2"
-            >
-                <button
-                    type="button"
-                    @click="$emit('verDetalles')"
-                    class="flex-1 obs-cta-secondary text-xs"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Detalles completos
-                </button>
-                <button
-                    type="button"
-                    @click="$emit('repetirSesion')"
-                    class="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-xs font-bold bg-[var(--color-violet-primary)] text-white hover:bg-[var(--color-violet-light)] active:scale-[0.98] shadow-[0_8px_24px_var(--color-violet-glow)] transition-all"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Repetir sesión
-                </button>
-            </div>
         </div>
+
+        <!-- Footer con botones de acción -->
+        <div v-if="showActions" class="pt-1 flex items-center justify-between gap-2">
+            <button
+                type="button"
+                @click="$emit('verDetalles')"
+                class="flex-1 py-2 px-3 rounded-lg bg-[#262a35] hover:bg-[#313540] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors active:scale-95"
+            >
+                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                <span>Detalles completos</span>
+            </button>
+            <button
+                type="button"
+                @click="$emit('repetirSesion')"
+                class="flex-1 py-2 px-3 rounded-lg bg-[#c0c1ff] text-[#1000a9] text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-98 transition-all shadow-sm"
+            >
+                <span class="material-symbols-outlined text-[16px]">replay</span>
+                <span>Repetir sesión</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Card Compacta (Estilo Card 2 del mockup para sesiones previas) -->
+    <div
+        v-else
+        @click="$emit('toggle')"
+        class="bg-[#171b26] rounded-xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm border border-slate-800/40 hover:bg-[#1c202d] transition-colors cursor-pointer group"
+    >
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs text-[#c7c4d7] uppercase font-semibold font-display">
+                    {{ fechaHighlight || fecha }}
+                </span>
+                <span class="text-sm font-bold text-white">
+                    {{ fechaLabel || 'Día de entrenamiento' }}
+                </span>
+            </div>
+            <p class="text-xs text-[#c7c4d7] truncate">
+                {{ series }} series finalizadas • {{ tonelaje }} <span v-if="rirProm">• RIR prom: {{ rirProm }}</span>
+            </p>
+        </div>
+        <button
+            type="button"
+            class="w-8 h-8 rounded-full bg-[#262a35] group-hover:bg-[#313540] flex items-center justify-center text-[#c7c4d7] group-hover:text-white transition-colors shrink-0"
+            aria-label="Expandir sesión"
+        >
+            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+        </button>
     </div>
 </template>
 
@@ -160,9 +138,11 @@
 defineProps({
     fecha: { type: String, required: true },
     fechaHighlight: { type: String, default: '' },
+    fechaLabel: { type: String, default: '' },
     duracion: { type: String, default: '' },
     series: { type: [Number, String], default: 0 },
     tonelaje: { type: String, default: '' },
+    rirProm: { type: [String, Number], default: '' },
     ejercicios: { type: Array, default: () => [] },
     expanded: { type: Boolean, default: true },
     showActions: { type: Boolean, default: true },
@@ -170,3 +150,4 @@ defineProps({
 
 defineEmits(['toggle', 'verDetalles', 'repetirSesion']);
 </script>
+

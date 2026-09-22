@@ -3,6 +3,50 @@ import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 
+// SVG primitives que se escriben en camelCase pero NO son componentes Vue.
+// Sin esta whitelist, Vue compiler tira warning "Failed to resolve component"
+// porque intenta matchearlos como componentes. Esto pasaba con <lineargradient>
+// (typo de <linearGradient>) en DashboardContent.vue.
+//
+// Cubrimos los más usados para no volver a caer en el mismo bug.
+const svgCustomElements = [
+    'linearGradient',
+    'radialGradient',
+    'stop',
+    'pattern',
+    'clipPath',
+    'mask',
+    'filter',
+    'feGaussianBlur',
+    'feOffset',
+    'feMerge',
+    'feMergeNode',
+    'feBlend',
+    'feColorMatrix',
+    'feComponentTransfer',
+    'feComposite',
+    'feConvolveMatrix',
+    'feDiffuseLighting',
+    'feDisplacementMap',
+    'feDistantLight',
+    'feFlood',
+    'feFuncA',
+    'feFuncB',
+    'feFuncG',
+    'feFuncR',
+    'feImage',
+    'feMorphology',
+    'fePointLight',
+    'feSpecularLighting',
+    'feSpotLight',
+    'feTile',
+    'feTurbulence',
+    'textPath',
+    'animate',
+    'animateTransform',
+    'animateMotion',
+];
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -10,8 +54,29 @@ export default defineConfig({
             refresh: true,
         }),
         tailwindcss(),
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => svgCustomElements.includes(tag),
+                },
+            },
+        }),
     ],
+    // Forzar IPv4 (127.0.0.1) para que el navegador no resuelva `localhost`
+    // a IPv6 ([::1]). Si el browser pide http://[::1]:5173/... el CSP no
+    // lo va a matchear aunque tengamos `localhost:*` y `127.0.0.1:*`
+    // porque [::1] es una dirección IPv6 distinta.
+    server: {
+        host: '127.0.0.1',
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: '127.0.0.1',
+        },
+        cors: {
+            origin: ['http://127.0.0.1:8000', 'http://localhost:8000'],
+        },
+    },
     resolve: {
         alias: {
             vue: 'vue/dist/vue.esm-bundler.js',

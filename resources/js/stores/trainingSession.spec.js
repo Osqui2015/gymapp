@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useTrainingSessionStore } from './trainingSession';
 
@@ -204,5 +204,116 @@ describe('useTrainingSessionStore', () => {
         expect(store.isPaused).toBe(true);
         store.resume();
         expect(store.isPaused).toBe(false);
+    });
+
+    describe('cronometro (regresion: duracion quedaba en 0 min)', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+            // Fijamos un reloj base para que las diferencias de tiempo sean
+            // deterministas. Luego avanzamos con vi.advanceTimersByTime.
+            vi.setSystemTime(new Date('2026-09-14T20:00:00.000Z'));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('elapsed arranca en 0 al iniciar una sesion', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
+            });
+            expect(store.elapsed).toBe(0);
+        });
+
+        it('elapsed crece con el paso del tiempo (regresion: antes quedaba congelado)', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
+            });
+
+            expect(store.elapsed).toBe(0);
+
+            vi.advanceTimersByTime(60_000); // +60s
+            expect(store.elapsed).toBe(60);
+
+            vi.advanceTimersByTime(15 * 60_000); // +15min
+            expect(store.elapsed).toBe(60 + 15 * 60);
+        });
+
+        it('elapsed se mantiene estable durante una pausa y reanuda desde donde quedo', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
+            });
+
+            vi.advanceTimersByTime(120_000); // +2min
+            expect(store.elapsed).toBe(120);
+
+            store.pause();
+            const enPausa = store.elapsed;
+
+            vi.advanceTimersByTime(180_000); // +3min pausado
+            expect(store.elapsed).toBe(enPausa);
+
+            store.resume();
+            vi.advanceTimersByTime(60_000); // +1min despues de reanudar
+            // 120 inicial + 60 posterior = 180. El tiempo pausado no cuenta.
+            expect(store.elapsed).toBe(180);
+        });
+
+        it('end() deja elapsed en 0 y detiene el contador', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
+            });
+            vi.advanceTimersByTime(45_000);
+            expect(store.elapsed).toBe(45);
+
+            store.end();
+            expect(store.elapsed).toBe(0);
+
+            // Aunque pasen 5 minutos mas, elapsed sigue en 0.
+            vi.advanceTimersByTime(5 * 60_000);
+            expect(store.elapsed).toBe(0);
+        });
+
+        it('discard() deja elapsed en 0 y detiene el contador', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
+            });
+            vi.advanceTimersByTime(90_000);
+            expect(store.elapsed).toBe(90);
+
+            store.discard();
+            expect(store.elapsed).toBe(0);
+        });
+
+        it('tras 30 min de sesion elapsed refleja los 30 min (caso de la pantalla de resumen)', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'Push',
+                dia: 'Día 1',
+                ejercicios: [{ nombre: 'Press banca', series_objetivo: 4 }],
+            });
+
+            // 30 minutos de entrenamiento sin tocar nada.
+            vi.advanceTimersByTime(30 * 60_000);
+
+            // El snapshot que tomaria el modal de resumen debe mostrar
+            // 30 min (no 0 min).
+            expect(store.elapsed).toBe(30 * 60);
+        });
     });
 });

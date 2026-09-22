@@ -34,6 +34,11 @@ Route::get('/ejercicios', function () {
     return view('ejercicios');
 })->middleware(['auth', 'membership'])->name('ejercicios');
 
+// === Catálogo VisualGym (exercises-dataset, 1.324 ejercicios) ===
+Route::get('/visualgym', function () {
+    return view('visualgym');
+})->middleware(['auth', 'membership'])->name('visualgym');
+
 Route::get('/historial', function () {
     return view('historial');
 })->middleware(['auth', 'membership'])->name('historial');

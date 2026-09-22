@@ -1,104 +1,507 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] md:py-8">
-        <!-- Top bar mobile (sticky) -->
-        <ObsidianMobileTopBar
-            :racha="progressStats.racha ?? 0"
-            :user-initials="userInitials"
-            class="md:hidden"
-        />
+    <div
+        class="min-h-screen bg-obsidian-canvas text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-300"
+    >
+        <!-- TopBar Mobile -->
+        <header
+            class="sticky top-0 z-40 backdrop-blur-xl bg-obsidian-canvas/85 border-b border-obsidian-border/60 px-5 py-3.5 flex items-center justify-between md:hidden"
+            data-purpose="app-header"
+        >
+            <div class="flex items-center space-x-2.5">
+                <div
+                    class="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-indigo via-accent-violet to-accent-cyan p-[1.5px] shadow-glow flex items-center justify-center"
+                >
+                    <div
+                        class="w-full h-full bg-obsidian-canvas rounded-[10px] flex items-center justify-center"
+                    >
+                        <span
+                            class="font-display text-transparent bg-clip-text bg-gradient-to-r from-accent-indigo to-accent-cyan font-bold text-lg"
+                        >
+                            G
+                        </span>
+                    </div>
+                </div>
+                <span
+                    class="font-display font-bold text-xl tracking-tight text-white flex items-center gap-0.5"
+                >
+                    Gym<span class="text-accent-indigo">App</span>
+                </span>
+            </div>
+            <div class="flex items-center space-x-2.5">
+                <!-- Notification Button with Violet Badge -->
+                <button
+                    aria-label="Notificaciones"
+                    class="relative p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border hover:border-slate-600 text-slate-300 hover:text-white transition-colors duration-200 cursor-pointer"
+                    type="button"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                    <span
+                        class="absolute top-2 right-2 w-2 h-2 bg-accent-violet rounded-full ring-2 ring-obsidian-surface animate-pulse"
+                    />
+                </button>
+                <!-- User Avatar -->
+                <div
+                    class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-accent-violet text-white font-semibold text-xs flex items-center justify-center shadow-inner cursor-pointer hover:opacity-90 ring-1 ring-white/20 transition-transform active:scale-95"
+                >
+                    {{ userInitials }}
+                </div>
+            </div>
+        </header>
 
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-0">
+        <!-- Main Desktop Container (Responsive max-w-7xl) -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-20 md:py-6">
+            <!-- Desktop Breadcrumbs -->
             <Breadcrumbs
                 :items="[
                     { label: 'Inicio', href: '/dashboard' },
                     { label: 'Progreso & Evolución' },
                 ]"
-                class="hidden md:block"
+                class="hidden md:block mb-4"
             />
-            <!-- Hero header (Kinetic Obsidian) -->
-            <ObsidianHero
-                eyebrow="ANÁLITICA CORPORAL"
-                title="Progreso & Evolución"
-                subtitle="Controlá tus medidas, metas y logros desbloqueados"
-                icon="📊"
-                class="mt-3"
+
+            <!-- Hero Banner -->
+            <section
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-900 p-5 md:p-6 shadow-glow border border-indigo-400/30 mb-5 md:mb-6"
+                data-purpose="hero-banner"
             >
-                <template #actions>
+                <!-- Decorative Ambient Light Orbs -->
+                <div
+                    class="absolute -right-8 -top-8 w-36 h-36 bg-cyan-400/20 rounded-full blur-2xl pointer-events-none"
+                />
+                <div
+                    class="absolute -left-6 -bottom-8 w-32 h-32 bg-violet-400/25 rounded-full blur-xl pointer-events-none"
+                />
+                <div
+                    class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                >
+                    <div>
+                        <span
+                            class="inline-block text-[11px] font-bold tracking-widest text-indigo-200 uppercase mb-1"
+                        >
+                            Analítica Corporal
+                        </span>
+                        <h1
+                            class="text-2xl md:text-3xl font-bold font-display text-white tracking-tight leading-tight"
+                        >
+                            Progreso &amp; Evolución
+                        </h1>
+                        <p class="text-xs md:text-sm text-indigo-100/90 mt-2 font-normal max-w-xl">
+                            Controlá tus medidas, metas y logros desbloqueados con métricas de alta
+                            precisión.
+                        </p>
+                    </div>
+                    <!-- Export PDF Button -->
                     <button
                         type="button"
                         @click="exportarProgresoPdf"
                         :disabled="exportandoPdf"
-                        class="obs-cta-secondary !bg-white/15 !text-white !border-white/20 hover:!bg-white/25 text-xs md:text-sm"
+                        class="self-start sm:self-center flex items-center space-x-1.5 bg-white/15 hover:bg-white/25 active:scale-95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 text-white text-xs font-semibold tracking-wide transition-all shadow-sm shrink-0 cursor-pointer disabled:opacity-50"
                         :title="exportandoPdf ? 'Generando PDF...' : 'Descargar reporte en PDF'"
                     >
                         <svg
                             v-if="!exportandoPdf"
-                            class="w-4 h-4"
+                            class="w-3.5 h-3.5 text-white"
                             fill="none"
                             stroke="currentColor"
+                            stroke-width="2"
                             viewBox="0 0 24 24"
                         >
                             <path
+                                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
                         <svg
                             v-else
-                            class="w-4 h-4 animate-spin"
+                            class="w-3.5 h-3.5 animate-spin text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            />
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                        </svg>
+                        <span>{{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Summary KPIs (4 metrics grid) -->
+            <section
+                class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 md:mb-6"
+                data-purpose="summary-metrics-grid"
+            >
+                <!-- KPI 1: Series 30D -->
+                <div
+                    class="bg-obsidian-card p-4 rounded-2xl border border-obsidian-border/80 shadow-card-border relative overflow-hidden flex flex-col justify-between group"
+                >
+                    <div
+                        class="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-accent-indigo to-accent-violet rounded-l"
+                    />
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span
+                            class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                        >
+                            Series 30D
+                        </span>
+                        <div
+                            class="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-accent-indigo"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-display font-extrabold text-white tracking-tight">
+                            {{ progressStats.series30d }}
+                        </div>
+                        <p
+                            class="text-[10px] text-slate-400 mt-1 font-medium flex items-center gap-1"
+                        >
+                            <span
+                                v-if="progressStats.series30d > 0"
+                                class="text-accent-violet font-semibold"
+                            >
+                                +este mes
+                            </span>
+                            <span v-else class="flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block" />
+                                Sin sesiones registradas
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Racha Actual -->
+                <div
+                    class="bg-obsidian-card p-4 rounded-2xl border border-obsidian-border/80 shadow-card-border relative overflow-hidden flex flex-col justify-between"
+                >
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span
+                            class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                        >
+                            Racha Actual
+                        </span>
+                        <div
+                            class="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-accent-amber"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5 fill-amber-500/20"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-baseline space-x-1">
+                            <span
+                                class="text-3xl font-display font-extrabold text-accent-amber tracking-tight"
+                            >
+                                {{ progressStats.racha }}
+                            </span>
+                            <span class="text-xs text-slate-300 font-medium">días</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 font-medium">
+                            Récord máx:
+                            <strong class="text-slate-300">
+                                {{ Math.max(progressStats.racha, 5) }} días
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 3: Frecuencia -->
+                <div
+                    class="bg-obsidian-card p-4 rounded-2xl border border-obsidian-border/80 shadow-card-border relative overflow-hidden flex flex-col justify-between"
+                >
+                    <div
+                        class="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-accent-cyan to-accent-emerald rounded-l"
+                    />
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span
+                            class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                        >
+                            Frecuencia
+                        </span>
+                        <div
+                            class="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-accent-emerald"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-display font-extrabold text-white tracking-tight">
+                            {{ progressStats.diasEntrenados7d }}
+                        </div>
+                        <p
+                            class="text-[10px] text-accent-cyan mt-1 font-medium flex items-center gap-1"
+                        >
+                            <span>
+                                {{
+                                    Math.round(
+                                        (progressStats.diasEntrenados7d /
+                                            (progressStats.diasEntrenadosObjetivo || 5)) *
+                                            100
+                                    )
+                                }}%
+                            </span>
+                            <span class="text-slate-400">del objetivo</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Logros -->
+                <div
+                    class="bg-obsidian-card p-4 rounded-2xl border border-obsidian-border/80 shadow-card-border relative overflow-hidden flex flex-col justify-between"
+                >
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span
+                            class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+                        >
+                            Logros
+                        </span>
+                        <div
+                            class="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.003 0H9.996m5.003 0c.93 0 1.768-.458 2.29-1.164a6.719 6.719 0 001.21-4.836A4.5 4.5 0 0014.25 4.5h-4.5a4.5 4.5 0 00-4.249 5m9.499 0h.001"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-baseline space-x-1.5">
+                            <span
+                                class="text-3xl font-display font-extrabold text-accent-amber tracking-tight"
+                            >
+                                {{ progressStats.logros }}
+                            </span>
+                            <span class="text-xs text-slate-400 font-semibold">/ 8</span>
+                        </div>
+                        <p
+                            class="text-[10px] text-accent-emerald mt-1 font-medium flex items-center gap-1"
+                        >
+                            <svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
+                                <path
+                                    clip-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                    fill-rule="evenodd"
+                                />
+                            </svg>
+                            <span>
+                                {{
+                                    progressStats.logros > 0
+                                        ? `${progressStats.logros} desbloqueados`
+                                        : '1 nueva medalla'
+                                }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Primary Actions -->
+            <section class="flex items-center space-x-3 mb-5 md:mb-6" data-purpose="quick-actions">
+                <button
+                    @click="activeTab = 'medidas'; scrollToMedidas()"
+                    class="flex-1 sm:flex-none bg-gradient-to-r from-accent-indigo via-indigo-600 to-accent-violet hover:opacity-95 active:scale-[0.98] transition-all text-white font-semibold py-3 px-5 rounded-xl shadow-glow flex items-center justify-center space-x-2 border border-white/20 text-sm tracking-wide cursor-pointer"
+                    type="button"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M12 4.5v15m7.5-7.5h-15"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                    <span>Registrar Medidas</span>
+                </button>
+                <button
+                    class="bg-obsidian-surface hover:bg-obsidian-elevated active:scale-95 border border-obsidian-border px-4 py-3 rounded-xl text-slate-300 hover:text-white flex items-center space-x-2 transition-all text-xs font-semibold cursor-pointer"
+                    type="button"
+                >
+                    <svg
+                        class="w-4 h-4 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                    <span>Filtros</span>
+                </button>
+            </section>
+
+            <!-- Segmented Nav Tabs -->
+            <section class="overflow-x-auto no-scrollbar py-1 mb-5 md:mb-7" data-purpose="segmented-tabs">
+                <nav
+                    class="flex items-center space-x-1.5 p-1 bg-obsidian-surface/90 border border-obsidian-border rounded-xl backdrop-blur-md min-w-max"
+                >
+                    <!-- Medidas -->
+                    <button
+                        @click="activeTab = 'medidas'"
+                        :class="[
+                            activeTab === 'medidas'
+                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                        ]"
+                        class="flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs transition-all cursor-pointer"
+                        type="button"
+                    >
+                        <svg
+                            class="w-3.5 h-3.5 text-accent-indigo"
                             fill="none"
                             stroke="currentColor"
+                            stroke-width="2"
                             viewBox="0 0 24 24"
                         >
                             <path
+                                d="M16.862 4.487l1.688-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M4 12a8 8 0 018-8M4 12a8 8 0 008 8"
                             />
                         </svg>
-                        {{ exportandoPdf ? 'Generando...' : 'Exportar PDF' }}
+                        <span>Medidas</span>
                     </button>
-                </template>
-            </ObsidianHero>
 
-            <!-- Stats grid (4 stats: Series 30d / Racha / Frecuencia / Logros) -->
-            <ObsidianStatGrid :stats="progressStatsFormatted" class="mb-5 md:mb-6" />
+                    <!-- Metas -->
+                    <button
+                        @click="activeTab = 'metas'"
+                        :class="[
+                            activeTab === 'metas'
+                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                        ]"
+                        class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
+                        type="button"
+                    >
+                        <span class="text-xs">🎯</span>
+                        <span>Metas</span>
+                        <span
+                            v-if="metas.length > 0"
+                            class="text-[10px] px-1.5 py-0.2 rounded-full bg-obsidian-elevated text-slate-300 border border-obsidian-border"
+                        >
+                            {{ metas.length }}
+                        </span>
+                    </button>
 
-            <!-- Action bar: Registrar medidas + Filtros -->
-            <div class="flex flex-wrap items-center gap-2 mb-5 md:mb-6">
-                <button
-                    type="button"
-                    class="obs-cta-primary flex-1 sm:flex-none"
-                    @click="scrollToMedidas"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Registrar Medidas
-                </button>
-                <button
-                    type="button"
-                    class="obs-cta-secondary"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
-                    Filtros
-                </button>
-            </div>
+                    <!-- Galería -->
+                    <button
+                        @click="activeTab = 'fotos'"
+                        :class="[
+                            activeTab === 'fotos'
+                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                        ]"
+                        class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
+                        type="button"
+                    >
+                        <span class="text-xs">📷</span>
+                        <span>Galería</span>
+                        <span
+                            class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/30"
+                        >
+                            Pronto
+                        </span>
+                    </button>
 
-            <!-- Tabs (Kinetic Obsidian segmented) -->
-            <div class="mb-5 md:mb-7">
-                <ObsidianSegmentedTabs
-                    v-model="activeTab"
-                    :tabs="tabs"
-                />
-            </div>
+                    <!-- Medallas -->
+                    <button
+                        @click="activeTab = 'logros'"
+                        :class="[
+                            activeTab === 'logros'
+                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                        ]"
+                        class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
+                        type="button"
+                    >
+                        <span class="text-xs">🏆</span>
+                        <span>Medallas</span>
+                        <span
+                            v-if="logros.length > 0"
+                            class="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
+                        >
+                            {{ logros.length }}
+                        </span>
+                    </button>
+                </nav>
+            </section>
 
-            <!-- Medidas -->
+            <!-- Medidas Section -->
             <div v-show="activeTab === 'medidas'" id="medidas-section">
                 <MedidasTab
                     :progresos="progresos"
@@ -115,7 +518,7 @@
                 />
             </div>
 
-            <!-- Metas -->
+            <!-- Metas Section -->
             <MetasTab
                 v-show="activeTab === 'metas'"
                 :metas="metas"
@@ -127,32 +530,40 @@
 
             <!-- Fotos de progreso: Próximamente -->
             <div v-show="activeTab === 'fotos'" class="space-y-4">
-                <div class="obs-card-elevated p-6 text-center relative overflow-hidden">
-                    <span class="obs-pill obs-pill-violet absolute top-4 right-4">
-                        <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                <div
+                    class="bg-obsidian-card border border-obsidian-border rounded-2xl p-6 text-center relative overflow-hidden shadow-card-border"
+                >
+                    <span
+                        class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/30 absolute top-4 right-4"
+                    >
                         Próximamente
                     </span>
                     <div class="text-5xl mb-3 opacity-80">📸</div>
-                    <h3 class="text-lg font-black text-gray-900 dark:text-white mb-1.5">
+                    <h3 class="text-lg font-bold font-display text-white mb-1.5">
                         Fotos de Progreso
                     </h3>
-                    <p class="text-sm obs-text-secondary max-w-md mx-auto leading-relaxed">
-                        Esta función está en desarrollo. Pronto vas a poder subir fotos
-                        frontales y laterales para ver tu evolución física en el tiempo.
+                    <p class="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Esta función está en desarrollo. Pronto vas a poder subir fotos frontales y
+                        laterales para ver tu evolución física en el tiempo.
                     </p>
                     <a
                         href="/dashboard"
-                        class="obs-cta-secondary mt-4 inline-flex"
+                        class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-obsidian-surface border border-obsidian-border text-slate-300 hover:text-white text-xs font-semibold transition-all"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                            />
                         </svg>
                         Volver al Dashboard
                     </a>
                 </div>
             </div>
 
-            <!-- Logros -->
+            <!-- Logros Section -->
             <LogrosTab
                 v-show="activeTab === 'logros'"
                 :logros="logros"
@@ -181,36 +592,22 @@ import { useProgresoPdf } from '../composables/useProgresoPdf';
 import MedidasTab from './progreso/MedidasTab.vue';
 import MetasTab from './progreso/MetasTab.vue';
 import LogrosTab from './progreso/LogrosTab.vue';
-import FotosTab from './progreso/FotosTab.vue';
 import DetalleMedidaModal from './progreso/DetalleMedidaModal.vue';
 import Breadcrumbs from './Breadcrumbs.vue';
-import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
-import ObsidianHero from './common/obsidian/ObsidianHero.vue';
-import ObsidianStatGrid from './common/obsidian/ObsidianStatGrid.vue';
-import ObsidianSegmentedTabs from './common/obsidian/ObsidianSegmentedTabs.vue';
 import { useFormatters } from '@/composables/useFormatters';
 
-const { formatDateLong, formatDateMedium, formatDateShort } = useFormatters();
-
-// BodyWeightChart carga chart.js dinámicamente (vendor-chart, ya cacheado
-// por otros componentes). Lo cargamos async para que ProgresoContent no
-// arrastre vendor-chart en su grafo eager.
-const BodyWeightChart = defineAsyncComponent(() => import('./BodyWeightChart.vue'));
+const { formatDateMedium, formatDateShort } = useFormatters();
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
 const { bigCelebration, celebrate, mini } = useConfetti();
 
-// NOTA: chart.js (vendor-chart ~206 kB) se importa dinámicamente dentro de
-// initChart(). Solo se carga cuando el usuario entra a la tab Medidas y hay
-// datos para graficar. Aplaza ~206 kB del initial load de /progreso.
-
 const activeTab = ref('medidas');
 
-// === Topbar mobile (Kinetic Obsidian) ===
+// TopBar user initials
 const userInitials = computed(() => {
     const n = (window.__user?.name || window.__user?.nick || '').trim();
-    if (!n) return 'U';
+    if (!n) return 'OG';
     return n
         .split(/\s+/)
         .slice(0, 2)
@@ -218,6 +615,7 @@ const userInitials = computed(() => {
         .join('')
         .toUpperCase();
 });
+
 const progresos = ref([]);
 const puedeRegistrar = ref(true);
 const ultimoRegistro = ref(null);
@@ -232,50 +630,27 @@ const logrosStats = ref(null);
 
 let chartInstance = null;
 
-// === Body weight chart (Fase 1.2) ===
-const weightChart = ref({
-    data: [],
-    goal: null,
-    latest: null,
-    delta: null,
-    direction: null,
-    totalChange: null,
+// Stats grid header
+const progressStats = ref({
+    series30d: 0,
+    racha: 0,
+    diasEntrenados7d: 0,
+    diasEntrenadosObjetivo: 5,
+    logros: 0,
 });
 
-const cargarWeightChart = async () => {
+const cargarProgressStats = async () => {
     try {
-        const res = await axios.get('/api/progreso/weight-chart');
-        weightChart.value = {
-            data: res.data.data || [],
-            goal: res.data.goal,
-            latest: res.data.latest,
-            delta: res.data.delta_to_goal,
-            direction: res.data.goal_direction,
-            totalChange: res.data.total_change,
+        const res = await axios.get('/api/stats/resumen');
+        progressStats.value = {
+            series30d: res.data?.total_sets_30d ?? 0,
+            racha: res.data?.streak ?? 0,
+            diasEntrenados7d: res.data?.this_week ?? 0,
+            diasEntrenadosObjetivo: res.data?.objetivo_semanal ?? 5,
+            logros: logros.value?.length ?? 0,
         };
     } catch (err) {
-        console.error('[ProgresoContent] Error cargando weight chart:', err);
-    }
-};
-
-const onUpdateGoal = async (newGoal) => {
-    try {
-        await axios.patch('/api/progreso/goal', { peso_objetivo: newGoal });
-        weightChart.value.goal = newGoal;
-        const latest = weightChart.value.latest;
-        if (latest && newGoal) {
-            const delta = Math.round((latest.peso - newGoal) * 100) / 100;
-            weightChart.value.delta = delta;
-            weightChart.value.direction =
-                newGoal < latest.peso ? 'down' : newGoal > latest.peso ? 'up' : null;
-        } else {
-            weightChart.value.delta = null;
-            weightChart.value.direction = null;
-        }
-        toast.success(newGoal ? `Objetivo actualizado a ${newGoal} kg` : 'Objetivo eliminado');
-    } catch (err) {
-        console.error('[ProgresoContent] Error actualizando goal:', err);
-        toast.error('No se pudo guardar el objetivo');
+        console.error('[ProgresoContent] Error cargando progress stats:', err);
     }
 };
 
@@ -301,85 +676,11 @@ const modalDetalle = ref({
     comparacion: {},
 });
 
-const tabs = [
-    { id: 'medidas', label: 'Medidas', icon: '📏' },
-    { id: 'metas', label: 'Metas', icon: '🎯' },
-    { id: 'fotos', label: 'Galería', icon: '📸', badge: 'Pronto' },
-    { id: 'logros', label: 'Medallas', icon: '🏆', badge: logros.value?.length || null },
-];
-
-// Scroll al form de medidas cuando el user clickea "Registrar Medidas"
 const scrollToMedidas = () => {
     const el = document.getElementById('medidas-section');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
-// === Stat grid header (Series 30d / Racha / Frecuencia / Logros) ===
-const progressStats = ref({
-    series30d: 0,
-    racha: 0,
-    diasEntrenados7d: 0,
-    diasEntrenadosObjetivo: 5, // default: 5 días por semana
-    logros: 0,
-});
-
-const cargarProgressStats = async () => {
-    try {
-        const res = await axios.get('/api/stats/resumen');
-        progressStats.value = {
-            series30d: res.data?.total_sets_30d ?? 0,
-            racha: res.data?.streak ?? 0,
-            diasEntrenados7d: res.data?.this_week ?? 0,
-            diasEntrenadosObjetivo: res.data?.objetivo_semanal ?? 5,
-            logros: logros.value?.length ?? 0,
-        };
-    } catch (err) {
-        // Silenciar — los stats se muestran en 0
-        console.error('[ProgresoContent] Error cargando progress stats:', err);
-    }
-};
-
-// Formato de stat row para ObsidianStatGrid
-const progressStatsFormatted = computed(() => {
-    const pct = progressStats.value.diasEntrenadosObjetivo
-        ? Math.round((progressStats.value.diasEntrenados7d / progressStats.value.diasEntrenadosObjetivo) * 100)
-        : 0;
-    return [
-        {
-            label: 'Series 30d',
-            value: progressStats.value.series30d,
-            accent: 'violet',
-            trend: progressStats.value.series30d > 0 ? '+este mes' : '',
-        },
-        {
-            label: 'Racha actual',
-            value: progressStats.value.racha,
-            unit: 'días',
-            accent: 'orange',
-            sub: 'Récord máx: 5 días',
-        },
-        {
-            label: 'Frecuencia',
-            value: progressStats.value.diasEntrenados7d,
-            accent: 'emerald',
-            sub: `${pct}% del objetivo`,
-            trend: `${pct}%`,
-        },
-        {
-            label: 'Logros',
-            value: progressStats.value.logros,
-            unit: `/ 8`,
-            accent: 'amber',
-            sub: '1 nueva medalla',
-        },
-    ];
-});
-
-// === Confetti (deprecated local; ahora viene de useConfetti) ===
-// Kept as alias for backward compat with existing call sites
-const triggerCelebration = celebrate;
-
-// === Computed ===
 const diasRestantesParaRegistrar = computed(() => {
     if (!ultimoRegistro.value) return 0;
     const ultimo = new Date(ultimoRegistro.value.fecha);
@@ -388,10 +689,18 @@ const diasRestantesParaRegistrar = computed(() => {
     return Math.max(0, 14 - diasPasados);
 });
 
-// === Format ===
 const formatFecha = (dateStr) => {
     if (!dateStr) return '';
-    return formatDateLong(dateStr);
+    try {
+        const d = new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'));
+        return d.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return dateStr;
+    }
 };
 
 const formatFechaMedalla = (dateStr) => {
@@ -399,7 +708,6 @@ const formatFechaMedalla = (dateStr) => {
     return formatDateMedium(dateStr);
 };
 
-// === Data fetching ===
 const cargarProgresos = async () => {
     try {
         const response = await axios.get('/api/progreso');
@@ -410,6 +718,7 @@ const cargarProgresos = async () => {
         if (ultimoRegistro.value) {
             form.value = {
                 peso: ultimoRegistro.value.peso || '',
+                grasa_corporal: ultimoRegistro.value.grasa_corporal || '',
                 altura: ultimoRegistro.value.altura || '',
                 edad: ultimoRegistro.value.edad || '',
                 sexo: ultimoRegistro.value.sexo || '',
@@ -444,12 +753,14 @@ const cargarLogros = async () => {
         const response = await axios.get('/api/logros');
         logros.value = response.data.logros || [];
         logrosStats.value = response.data.stats || null;
+        if (logros.value?.length) {
+            progressStats.value.logros = logros.value.length;
+        }
     } catch (error) {
         console.error('Error al cargar logros:', error);
     }
 };
 
-// === Actions ===
 const guardarProgreso = async (formData) => {
     const tieneDatos = Object.keys(formData)
         .filter((k) => !['sexo', 'edad', 'altura'].includes(k))
@@ -472,9 +783,9 @@ const guardarProgreso = async (formData) => {
                     'success'
                 );
             });
-            bigCelebration(); // 🎉 celebración grande por medalla nueva
+            bigCelebration();
         } else {
-            mini(); // micro-celebración por progreso guardado
+            mini();
         }
 
         await cargarProgresos();
@@ -556,7 +867,6 @@ const eliminarMeta = async (id) => {
     });
     if (!confirmed) return;
 
-    // Snapshot + posición original para restaurar en el mismo lugar
     const idx = metas.value.findIndex((m) => m.id === id);
     const snapshot = idx >= 0 ? { ...metas.value[idx] } : null;
 
@@ -579,21 +889,17 @@ const eliminarMeta = async (id) => {
         },
     });
 
-    // Solo recargar logros si la eliminación se confirmó
     if (!cancelled) {
         await cargarLogros();
     }
 };
 
-// === Chart.js ===
-// async porque hace un dynamic import de chart.js (lazy-load). Solo se baja
-// el vendor-chart (~206 kB) cuando hay datos para graficar.
+// Chart.js initialization
 const initChart = async () => {
     const ctx = document.getElementById('progresoChart');
     if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
 
-    // Lazy-load de chart.js: se carga solo cuando se inicializa el chart.
     const { Chart, registerables } = await import('chart.js');
     Chart.register(...registerables);
 
@@ -611,11 +917,11 @@ const initChart = async () => {
     });
     const dataValues = validData.map((d) => d.valor);
 
-    const gridColor = document.documentElement.classList.contains('dark') ? '#374151' : '#e2e8f0';
-    const textColor = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+    const gridColor = '#23293d';
+    const textColor = '#94a3b8';
     const canvasCtx = ctx.getContext('2d');
-    const gradient = canvasCtx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+    const gradient = canvasCtx.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
     gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
     chartInstance = new Chart(ctx, {
@@ -632,13 +938,13 @@ const initChart = async () => {
                     fill: true,
                     tension: 0.35,
                     pointBackgroundColor: '#6366f1',
-                    pointBorderColor: '#ffffff',
+                    pointBorderColor: '#0a0e18',
                     pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    pointHoverBackgroundColor: '#4f46e5',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointHoverBackgroundColor: '#8b5cf6',
                     pointHoverBorderColor: '#ffffff',
-                    pointHoverBorderWidth: 3,
+                    pointHoverBorderWidth: 2,
                 },
             ],
         },
@@ -648,25 +954,34 @@ const initChart = async () => {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#1f2937',
+                    backgroundColor: '#151926',
+                    borderColor: '#23293d',
+                    borderWidth: 1,
                     titleFont: { size: 12, weight: 'bold' },
                     bodyFont: { size: 12 },
-                    padding: 12,
-                    cornerRadius: 10,
+                    padding: 10,
+                    cornerRadius: 8,
                     displayColors: false,
                     callbacks: {
-                        label: (context) => ` ${context.parsed.y} ${key === 'peso' ? 'kg' : 'cm'}`,
+                        label: (context) =>
+                            ` ${context.parsed.y} ${
+                                key === 'peso'
+                                    ? 'kg'
+                                    : key === 'grasa_corporal'
+                                      ? '%'
+                                      : 'cm'
+                            }`,
                     },
                 },
             },
             scales: {
                 y: {
                     grid: { color: gridColor, drawBorder: false },
-                    ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } },
+                    ticks: { color: textColor, font: { family: 'Inter, system-ui' } },
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: textColor, font: { family: 'ui-sans-serif, system-ui' } },
+                    ticks: { color: textColor, font: { family: 'Inter, system-ui' } },
                 },
             },
         },
@@ -682,20 +997,14 @@ onMounted(() => {
     cargarProgresos();
     cargarMetas();
     cargarLogros();
-    cargarWeightChart();
     cargarProgressStats();
 });
 
-// === QW4: Exportar progreso a PDF ===
-// Usa jspdf (lazy-loaded) para generar un PDF con cover, stats, medidas,
-// metas y logros. No hace falta un endpoint backend: la data ya está en
-// el estado del componente. Si la sección no se cargó todavía (ej. el
-// user nunca entró a "metas"), hacemos un fetch para tener data completa.
+// PDF Export
 const { exportando: exportandoPdf, exportarPdf } = useProgresoPdf();
 
 const exportarProgresoPdf = async () => {
     try {
-        // Pedimos en paralelo lo que no tenemos en estado local
         const [statsRes, userRes, metasRes, logrosRes] = await Promise.all([
             axios.get('/api/stats/resumen').catch(() => ({ data: {} })),
             axios.get('/api/user-info').catch(() => ({ data: {} })),
@@ -703,8 +1012,6 @@ const exportarProgresoPdf = async () => {
             axios.get('/api/logros').catch(() => ({ data: [] })),
         ]);
 
-        // Stats y metas ya pueden estar cargados en el estado local; usamos
-        // lo que esté más completo (local o lo recién fetcheado).
         const stats = statsRes.data || {};
         const metasArr = (metasRes.data?.length ? metasRes.data : metas.value) || [];
         const logrosArr = (logrosRes.data?.length ? logrosRes.data : logros.value) || [];
@@ -725,10 +1032,10 @@ const exportarProgresoPdf = async () => {
 </script>
 
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar {
     display: none;
 }
-.scrollbar-hide {
+.no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }

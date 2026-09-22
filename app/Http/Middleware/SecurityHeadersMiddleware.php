@@ -51,23 +51,73 @@ class SecurityHeadersMiddleware
         $scriptSrc[] = "'unsafe-inline'";   // Vue runtime template compilation
         if ($isDev) {
             $scriptSrc[] = "'unsafe-eval'"; // Vite HMR
+            // Vite dev server corre en localhost:5173. Usamos wildcards
+            // (localhost:* y 127.0.0.1:*) que son válidos en CSP spec
+            // y cubren cualquier puerto. NO usamos http://[::1]:5173
+            // porque Chrome ignora sources IPv6 con brackets literales.
+            $scriptSrc[] = 'http://localhost:*';
+            $scriptSrc[] = 'http://127.0.0.1:*';
         }
         $scriptSrc[] = 'https://cdn.jsdelivr.net'; // canvas-confetti fallback si se sirve por CDN
+        $scriptSrc[] = 'https://unpkg.com'; // @phosphor-icons/web (Kinetic Obsidian UI)
 
         $styleSrc = ["'self'", "'unsafe-inline'"]; // Tailwind inline styles
+        // Bunny Fonts es el default de Laravel/Breeze para Figtree. Es seguro
+        // (no permite JS, solo CSS/fonts) y se usa en producción, no solo en dev.
+        $styleSrc[] = 'https://fonts.bunny.net';
+        $styleSrc[] = 'https://fonts.googleapis.com';
+        // Google Fonts sirve los archivos binarios de fuente desde gstatic.com;
+        // algunos navegadores también lo consultan como stylesheet fallback.
+        $styleSrc[] = 'https://fonts.gstatic.com';
+        // @phosphor-icons/web (Kinetic Obsidian UI) puede inyectar <style>
+        // o cargar CSS auxiliar desde unpkg.
+        $styleSrc[] = 'https://unpkg.com';
+        // jsDelivr se usa como CDN alternativo para algunos assets.
+        $styleSrc[] = 'https://cdn.jsdelivr.net';
+        if ($isDev) {
+            $styleSrc[] = 'http://localhost:*';
+            $styleSrc[] = 'http://127.0.0.1:*';
+        }
+
+        $fontSrc = ["'self'", 'data:'];
+        $fontSrc[] = 'https://fonts.bunny.net'; // Bunny Fonts (Figtree)
+        $fontSrc[] = 'https://fonts.gstatic.com';
+        // @phosphor-icons/web inyecta <link rel=stylesheet> por cada weight
+        // (regular/thin/light/bold/fill/duotone). Los style.css resultantes
+        // declaran @font-face que apunta a woff2/woff/ttf. Esos binarios
+        // se sirven desde unpkg.com Y desde cdn.jsdelivr.net (depende
+        // de qué CDN termine resolviendo el navegador).
+        $fontSrc[] = 'https://unpkg.com';
+        $fontSrc[] = 'https://cdn.jsdelivr.net';
+
         $connectSrc = ["'self'"];
         if ($isDev) {
             $connectSrc[] = 'ws:';   // Vite HMR WebSocket
             $connectSrc[] = 'wss:';
+            $connectSrc[] = 'http://localhost:*';
+            $connectSrc[] = 'http://127.0.0.1:*';
+        }
+
+        // img-src: además de 'self', data:, blob:, en dev permitimos localhost
+        // para que el Vite dev server pueda servir imágenes del repo (svg, etc).
+        $imgSrc = ["'self'", 'data:', 'blob:'];
+        if ($isDev) {
+            $imgSrc[] = 'http://localhost:*';
+            $imgSrc[] = 'http://127.0.0.1:*';
         }
 
         $directives = [
             "default-src 'self'",
             'script-src '.implode(' ', $scriptSrc),
             'style-src '.implode(' ', $styleSrc),
-            "img-src 'self' data: blob: ".implode(' ', $connectSrc),
-            "font-src 'self' data:",
+            'img-src '.implode(' ', $imgSrc),
+            'font-src '.implode(' ', $fontSrc),
             'connect-src '.implode(' ', $connectSrc),
+            // canvas-confetti crea un Web Worker desde blob: para animar partículas.
+            // Sin worker-src explícito, CSP usa script-src como fallback, que no
+            // permite blob:. Agregamos 'self' + blob: para que funcione tanto en
+            // dev (Vite) como en prod (assets bundleados).
+            "worker-src 'self' blob:",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

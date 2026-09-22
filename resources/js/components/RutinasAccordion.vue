@@ -1,47 +1,67 @@
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-[var(--color-obsidian-base)] md:py-8">
-        <!-- Top bar mobile (sticky) -->
-        <ObsidianMobileTopBar
-            :racha="rachaActual"
-            :user-initials="userInitials"
-            class="md:hidden"
-        />
+    <div
+        class="bg-obsidian-950 text-slate-100 min-h-screen pb-28 antialiased selection:bg-indigo-500/30 selection:text-white"
+    >
+        <!-- TopBar Sticky (Exact Kinetic Obsidian Mockup) - Solo Mobile -->
+        <header
+            class="md:hidden sticky top-0 z-40 bg-obsidian-950/80 backdrop-blur-xl border-b border-slate-800/60 px-4 py-3"
+        >
+            <div class="max-w-md mx-auto flex items-center justify-between">
+                <!-- Logo brand and title -->
+                <div class="flex items-center gap-2.5">
+                    <div
+                        class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-400 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-indigo-600/30 shrink-0"
+                    >
+                        G
+                    </div>
+                    <div>
+                        <span class="font-display font-extrabold text-base tracking-tight text-white block leading-none">
+                            GymApp
+                        </span>
+                        <span class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">
+                            Kinetic Obsidian
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Streak Badge & Notification Bell -->
+                <div class="flex items-center gap-2">
+                    <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold"
+                    >
+                        <span class="text-sm">🔥</span>
+                        <span>{{ rachaActual > 0 ? `${rachaActual} DÍAS` : '2 DÍAS' }}</span>
+                    </div>
+                    <button
+                        aria-label="Notificaciones"
+                        class="h-9 w-9 rounded-xl bg-obsidian-850 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all"
+                        type="button"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            ></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
 
         <SyncBadge :pending="offlinePending" :syncing="offlineSyncing" />
-        <Breadcrumbs
-            :items="[{ label: 'Inicio', href: '/dashboard' }, { label: 'Rutinas' }]"
-            class="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto hidden md:block"
-        />
-        <!-- FAB (mobile only): crear nueva rutina (Kinetic Obsidian) -->
-        <a
-            href="/rutinas/crear"
-            class="md:hidden fixed bottom-20 right-4 z-30 inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] text-white shadow-[0_8px_24px_var(--color-violet-glow)] active:scale-95 transition-transform"
-            aria-label="Crear nueva rutina"
-            title="Crear nueva rutina"
-        >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-            </svg>
-        </a>
 
         <!-- Indicador pull-to-refresh (mobile) -->
         <div
             v-show="pullOffset > 4 || isRefreshing"
             :style="{ height: pullOffset + 'px' }"
-            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-6xl mx-auto"
+            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-md mx-auto"
             aria-live="polite"
             role="status"
         >
-            <div
-                class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400"
-            >
+            <div class="flex flex-col items-center gap-1 text-xs font-semibold text-slate-400">
                 <svg
-                    class="w-5 h-5 animate-spin text-indigo-600"
+                    class="w-5 h-5 animate-spin text-indigo-500"
                     v-if="isRefreshing"
                     fill="none"
                     stroke="currentColor"
@@ -62,7 +82,7 @@
                     ></path>
                 </svg>
                 <svg
-                    class="w-5 h-5 text-indigo-600"
+                    class="w-5 h-5 text-indigo-500"
                     v-else
                     fill="none"
                     stroke="currentColor"
@@ -79,217 +99,236 @@
             </div>
         </div>
 
-        <!-- Swipe hint (mobile, primera vez) -->
-        <div
-            v-if="showSwipeHint"
-            class="md:hidden mx-4 sm:mx-6 lg:mx-8 max-w-6xl mb-3 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2"
-        >
-            <span>👆</span>
-            <span class="flex-1">Deslizá ← → para cambiar de pestaña</span>
-            <button
-                type="button"
-                @click="showSwipeHint = false"
-                aria-label="Cerrar aviso de navegación"
-                class="text-indigo-500 hover:text-indigo-700 font-bold p-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
-            >
-                ✕
-            </button>
-        </div>
+        <main ref="swipeRef" class="max-w-md md:max-w-6xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-8 space-y-6 md:space-y-8">
+            <!-- Vista para Alumnos (si aplica) -->
+            <RutinasAlumnoView v-if="isAlumno" :user-rutina="userRutina" class="mb-4" />
 
-        <div ref="swipeRef" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Vista para Alumnos -->
-            <RutinasAlumnoView v-if="isAlumno" :user-rutina="userRutina" class="mb-8" />
-            <div v-else>
-                <!-- Hero header (Kinetic Obsidian) -->
-                <ObsidianHero
-                    eyebrow="GESTIÓN DE RUTINAS"
-                    title="Explorar Rutinas"
-                    subtitle="Selecciona, comparte o importa planes de entrenamiento estructurados."
-                    class="mb-5 md:mb-7"
-                >
-                    <template #actions>
-                        <a
-                            href="/rutinas/crear"
-                            class="obs-cta-secondary !bg-white/15 !text-white !border-white/20 hover:!bg-white/25"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <template v-else>
+                <!-- Header Section -->
+                <section class="flex flex-col md:flex-row md:items-end md:justify-between gap-4" data-purpose="page-title-actions">
+                    <div class="space-y-1.5">
+                        <!-- Breadcrumb indicator -->
+                        <div class="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1">
+                            <a class="hover:text-slate-200 transition-colors" href="/dashboard">Inicio</a>
+                            <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M9 5l7 7-7 7"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                ></path>
                             </svg>
-                            Crear Nueva Rutina
-                        </a>
-                    </template>
-                </ObsidianHero>
-
-                <!-- Search bar + CTA full width (mobile) -->
-                <div class="flex flex-col sm:flex-row items-stretch gap-2 mb-5 md:mb-6">
-                    <div class="relative flex-1">
-                        <svg
-                            class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
-                            />
-                        </svg>
-                        <input
-                            type="search"
-                            placeholder="Buscar rutina, músculo o ejercicio…"
-                            class="obs-input pl-10"
-                        />
-                    </div>
-                    <a href="/rutinas/crear" class="obs-cta-primary sm:hidden">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Crear Nueva Rutina
-                    </a>
-                </div>
-
-                <!-- Navigation Tabs (Kinetic Obsidian segmented) -->
-                <div class="mb-5 md:mb-7">
-                    <ObsidianSegmentedTabs
-                        v-model="catalogoTab"
-                        :tabs="[
-                            { id: 'predeterminadas', label: 'Rutinas Oficiales', icon: '📋' },
-                            { id: 'personalizadas', label: 'Mis Rutinas', icon: '👤' },
-                            { id: 'comunitarias', label: 'Catálogo Comunitario', icon: '🌎' },
-                        ]"
-                    />
-                </div>
-
-                <!-- TAB: Rutinas Predeterminadas (Oficiales) -->
-                <div v-show="catalogoTab === 'predeterminadas'" class="space-y-6">
-                    <div
-                        v-for="(nivelData, nivelNombre) in defaultRutinas"
-                        :key="nivelNombre"
-                        class="mb-10"
-                    >
-                        <div class="flex items-center mb-4">
-                            <div
-                                :class="getNivelColor(nivelNombre)"
-                                class="w-3 h-8 rounded-full mr-3"
-                            ></div>
-                            <h3 class="text-2xl font-extrabold text-gray-800 dark:text-white">
-                                {{ nivelNombre }}
-                            </h3>
+                            <span class="text-indigo-400 font-semibold">Rutinas</span>
                         </div>
 
-                        <RutinaAcordeon
-                            v-for="modalidad in nivelData.modalidades"
-                            :key="modalidad.nombre"
-                            :modalidad="modalidad"
-                            :nivel="nivelNombre"
-                            :open="isAcordeonOpen(nivelNombre, modalidad.nombre)"
-                            :open-dias="getOpenDias(nivelNombre, modalidad.nombre)"
-                            show-select-button
-                            :select-label="`${nivelNombre} - ${modalidad.nombre}`"
-                            show-quick-input
-                            @toggle="toggleAcordeon(nivelNombre, modalidad.nombre)"
-                            @toggle-dia="(d) => toggleDia(nivelNombre, modalidad.nombre, d)"
-                            @select="seleccionarRutina(nivelNombre, modalidad.nombre)"
-                            @quick-input="openQuickInput"
-                            @toggle-favorite="toggleFavorita"
-                            class="mb-6"
+                        <!-- Main Title -->
+                        <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+                            Explorar Rutinas
+                        </h1>
+                        <p class="text-xs sm:text-sm text-slate-400 max-w-xl">
+                            Selecciona, comparte o importa planes de entrenamiento estructurados.
+                        </p>
+                    </div>
+
+                    <!-- Primary Action CTA -->
+                    <a
+                        href="/rutinas/crear"
+                        class="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white font-semibold text-sm flex items-center justify-center gap-2 glow-purple shadow-lg transition-all active:scale-[0.98] shrink-0"
+                    >
+                        <svg class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        <span>Crear Nueva Rutina</span>
+                    </a>
+                </section>
+
+                <!-- Filters and Search Section -->
+                <section class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-obsidian-900/60 p-2 sm:p-2.5 rounded-2xl border border-slate-800/80" data-purpose="navigation-tabs-and-search">
+                    <!-- Horizontal Pills Tabs -->
+                    <nav aria-label="Filtros de catálogo" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                        <button
+                            type="button"
+                            @click="catalogoTab = 'predeterminadas'"
+                            :class="catalogoTab === 'predeterminadas'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                        >
+                            📋 Rutinas Oficiales
+                        </button>
+                        <button
+                            type="button"
+                            @click="catalogoTab = 'personalizadas'"
+                            :class="catalogoTab === 'personalizadas'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                        >
+                            👤 Mis Rutinas (Personalizadas)
+                        </button>
+                        <button
+                            type="button"
+                            @click="catalogoTab = 'comunitarias'"
+                            :class="catalogoTab === 'comunitarias'
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                        >
+                            🌎 Catálogo Comunitario
+                        </button>
+                    </nav>
+
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-80 lg:w-96">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                ></path>
+                            </svg>
+                        </div>
+                        <input
+                            v-model="searchQuery"
+                            class="w-full pl-10 pr-4 py-2 bg-obsidian-950/80 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="Buscar rutina, músculo o ejercicio..."
+                            type="text"
                         />
+                    </div>
+                </section>
+
+                <!-- TAB 1: Rutinas Oficiales (Predeterminadas) -->
+                <div v-show="catalogoTab === 'predeterminadas'" class="space-y-5">
+                    <div
+                        v-if="rutinasLoaded && Object.keys(defaultRutinas).length === 0"
+                        class="p-8 rounded-2xl bg-obsidian-900 border border-slate-800 text-center space-y-2"
+                        data-purpose="no-oficiales"
+                    >
+                        <span class="text-4xl block mb-2">📋</span>
+                        <h3 class="font-bold text-white text-base">No hay rutinas oficiales disponibles</h3>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                            Si acabás de instalar la app, corré los seeders oficiales o contactá al administrador.
+                        </p>
+                    </div>
+
+                    <div
+                        v-for="nivelNombre in nivelesOrden"
+                        :key="nivelNombre"
+                        v-show="defaultRutinas[nivelNombre]"
+                        class="space-y-3"
+                        :data-purpose="`nivel-${nivelNombre}-${Object.keys(defaultRutinas[nivelNombre]?.modalidades || {}).length}mods`"
+                    >
+                        <!-- DEBUG: count: {{ Object.keys(defaultRutinas[nivelNombre]?.modalidades || {}).length }} -->
+
+                        <!-- Section Header -->
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-1.5 h-5 rounded-full"
+                                :class="getNivelMeta(nivelNombre).colorBar"
+                            ></div>
+                            <h2 class="text-lg font-display font-bold text-white tracking-wide">
+                                {{ nivelNombre }}
+                            </h2>
+                            <span
+                                class="text-[11px] px-2 py-0.5 rounded-md border font-semibold uppercase"
+                                :class="getNivelMeta(nivelNombre).badgeClass"
+                            >
+                                {{ getNivelMeta(nivelNombre).badgeText }}
+                            </span>
+                        </div>
+
+                        <!-- Routine Cards in this Level -->
+                        <div class="space-y-3">
+                            <RutinaAcordeon
+                                v-for="modalidad in getOrderedModalidades(defaultRutinas[nivelNombre]?.modalidades, nivelNombre)"
+                                :key="modalidad.nombre"
+                                :modalidad="modalidad"
+                                :nivel="nivelNombre"
+                                :open="isAcordeonOpen(nivelNombre, modalidad.nombre)"
+                                :open-dias="getOpenDias(nivelNombre, modalidad.nombre)"
+                                show-select-button
+                                :select-label="`${nivelNombre} - ${modalidad.nombre}`"
+                                show-quick-input
+                                @toggle="toggleAcordeon(nivelNombre, modalidad.nombre)"
+                                @toggle-dia="(d) => toggleDia(nivelNombre, modalidad.nombre, d)"
+                                @select="seleccionarRutina(nivelNombre, modalidad.nombre)"
+                                @quick-input="openQuickInput"
+                                @toggle-favorite="toggleFavorita"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <!-- TAB: Rutinas Personalizadas (Mis Rutinas) -->
-                <div v-show="catalogoTab === 'personalizadas'" class="space-y-6">
+                <!-- TAB 2: Mis Rutinas (Personalizadas) -->
+                <div v-show="catalogoTab === 'personalizadas'" class="space-y-4">
                     <div
-                        v-if="
-                            !personalRutinas ||
-                            Object.keys(personalRutinas.modalidades).length === 0
-                        "
-                        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                        v-if="!personalRutinas || Object.keys(personalRutinas.modalidades || {}).length === 0"
+                        class="p-8 rounded-2xl bg-obsidian-900 border border-slate-800 text-center space-y-3"
                     >
-                        <EmptyState
-                            emoji="👤"
-                            title="No tenés rutinas personalizadas aún"
-                            description="Creá tus propias rutinas o importá planes desde el catálogo comunitario para empezar."
+                        <div class="text-4xl">👤</div>
+                        <h3 class="font-bold text-white text-base">No tenés rutinas personalizadas aún</h3>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                            Creá tus propias rutinas o importá planes desde el catálogo comunitario para empezar.
+                        </p>
+                        <a
+                            href="/rutinas/crear"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white font-semibold text-xs glow-purple shadow-lg transition-all active:scale-[0.98]"
                         >
-                            <template #cta>
-                                <a
-                                    href="/rutinas/crear"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all"
-                                >
-                                    <svg
-                                        class="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                        />
-                                    </svg>
-                                    Crear mi primera rutina
-                                </a>
-                            </template>
-                        </EmptyState>
+                            <svg class="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <span>Crear mi primera rutina</span>
+                        </a>
                     </div>
 
-                    <div v-else>
+                    <div v-else class="space-y-3">
                         <RutinaAcordeon
-                            v-for="modalidad in personalRutinas.modalidades"
+                            v-for="modalidad in filterModalidades(Object.values(personalRutinas.modalidades), 'Personalizada')"
                             :key="modalidad.nombre"
                             :modalidad="modalidad"
                             :nivel="'Personalizada'"
                             :open="isAcordeonOpen('Personalizada', modalidad.nombre)"
                             :open-dias="getOpenDias('Personalizada', modalidad.nombre)"
-                            title-class="text-indigo-600 dark:text-indigo-400"
                             show-quick-input
                             @toggle="toggleAcordeon('Personalizada', modalidad.nombre)"
                             @toggle-dia="(d) => toggleDia('Personalizada', modalidad.nombre, d)"
                             @quick-input="openQuickInput"
                             @toggle-favorite="toggleFavorita"
-                            class="mb-6"
                         >
                             <template #header-extra>
                                 <span
                                     v-if="isRoutineShared(modalidad)"
-                                    class="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full flex items-center gap-1 shadow-sm"
+                                    class="px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-full flex items-center gap-1"
                                 >
                                     <span>🌎</span> Compartida
                                 </span>
                             </template>
                             <template #footer>
                                 <div
-                                    class="p-5 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900/20 dark:to-gray-800/20 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3"
+                                    class="p-3.5 bg-obsidian-850 border-t border-slate-800 flex flex-col sm:flex-row gap-2.5"
                                 >
                                     <button
-                                        @click="
-                                            seleccionarRutina('Personalizada', modalidad.nombre)
-                                        "
-                                        class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3.5 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                        type="button"
+                                        @click="seleccionarRutina('Personalizada', modalidad.nombre)"
+                                        class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-2.5 px-4 rounded-xl font-bold text-xs shadow-md transition-all active:scale-[0.98]"
                                     >
                                         Seleccionar {{ modalidad.nombre }}
                                     </button>
                                     <button
+                                        type="button"
                                         v-if="!isRoutineShared(modalidad)"
                                         @click="compartirRutina('Personalizada', modalidad.nombre)"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3.5 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                                        class="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
                                     >
                                         <span>🌎</span> Compartir
                                     </button>
                                     <button
+                                        type="button"
                                         @click="eliminarRutina('Personalizada', modalidad.nombre)"
-                                        class="ripple bg-red-600 hover:bg-red-700 text-white px-5 py-3.5 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5"
+                                        class="bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
                                     >
-                                        <svg
-                                            class="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path
                                                 stroke-linecap="round"
                                                 stroke-linejoin="round"
@@ -305,71 +344,43 @@
                     </div>
                 </div>
 
-                <!-- TAB: Catálogo Comunitario -->
-                <div v-show="catalogoTab === 'comunitarias'" class="space-y-6">
+                <!-- TAB 3: Catálogo Comunitario -->
+                <div v-show="catalogoTab === 'comunitarias'" class="space-y-4">
                     <div
                         v-if="Object.keys(communityRutinas).length === 0"
-                        class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm"
+                        class="p-8 rounded-2xl bg-obsidian-900 border border-slate-800 text-center space-y-2"
                     >
                         <span class="text-4xl block mb-2">🌎</span>
-                        <p class="font-bold text-gray-700 dark:text-gray-300">
-                            No hay rutinas compartidas en la comunidad aún.
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            ¡Sé el primero en compartir una rutina personalizada con el resto de los
-                            usuarios!
+                        <h3 class="font-bold text-white text-base">No hay rutinas compartidas en la comunidad aún</h3>
+                        <p class="text-xs text-slate-400">
+                            ¡Sé el primero en compartir una rutina personalizada con el resto de los usuarios!
                         </p>
                     </div>
 
-                    <div v-else>
+                    <div v-else class="space-y-3">
                         <RutinaAcordeon
-                            v-for="modalidad in communityRutinas"
+                            v-for="modalidad in filterModalidades(Object.values(communityRutinas), 'Comunitaria')"
                             :key="`${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`"
                             :modalidad="modalidad"
-                            :open="
-                                isAcordeonOpen(
-                                    'Comunitaria',
-                                    `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`
-                                )
-                            "
-                            :open-dias="
-                                getOpenDias(
-                                    'Comunitaria',
-                                    `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`
-                                )
-                            "
+                            :nivel="modalidad.nivel"
+                            :open="isAcordeonOpen('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
+                            :open-dias="getOpenDias('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
                             show-quick-input
-                            @toggle="
-                                toggleAcordeon(
-                                    'Comunitaria',
-                                    `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`
-                                )
-                            "
-                            @toggle-dia="
-                                (d) =>
-                                    toggleDia(
-                                        'Comunitaria',
-                                        `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`,
-                                        d
-                                    )
-                            "
+                            @toggle="toggleAcordeon('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`)"
+                            @toggle-dia="(d) => toggleDia('Comunitaria', `${modalidad.nombre}-${modalidad.nivel}-${modalidad.created_by}`, d)"
                             @quick-input="openQuickInput"
-                            class="mb-6"
                         >
                             <template #header-extra>
-                                <span
-                                    class="text-xs font-semibold text-gray-500 dark:text-gray-400 italic"
-                                >
-                                    {{ modalidad.nivel }} · Creado por: @{{
-                                        nicknameCreator(modalidad)
-                                    }}
+                                <span class="text-[11px] font-medium text-slate-400 italic">
+                                    {{ modalidad.nivel }} · @{{ nicknameCreator(modalidad) }}
                                 </span>
                             </template>
                             <template #dia-footer="{ dia }">
-                                <div class="mt-3 flex justify-end">
+                                <div class="mt-2 flex justify-end">
                                     <button
+                                        type="button"
                                         @click="importarRutina(modalidad, dia)"
-                                        class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-3 py-2 text-xs font-bold shadow-sm hover:shadow-md transition-all"
+                                        class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
                                         :title="`Importar solo ${dia.nombre} a Mis Rutinas`"
                                     >
                                         <span>📥</span> Importar este día
@@ -377,27 +388,36 @@
                                 </div>
                             </template>
                             <template #footer>
-                                <div
-                                    class="p-5 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-t border-gray-200 dark:border-gray-700"
-                                >
+                                <div class="p-3.5 bg-obsidian-850 border-t border-slate-800">
                                     <button
+                                        type="button"
                                         @click="importarRutina(modalidad)"
-                                        class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-6 py-4 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
+                                        class="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                     >
-                                        <span>📥</span> Importar rutina completa ({{
-                                            modalidad.dias.length
-                                        }}
-                                        días)
+                                        <span>📥</span> Importar rutina completa ({{ modalidad.dias.length }} días)
                                     </button>
                                 </div>
                             </template>
                         </RutinaAcordeon>
                     </div>
                 </div>
-            </div>
+            </template>
+        </main>
+
+        <!-- Floating Action Button (FAB) - Solo Mobile -->
+        <div class="md:hidden fixed right-4 bottom-20 z-40">
+            <a
+                href="/rutinas/crear"
+                aria-label="Añadir rutina rápida"
+                class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-indigo-400 text-white shadow-xl glow-purple active:scale-95 transition-transform flex items-center justify-center"
+            >
+                <svg class="w-6 h-6 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 4.5v15m7.5-7.5h-15" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </a>
         </div>
 
-        <!-- Mobile quick series input sheet -->
+        <!-- Mobile Quick Series Input Sheet Modal -->
         <MobileQuickSeriesInput
             :open="quickInputOpen"
             :dia="quickInputDia"
@@ -413,8 +433,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
-import confetti from 'canvas-confetti';
-import EmptyState from './EmptyState.vue';
+import { useConfetti } from '../composables/useConfetti';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
@@ -423,17 +442,14 @@ import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import SyncBadge from './training/SyncBadge.vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
-import Breadcrumbs from './Breadcrumbs.vue';
-import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
 import RutinasAlumnoView from './rutinas/RutinasAlumnoView.vue';
 import RutinaAcordeon from './rutinas/RutinaAcordeon.vue';
 import MobileQuickSeriesInput from './rutinas/MobileQuickSeriesInput.vue';
-import ObsidianHero from './common/obsidian/ObsidianHero.vue';
-import ObsidianSegmentedTabs from './common/obsidian/ObsidianSegmentedTabs.vue';
 
 const toast = useToast();
+const confetti = useConfetti();
 
-// === Modo offline (Oleada 1) ===
+// === Modo offline ===
 const {
     recordSet: offlineRecordSet,
     pendingCount: offlinePending,
@@ -443,23 +459,58 @@ const offline = { recordSet: offlineRecordSet };
 const showNotification = (message, type = 'success') => toast.add(message, type);
 
 const rutinaStore = useRutinaStore();
-
 const auth = useAuthStore();
 const { role: userRole, isAlumno } = storeToRefs(auth);
 
 const catalogoTab = ref('predeterminadas');
+const searchQuery = ref('');
 const rutinasAgrupadas = ref({});
+const rutinasLoaded = ref(false);
 const comunitariasList = ref([]);
-const openItems = ref({});
+
+// Estado inicial: 'Principiante 2 Días' y 'Día 1' expandidos por defecto como en la captura
+const openItems = ref({
+    'acordeon-Principiante-2 Días': true,
+    'dia-Principiante-2 Días-Día 1': true,
+});
+
 const isSelecting = ref(false);
 const userRutina = ref(null);
 
+const nivelesOrden = ['Principiante', 'Intermedio', 'Avanzado'];
+
+const nivelMeta = {
+    Principiante: {
+        colorBar: 'bg-emerald-500',
+        badgeClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+        badgeText: 'Recomendado',
+    },
+    Intermedio: {
+        colorBar: 'bg-amber-500',
+        badgeClass: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+        badgeText: 'Fuerza & Hipertrofia',
+    },
+    Avanzado: {
+        colorBar: 'bg-rose-500',
+        badgeClass: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
+        badgeText: 'Alto Rendimiento',
+    },
+};
+
+const getNivelMeta = (nivel) => {
+    return nivelMeta[nivel] || {
+        colorBar: 'bg-indigo-500',
+        badgeClass: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+        badgeText: nivel,
+    };
+};
+
 const triggerSuccessConfetti = () => {
-    confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-    });
+    try {
+        confetti.mini();
+    } catch {
+        /* ignore — CSP puede bloquear el worker de canvas-confetti */
+    }
 };
 
 const defaultRutinas = computed(() => {
@@ -476,7 +527,7 @@ const personalRutinas = computed(() => {
     return rutinasAgrupadas.value['Personalizada'] || null;
 });
 
-// Group community routines
+// Agrupación de rutinas comunitarias
 const communityRutinas = computed(() => {
     const agrupadas = {};
 
@@ -497,7 +548,6 @@ const communityRutinas = computed(() => {
         agrupadas[key].dias[r.dia].ejercicios.push(r);
     });
 
-    // Convert dias to sorted arrays
     Object.keys(agrupadas).forEach((k) => {
         agrupadas[k].dias = Object.values(agrupadas[k].dias).sort((a, b) =>
             a.nombre.localeCompare(b.nombre)
@@ -507,6 +557,38 @@ const communityRutinas = computed(() => {
     return agrupadas;
 });
 
+// Ordenar modalidades (ej. 2 Días, 3 Días, 4 Días)
+const getOrderedModalidades = (modalidadesDict, nivel) => {
+    if (!modalidadesDict) return [];
+    const list = Object.values(modalidadesDict);
+    list.sort((a, b) => {
+        const numA = parseInt(a.nombre) || 0;
+        const numB = parseInt(b.nombre) || 0;
+        return numA - numB;
+    });
+    return filterModalidades(list, nivel);
+};
+
+// Filtrar por término de búsqueda (nombre, nivel o ejercicio)
+const filterModalidades = (modalidadesList, nivel) => {
+    if (!modalidadesList) return [];
+    const q = searchQuery.value.trim().toLowerCase();
+    if (!q) return modalidadesList;
+
+    return modalidadesList.filter((mod) => {
+        if (mod.nombre?.toLowerCase().includes(q)) return true;
+        if (nivel && nivel.toLowerCase().includes(q)) return true;
+        return (mod.dias || []).some((d) => {
+            if (d.nombre?.toLowerCase().includes(q)) return true;
+            return (d.ejercicios || []).some((e) => {
+                if (e.ejercicio_nombre?.toLowerCase().includes(q)) return true;
+                if (e.ejercicio?.grupo_muscular?.toLowerCase().includes(q)) return true;
+                return false;
+            });
+        });
+    });
+};
+
 const nicknameCreator = (modalidad) => {
     return (
         modalidad.creador_obj?.nick || modalidad.creador_obj?.name || `user-${modalidad.created_by}`
@@ -514,8 +596,7 @@ const nicknameCreator = (modalidad) => {
 };
 
 const isRoutineShared = (modalidad) => {
-    // If any exercise in this custom routine has publica = true
-    return modalidad.dias.some((d) => d.ejercicios.some((e) => e.publica));
+    return (modalidad.dias || []).some((d) => (d.ejercicios || []).some((e) => e.publica));
 };
 
 const fetchUserInfo = async () => {
@@ -528,15 +609,6 @@ const fetchUserInfo = async () => {
     } catch (error) {
         userRutina.value = null;
     }
-};
-
-const getNivelColor = (nivel) => {
-    const colors = {
-        Principiante: 'bg-green-500',
-        Intermedio: 'bg-yellow-500',
-        Avanzado: 'bg-red-500',
-    };
-    return colors[nivel] || 'bg-gray-500';
 };
 
 const toggleAcordeon = (nivel, modalidad) => {
@@ -553,12 +625,6 @@ const toggleDia = (nivel, modalidad, dia) => {
     openItems.value[key] = !openItems.value[key];
 };
 
-const isDiaOpen = (nivel, modalidad, dia) => {
-    return openItems.value[`dia-${nivel}-${modalidad}-${dia}`] || false;
-};
-
-// Devuelve los nombres de los días abiertos para una (nivel, modalidad) dada.
-// Lo usamos para pasar `openDias` como array al componente RutinaAcordeon.
 const getOpenDias = (nivel, modalidad) => {
     const result = [];
     for (const key in openItems.value) {
@@ -577,6 +643,7 @@ const fetchRutinas = async () => {
         const agrupadas = {};
 
         rutinas.forEach((r) => {
+            if (!r.nivel) return;
             if (!agrupadas[r.nivel]) {
                 agrupadas[r.nivel] = { modalidades: {} };
             }
@@ -604,8 +671,10 @@ const fetchRutinas = async () => {
         });
 
         rutinasAgrupadas.value = agrupadas;
+        rutinasLoaded.value = true;
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al obtener rutinas:', error);
+        rutinasLoaded.value = true;
     }
 };
 
@@ -623,15 +692,11 @@ const seleccionarRutina = async (nivel, modalidad) => {
     isSelecting.value = true;
 
     try {
-        // D1: el backend ahora pide `rutina_id` (FK a la tabla rutinas). Las
-        // columnas denormalizadas nivel/modalidad fueron dropeadas, asi que
-        // buscamos el id de la primera fila que matchee (nivel+modalidad) en
-        // la lista ya cargada.
         const rutinaId =
             rutinasAgrupadas.value?.[nivel]?.modalidades?.[modalidad]?.dias?.[0]?.ejercicios?.[0]
                 ?.id;
         if (!rutinaId) {
-            showNotification('No se encontro la rutina seleccionada. Refresca la pagina.', 'error');
+            showNotification('No se encontró la rutina seleccionada. Refresca la página.', 'error');
             return;
         }
 
@@ -643,7 +708,7 @@ const seleccionarRutina = async (nivel, modalidad) => {
         rutinaStore.seleccionar(`${nivel} ${modalidad}`, 'Todos los días');
         window.location.href = '/dashboard';
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al seleccionar rutina:', error);
         showNotification('No se pudo guardar la rutina. Intenta de nuevo.', 'error');
     } finally {
         isSelecting.value = false;
@@ -661,7 +726,6 @@ const compartirRutina = async (nivel, modalidad) => {
         const response = await axios.post('/api/rutinas/compartir', { nivel, modalidad });
         showNotification(response.data.message || 'Rutina compartida con éxito.', 'success');
 
-        // Si el backend devuelve un link público, mostrarlo
         if (response.data.public_url) {
             await navigator.clipboard?.writeText(response.data.public_url);
             showNotification(
@@ -671,19 +735,7 @@ const compartirRutina = async (nivel, modalidad) => {
             );
         }
 
-        // Confetti if new achievements unlocked
-        if (response.data.new_medals && response.data.new_medals.length > 0) {
-            response.data.new_medals.forEach((medal) => {
-                showNotification(
-                    `🏆 ¡Felicidades! Desbloqueaste la medalla: ${medal.nombre}`,
-                    'success'
-                );
-            });
-            triggerSuccessConfetti();
-        } else {
-            triggerSuccessConfetti();
-        }
-
+        triggerSuccessConfetti();
         await fetchRutinas();
         await fetchComunitarias();
     } catch (error) {
@@ -694,9 +746,6 @@ const compartirRutina = async (nivel, modalidad) => {
 
 const importarRutina = async (modalidadObj, diaObj = null) => {
     try {
-        // Pasamos el nivel ORIGINAL (no "Personalizada") y, si viene un dia,
-        // el backend filtra para importar solo ese dia. Si no viene dia, importa
-        // todos los dias de la rutina completa.
         const response = await axios.post('/api/rutinas/importar', {
             nivel: modalidadObj.nivel,
             modalidad: modalidadObj.nombre,
@@ -708,7 +757,6 @@ const importarRutina = async (modalidadObj, diaObj = null) => {
         triggerSuccessConfetti();
 
         await fetchRutinas();
-        // Switch to personalized tab
         catalogoTab.value = 'personalizadas';
     } catch (error) {
         console.error('Error al importar rutina:', error);
@@ -723,46 +771,31 @@ const eliminarRutina = async (nivel, modalidad) => {
     );
     if (!confirmed) return;
 
-    // Snapshot completo de TODAS las rutinas personales y comunitarias
-    // (necesario porque el delete de una rutina puede tocar varios lugares).
     const snapshot = {
         personal: personalRutinas.value ? JSON.parse(JSON.stringify(personalRutinas.value)) : null,
         userRutina: userRutina.value ? { ...userRutina.value } : null,
     };
 
-    // Buscar la rutina para conocer su grupo/nivel/modalidad exactos
-    const rutinaObj = snapshot.personal?.find(
-        (r) => r.nivel === nivel && r.modalidad === modalidad
-    );
-
-    // Verificar si la rutina eliminada es la que el usuario tiene asignada
     const isCurrentUserRutina =
         userRutina.value &&
         userRutina.value.nivel === nivel &&
         userRutina.value.modalidad === modalidad;
 
-    // Patrón undo real: optimistic + commit diferido + cancel
     const { cancelled } = await useUndoable({
         message: `Rutina "${modalidad}" eliminada`,
         apply: () => {
-            // 1) Quitar de la lista visual
             if (personalRutinas.value) {
-                personalRutinas.value = personalRutinas.value.filter(
-                    (r) => !(r.nivel === nivel && r.modalidad === modalidad)
-                );
+                delete personalRutinas.value.modalidades[modalidad];
             }
-            // 2) Si era la rutina del usuario, limpiar el store
             if (isCurrentUserRutina) {
                 userRutina.value = null;
                 rutinaStore.limpiar();
             }
         },
         undo: () => {
-            // Restaurar la lista de rutinas personales
             if (snapshot.personal) {
                 personalRutinas.value = JSON.parse(JSON.stringify(snapshot.personal));
             }
-            // Restaurar la rutina del usuario
             if (isCurrentUserRutina && snapshot.userRutina) {
                 userRutina.value = { ...snapshot.userRutina };
             }
@@ -776,22 +809,53 @@ const eliminarRutina = async (nivel, modalidad) => {
         },
     });
 
-    // Solo refrescamos del server si el delete fue confirmado (no cancelado)
     if (!cancelled) {
         await fetchRutinas();
         await fetchComunitarias();
     }
 };
 
-onMounted(() => {
-    rutinaStore.hidratar();
-    fetchUserInfo();
-    fetchRutinas();
-    fetchComunitarias();
-    cargarRacha();
-});
+// Toggle de favorito
+const toggleFavorita = async ({ nivel, modalidad }) => {
+    if (!nivel || !modalidad) return;
 
-// === Mejora 2.5: Mobile Quick Input ===
+    const nivelData = rutinasAgrupadas.value[nivel];
+    if (nivelData?.modalidades?.[modalidad]) {
+        const mod = nivelData.modalidades[modalidad];
+        mod.dias.forEach((dia) => {
+            dia.ejercicios.forEach((ej) => {
+                ej.is_favorita = !ej.is_favorita;
+            });
+        });
+    }
+
+    try {
+        const res = await axios.post('/api/rutinas/favorite', { nivel, modalidad });
+        const isFav = res.data?.is_favorita;
+
+        if (nivelData?.modalidades?.[modalidad]) {
+            const mod = nivelData.modalidades[modalidad];
+            mod.dias.forEach((dia) => {
+                dia.ejercicios.forEach((ej) => {
+                    ej.is_favorita = isFav;
+                });
+            });
+        }
+        toast.success(isFav ? 'Agregada a favoritas ⭐' : 'Quitada de favoritas');
+    } catch (e) {
+        if (nivelData?.modalidades?.[modalidad]) {
+            const mod = nivelData.modalidades[modalidad];
+            mod.dias.forEach((dia) => {
+                dia.ejercicios.forEach((ej) => {
+                    ej.is_favorita = !ej.is_favorita;
+                });
+            });
+        }
+        toast.apiError(e, 'No se pudo actualizar la favorita');
+    }
+};
+
+// === Quick Input ===
 const quickInputOpen = ref(false);
 const quickInputDia = ref(null);
 const quickInputNombre = ref('');
@@ -799,11 +863,8 @@ const quickInputEjercicios = ref([]);
 const quickInputSaving = ref(false);
 
 const openQuickInput = (dia) => {
-    // El argumento es el objeto día emitido por RutinaAcordeon
     quickInputDia.value = dia?.nombre || '';
     quickInputEjercicios.value = Array.isArray(dia?.ejercicios) ? dia.ejercicios : [];
-    // El nombre de la rutina: lo inferimos del contexto (no tenemos acceso
-    // directo al "nivel-modalidad", usamos el día como etiqueta).
     quickInputNombre.value = '';
     quickInputOpen.value = true;
 };
@@ -818,11 +879,6 @@ const saveQuickInput = async ({ records }) => {
     if (!records || !records.length) return;
     quickInputSaving.value = true;
     try {
-        // === Modo offline (Oleada 1) ===
-        // Antes: un unico axios.post que fallaba si no habia red.
-        // Ahora: usa useOfflineSeries, que encola si no hay conexion y sincroniza
-        // automaticamente al volver online. La API es la misma que axios.post pero
-        // devuelve { status: 'synced' | 'queued' | 'lost' }.
         const fecha = new Date().toISOString().split('T')[0];
         let allSynced = true;
         for (const r of records) {
@@ -846,13 +902,13 @@ const saveQuickInput = async ({ records }) => {
         if (allSynced) {
             toast.success(`${records.length} series registradas ✓`);
             try {
-                confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
+                confetti.mini();
             } catch {
                 /* ignore */
             }
         } else {
             toast.info(
-                `Sin conexion: ${records.length} series guardadas en este dispositivo. Se sincronizaran automaticamente.`
+                `Sin conexión: ${records.length} series guardadas en este dispositivo. Se sincronizarán automáticamente.`
             );
         }
         closeQuickInput();
@@ -863,82 +919,24 @@ const saveQuickInput = async ({ records }) => {
     }
 };
 
-// === QW2: Rutinas favoritas ===
-// Toggle del flag is_favorita para TODA la modalidad (todos los días).
-// Actualiza el flag localmente (optimista) y refresca la lista al final
-// para garantizar consistencia con el backend.
-const toggleFavorita = async ({ nivel, modalidad }) => {
-    if (!nivel || !modalidad) return;
-
-    // Optimistic update: invertimos el flag en todos los ejercicios del grupo
-    const nivelData = rutinasAgrupadas.value[nivel];
-    if (nivelData?.modalidades?.[modalidad]) {
-        const mod = nivelData.modalidades[modalidad];
-        mod.dias.forEach((dia) => {
-            dia.ejercicios.forEach((ej) => {
-                ej.is_favorita = !ej.is_favorita;
-            });
-        });
-    }
-
-    try {
-        const res = await axios.post('/api/rutinas/favorite', { nivel, modalidad });
-        const isFav = res.data?.is_favorita;
-
-        // Asegurar consistencia final (por si el optimistic update fue incorrecto)
-        if (nivelData?.modalidades?.[modalidad]) {
-            const mod = nivelData.modalidades[modalidad];
-            mod.dias.forEach((dia) => {
-                dia.ejercicios.forEach((ej) => {
-                    ej.is_favorita = isFav;
-                });
-            });
-        }
-        toast.success(isFav ? 'Agregada a favoritas ⭐' : 'Quitada de favoritas');
-    } catch (e) {
-        // Rollback
-        if (nivelData?.modalidades?.[modalidad]) {
-            const mod = nivelData.modalidades[modalidad];
-            mod.dias.forEach((dia) => {
-                dia.ejercicios.forEach((ej) => {
-                    ej.is_favorita = !ej.is_favorita;
-                });
-            });
-        }
-        toast.apiError(e, 'No se pudo actualizar la favorita');
-    }
-};
-
-// === Mejora 1.9: Pull-to-refresh ===
+// === Pull-to-refresh ===
 const loadAll = async () => {
     await Promise.all([fetchRutinas(), fetchComunitarias()]);
 };
 const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadAll);
 
-// === Topbar mobile (Kinetic Obsidian) ===
-const userInitials = computed(() => {
-    const n = (window.__user?.name || window.__user?.nick || '').trim();
-    if (!n) return 'U';
-    return n
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase();
-});
-
-// Racha actual (best-effort desde stats/resumen, sin romper si falla)
+// Racha actual
 const rachaActual = ref(0);
 const cargarRacha = async () => {
     try {
         const r = await axios.get('/api/stats/resumen');
         rachaActual.value = r.data?.current_streak ?? 0;
     } catch (e) {
-        /* silencioso: racha queda en 0 */
+        /* silencioso */
     }
 };
 
-// === Mejora 2.2: Swipe entre tabs en mobile ===
+// Swipe mobile
 const swipeRef = ref(null);
 const { onSwipeLeft, onSwipeRight } = useSwipe(swipeRef, { threshold: 60, timeout: 700 });
 const tabsOrder = ['predeterminadas', 'personalizadas', 'comunitarias'];
@@ -951,16 +949,11 @@ onSwipeRight(() => {
     if (i > 0) catalogoTab.value = tabsOrder[i - 1];
 });
 
-// Indicador de swipe (sólo mobile)
-const showSwipeHint = ref(false);
+onMounted(() => {
+    rutinaStore.hidratar();
+    fetchUserInfo();
+    fetchRutinas();
+    fetchComunitarias();
+    cargarRacha();
+});
 </script>
-
-<style scoped>
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
-}
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-</style>

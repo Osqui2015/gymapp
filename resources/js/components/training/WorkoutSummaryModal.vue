@@ -157,8 +157,15 @@ const guardando = ref(false);
 const prsCount = ref(0);
 const newMedals = ref([]);
 
+// Snapshot de la duración al abrir el modal. Después de guardar y finalizar,
+// `store.end()` resetea `startedAt = null` y `elapsed` cae a 0; sin este
+// snapshot, el modal podría re-renderizar y mostrar "0 min" un instante.
+const duracionSnapshot = ref(0);
+
 const duracionTexto = computed(() => {
-    const s = store.elapsed;
+    // Usamos el snapshot para que no dependa de cambios reactivos del store
+    // mientras el modal esta abierto (incluido `store.end()` al guardar).
+    const s = duracionSnapshot.value;
     const mins = Math.floor(s / 60);
     const hrs = Math.floor(mins / 60);
     if (hrs > 0) {
@@ -183,6 +190,8 @@ watch(
     () => props.open,
     (isOpen) => {
         if (isOpen) {
+            // Capturamos la duración en vivo al momento de abrir.
+            duracionSnapshot.value = store.elapsed;
             triggerConfetti();
         }
     }
@@ -190,6 +199,7 @@ watch(
 
 onMounted(() => {
     if (props.open) {
+        duracionSnapshot.value = store.elapsed;
         triggerConfetti();
     }
 });

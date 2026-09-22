@@ -48,10 +48,121 @@
     --color-text-secondary-dark: #94A3B8;
     --color-text-tertiary-dark: #64748B;
 
+    --color-obsidian-canvas: #0a0e18;
+    --color-obsidian-card: #151926;
+    --color-obsidian-input: #121622;
+
+    --color-obsidian-950: #07090e;
+    --color-obsidian-900: #0b0f19;
+    --color-obsidian-850: #111625;
+    --color-obsidian-800: #171d2e;
+    --color-obsidian-700: #232b40;
+    --color-obsidian-600: #343e5c;
+
+    --color-neon-indigo: #6366f1;
+    --color-neon-violet: #8b5cf6;
+    --color-neon-purple: #a855f7;
+    --color-neon-emerald: #10b981;
+    --color-neon-amber: #f59e0b;
+    --color-neon-cyan: #06b6d4;
+
+    --color-accent-indigo: #6366f1;
+    --color-accent-violet: #8b5cf6;
+    --color-accent-cyan: #06b6d4;
+    --color-accent-emerald: #10b981;
+    --color-accent-amber: #f59e0b;
+    --color-accent-fuchsia: #d946ef;
+
+    --shadow-glow: 0 0 25px -5px rgba(99, 102, 241, 0.35);
+    --shadow-glow-indigo: 0 0 25px -5px rgba(99, 102, 241, 0.35);
+    --shadow-glow-violet: 0 0 20px -3px rgba(139, 92, 246, 0.4);
+    --shadow-glow-emerald: 0 0 15px -3px rgba(16, 185, 129, 0.3);
+    --shadow-inner-subtle: inset 0 1px 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-card-border: inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+
+    --font-display: 'Space Grotesk', sans-serif;
+
     --radius-obsidian-sm: 0.75rem;
     --radius-obsidian-md: 1.25rem;
     --radius-obsidian-lg: 1.5rem;
     --radius-obsidian-xl: 2rem;
+}
+
+.font-display {
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+}
+
+.glow-purple {
+    box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.35);
+}
+.glow-emerald {
+    box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.25);
+}
+
+/* iOS Safe Area Utilities */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+.pt-safe {
+    padding-top: env(safe-area-inset-top, 16px);
+}
+
+/* Kinetic Obsidian Glassmorphism */
+.glass-panel {
+    background: rgba(17, 22, 37, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-card {
+    background: linear-gradient(180deg, rgba(23, 29, 46, 0.78) 0%, rgba(15, 19, 31, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card:active {
+    transform: scale(0.992);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Anatomy Muscle Heatmap Glows */
+.muscle-hot {
+    fill: #6366f1;
+    filter: drop-shadow(0 0 3px #818cf8);
+}
+.muscle-warm {
+    fill: #3b82f6;
+}
+.muscle-cold {
+    fill: #273148;
+}
+.muscle-base {
+    fill: #1e2638;
+    stroke: #313d59;
+    stroke-width: 0.65;
 }
 
 :root {

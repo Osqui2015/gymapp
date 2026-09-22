@@ -106,430 +106,485 @@
             </span>
         </div>
 
-        <!-- Contenedor Scrollable del Ejercicio -->
-        <main class="flex-1 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
-            <!-- Selector de Ejercicios / Carrusel de navegación -->
-            <div v-if="store.currentEjercicio" class="flex items-center justify-between gap-2">
-                <button
-                    type="button"
-                    @click="store.prevEjercicio"
-                    :disabled="store.session.currentEjercicioIndex === 0"
-                    class="p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
-                    aria-label="Ejercicio anterior"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-
-                <div class="text-center min-w-0 flex-1">
-                    <span class="obs-pill obs-pill-violet">
-                        EJERCICIO {{ store.session.currentEjercicioIndex + 1 }} DE
-                        {{ store.session.ejercicios.length }}
-                    </span>
-                    <h2 class="text-xl sm:text-2xl font-black text-white truncate mt-2">
-                        {{ store.currentEjercicio.nombre }}
-                    </h2>
-                    <div class="flex items-center justify-center gap-2 mt-2 flex-wrap">
-                        <span class="obs-pill obs-pill-violet">
-                            🎯 {{ store.currentEjercicio.reps_min }}–{{
-                                store.currentEjercicio.reps_max
-                            }} reps
-                        </span>
-                        <span class="obs-pill obs-pill-orange">
-                            ⏱ {{ store.currentEjercicio.descanso_min }} min rest
-                        </span>
-                        <span
-                            v-if="store.currentEjercicio.superserie_grupo"
-                            class="obs-pill obs-pill-emerald"
-                        >
-                            SS {{ store.currentEjercicio.superserie_grupo }}
-                        </span>
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    @click="store.nextEjercicio"
-                    :disabled="
-                        store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1
-                    "
-                    class="p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
-                    aria-label="Siguiente ejercicio"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Focus Card: Serie Actual con Glove Mode -->
-            <section
+        <!-- Contenedor Principal Adaptable (Mobile + Web Responsive 2 Columnas) -->
+        <main class="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 overscroll-contain">
+            <div
                 v-if="store.currentEjercicio"
-                class="obs-card-elevated p-4 md:p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+                class="max-w-6xl xl:max-w-7xl mx-auto w-full flex flex-col md:grid md:grid-cols-12 gap-3 lg:gap-5 items-start"
             >
-                <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-3 flex-wrap gap-2">
-                    <span class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-300">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        Configurar Serie #{{ store.session.currentSerieNumero }}
-                    </span>
+                <!-- COLUMNA IZQUIERDA (Desktop: col-span-5) -->
+                <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-3">
+                    <!-- Selector de Ejercicios / Carrusel de navegación -->
+                    <div class="obs-card-elevated p-3 sm:p-4 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                @click="store.prevEjercicio"
+                                :disabled="store.session.currentEjercicioIndex === 0"
+                                class="p-2 sm:p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
+                                aria-label="Ejercicio anterior"
+                            >
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
 
-                    <!-- Selector de Tipo de Serie (Kinetic Obsidian segmented) -->
-                    <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-1 text-[10px] font-bold border border-[var(--color-obsidian-border)]">
-                        <button
-                            v-for="tipo in tiposSerie"
-                            :key="tipo.id"
-                            type="button"
-                            @click="form.tipo_serie = tipo.id"
-                            :class="[
-                                'px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap',
-                                form.tipo_serie === tipo.id
-                                    ? tipo.activeClass
-                                    : 'text-gray-400 hover:text-white',
-                            ]"
-                        >
-                            {{ tipo.label }}
-                        </button>
-                    </div>
-                </div>
+                            <div class="text-center min-w-0 flex-1">
+                                <span class="obs-pill obs-pill-violet text-[10px]">
+                                    EJERCICIO {{ store.session.currentEjercicioIndex + 1 }} DE
+                                    {{ store.session.ejercicios.length }}
+                                </span>
+                                <h2 class="text-lg sm:text-xl md:text-2xl font-black text-white truncate mt-1">
+                                    {{ store.currentEjercicio.nombre }}
+                                </h2>
+                            </div>
 
-                <!-- Referencia del ejercicio: última vez + recomendación -->
-                <div
-                    v-if="lastExerciseData && lastExerciseData.encontrado"
-                    class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 space-y-1.5"
-                >
-                    <div class="flex items-center justify-between gap-2 flex-wrap">
-                        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-violet-200 flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Última vez
-                        </span>
-                        <span class="text-[10px] text-gray-400 font-semibold">
-                            {{ lastExerciseData.fecha }}
-                        </span>
-                    </div>
-                    <p class="text-sm font-bold text-white tabular-nums">
-                        Top:
-                        <span class="text-violet-200">{{ formatPeso(lastExerciseData.peso_top) }} kg</span>
-                        <span class="text-gray-500 mx-1">×</span>
-                        <span class="text-emerald-200">{{ lastExerciseData.reps_en_peso_top }} reps</span>
-                        <span
-                            v-if="lastExerciseData.ultimo_esfuerzo"
-                            class="ml-1.5 obs-pill"
-                            :class="
-                                lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
-                                    ? 'obs-pill-violet'
-                                    : 'obs-pill-orange'
-                            "
-                        >
-                            {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }}
-                            {{ lastExerciseData.ultimo_esfuerzo.valor }}
-                        </span>
-                    </p>
-                    <p
-                        v-if="recomendacion"
-                        class="text-xs flex items-start gap-1.5"
-                        :class="recomendacion.colorClass"
-                    >
-                        <span class="font-black">{{ recomendacion.icon }}</span>
-                        <span>
-                            <span class="font-bold">Sugerencia:</span>
-                            {{ recomendacion.mensaje }}
+                            <button
+                                type="button"
+                                @click="store.nextEjercicio"
+                                :disabled="
+                                    store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1
+                                "
+                                class="p-2 sm:p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
+                                aria-label="Siguiente ejercicio"
+                            >
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap pt-0.5">
+                            <span class="obs-pill obs-pill-violet text-[10px] sm:text-xs">
+                                🎯 {{ store.currentEjercicio.reps_min }}–{{
+                                    store.currentEjercicio.reps_max
+                                }} reps
+                            </span>
+                            <span class="obs-pill obs-pill-orange text-[10px] sm:text-xs">
+                                ⏱ {{ store.currentEjercicio.descanso_min }} min rest
+                            </span>
                             <span
-                                v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== lastExerciseData.peso_top"
-                                class="font-black tabular-nums"
+                                v-if="store.currentEjercicio.superserie_grupo"
+                                class="obs-pill obs-pill-emerald text-[10px] sm:text-xs"
                             >
-                                ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
+                                SS {{ store.currentEjercicio.superserie_grupo }}
                             </span>
-                        </span>
-                    </p>
-                </div>
-
-                <!-- Controles Glove Mode: PESO -->
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
-                            CARGA / PESO
-                        </label>
-                        <span class="text-[10px] text-violet-300 font-bold">Toques rápidos (kg)</span>
-                    </div>
-
-                    <div class="flex items-center gap-1.5">
-                        <!-- Botones decremento -->
-                        <div class="grid grid-cols-3 gap-1 shrink-0">
-                            <button
-                                type="button"
-                                @click="ajustarPeso(-5)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                -5
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarPeso(-2.5)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                -2.5
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarPeso(-1)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                -1
-                            </button>
-                        </div>
-
-                        <!-- Display grande de peso -->
-                        <div
-                            class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-violet-500/30 rounded-2xl h-14 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
-                        >
-                            <input
-                                v-model.number="form.peso"
-                                type="number"
-                                inputmode="decimal"
-                                step="0.5"
-                                min="0"
-                                class="w-full bg-transparent text-center text-3xl font-black text-white outline-none tabular-nums"
-                                placeholder="0"
-                            />
-                            <span class="absolute right-3 text-xs font-black text-violet-300 uppercase tracking-wider"
-                                >kg</span
-                            >
-                        </div>
-
-                        <!-- Botones incremento -->
-                        <div class="grid grid-cols-3 gap-1 shrink-0">
-                            <button
-                                type="button"
-                                @click="ajustarPeso(1)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                +1
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarPeso(2.5)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                +2.5
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarPeso(5)"
-                                class="w-10 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                +5
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Controles Glove Mode: REPETICIONES -->
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
-                            REPETICIONES
-                        </label>
-                        <span class="text-[10px] text-emerald-300 font-bold tabular-nums">
-                            Objetivo: {{ store.currentEjercicio.reps_min }}–{{
-                                store.currentEjercicio.reps_max
-                            }}
-                        </span>
-                    </div>
-
-                    <div class="flex items-center gap-1.5">
-                        <!-- Decremento reps -->
-                        <div class="grid grid-cols-2 gap-1 shrink-0">
-                            <button
-                                type="button"
-                                @click="ajustarReps(-2)"
-                                class="w-12 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                -2
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarReps(-1)"
-                                class="w-12 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                -1
-                            </button>
-                        </div>
-
-                        <!-- Display grande de reps -->
-                        <div
-                            class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-emerald-500/30 rounded-2xl h-14 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                        >
-                            <input
-                                v-model.number="form.reps"
-                                type="number"
-                                inputmode="numeric"
-                                min="0"
-                                class="w-full bg-transparent text-center text-3xl font-black text-white outline-none tabular-nums"
-                                placeholder="0"
-                            />
-                            <span class="absolute right-3 text-xs font-black text-emerald-300 uppercase tracking-wider"
-                                >reps</span
-                            >
-                        </div>
-
-                        <!-- Incremento reps -->
-                        <div class="grid grid-cols-2 gap-1 shrink-0">
-                            <button
-                                type="button"
-                                @click="ajustarReps(1)"
-                                class="w-12 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                +1
-                            </button>
-                            <button
-                                type="button"
-                                @click="ajustarReps(2)"
-                                class="w-12 h-14 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                            >
-                                +2
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Esfuerzo (RIR / RPE) -->
-                <div class="bg-[var(--color-obsidian-surface)] rounded-xl p-3 border border-[var(--color-obsidian-border)] space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-gray-300">Esfuerzo percibido:</span>
-                        <div class="inline-flex rounded-lg bg-[var(--color-obsidian-elevated)] p-0.5 text-[10px] font-black border border-[var(--color-obsidian-border)]">
-                            <button
-                                type="button"
-                                @click="form.esfuerzo_tipo = 'rir'"
-                                :class="
-                                    form.esfuerzo_tipo === 'rir'
-                                        ? 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                                        : 'text-gray-400'
-                                "
-                                class="px-2.5 py-1 rounded-md transition-colors"
-                            >
-                                RIR
-                            </button>
-                            <button
-                                type="button"
-                                @click="form.esfuerzo_tipo = 'rpe'"
-                                :class="
-                                    form.esfuerzo_tipo === 'rpe'
-                                        ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                                        : 'text-gray-400'
-                                "
-                                class="px-2.5 py-1 rounded-md transition-colors"
-                            >
-                                RPE
-                            </button>
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between gap-1 overflow-x-auto py-1">
-                        <button
-                            v-for="val in esfuerzoOptions"
-                            :key="val"
-                            type="button"
-                            @click="form.esfuerzo_valor = form.esfuerzo_valor === val ? null : val"
-                            :class="[
-                                'min-w-9 h-11 px-2 rounded-xl font-black text-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5',
-                                form.esfuerzo_valor === val
-                                    ? form.esfuerzo_tipo === 'rir'
-                                        ? 'bg-emerald-500 text-white shadow-[0_0_18px_rgba(16,185,129,0.5)] scale-105'
-                                        : 'bg-amber-500 text-white shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105'
-                                    : 'bg-[var(--color-obsidian-elevated)] text-gray-300 hover:bg-[var(--color-obsidian-overlay)] hover:text-white border border-[var(--color-obsidian-border)]',
-                            ]"
-                        >
-                            <span>{{ val }}</span>
-                            <span class="text-[8px] uppercase opacity-80">
-                                {{ esfuerzoLabel(val) }}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Botón Gigante: COMPLETAR SERIE (Kinetic Obsidian) -->
-                <button
-                    type="button"
-                    @click="completarSerie"
-                    class="w-full py-4 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-base font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/10"
-                >
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="3"
-                            d="M5 13l4 4L19 7"
-                        />
-                    </svg>
-                    <span>COMPLETAR SERIE #{{ store.session.currentSerieNumero }}</span>
-                </button>
-
-                <!-- Botón Deshacer -->
-                <div v-if="store.canUndo" class="text-center pt-1">
-                    <button
-                        type="button"
-                        @click="deshacer"
-                        class="text-xs font-bold text-rose-300 hover:text-rose-200 underline underline-offset-4 cursor-pointer"
+                    <!-- Demostración Visual / GIF Animado (data-testid="exercise-media") -->
+                    <section
+                        v-if="ejercicioMedia && (ejercicioMedia.gif_url || ejercicioMedia.image_url)"
+                        class="obs-card p-3 relative flex flex-col items-center justify-center overflow-hidden"
+                        data-testid="exercise-media"
                     >
-                        ↩ Deshacer última serie completada
-                    </button>
-                </div>
-            </section>
+                        <div class="w-full flex items-center justify-between gap-2 mb-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                                Vista del ejercicio
+                            </span>
+                            <button
+                                v-if="ejercicioMedia.gif_url"
+                                type="button"
+                                @click="gifHovered = !gifHovered"
+                                class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
+                            >
+                                {{ gifHovered ? '⏸ Pausar animación' : '▶ Ver animación' }}
+                            </button>
+                        </div>
 
-            <!-- Lista de Series ya completadas en este ejercicio -->
-            <section
-                v-if="
-                    store.currentEjercicio &&
-                    store.currentEjercicio.sets &&
-                    store.currentEjercicio.sets.length > 0
-                "
-                class="obs-card p-4 space-y-2.5"
-            >
-                <h3 class="text-xs font-black uppercase tracking-wider text-gray-300">
-                    Series registradas en esta sesión
-                    <span class="text-violet-300">({{ store.currentEjercicio.nombre }})</span>
-                </h3>
-                <div class="space-y-1.5">
+                        <div
+                            class="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 rounded-xl overflow-hidden bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex items-center justify-center cursor-pointer group"
+                            @click="gifHovered = !gifHovered"
+                            @mouseenter="gifHovered = true"
+                        >
+                            <img
+                                :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
+                                :alt="`Demostración de ${store.currentEjercicio.nombre}`"
+                                class="h-full w-full object-contain p-1.5 rounded-xl transition-transform duration-200 group-hover:scale-105"
+                                loading="lazy"
+                            />
+                            <div
+                                v-if="!gifHovered && ejercicioMedia.gif_url"
+                                class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center text-white text-xs font-bold gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity"
+                            >
+                                <span class="p-2 rounded-full bg-violet-600/80 shadow-lg">▶</span>
+                                <span>Pasá el mouse o tocá para ver animación</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Referencia del ejercicio: última vez + recomendación -->
                     <div
-                        v-for="(s, idx) in store.currentEjercicio.sets"
-                        :key="idx"
-                        class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] text-xs"
+                        v-if="lastExerciseData && lastExerciseData.encontrado"
+                        class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-2.5 sm:p-3 space-y-1 text-xs"
                     >
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-black text-emerald-300 tabular-nums">
-                                #{{ s.series_numero }}
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="text-[10px] font-black uppercase tracking-[0.14em] text-violet-200 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Última vez
                             </span>
-                            <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
-                            <span class="text-gray-500">×</span>
-                            <span class="font-black text-white tabular-nums">{{ s.reps }} reps</span>
-                            <span
-                                v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
-                                class="obs-pill obs-pill-amber"
-                            >
-                                {{ s.tipo_serie }}
-                            </span>
-                            <span
-                                v-if="s.esfuerzo_valor != null"
-                                class="obs-pill obs-pill-neutral"
-                            >
-                                {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
+                            <span class="text-[10px] text-gray-400 font-semibold">
+                                {{ lastExerciseData.fecha }}
                             </span>
                         </div>
-                        <span class="text-[10px] text-gray-500 font-mono tabular-nums">
-                            {{ formatSetTime(s.completed_at) }}
-                        </span>
+                        <p class="text-xs sm:text-sm font-bold text-white tabular-nums">
+                            Top:
+                            <span class="text-violet-200">{{ formatPeso(lastExerciseData.peso_top) }} kg</span>
+                            <span class="text-gray-500 mx-1">×</span>
+                            <span class="text-emerald-200">{{ lastExerciseData.reps_en_peso_top }} reps</span>
+                            <span
+                                v-if="lastExerciseData.ultimo_esfuerzo"
+                                class="ml-1.5 obs-pill text-[9px]"
+                                :class="
+                                    lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
+                                        ? 'obs-pill-violet'
+                                        : 'obs-pill-orange'
+                                "
+                            >
+                                {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }}
+                                {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                            </span>
+                        </p>
+                        <p
+                            v-if="recomendacion"
+                            class="text-[11px] sm:text-xs flex items-start gap-1.5"
+                            :class="recomendacion.colorClass"
+                        >
+                            <span class="font-black">{{ recomendacion.icon }}</span>
+                            <span>
+                                <span class="font-bold">Sugerencia:</span>
+                                {{ recomendacion.mensaje }}
+                                <span
+                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== lastExerciseData.peso_top"
+                                    class="font-black tabular-nums"
+                                >
+                                    ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
+                                </span>
+                            </span>
+                        </p>
                     </div>
+
+                    <!-- Lista de Series ya completadas en este ejercicio -->
+                    <section
+                        v-if="store.currentEjercicio?.sets?.length"
+                        class="obs-card p-3 space-y-2 max-h-48 overflow-y-auto"
+                    >
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-[11px] font-black uppercase tracking-wider text-gray-300">
+                                Series registradas ({{ store.currentEjercicio.sets.length }})
+                            </h3>
+                            <span class="text-[10px] text-violet-300 font-semibold truncate max-w-[160px]">
+                                {{ store.currentEjercicio.nombre }}
+                            </span>
+                        </div>
+                        <div class="space-y-1">
+                            <div
+                                v-for="(s, idx) in store.currentEjercicio.sets"
+                                :key="idx"
+                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] text-xs"
+                            >
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-black text-emerald-300 tabular-nums">
+                                        #{{ s.series_numero }}
+                                    </span>
+                                    <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
+                                    <span class="text-gray-500">×</span>
+                                    <span class="font-black text-white tabular-nums">{{ s.reps }} reps</span>
+                                    <span
+                                        v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
+                                        class="obs-pill obs-pill-amber text-[9px]"
+                                    >
+                                        {{ s.tipo_serie }}
+                                    </span>
+                                    <span
+                                        v-if="s.esfuerzo_valor != null"
+                                        class="obs-pill obs-pill-neutral text-[9px]"
+                                    >
+                                        {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-500 font-mono tabular-nums">
+                                    {{ formatSetTime(s.completed_at) }}
+                                </span>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </section>
+
+                <!-- COLUMNA DERECHA (Desktop: col-span-7) Focus Card: Configurar Serie -->
+                <div class="w-full md:col-span-7 lg:col-span-7 flex flex-col gap-3">
+                    <section
+                        class="obs-card-elevated p-3.5 sm:p-4 md:p-5 space-y-3 sm:space-y-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+                    >
+                        <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-2.5 flex-wrap gap-2">
+                            <span class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                Configurar Serie #{{ store.session.currentSerieNumero }}
+                            </span>
+
+                            <!-- Selector de Tipo de Serie (Kinetic Obsidian segmented) -->
+                            <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-0.5 sm:p-1 text-[10px] font-bold border border-[var(--color-obsidian-border)]">
+                                <button
+                                    v-for="tipo in tiposSerie"
+                                    :key="tipo.id"
+                                    type="button"
+                                    @click="form.tipo_serie = tipo.id"
+                                    :class="[
+                                        'px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap',
+                                        form.tipo_serie === tipo.id
+                                            ? tipo.activeClass
+                                            : 'text-gray-400 hover:text-white',
+                                    ]"
+                                >
+                                    {{ tipo.label }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Controles Glove Mode: PESO -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
+                                    CARGA / PESO
+                                </label>
+                                <span class="text-[10px] text-violet-300 font-bold">Toques rápidos (kg)</span>
+                            </div>
+
+                            <div class="flex items-center gap-1 sm:gap-1.5">
+                                <!-- Botones decremento -->
+                                <div class="grid grid-cols-3 gap-1 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(-5)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        -5
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(-2.5)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        -2.5
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(-1)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        -1
+                                    </button>
+                                </div>
+
+                                <!-- Display grande de peso -->
+                                <div
+                                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-violet-500/30 rounded-2xl h-11 sm:h-12 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                                >
+                                    <input
+                                        v-model.number="form.peso"
+                                        type="number"
+                                        inputmode="decimal"
+                                        step="0.5"
+                                        min="0"
+                                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
+                                        placeholder="0"
+                                    />
+                                    <span class="absolute right-2.5 sm:right-3 text-[11px] font-black text-violet-300 uppercase tracking-wider"
+                                        >kg</span
+                                    >
+                                </div>
+
+                                <!-- Botones incremento -->
+                                <div class="grid grid-cols-3 gap-1 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(1)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        +1
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(2.5)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        +2.5
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarPeso(5)"
+                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        +5
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Controles Glove Mode: REPETICIONES -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
+                                    REPETICIONES
+                                </label>
+                                <span class="text-[10px] text-emerald-300 font-bold tabular-nums">
+                                    Objetivo: {{ store.currentEjercicio.reps_min }}–{{
+                                        store.currentEjercicio.reps_max
+                                    }}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-1 sm:gap-1.5">
+                                <!-- Decremento reps -->
+                                <div class="grid grid-cols-2 gap-1 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="ajustarReps(-2)"
+                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        -2
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarReps(-1)"
+                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        -1
+                                    </button>
+                                </div>
+
+                                <!-- Display grande de reps -->
+                                <div
+                                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-emerald-500/30 rounded-2xl h-11 sm:h-12 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                                >
+                                    <input
+                                        v-model.number="form.reps"
+                                        type="number"
+                                        inputmode="numeric"
+                                        min="0"
+                                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
+                                        placeholder="0"
+                                    />
+                                    <span class="absolute right-2.5 sm:right-3 text-[11px] font-black text-emerald-300 uppercase tracking-wider"
+                                        >reps</span
+                                    >
+                                </div>
+
+                                <!-- Incremento reps -->
+                                <div class="grid grid-cols-2 gap-1 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="ajustarReps(1)"
+                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        +1
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="ajustarReps(2)"
+                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                                    >
+                                        +2
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Esfuerzo (RIR / RPE) -->
+                        <div class="bg-[var(--color-obsidian-surface)] rounded-xl p-2.5 sm:p-3 border border-[var(--color-obsidian-border)] space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-gray-300">Esfuerzo percibido:</span>
+                                <div class="inline-flex rounded-lg bg-[var(--color-obsidian-elevated)] p-0.5 text-[10px] font-black border border-[var(--color-obsidian-border)]">
+                                    <button
+                                        type="button"
+                                        @click="form.esfuerzo_tipo = 'rir'"
+                                        :class="
+                                            form.esfuerzo_tipo === 'rir'
+                                                ? 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                                                : 'text-gray-400'
+                                        "
+                                        class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                                    >
+                                        RIR
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="form.esfuerzo_tipo = 'rpe'"
+                                        :class="
+                                            form.esfuerzo_tipo === 'rpe'
+                                                ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                                                : 'text-gray-400'
+                                        "
+                                        class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                                    >
+                                        RPE
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-1 overflow-x-auto py-0.5">
+                                <button
+                                    v-for="val in esfuerzoOptions"
+                                    :key="val"
+                                    type="button"
+                                    @click="form.esfuerzo_valor = form.esfuerzo_valor === val ? null : val"
+                                    :class="[
+                                        'min-w-8 sm:min-w-9 h-10 px-1.5 sm:px-2 rounded-xl font-black text-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5',
+                                        form.esfuerzo_valor === val
+                                            ? form.esfuerzo_tipo === 'rir'
+                                                ? 'bg-emerald-500 text-white shadow-[0_0_18px_rgba(16,185,129,0.5)] scale-105'
+                                                : 'bg-amber-500 text-white shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105'
+                                            : 'bg-[var(--color-obsidian-elevated)] text-gray-300 hover:bg-[var(--color-obsidian-overlay)] hover:text-white border border-[var(--color-obsidian-border)]',
+                                    ]"
+                                >
+                                    <span>{{ val }}</span>
+                                    <span class="text-[8px] uppercase opacity-80">
+                                        {{ esfuerzoLabel(val) }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Botón Gigante: COMPLETAR SERIE (Kinetic Obsidian) -->
+                        <button
+                            type="button"
+                            @click="completarSerie"
+                            class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-white/10"
+                        >
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="3"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                            <span>COMPLETAR SERIE #{{ store.session.currentSerieNumero }}</span>
+                        </button>
+
+                        <!-- Botón Deshacer -->
+                        <div v-if="store.canUndo" class="text-center pt-0.5">
+                            <button
+                                type="button"
+                                @click="deshacer"
+                                class="text-xs font-bold text-rose-300 hover:text-rose-200 underline underline-offset-4 cursor-pointer"
+                            >
+                                ↩ Deshacer última serie completada
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </main>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
 import { useTrainingSessionStore } from '@/stores/trainingSession';
 import { useRestTimerStore } from '@/stores/restTimer';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
@@ -548,6 +603,48 @@ const store = useTrainingSessionStore();
 const restTimer = useRestTimerStore();
 const offline = useOfflineSeries();
 const wakeLock = useWakeLock();
+
+// === Media del ejercicio actual (image_url + gif_url) ===
+// Se carga via /api/ejercicios/media cuando cambia el ejercicio activo.
+// Cache simple en `mediaCache` para no re-peir el mismo nombre.
+const ejercicioMedia = ref(null);
+const gifHovered = ref(true);
+const mediaCache = new Map();
+let mediaFetchSeq = 0;
+
+async function loadEjercicioMedia(nombre) {
+    if (!nombre) {
+        ejercicioMedia.value = null;
+        return;
+    }
+    if (mediaCache.has(nombre)) {
+        ejercicioMedia.value = mediaCache.get(nombre);
+        return;
+    }
+    const seq = ++mediaFetchSeq;
+    try {
+        const { data } = await axios.get('/api/ejercicios/media', {
+            params: { name: nombre },
+        });
+        // Ignorar respuestas viejas si el user cambió de ejercicio mientras cargaba
+        if (seq !== mediaFetchSeq) return;
+        mediaCache.set(nombre, data);
+        ejercicioMedia.value = data;
+    } catch (e) {
+        if (seq !== mediaFetchSeq) return;
+        // 404 u otro error → no mostrar bloque
+        ejercicioMedia.value = null;
+    }
+}
+
+watch(
+    () => store.currentEjercicio?.nombre,
+    (nombre) => {
+        gifHovered.value = true;
+        loadEjercicioMedia(nombre);
+    },
+    { immediate: true },
+);
 
 // Tipos de serie disponibles
 const tiposSerie = [

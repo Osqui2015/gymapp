@@ -3,60 +3,65 @@
         <div class="grid md:grid-cols-3 gap-8">
             <!-- Form -->
             <div
-                class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 border border-gray-100 dark:border-gray-700 h-fit md:col-span-1"
+                class="bg-obsidian-card border border-obsidian-border rounded-2xl shadow-card-border p-5 h-fit md:col-span-1 space-y-4"
             >
-                <h3
-                    class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
-                >
+                <h3 class="text-base font-bold font-display text-white flex items-center gap-2">
                     <span>🎯</span> Establecer Meta
                 </h3>
                 <form @submit.prevent="$emit('crear', nuevaMeta)" class="space-y-4">
-                    <div>
-                        <label
-                            class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                            >Métrica Objetivo</label
-                        >
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-semibold text-slate-300">
+                            Métrica Objetivo
+                        </label>
                         <select
                             v-model="nuevaMeta.tipo"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                            class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3 py-2 text-sm text-white font-medium transition-all outline-none cursor-pointer"
                             required
                         >
-                            <option value="entrenamiento_semanal">
+                            <option class="bg-obsidian-card text-white" value="entrenamiento_semanal">
                                 Entrenamientos Semanales (Sesiones)
                             </option>
-                            <option value="peso_corporal">Peso Corporal (kg)</option>
-                            <option value="cintura_corporal">Medida de Cintura (cm)</option>
-                            <option value="brazos_corporal">Medida de Brazos/Bíceps (cm)</option>
-                            <option value="pecho_corporal">Medida de Pecho (cm)</option>
-                            <option value="otro">Otro</option>
+                            <option class="bg-obsidian-card text-white" value="peso_corporal">
+                                Peso Corporal (kg)
+                            </option>
+                            <option class="bg-obsidian-card text-white" value="cintura_corporal">
+                                Medida de Cintura (cm)
+                            </option>
+                            <option class="bg-obsidian-card text-white" value="brazos_corporal">
+                                Medida de Brazos/Bíceps (cm)
+                            </option>
+                            <option class="bg-obsidian-card text-white" value="pecho_corporal">
+                                Medida de Pecho (cm)
+                            </option>
+                            <option class="bg-obsidian-card text-white" value="otro">
+                                Otro
+                            </option>
                         </select>
                     </div>
 
-                    <div>
-                        <label
-                            class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                            >Valor Objetivo</label
-                        >
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-semibold text-slate-300">
+                            Valor Objetivo
+                        </label>
                         <input
                             v-model.number="nuevaMeta.valor_objetivo"
                             type="number"
                             step="0.01"
                             min="0.1"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                            class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
                             placeholder="Ej: 3 (entrenamientos) o 72.5 (kg)"
                             required
                         />
                     </div>
 
-                    <div>
-                        <label
-                            class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                            >Descripción / Notas</label
-                        >
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-semibold text-slate-300">
+                            Descripción / Notas
+                        </label>
                         <input
                             v-model="nuevaMeta.descripcion"
                             type="text"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                            class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
                             placeholder="Ej: Entrenar 3 veces por semana para consistencia"
                             required
                         />
@@ -65,7 +70,7 @@
                     <button
                         type="submit"
                         :disabled="creandoMeta"
-                        class="w-full py-2.5 px-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2 text-sm"
+                        class="w-full py-2.5 px-4 bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-95 active:scale-[0.99] text-white font-bold rounded-xl shadow-glow transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50"
                     >
                         <span v-if="creandoMeta">Procesando...</span>
                         <span v-else>Establecer Objetivo</span>
@@ -76,9 +81,9 @@
             <!-- Listado -->
             <div class="md:col-span-2 space-y-4">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mis Objetivos</h3>
+                    <h3 class="text-base font-bold font-display text-white">Mis Objetivos</h3>
                     <span
-                        class="px-2.5 py-1 text-xs font-bold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+                        class="px-2.5 py-1 text-xs font-bold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
                     >
                         {{ metas.filter((m) => m.completada).length }} /
                         {{ metas.length }} completados
@@ -87,11 +92,11 @@
 
                 <div
                     v-if="metas.length === 0"
-                    class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400"
+                    class="bg-obsidian-card border border-dashed border-obsidian-border rounded-2xl p-8 text-center text-slate-400"
                 >
                     <span class="text-4xl block mb-2">🎯</span>
-                    <p class="font-bold">No has definido metas personales todavía.</p>
-                    <p class="text-xs mt-1">
+                    <p class="font-bold text-white">No has definido metas personales todavía.</p>
+                    <p class="text-xs text-slate-400 mt-1">
                         Establece objetivos de peso, medidas o entrenamiento para mantenerte
                         motivado.
                     </p>
@@ -101,14 +106,14 @@
                     <article
                         v-for="meta in metas"
                         :key="meta.id"
-                        class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-md relative overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between"
+                        class="bg-obsidian-card border border-obsidian-border rounded-2xl p-5 shadow-card-border relative overflow-hidden transition-all hover:bg-obsidian-elevated/40 flex flex-col justify-between"
                         :class="{
-                            'ring-2 ring-emerald-500/50 dark:ring-emerald-400/30': meta.completada,
+                            'ring-1 ring-accent-emerald/60': meta.completada,
                         }"
                     >
                         <div
                             v-if="meta.completada"
-                            class="absolute top-0 right-0 bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg shadow-sm"
+                            class="absolute top-0 right-0 bg-accent-emerald text-obsidian-canvas text-[9px] font-black uppercase px-2 py-1 rounded-bl-lg shadow-sm"
                         >
                             Alcanzada
                         </div>
@@ -117,29 +122,29 @@
                             <div class="flex items-center gap-2.5 mb-2">
                                 <span class="text-2xl">{{ getMetaEmoji(meta.tipo) }}</span>
                                 <h4
-                                    class="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wide"
+                                    class="font-bold text-sm text-white uppercase tracking-wide"
                                 >
                                     {{ formatMetaTipo(meta.tipo) }}
                                 </h4>
                             </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                            <p class="text-xs text-slate-300 mb-3">
                                 {{ meta.descripcion }}
                             </p>
                             <p
-                                class="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono mb-4"
+                                class="text-sm font-black text-accent-indigo font-mono mb-4"
                             >
                                 Objetivo: {{ parseFloat(meta.valor_objetivo) }}
                             </p>
                         </div>
 
-                        <div class="flex gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
+                        <div class="flex gap-2 border-t border-obsidian-border/70 pt-3">
                             <button
                                 @click="$emit('toggle', meta)"
-                                class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                 :class="
                                     meta.completada
-                                        ? 'bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300'
-                                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
+                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                                 "
                             >
                                 <span v-if="meta.completada">Reabrir</span>
@@ -147,7 +152,7 @@
                             </button>
                             <button
                                 @click="$emit('eliminar', meta.id)"
-                                class="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:text-red-800 transition-colors"
+                                class="p-1.5 rounded-lg bg-red-500/15 border border-red-500/20 text-red-400 hover:bg-red-500/25 transition-colors cursor-pointer"
                             >
                                 <svg
                                     class="w-4 h-4"

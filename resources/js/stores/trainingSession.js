@@ -91,6 +91,38 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
     const session = ref(loadFromStorage() || emptySession());
     const undoStack = ref([]);
 
+    // === Tick reactivo para que `elapsed` se recalcule cada segundo ===
+    // El computed `elapsed` lee `Date.now()`. Sin un disparador reactivo, Vue lo
+    // cachea y nunca se actualiza solo (bug clásico: el cronómetro quedaba
+    // "congelado" en el último valor conocido, mostrando 0 min en el resumen).
+    // `tick` se incrementa cada 1s mientras la sesion este activa y fuerza a
+    // Vue a invalidar `elapsed` y todos los lugares que dependen del tiempo.
+    const tick = ref(0);
+    let tickInterval = null;
+    const isBrowser = typeof window !== 'undefined';
+
+    const startTick = () => {
+        if (!isBrowser) return;
+        if (tickInterval) return;
+        tick.value = Date.now();
+        tickInterval = window.setInterval(() => {
+            tick.value = Date.now();
+        }, 1000);
+    };
+
+    const stopTick = () => {
+        if (tickInterval != null && isBrowser) {
+            window.clearInterval(tickInterval);
+        }
+        tickInterval = null;
+    };
+
+    // Si arranca con una sesion restaurada desde localStorage, ya hay que
+    // empezar a contar el tiempo (no a partir de ahora, sino desde startedAt).
+    if (session.value.id && !session.value.endedAt) {
+        startTick();
+    }
+
     // Persistir automaticamente cada vez que cambia.
     watch(session, (value) => saveToStorage(value), { deep: true });
 
@@ -140,10 +172,17 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
     });
 
     const elapsed = computed(() => {
+        // Dependemos de `tick` para que Vue invalide este computed cada segundo.
+        // (Sin esta lectura, el cache nunca se invalida y el cronómetro queda
+        // congelado en el último valor conocido.)
+        void tick.value;
+
         if (!session.value.startedAt) return 0;
         const start = new Date(session.value.startedAt).getTime();
         const pauseAcc = session.value.accumulatedPauseSeconds || 0;
-        let now = Date.now();
+        // `now` parte del tick (que se actualiza cada segundo) y solo cae a
+        // `Date.now()` si por algun motivo el tick quedo en cero.
+        let now = tick.value || Date.now();
         if (session.value.isPaused && session.value.pausedAt) {
             now = new Date(session.value.pausedAt).getTime();
         }
@@ -181,6 +220,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             accumulatedPauseSeconds: 0,
             completedSets: [],
         };
+        startTick();
     };
 
     /**
@@ -339,12 +379,14 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         saveToStorage(null);
         session.value = emptySession();
         undoStack.value = [];
+        stopTick();
     };
 
     const discard = () => {
         session.value = emptySession();
         undoStack.value = [];
         saveToStorage(null);
+        stopTick();
     };
 
     return {

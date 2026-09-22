@@ -14,10 +14,18 @@
  *   - POST/PUT/DELETE: siempre van a la red, sin cache
  */
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
 const API_CACHE = `gymapp-api-${VERSION}`;
+
+const OFFLINE_FALLBACK = new Response(
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sin conexión</title></head>' +
+        '<body style="font-family:system-ui;padding:2rem;text-align:center">' +
+        '<h1>Sin conexión</h1><p>Necesitás conexión a internet para usar GymApp.</p>' +
+        '<p><a href="/" style="color:#3b82f6">Reintentar</a></p></body></html>',
+    { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+);
 
 const PRECACHE_URLS = [
     '/',
@@ -68,6 +76,19 @@ const isNavigation = (request) =>
     request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
 
 // === Fetch handler ===
+// Helper: garantiza que SIEMPRE devolvemos una Response válida al respondWith.
+// El navegador lanza "Failed to convert value to 'Response'" si respondWith
+// recibe una promise que termina en undefined o que rechaza.
+const safeResponse = async (promise) => {
+    try {
+        const r = await promise;
+        return r instanceof Response ? r : OFFLINE_FALLBACK;
+    } catch (e) {
+        console.warn('[sw] fetch handler error:', e);
+        return OFFLINE_FALLBACK;
+    }
+};
+
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
@@ -81,16 +102,18 @@ self.addEventListener('fetch', (event) => {
     // Estrategia 1: Assets estáticos → CacheFirst
     if (isStaticAsset(url)) {
         event.respondWith(
-            caches.match(request).then((cached) => {
-                if (cached) return cached;
-                return fetch(request).then((response) => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
-                    }
-                    return response;
-                });
-            }),
+            safeResponse(
+                caches.match(request).then((cached) => {
+                    if (cached) return cached;
+                    return fetch(request).then((response) => {
+                        if (response.ok) {
+                            const clone = response.clone();
+                            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+                        }
+                        return response;
+                    });
+                }),
+            ),
         );
         return;
     }
@@ -98,23 +121,25 @@ self.addEventListener('fetch', (event) => {
     // Estrategia 2: API → NetworkFirst (5 min de fallback a cache)
     if (isApiRequest(url)) {
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(API_CACHE).then((cache) =>
-                            cache.put(request, clone),
+            safeResponse(
+                fetch(request)
+                    .then((response) => {
+                        if (response.ok) {
+                            const clone = response.clone();
+                            caches.open(API_CACHE).then((cache) =>
+                                cache.put(request, clone),
+                            );
+                        }
+                        return response;
+                    })
+                    .catch(() => caches.match(request).then((cached) => {
+                        if (cached) return cached;
+                        return new Response(
+                            JSON.stringify({ error: 'offline', message: 'Sin conexión' }),
+                            { status: 503, headers: { 'Content-Type': 'application/json' } },
                         );
-                    }
-                    return response;
-                })
-                .catch(() => caches.match(request).then((cached) => {
-                    if (cached) return cached;
-                    return new Response(
-                        JSON.stringify({ error: 'offline', message: 'Sin conexión' }),
-                        { status: 503, headers: { 'Content-Type': 'application/json' } },
-                    );
-                })),
+                    })),
+            ),
         );
         return;
     }
@@ -122,17 +147,22 @@ self.addEventListener('fetch', (event) => {
     // Estrategia 3: Navegación HTML → NetworkFirst con fallback a /offline
     if (isNavigation(request)) {
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, clone));
-                    }
-                    return response;
-                })
-                .catch(() =>
-                    caches.match(request).then((cached) => cached || caches.match('/offline')),
-                ),
+            safeResponse(
+                fetch(request)
+                    .then((response) => {
+                        if (response.ok) {
+                            const clone = response.clone();
+                            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, clone));
+                        }
+                        return response;
+                    })
+                    .catch(async () => {
+                        const cached = await caches.match(request);
+                        if (cached) return cached;
+                        const offline = await caches.match('/offline');
+                        return offline || OFFLINE_FALLBACK;
+                    }),
+            ),
         );
         return;
     }

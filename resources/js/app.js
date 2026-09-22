@@ -56,6 +56,9 @@ const components = {
     'chat-panel': () => import('./components/ChatPanel.vue'),
     'ejercicio-detail-modal': () => import('./components/EjercicioDetailModal.vue'),
     'video-player': () => import('./components/VideoPlayer.vue'),
+
+    // === VisualGym (catálogo exercises-dataset, 1.324 ejercicios) ===
+    'visualgym-catalog': () => import('./components/visualgym/VisualGymCatalog.vue'),
     'page-transition': () => import('./components/PageTransition.vue'),
     'onboarding-tour': () => import('./components/OnboardingTour.vue'),
 };

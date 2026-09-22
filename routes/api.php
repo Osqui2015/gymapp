@@ -33,7 +33,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/ejercicios', [EjercicioController::class, 'index']);
 Route::get('/ejercicios/grupos-musculares', [EjercicioController::class, 'gruposMusculares']);
 Route::get('/ejercicios/equipamientos', [EjercicioController::class, 'equipamientos']);
+Route::get('/ejercicios/media', [EjercicioController::class, 'ejercicioMediaByName']);
 Route::get('/musculos', [EjercicioController::class, 'musculos']);
+
+// === Catálogo VisualGym (exercises-dataset, 1.324 ejercicios) ===
+// Público (read-only), igual que /ejercicios.
+Route::prefix('visualgym')->group(function () {
+    Route::get('/facets', [EjercicioController::class, 'facetsVisualGym']);
+    Route::get('/exercises', [EjercicioController::class, 'catalogVisualGym']);
+    Route::get('/exercises/{externalId}', [EjercicioController::class, 'showVisualGym']);
+});
 
 // Favoritos: requiere auth (devuelve is_favorite del user actual)
 Route::middleware(['web', 'auth'])->group(function () {
