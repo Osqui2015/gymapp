@@ -160,6 +160,10 @@
                                     store.currentEjercicio.reps_max
                                 }} reps
                             </span>
+                            <span class="obs-pill obs-pill-emerald text-[10px] sm:text-xs">
+                                💪 {{ store.currentEjercicio.series_objetivo }}
+                                {{ store.currentEjercicio.series_objetivo === 1 ? 'serie' : 'series' }}
+                            </span>
                             <span class="obs-pill obs-pill-orange text-[10px] sm:text-xs">
                                 ⏱ {{ store.currentEjercicio.descanso_min }} min rest
                             </span>
@@ -287,8 +291,20 @@
                                 class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] text-xs"
                             >
                                 <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="font-black text-emerald-300 tabular-nums">
-                                        #{{ s.series_numero }}
+                                    <span
+                                        class="font-black tabular-nums"
+                                        :class="
+                                            s.tipo_serie === 'calentamiento'
+                                                ? 'text-indigo-300'
+                                                : 'text-emerald-300'
+                                        "
+                                    >
+                                        <template v-if="s.tipo_serie === 'calentamiento'">
+                                            Calentamiento {{ s.series_numero }}
+                                        </template>
+                                        <template v-else>
+                                            #{{ s.series_numero }}
+                                        </template>
                                     </span>
                                     <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
                                     <span class="text-gray-500">×</span>
@@ -321,8 +337,20 @@
                     >
                         <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-2.5 flex-wrap gap-2">
                             <span class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-300">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                Configurar Serie #{{ store.session.currentSerieNumero }}
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full"
+                                    :class="
+                                        form.tipo_serie === 'calentamiento'
+                                            ? 'bg-indigo-400'
+                                            : 'bg-emerald-400'
+                                    "
+                                ></span>
+                                <template v-if="form.tipo_serie === 'calentamiento'">
+                                    Configurar Calentamiento #{{ store.session.currentCalentamientoNumero || 1 }}
+                                </template>
+                                <template v-else>
+                                    Configurar Serie #{{ store.session.currentSerieNumero }}
+                                </template>
                             </span>
 
                             <!-- Selector de Tipo de Serie (Kinetic Obsidian segmented) -->
@@ -548,8 +576,9 @@
                             </div>
                         </div>
 
-                        <!-- Botón Gigante: COMPLETAR SERIE (Kinetic Obsidian) -->
+                        <!-- Botón Gigante: COMPLETAR SERIE / FINALIZAR (Kinetic Obsidian) -->
                         <button
+                            v-if="!store.isSessionComplete"
                             type="button"
                             @click="completarSerie"
                             class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-white/10"
@@ -562,7 +591,38 @@
                                     d="M5 13l4 4L19 7"
                                 />
                             </svg>
-                            <span>COMPLETAR SERIE #{{ store.session.currentSerieNumero }}</span>
+                            <span v-if="form.tipo_serie === 'calentamiento'">
+                                COMPLETAR CALENTAMIENTO #{{ store.session.currentCalentamientoNumero || 1 }}
+                            </span>
+                            <span v-else>
+                                COMPLETAR SERIE #{{ store.session.currentSerieNumero }}
+                            </span>
+                        </button>
+
+                        <button
+                            v-else
+                            type="button"
+                            @click="handleFinalizar"
+                            data-testid="btn-finalizar-sesion"
+                            class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_12px_36px_rgba(16,185,129,0.45)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/15"
+                        >
+                            <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="3"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                            <span>FINALIZAR SESIÓN</span>
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2.5"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
                         </button>
 
                         <!-- Botón Deshacer -->
@@ -872,7 +932,13 @@ const completarSerie = async () => {
     const ej = store.currentEjercicio;
     if (!ej) return;
 
-    const currentSerieNum = store.session.currentSerieNumero;
+    // El numero de serie que va al backend debe coincidir con el que muestra
+    // la UI: si es calentamiento usamos su propio contador, si no, el de
+    // series de trabajo.
+    const isWarmup = form.value.tipo_serie === 'calentamiento';
+    const currentSerieNum = isWarmup
+        ? (store.session.currentCalentamientoNumero || 1)
+        : store.session.currentSerieNumero;
     const pesoNum = Number(form.value.peso) || 0;
     const repsNum = Number(form.value.reps) || 0;
 

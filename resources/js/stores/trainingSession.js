@@ -26,6 +26,7 @@
  *     ],
  *     currentEjercicioIndex: 0,
  *     currentSerieNumero: 1,
+ *     currentCalentamientoNumero: 1,
  *     isPaused: false,
  *     pausedAt: null,
  *     accumulatedPauseSeconds: 0,
@@ -47,11 +48,26 @@ const emptySession = () => ({
     ejercicios: [],
     currentEjercicioIndex: 0,
     currentSerieNumero: 1,
+    currentCalentamientoNumero: 1,
     isPaused: false,
     pausedAt: null,
     accumulatedPauseSeconds: 0,
     completedSets: [],
 });
+
+/**
+ * Asegura que los campos nuevos del schema estén presentes en sesiones que
+ * quedaron persistidas en versiones anteriores (migración silenciosa).
+ */
+const migrateSessionShape = (parsed) => {
+    if (!parsed || typeof parsed !== 'object') return parsed;
+    if (parsed.currentCalentamientoNumero == null) {
+        parsed.currentCalentamientoNumero = 1;
+    }
+    if (!Array.isArray(parsed.ejercicios)) parsed.ejercicios = [];
+    if (!Array.isArray(parsed.completedSets)) parsed.completedSets = [];
+    return parsed;
+};
 
 const generateId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -68,7 +84,7 @@ const loadFromStorage = () => {
         const parsed = JSON.parse(raw);
         // Si termino, no restaurar.
         if (parsed.endedAt) return null;
-        return parsed;
+        return migrateSessionShape(parsed);
     } catch {
         return null;
     }
@@ -171,6 +187,18 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         );
     });
 
+    /**
+     * True cuando todos los ejercicios de la sesion estan completos
+     * (series_completadas >= series_objetivo en cada uno). Cuando esto es
+     * cierto la UI deberia mostrar el CTA de finalizar en vez del de
+     * completar serie.
+     */
+    const isSessionComplete = computed(() => {
+        const ejs = session.value.ejercicios || [];
+        if (ejs.length === 0) return false;
+        return ejs.every((ej) => Number(ej.series_completadas || 0) >= Number(ej.series_objetivo || 0));
+    });
+
     const elapsed = computed(() => {
         // Dependemos de `tick` para que Vue invalide este computed cada segundo.
         // (Sin esta lectura, el cache nunca se invalida y el cronómetro queda
@@ -215,6 +243,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             })),
             currentEjercicioIndex: 0,
             currentSerieNumero: 1,
+            currentCalentamientoNumero: 1,
             isPaused: false,
             pausedAt: null,
             accumulatedPauseSeconds: 0,
@@ -238,7 +267,14 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         const ej = session.value.ejercicios[session.value.currentEjercicioIndex];
         if (!ej) return null;
 
-        const currentSerieNum = session.value.currentSerieNumero;
+        // Las series de calentamiento tienen su propio contador y NO cuentan
+        // para el progreso de la rutina (la barra global). Solo efectiva /
+        // dropset / al_fallo avanzan el contador de series de trabajo.
+        const isWarmup = tipo_serie === 'calentamiento';
+        const currentSerieNum = isWarmup
+            ? (session.value.currentCalentamientoNumero || 1)
+            : session.value.currentSerieNumero;
+
         const setData = {
             ejercicio_nombre: ej.nombre,
             series_numero: currentSerieNum,
@@ -253,30 +289,47 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
 
         if (!ej.sets) ej.sets = [];
         ej.sets.push(setData);
-        ej.series_completadas += 1;
 
         if (!session.value.completedSets) session.value.completedSets = [];
         session.value.completedSets.push(setData);
 
-        // Guardar para Deshacer
+        // Guardar para Deshacer. Guardamos ambos contadores al momento de
+        // registrar la serie para poder restaurarlos exactamente.
         undoStack.value.push({
             ejercicioIndex: session.value.currentEjercicioIndex,
             serieNumero: currentSerieNum,
+            calentamientoNumero: session.value.currentCalentamientoNumero || 1,
+            serieNumeroAntes: session.value.currentSerieNumero,
+            isWarmup,
             setData,
         });
 
         // Avance automático
-        if (ej.series_completadas >= ej.series_objetivo) {
+        if (isWarmup) {
+            // Calentamiento: solo avanza su propio contador. El contador de
+            // series de trabajo queda intacto (el próximo efectivo sigue
+            // siendo "Serie #1").
+            session.value.currentCalentamientoNumero =
+                (session.value.currentCalentamientoNumero || 1) + 1;
+        } else if (ej.series_completadas + 1 >= ej.series_objetivo) {
+            ej.series_completadas += 1;
             ej.completed = true;
             if (session.value.currentEjercicioIndex < session.value.ejercicios.length - 1) {
                 session.value.currentEjercicioIndex += 1;
                 session.value.currentSerieNumero = 1;
+                session.value.currentCalentamientoNumero = 1;
             } else {
                 // Último ejercicio completado
                 session.value.currentSerieNumero = ej.series_completadas + 1;
+                session.value.currentCalentamientoNumero = 1;
             }
         } else {
+            ej.series_completadas += 1;
             session.value.currentSerieNumero += 1;
+            // Al arrancar el ciclo de series efectivas, reseteamos el
+            // contador de calentamiento: si el usuario vuelve a registrar un
+            // calentamiento mas adelante arrancara desde "Calentamiento 1".
+            session.value.currentCalentamientoNumero = 1;
         }
 
         return setData;
@@ -306,8 +359,12 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         if (ej.sets && ej.sets.length > 0) {
             ej.sets.pop();
         }
-        ej.series_completadas = Math.max(0, ej.series_completadas - 1);
-        ej.completed = false;
+
+        // Solo las series NO-calentamiento afectan el contador de progreso.
+        if (!lastAction.isWarmup) {
+            ej.series_completadas = Math.max(0, ej.series_completadas - 1);
+            ej.completed = false;
+        }
 
         // Remover de session.completedSets
         if (session.value.completedSets && session.value.completedSets.length > 0) {
@@ -316,7 +373,16 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
 
         // Restaurar cursores a la serie deshecha
         session.value.currentEjercicioIndex = lastAction.ejercicioIndex;
-        session.value.currentSerieNumero = lastAction.serieNumero;
+        if (lastAction.isWarmup) {
+            // Calentamiento: volver al numero anterior (o 1 si era el primero).
+            session.value.currentCalentamientoNumero = lastAction.calentamientoNumero;
+            session.value.currentSerieNumero = lastAction.serieNumeroAntes;
+        } else {
+            session.value.currentSerieNumero = lastAction.serieNumero;
+            // Restauramos el contador de calentamiento al valor previo a
+            // registrar la efectiva. Si no habia calentamiento previo, sera 1.
+            session.value.currentCalentamientoNumero = lastAction.calentamientoNumero;
+        }
 
         return lastAction.setData;
     };
@@ -356,6 +422,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         if (session.value.currentEjercicioIndex < session.value.ejercicios.length - 1) {
             session.value.currentEjercicioIndex += 1;
             session.value.currentSerieNumero = 1;
+            session.value.currentCalentamientoNumero = 1;
         }
     };
 
@@ -364,6 +431,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         if (session.value.currentEjercicioIndex > 0) {
             session.value.currentEjercicioIndex -= 1;
             session.value.currentSerieNumero = 1;
+            session.value.currentCalentamientoNumero = 1;
         }
     };
 
@@ -371,6 +439,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         if (!isActive.value) return;
         session.value.currentEjercicioIndex = ejercicioIndex;
         session.value.currentSerieNumero = serieNumero;
+        session.value.currentCalentamientoNumero = 1;
     };
 
     const end = () => {
@@ -399,6 +468,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         totalSeriesObjetivo,
         totalSeriesCompletadas,
         progresoPorcentaje,
+        isSessionComplete,
         canUndo,
         start,
         recordSet,

@@ -157,7 +157,10 @@ describe('useTrainingSessionStore', () => {
         expect(store.canUndo).toBe(false);
         expect(store.volumenTotal).toBe(0);
 
-        // Registrar set 1: 100kg x 5 (volumen = 500)
+        // Set 1: calentamiento 100kg x 5.
+        // El calentamiento se guarda pero NO avanza el contador de series
+        // de trabajo: el progreso global queda en 0/5 y la proxima efectiva
+        // sigue siendo "Serie #1".
         store.recordSet({
             peso: 100,
             reps: 5,
@@ -167,11 +170,12 @@ describe('useTrainingSessionStore', () => {
         });
 
         expect(store.volumenTotal).toBe(500);
-        expect(store.totalSeriesCompletadas).toBe(1);
+        expect(store.totalSeriesCompletadas).toBe(0);
+        expect(store.session.currentSerieNumero).toBe(1);
+        expect(store.session.currentCalentamientoNumero).toBe(2);
         expect(store.canUndo).toBe(true);
-        expect(store.session.currentSerieNumero).toBe(2);
 
-        // Registrar set 2: 120kg x 5 (volumen = 600, total = 1100)
+        // Set 2: efectiva 120kg x 5. Ahora si avanza el contador de trabajo.
         store.recordSet({
             peso: 120,
             reps: 5,
@@ -181,14 +185,88 @@ describe('useTrainingSessionStore', () => {
         });
 
         expect(store.volumenTotal).toBe(1100);
-        expect(store.totalSeriesCompletadas).toBe(2);
+        expect(store.totalSeriesCompletadas).toBe(1);
+        expect(store.session.currentSerieNumero).toBe(2);
+        // Al registrar una efectiva, el contador de calentamiento se resetea.
+        expect(store.session.currentCalentamientoNumero).toBe(1);
 
-        // Deshacer el set 2
+        // Deshacer la efectiva
         const undone = store.undoLastSet();
         expect(undone.peso).toBe(120);
         expect(store.volumenTotal).toBe(500);
-        expect(store.totalSeriesCompletadas).toBe(1);
+        expect(store.totalSeriesCompletadas).toBe(0);
+        expect(store.session.currentSerieNumero).toBe(1);
+        // La deshacer restaura el cursor de calentamiento al momento previo.
+        expect(store.session.currentCalentamientoNumero).toBe(2);
+    });
+
+    it('las series de calentamiento tienen su propio contador y no afectan el progreso', () => {
+        const store = useTrainingSessionStore();
+        store.start({
+            rutina_nombre: 'Torso',
+            dia: 'Día 1',
+            ejercicios: [{ nombre: 'Press de banca', series_objetivo: 3 }],
+        });
+
+        // Calentamiento 1
+        store.recordSet({ peso: 20, reps: 8, tipo_serie: 'calentamiento' });
+        expect(store.session.currentCalentamientoNumero).toBe(2);
+        expect(store.session.currentSerieNumero).toBe(1);
+        expect(store.totalSeriesCompletadas).toBe(0);
+
+        // Calentamiento 2
+        store.recordSet({ peso: 30, reps: 6, tipo_serie: 'calentamiento' });
+        expect(store.session.currentCalentamientoNumero).toBe(3);
+        expect(store.session.currentSerieNumero).toBe(1);
+        expect(store.totalSeriesCompletadas).toBe(0);
+
+        // Set efectivo 1: ahora avanza la barra de progreso.
+        store.recordSet({ peso: 60, reps: 6, tipo_serie: 'efectiva' });
+        expect(store.session.currentCalentamientoNumero).toBe(1);
         expect(store.session.currentSerieNumero).toBe(2);
+        expect(store.totalSeriesCompletadas).toBe(1);
+
+        // Set efectivo 2.
+        store.recordSet({ peso: 60, reps: 5, tipo_serie: 'efectiva' });
+        expect(store.session.currentSerieNumero).toBe(3);
+        expect(store.totalSeriesCompletadas).toBe(2);
+
+        // Set efectivo 3 -> ejercicio completo, pero como es el unico no
+        // hay siguiente.
+        store.recordSet({ peso: 60, reps: 4, tipo_serie: 'efectiva' });
+        expect(store.totalSeriesCompletadas).toBe(3);
+        expect(store.currentEjercicio.completed).toBe(true);
+
+        // Deshacer la ultima efectiva.
+        store.undoLastSet();
+        expect(store.totalSeriesCompletadas).toBe(2);
+        expect(store.session.currentSerieNumero).toBe(3);
+    });
+
+    it('isSessionComplete refleja cuando todos los ejercicios estan terminados', () => {
+        const store = useTrainingSessionStore();
+        store.start({
+            rutina_nombre: 'Torso',
+            dia: 'Día 1',
+            ejercicios: [
+                { nombre: 'Press de banca', series_objetivo: 2 },
+                { nombre: 'Remo', series_objetivo: 2 },
+            ],
+        });
+
+        expect(store.isSessionComplete).toBe(false);
+
+        // Terminar el primer ejercicio.
+        store.recordSet({ peso: 60, reps: 8, tipo_serie: 'efectiva' });
+        store.recordSet({ peso: 60, reps: 8, tipo_serie: 'efectiva' });
+        expect(store.currentEjercicio.nombre).toBe('Remo');
+        expect(store.isSessionComplete).toBe(false);
+
+        // Terminar el segundo ejercicio (el ultimo).
+        store.recordSet({ peso: 50, reps: 10, tipo_serie: 'efectiva' });
+        store.recordSet({ peso: 50, reps: 10, tipo_serie: 'efectiva' });
+        expect(store.isSessionComplete).toBe(true);
+        expect(store.currentEjercicio.completed).toBe(true);
     });
 
     it('pause y resume controlan el estado isPaused', () => {
