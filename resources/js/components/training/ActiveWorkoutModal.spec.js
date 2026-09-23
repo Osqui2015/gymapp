@@ -22,6 +22,28 @@ vi.mock('@/composables/useWakeLock', () => ({
     }),
 }));
 
+// Mock axios para que la seccion "Vista del ejercicio" renderice con media fake.
+vi.mock('axios', () => {
+    return {
+        default: {
+            get: vi.fn((url) => {
+                if (String(url).includes('/api/ejercicios/media')) {
+                    return Promise.resolve({
+                        data: {
+                            gif_url: 'https://example.com/demo.gif',
+                            image_url: 'https://example.com/demo.png',
+                        },
+                    });
+                }
+                if (String(url).includes('/api/historial/ultimo')) {
+                    return Promise.resolve({ data: { encontrado: false } });
+                }
+                return Promise.resolve({ data: {} });
+            }),
+        },
+    };
+});
+
 describe('ActiveWorkoutModal', () => {
     let store;
 
@@ -62,6 +84,41 @@ describe('ActiveWorkoutModal', () => {
         expect(wrapper.text()).toContain('COMPLETAR SERIE #1');
         // Pill con el total de series del ejercicio (Press Banca tiene 3).
         expect(wrapper.text()).toContain('3 series');
+    });
+
+    it('el ojito oculta y muestra la vista del ejercicio', async () => {
+        const wrapper = mount(ActiveWorkoutModal, {
+            props: { open: true },
+        });
+
+        // Esperar a que el watch inicial con `immediate: true` cargue la
+        // media del ejercicio (la seccion que contiene el toggle solo
+        // aparece cuando hay gif o imagen).
+        await new Promise((r) => setTimeout(r, 0));
+        await wrapper.vm.$nextTick();
+
+        const toggle = wrapper.find('[data-testid="toggle-exercise-view"]');
+        expect(toggle.exists()).toBe(true);
+
+        // Por defecto, la vista esta visible.
+        expect(wrapper.find('[data-testid="exercise-media"]').exists()).toBe(true);
+        expect(toggle.attributes('aria-pressed')).toBe('false');
+
+        // Click -> oculta.
+        await toggle.trigger('click');
+        expect(toggle.attributes('aria-pressed')).toBe('true');
+        expect(wrapper.find('[data-testid="exercise-media"]').exists()).toBe(true);
+        // ...pero la imagen dentro del bloque desaparece.
+        expect(
+            wrapper.find('[data-testid="exercise-media"] img').exists()
+        ).toBe(false);
+
+        // Click otra vez -> vuelve a mostrarse.
+        await toggle.trigger('click');
+        expect(toggle.attributes('aria-pressed')).toBe('false');
+        expect(
+            wrapper.find('[data-testid="exercise-media"] img').exists()
+        ).toBe(true);
     });
 
     it('no renderiza contenido cuando open es false', () => {

@@ -187,17 +187,59 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
                                 Vista del ejercicio
                             </span>
-                            <button
-                                v-if="ejercicioMedia.gif_url"
-                                type="button"
-                                @click="gifHovered = !gifHovered"
-                                class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
-                            >
-                                {{ gifHovered ? '⏸ Pausar animación' : '▶ Ver animación' }}
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <!-- Ojito: ocultar / mostrar toda la vista del ejercicio -->
+                                <button
+                                    type="button"
+                                    @click="vistaVisible = !vistaVisible"
+                                    :aria-pressed="!vistaVisible"
+                                    :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
+                                    :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
+                                    data-testid="toggle-exercise-view"
+                                    class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
+                                >
+                                    <svg
+                                        v-if="vistaVisible"
+                                        class="w-3.5 h-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                    </svg>
+                                    <svg
+                                        v-else
+                                        class="w-3.5 h-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18"
+                                        />
+                                    </svg>
+                                </button>
+                                <button
+                                    v-if="ejercicioMedia.gif_url"
+                                    type="button"
+                                    @click="gifHovered = !gifHovered"
+                                    class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
+                                >
+                                    {{ gifHovered ? '⏸ Pausar animación' : '▶ Ver animación' }}
+                                </button>
+                            </div>
                         </div>
 
                         <div
+                            v-if="vistaVisible"
                             class="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 rounded-xl overflow-hidden bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex items-center justify-center cursor-pointer group"
                             @click="gifHovered = !gifHovered"
                             @mouseenter="gifHovered = true"
@@ -669,6 +711,9 @@ const wakeLock = useWakeLock();
 // Cache simple en `mediaCache` para no re-peir el mismo nombre.
 const ejercicioMedia = ref(null);
 const gifHovered = ref(true);
+// Visibilidad del bloque "Vista del ejercicio". Por defecto se muestra; el
+// usuario puede ocultarlo con el ojito si quiere mas espacio en pantalla.
+const vistaVisible = ref(true);
 const mediaCache = new Map();
 let mediaFetchSeq = 0;
 
