@@ -130,9 +130,12 @@
                             </button>
 
                             <div class="text-center min-w-0 flex-1">
-                                <span class="obs-pill obs-pill-violet text-[10px]">
-                                    EJERCICIO {{ store.session.currentEjercicioIndex + 1 }} DE
-                                    {{ store.session.ejercicios.length }}
+                                <span
+                                    class="obs-pill obs-pill-violet text-[10px]"
+                                    data-testid="ejercicio-progress-pill"
+                                >
+                                    EJERCICIO {{ store.unidadProgreso.actual }} DE
+                                    {{ store.unidadProgreso.total }}
                                 </span>
                                 <h2 class="text-lg sm:text-xl md:text-2xl font-black text-white truncate mt-1">
                                     {{ store.currentEjercicio.nombre }}
@@ -176,6 +179,122 @@
                         </div>
                     </div>
 
+                    <!-- Bloque "Superserie" en la columna izquierda: muestra los
+                         DOS ejercicios del par en el ORDEN correcto (primero →
+                         segundo), adaptando la etiqueta "Ahora / Después" según
+                         si estás en el primero o en el segundo del par. -->
+                    <div
+                        v-if="superseriePartner && superserieOrder"
+                        class="obs-card p-3 border-violet-500/30 bg-violet-500/5"
+                        data-testid="superset-left-block"
+                    >
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-base">⚡</span>
+                            <p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-200">
+                                Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
+                            </p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <!-- PRIMERO del par (el de menor índice) -->
+                            <div
+                                class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
+                                :class="
+                                    superserieOrder.currentRole === 'first'
+                                        ? 'bg-violet-500/15 border-violet-500/35'
+                                        : 'bg-emerald-900/15 border-emerald-500/25'
+                                "
+                                :data-testid="`superset-left-first-${superserieOrder.first.index}`"
+                            >
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full shrink-0"
+                                    :class="
+                                        superserieOrder.currentRole === 'first'
+                                            ? 'bg-emerald-400'
+                                            : 'bg-emerald-500/70'
+                                    "
+                                ></span>
+                                <span
+                                    class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
+                                    :class="
+                                        superserieOrder.currentRole === 'first'
+                                            ? 'text-emerald-300'
+                                            : 'text-emerald-400/70'
+                                    "
+                                >
+                                    {{ superserieOrder.currentRole === 'first' ? 'Ahora' : 'Ya hiciste' }}
+                                </span>
+                                <span
+                                    class="text-xs sm:text-sm font-bold truncate"
+                                    :class="
+                                        superserieOrder.currentRole === 'first'
+                                            ? 'text-white'
+                                            : 'text-gray-300 line-through decoration-emerald-500/40'
+                                    "
+                                >
+                                    {{ superserieOrder.first.ejercicio.nombre }}
+                                </span>
+                            </div>
+
+                            <!-- Conector visual entre los dos -->
+                            <div class="flex items-center gap-2 px-2.5">
+                                <span class="text-violet-400 text-[10px] font-black">↓</span>
+                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                    {{ superserieOrder.currentRole === 'first' ? 'Seguí directo con' : 'Ahora' }}
+                                </span>
+                            </div>
+
+                            <!-- SEGUNDO del par (el de mayor índice) -->
+                            <div
+                                class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
+                                :class="
+                                    superserieOrder.currentRole === 'second'
+                                        ? 'bg-violet-500/15 border-violet-500/35'
+                                        : 'bg-[var(--color-obsidian-surface)] border-[var(--color-obsidian-border)]'
+                                "
+                                :data-testid="`superset-left-second-${superserieOrder.second.index}`"
+                            >
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full shrink-0"
+                                    :class="
+                                        superserieOrder.currentRole === 'second'
+                                            ? 'bg-emerald-400'
+                                            : 'bg-violet-400'
+                                    "
+                                ></span>
+                                <span
+                                    class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
+                                    :class="
+                                        superserieOrder.currentRole === 'second'
+                                            ? 'text-emerald-300'
+                                            : 'text-violet-300'
+                                    "
+                                >
+                                    {{ superserieOrder.currentRole === 'second' ? 'Ahora' : 'Después' }}
+                                </span>
+                                <span
+                                    class="text-xs sm:text-sm font-bold truncate"
+                                    :class="
+                                        superserieOrder.currentRole === 'second'
+                                            ? 'text-white'
+                                            : 'text-white'
+                                    "
+                                >
+                                    {{ superserieOrder.second.ejercicio.nombre }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="mt-2 text-[10px] text-gray-400 italic">
+                            <template v-if="superserieOrder.currentRole === 'first'">
+                                Sin descanso entre ambos. Registrá una serie en cada uno antes de la próxima pausa.
+                            </template>
+                            <template v-else>
+                                Último del par. Después de esta serie arranca el descanso.
+                            </template>
+                        </p>
+                    </div>
+
                     <!-- Demostración Visual / GIF Animado (data-testid="exercise-media") -->
                     <section
                         v-if="ejercicioMedia && (ejercicioMedia.gif_url || ejercicioMedia.image_url)"
@@ -183,9 +302,12 @@
                         data-testid="exercise-media"
                     >
                         <div class="w-full flex items-center justify-between gap-2 mb-2">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
-                                Vista del ejercicio
+                            <span class="text-[10px] font-black uppercase tracking-wider text-violet-300 flex items-center gap-1.5 min-w-0">
+                                <span class="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0"></span>
+                                <span class="truncate">
+                                    Vista:&nbsp;
+                                    <span class="text-white">{{ mediaEjercicio?.nombre }}</span>
+                                </span>
                             </span>
                             <div class="flex items-center gap-1.5">
                                 <!-- Ojito: ocultar / mostrar toda la vista del ejercicio -->
@@ -238,24 +360,61 @@
                             </div>
                         </div>
 
+                        <!-- Contenedor con flechas para alternar entre el ejercicio
+                             actual y el compañero de superset (si lo hay). -->
                         <div
                             v-if="vistaVisible"
-                            class="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 rounded-xl overflow-hidden bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex items-center justify-center cursor-pointer group"
-                            @click="gifHovered = !gifHovered"
-                            @mouseenter="gifHovered = true"
+                            class="relative w-full"
                         >
-                            <img
-                                :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
-                                :alt="`Demostración de ${store.currentEjercicio.nombre}`"
-                                class="h-full w-full object-contain p-1.5 rounded-xl transition-transform duration-200 group-hover:scale-105"
-                                loading="lazy"
-                            />
-                            <div
-                                v-if="!gifHovered && ejercicioMedia.gif_url"
-                                class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center text-white text-xs font-bold gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity"
+                            <!-- Flecha izquierda (solo si hay superset y NO estamos mirando al current) -->
+                            <button
+                                v-if="superseriePartner && mediaEjercicioIndex !== store.session.currentEjercicioIndex"
+                                type="button"
+                                @click="mediaEjercicioIndex = store.session.currentEjercicioIndex"
+                                data-testid="media-prev"
+                                :title="`Ver ${store.currentEjercicio.nombre}`"
+                                aria-label="Ver imagen del ejercicio actual"
+                                class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-violet-600/80 hover:bg-violet-500 text-white shadow-lg transition-all cursor-pointer"
                             >
-                                <span class="p-2 rounded-full bg-violet-600/80 shadow-lg">▶</span>
-                                <span>Pasá el mouse o tocá para ver animación</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            <!-- Flecha derecha (solo si hay superset y estamos mirando al current) -->
+                            <button
+                                v-if="superseriePartner && mediaEjercicioIndex === store.session.currentEjercicioIndex"
+                                type="button"
+                                @click="mediaEjercicioIndex = superseriePartner.index"
+                                data-testid="media-next"
+                                :title="`Ver ${superseriePartner.ejercicio.nombre}`"
+                                aria-label="Ver imagen del compañero de superset"
+                                class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-violet-600/80 hover:bg-violet-500 text-white shadow-lg transition-all cursor-pointer"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+
+                            <div
+                                class="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 rounded-xl overflow-hidden bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex items-center justify-center cursor-pointer group"
+                                @click="gifHovered = !gifHovered"
+                                @mouseenter="gifHovered = true"
+                            >
+                                <img
+                                    :key="mediaEjercicio?.nombre"
+                                    :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
+                                    :alt="`Demostración de ${mediaEjercicio?.nombre}`"
+                                    class="h-full w-full object-contain p-1.5 rounded-xl transition-transform duration-200 group-hover:scale-105"
+                                    loading="lazy"
+                                />
+                                <div
+                                    v-if="!gifHovered && ejercicioMedia.gif_url"
+                                    class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center text-white text-xs font-bold gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <span class="p-2 rounded-full bg-violet-600/80 shadow-lg">▶</span>
+                                    <span>Pasá el mouse o tocá para ver animación</span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -374,310 +533,109 @@
 
                 <!-- COLUMNA DERECHA (Desktop: col-span-7) Focus Card: Configurar Serie -->
                 <div class="w-full md:col-span-7 lg:col-span-7 flex flex-col gap-3">
-                    <section
-                        class="obs-card-elevated p-3.5 sm:p-4 md:p-5 space-y-3 sm:space-y-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+                    <!-- Header explicativo cuando es superset -->
+                    <div
+                        v-if="superseriePartner && superserieOrder"
+                        class="obs-card p-2.5 sm:p-3 flex items-center gap-2 border-violet-500/30 bg-violet-500/5"
+                        data-testid="superset-banner"
                     >
-                        <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-2.5 flex-wrap gap-2">
-                            <span class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-300">
-                                <span
-                                    class="w-1.5 h-1.5 rounded-full"
-                                    :class="
-                                        form.tipo_serie === 'calentamiento'
-                                            ? 'bg-indigo-400'
-                                            : 'bg-emerald-400'
-                                    "
-                                ></span>
-                                <template v-if="form.tipo_serie === 'calentamiento'">
-                                    Configurar Calentamiento #{{ store.session.currentCalentamientoNumero || 1 }}
+                        <span class="text-base">⚡</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-200">
+                                Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
+                            </p>
+                            <p class="text-[11px] text-gray-400">
+                                <!-- Si estamos en el primero del par, hay que
+                                     decir "hacé X y seguí con Y". Si ya
+                                     estamos en el segundo, el orden ya pasó
+                                     y hay que reflejarlo. -->
+                                <template v-if="superserieOrder.currentRole === 'first'">
+                                    Hacé
+                                    <strong class="text-white">{{ superserieOrder.first.ejercicio.nombre }}</strong>
+                                    y seguí directo con
+                                    <strong class="text-white">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                                    sin descansar entre ellos.
                                 </template>
                                 <template v-else>
-                                    Configurar Serie #{{ store.session.currentSerieNumero }}
+                                    Hacé
+                                    <strong class="text-white">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                                    — ya hiciste
+                                    <strong class="text-white">{{ superserieOrder.first.ejercicio.nombre }}</strong>
+                                    antes, seguí sin descansar.
                                 </template>
-                            </span>
-
-                            <!-- Selector de Tipo de Serie (Kinetic Obsidian segmented) -->
-                            <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-0.5 sm:p-1 text-[10px] font-bold border border-[var(--color-obsidian-border)]">
-                                <button
-                                    v-for="tipo in tiposSerie"
-                                    :key="tipo.id"
-                                    type="button"
-                                    @click="form.tipo_serie = tipo.id"
-                                    :class="[
-                                        'px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap',
-                                        form.tipo_serie === tipo.id
-                                            ? tipo.activeClass
-                                            : 'text-gray-400 hover:text-white',
-                                    ]"
-                                >
-                                    {{ tipo.label }}
-                                </button>
-                            </div>
+                            </p>
                         </div>
+                    </div>
 
-                        <!-- Controles Glove Mode: PESO -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
-                                    CARGA / PESO
-                                </label>
-                                <span class="text-[10px] text-violet-300 font-bold">Toques rápidos (kg)</span>
-                            </div>
+                    <!-- Cuando NO es superserie: una sola card -->
+                    <SetConfigCard
+                        v-if="!superseriePartner"
+                        :ejercicio="store.currentEjercicio"
+                        :ejercicio-index="store.session.currentEjercicioIndex"
+                        @complete="onSetComplete"
+                    />
 
-                            <div class="flex items-center gap-1 sm:gap-1.5">
-                                <!-- Botones decremento -->
-                                <div class="grid grid-cols-3 gap-1 shrink-0">
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(-5)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        -5
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(-2.5)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        -2.5
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(-1)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        -1
-                                    </button>
-                                </div>
+                    <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile).
+                         Las cards se renderizan en el ORDEN del par (primero →
+                         segundo), no del current. Así el usuario ve siempre
+                         la misma disposición: "izquierda = primero, derecha =
+                         segundo", sin importar en cuál de los dos esté parado. -->
+                    <div
+                        v-else-if="superserieOrder"
+                        class="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                        data-testid="superset-grid"
+                    >
+                        <SetConfigCard
+                            :ejercicio="superserieOrder.first.ejercicio"
+                            :ejercicio-index="superserieOrder.first.index"
+                            :show-exercise-name="true"
+                            @complete="onSetComplete"
+                        />
+                        <SetConfigCard
+                            :ejercicio="superserieOrder.second.ejercicio"
+                            :ejercicio-index="superserieOrder.second.index"
+                            :show-exercise-name="true"
+                            @complete="onSetComplete"
+                        />
+                    </div>
 
-                                <!-- Display grande de peso -->
-                                <div
-                                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-violet-500/30 rounded-2xl h-11 sm:h-12 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
-                                >
-                                    <input
-                                        v-model.number="form.peso"
-                                        type="number"
-                                        inputmode="decimal"
-                                        step="0.5"
-                                        min="0"
-                                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
-                                        placeholder="0"
-                                    />
-                                    <span class="absolute right-2.5 sm:right-3 text-[11px] font-black text-violet-300 uppercase tracking-wider"
-                                        >kg</span
-                                    >
-                                </div>
+                    <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
+                    <button
+                        v-if="store.isSessionComplete"
+                        type="button"
+                        @click="handleFinalizar"
+                        data-testid="btn-finalizar-sesion"
+                        class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_12px_36px_rgba(16,185,129,0.45)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/15"
+                    >
+                        <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="3"
+                                d="M5 13l4 4L19 7"
+                            />
+                        </svg>
+                        <span>FINALIZAR SESIÓN</span>
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2.5"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                    </button>
 
-                                <!-- Botones incremento -->
-                                <div class="grid grid-cols-3 gap-1 shrink-0">
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(1)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        +1
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(2.5)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        +2.5
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarPeso(5)"
-                                        class="w-9 sm:w-10 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        +5
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Controles Glove Mode: REPETICIONES -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[10px] font-black uppercase tracking-[0.16em] text-gray-300">
-                                    REPETICIONES
-                                </label>
-                                <span class="text-[10px] text-emerald-300 font-bold tabular-nums">
-                                    Objetivo: {{ store.currentEjercicio.reps_min }}–{{
-                                        store.currentEjercicio.reps_max
-                                    }}
-                                </span>
-                            </div>
-
-                            <div class="flex items-center gap-1 sm:gap-1.5">
-                                <!-- Decremento reps -->
-                                <div class="grid grid-cols-2 gap-1 shrink-0">
-                                    <button
-                                        type="button"
-                                        @click="ajustarReps(-2)"
-                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        -2
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarReps(-1)"
-                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        -1
-                                    </button>
-                                </div>
-
-                                <!-- Display grande de reps -->
-                                <div
-                                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-emerald-500/30 rounded-2xl h-11 sm:h-12 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-                                >
-                                    <input
-                                        v-model.number="form.reps"
-                                        type="number"
-                                        inputmode="numeric"
-                                        min="0"
-                                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
-                                        placeholder="0"
-                                    />
-                                    <span class="absolute right-2.5 sm:right-3 text-[11px] font-black text-emerald-300 uppercase tracking-wider"
-                                        >reps</span
-                                    >
-                                </div>
-
-                                <!-- Incremento reps -->
-                                <div class="grid grid-cols-2 gap-1 shrink-0">
-                                    <button
-                                        type="button"
-                                        @click="ajustarReps(1)"
-                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        +1
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="ajustarReps(2)"
-                                        class="w-10 sm:w-12 h-11 sm:h-12 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
-                                    >
-                                        +2
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Esfuerzo (RIR / RPE) -->
-                        <div class="bg-[var(--color-obsidian-surface)] rounded-xl p-2.5 sm:p-3 border border-[var(--color-obsidian-border)] space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-gray-300">Esfuerzo percibido:</span>
-                                <div class="inline-flex rounded-lg bg-[var(--color-obsidian-elevated)] p-0.5 text-[10px] font-black border border-[var(--color-obsidian-border)]">
-                                    <button
-                                        type="button"
-                                        @click="form.esfuerzo_tipo = 'rir'"
-                                        :class="
-                                            form.esfuerzo_tipo === 'rir'
-                                                ? 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                                                : 'text-gray-400'
-                                        "
-                                        class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-                                    >
-                                        RIR
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="form.esfuerzo_tipo = 'rpe'"
-                                        :class="
-                                            form.esfuerzo_tipo === 'rpe'
-                                                ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                                                : 'text-gray-400'
-                                        "
-                                        class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
-                                    >
-                                        RPE
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-1 overflow-x-auto py-0.5">
-                                <button
-                                    v-for="val in esfuerzoOptions"
-                                    :key="val"
-                                    type="button"
-                                    @click="form.esfuerzo_valor = form.esfuerzo_valor === val ? null : val"
-                                    :class="[
-                                        'min-w-8 sm:min-w-9 h-10 px-1.5 sm:px-2 rounded-xl font-black text-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5',
-                                        form.esfuerzo_valor === val
-                                            ? form.esfuerzo_tipo === 'rir'
-                                                ? 'bg-emerald-500 text-white shadow-[0_0_18px_rgba(16,185,129,0.5)] scale-105'
-                                                : 'bg-amber-500 text-white shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105'
-                                            : 'bg-[var(--color-obsidian-elevated)] text-gray-300 hover:bg-[var(--color-obsidian-overlay)] hover:text-white border border-[var(--color-obsidian-border)]',
-                                    ]"
-                                >
-                                    <span>{{ val }}</span>
-                                    <span class="text-[8px] uppercase opacity-80">
-                                        {{ esfuerzoLabel(val) }}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Botón Gigante: COMPLETAR SERIE / FINALIZAR (Kinetic Obsidian) -->
+                    <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
+                    <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-0.5">
                         <button
-                            v-if="!store.isSessionComplete"
                             type="button"
-                            @click="completarSerie"
-                            class="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-white/10"
+                            @click="deshacer"
+                            class="text-xs font-bold text-rose-300 hover:text-rose-200 underline underline-offset-4 cursor-pointer"
                         >
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M5 13l4 4L19 7"
-                                />
-                            </svg>
-                            <span v-if="form.tipo_serie === 'calentamiento'">
-                                COMPLETAR CALENTAMIENTO #{{ store.session.currentCalentamientoNumero || 1 }}
-                            </span>
-                            <span v-else>
-                                COMPLETAR SERIE #{{ store.session.currentSerieNumero }}
-                            </span>
+                            ↩ Deshacer última serie completada
                         </button>
-
-                        <button
-                            v-else
-                            type="button"
-                            @click="handleFinalizar"
-                            data-testid="btn-finalizar-sesion"
-                            class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_12px_36px_rgba(16,185,129,0.45)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/15"
-                        >
-                            <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M5 13l4 4L19 7"
-                                />
-                            </svg>
-                            <span>FINALIZAR SESIÓN</span>
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2.5"
-                                    d="M9 5l7 7-7 7"
-                                />
-                            </svg>
-                        </button>
-
-                        <!-- Botón Deshacer -->
-                        <div v-if="store.canUndo" class="text-center pt-0.5">
-                            <button
-                                type="button"
-                                @click="deshacer"
-                                class="text-xs font-bold text-rose-300 hover:text-rose-200 underline underline-offset-4 cursor-pointer"
-                            >
-                                ↩ Deshacer última serie completada
-                            </button>
-                        </div>
-                    </section>
+                    </div>
                 </div>
             </div>
         </main>
@@ -691,6 +649,7 @@ import { useTrainingSessionStore } from '@/stores/trainingSession';
 import { useRestTimerStore } from '@/stores/restTimer';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useWakeLock } from '@/composables/useWakeLock';
+import SetConfigCard from './SetConfigCard.vue';
 
 const props = defineProps({
     open: {
@@ -717,6 +676,18 @@ const vistaVisible = ref(true);
 const mediaCache = new Map();
 let mediaFetchSeq = 0;
 
+/**
+ * Índice del ejercicio cuya imagen se está mostrando. Por defecto sigue al
+ * `currentEjercicioIndex`, pero cuando hay superset el usuario puede
+ * alternar con las flechas para ver la imagen del compañero sin perder el
+ * foco en la card de carga.
+ */
+const mediaEjercicioIndex = ref(store.session.currentEjercicioIndex);
+const mediaEjercicio = computed(() => {
+    const ejs = store.session.ejercicios || [];
+    return ejs[mediaEjercicioIndex.value] || ejs[store.session.currentEjercicioIndex] || null;
+});
+
 async function loadEjercicioMedia(nombre) {
     if (!nombre) {
         ejercicioMedia.value = null;
@@ -742,8 +713,27 @@ async function loadEjercicioMedia(nombre) {
     }
 }
 
+/**
+ * Cuando cambia el ejercicio activo (currentEjercicioIndex) reseteamos el
+ * media para que muestre la imagen del current. Si el usuario ya estaba
+ * mirando al partner, lo dejamos donde estaba (caso típico: navegó con la
+ * flecha y después cambió de ejercicio → la imagen salta al nuevo current).
+ */
 watch(
-    () => store.currentEjercicio?.nombre,
+    () => store.session.currentEjercicioIndex,
+    (newIdx) => {
+        // Solo reseteamos si no estamos mirando al partner dentro del mismo par
+        const partner = store.superseriePartnerFor(newIdx);
+        const isLookingAtPartner =
+            partner && mediaEjercicioIndex.value === partner.index;
+        if (!isLookingAtPartner) {
+            mediaEjercicioIndex.value = newIdx;
+        }
+    },
+);
+
+watch(
+    () => mediaEjercicio.value?.nombre,
     (nombre) => {
         gifHovered.value = true;
         loadEjercicioMedia(nombre);
@@ -751,46 +741,10 @@ watch(
     { immediate: true },
 );
 
-// Tipos de serie disponibles
-const tiposSerie = [
-    { id: 'efectiva', label: 'Efectiva', activeClass: 'bg-emerald-500 text-white' },
-    { id: 'calentamiento', label: 'Calentamiento', activeClass: 'bg-indigo-500 text-white' },
-    { id: 'dropset', label: 'Drop Set', activeClass: 'bg-amber-500 text-white' },
-    { id: 'al_fallo', label: 'Al Fallo', activeClass: 'bg-rose-500 text-white' },
-];
-
-const form = ref({
-    peso: 0,
-    reps: 0,
-    tipo_serie: 'efectiva',
-    esfuerzo_tipo: 'rir',
-    esfuerzo_valor: null,
-    nota_user: '',
-});
-
 // Datos de la última vez que el usuario hizo este ejercicio.
 // null mientras carga, {} sin encontrado=true si no hay histórico.
 const lastExerciseData = ref(null);
 let lastExerciseFetchToken = 0;
-
-// Setea true cuando ya pre-rellenamos el form con el último peso top,
-// para no pisar ediciones del usuario si vuelve a cambiar el ejercicio.
-let prefilledFromLast = false;
-
-// Opciones dinámicas de esfuerzo (RIR 0..5, RPE 6..10)
-const esfuerzoOptions = computed(() => {
-    return form.value.esfuerzo_tipo === 'rir' ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10];
-});
-
-// Etiquetas cortas para cada valor de RIR/RPE (debajo del número)
-const esfuerzoLabel = (val) => {
-    const rir = ['Fallo', 'Máx', 'Óptimo', 'Medio', 'Fácil', 'Calent.'];
-    const rpe = ['Fácil', 'Fácil+', 'Medio', 'Medio+', 'Máx'];
-    if (form.value.esfuerzo_tipo === 'rir') {
-        return rir[Math.min(val, 5)] || '';
-    }
-    return rpe[Math.min(Math.max(val - 6, 0), 4)] || '';
-};
 
 // Formateo del cronómetro de la sesión
 const formattedTime = computed(() => {
@@ -803,15 +757,6 @@ const formattedTime = computed(() => {
     }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
-
-const ajustarPeso = (delta) => {
-    const nuevo = Math.max(0, (Number(form.value.peso) || 0) + delta);
-    form.value.peso = Math.round(nuevo * 2) / 2; // redondear a 0.5
-};
-
-const ajustarReps = (delta) => {
-    form.value.reps = Math.max(0, (Number(form.value.reps) || 0) + delta);
-};
 
 const formatSetTime = (isoString) => {
     if (!isoString) return '';
@@ -827,51 +772,66 @@ const togglePause = () => {
     }
 };
 
-// Mantener valores del set previo del ejercicio si no hay cargados.
-// Ademas trae el último histórico del ejercicio desde el backend para
-// mostrarle al usuario "última vez cargaste X" + sugerencia.
+/**
+ * Compuerzo de superserie: si el ejercicio actual pertenece a un grupo de
+ * superset y hay otro ejercicio con el mismo grupo, lo retornamos junto con
+ * su índice. Si no, null (modo "ejercicio simple", una sola card).
+ */
+const superseriePartner = computed(() => {
+    if (!store.currentEjercicio) return null;
+    return store.superseriePartnerFor(store.session.currentEjercicioIndex);
+});
+
+/**
+ * Orden del par de superserie en función del currentEjercicioIndex.
+ *
+ * - `current`: el ejercicio que el usuario está haciendo ahora.
+ * - `next`: el otro del par (el que sigue si todavía no lo hiciste, o el
+ *   que ya hiciste si estás en el segundo).
+ *
+ * Como el orden de la rutina es lineal, el "primero" del par siempre es el
+ * que tiene el índice MENOR. Esto nos sirve para que el banner y el bloque
+ * izquierdo muestren el orden correcto:
+ *
+ *   currentIdx < partnerIdx → current es el primero, partner es el segundo
+ *   currentIdx > partnerIdx → partner es el primero (ya hecho), current es el segundo
+ */
+const superserieOrder = computed(() => {
+    const partner = superseriePartner.value;
+    if (!partner) return null;
+    const currentIdx = store.session.currentEjercicioIndex;
+    const partnerIdx = partner.index;
+    if (currentIdx < partnerIdx) {
+        return {
+            first: { index: currentIdx, ejercicio: store.currentEjercicio },
+            second: { index: partnerIdx, ejercicio: partner.ejercicio },
+            currentRole: 'first',
+        };
+    }
+    return {
+        first: { index: partnerIdx, ejercicio: partner.ejercicio },
+        second: { index: currentIdx, ejercicio: store.currentEjercicio },
+        currentRole: 'second',
+    };
+});
+
+/**
+ * Trae el "última vez" del ejercicio actual para la card de la columna
+ * izquierda. El SetConfigCard maneja su propio form / prefill localmente.
+ */
 watch(
     () => store.currentEjercicio,
     async (ej) => {
         if (!ej) return;
-
-        if (ej.sets && ej.sets.length > 0) {
-            const last = ej.sets[ej.sets.length - 1];
-            form.value.peso = last.peso;
-            form.value.reps = last.reps;
-            prefilledFromLast = true;
-        } else {
-            // Predeterminado según objetivo
-            form.value.reps = Number(ej.reps_min) || 8;
-        }
-
-        // Buscar la última sesión en la que el usuario trabajó este ejercicio.
         lastExerciseData.value = null;
         const token = ++lastExerciseFetchToken;
         try {
             const { data } = await window.axios.get('/api/historial/ultimo', {
                 params: { ejercicio: ej.nombre },
             });
-            // Evitar race conditions si el usuario cambió de ejercicio.
             if (token !== lastExerciseFetchToken) return;
             lastExerciseData.value = data || null;
-
-            // Si todavía no se hizo ningún set en este ejercicio y el backend
-            // devolvió un peso top, lo usamos como valor inicial sugerido.
-            if (
-                data &&
-                data.encontrado &&
-                !prefilledFromLast &&
-                Number(form.value.peso) === 0 &&
-                data.peso_top
-            ) {
-                form.value.peso = Number(data.peso_top) || 0;
-                if (!Number(form.value.reps) && data.reps_en_peso_top) {
-                    form.value.reps = Number(data.reps_en_peso_top) || 0;
-                }
-            }
         } catch (err) {
-            // Silencioso: si falla la red, el modal sigue funcionando sin la card.
             if (token === lastExerciseFetchToken) {
                 lastExerciseData.value = null;
             }
@@ -973,28 +933,52 @@ const recomendacion = computed(() => {
     };
 });
 
-const completarSerie = async () => {
-    const ej = store.currentEjercicio;
+/**
+ * Handler que recibe el evento `complete` del SetConfigCard (sea el del
+ * ejercicio principal o el del compañero de superset). Persiste la serie
+ * para el ejercicioIndex correcto y dispara el rest timer del ejercicio
+ * que se acaba de registrar.
+ */
+const onSetComplete = async (payload) => {
+    const {
+        ejercicioIndex,
+        peso,
+        reps,
+        tipo_serie,
+        esfuerzo_tipo,
+        esfuerzo_valor,
+        nota_user,
+    } = payload;
+    const ej = store.session.ejercicios[ejercicioIndex];
     if (!ej) return;
 
-    // El numero de serie que va al backend debe coincidir con el que muestra
-    // la UI: si es calentamiento usamos su propio contador, si no, el de
-    // series de trabajo.
-    const isWarmup = form.value.tipo_serie === 'calentamiento';
-    const currentSerieNum = isWarmup
-        ? (store.session.currentCalentamientoNumero || 1)
-        : store.session.currentSerieNumero;
-    const pesoNum = Number(form.value.peso) || 0;
-    const repsNum = Number(form.value.reps) || 0;
+    const isWarmup = tipo_serie === 'calentamiento';
+    const isCurrent = ejercicioIndex === store.session.currentEjercicioIndex;
 
-    // 1. Guardar en Pinia store
-    store.recordSet({
-        peso: pesoNum,
-        reps: repsNum,
-        tipo_serie: form.value.tipo_serie,
-        esfuerzo_tipo: form.value.esfuerzo_tipo,
-        esfuerzo_valor: form.value.esfuerzo_valor,
-        nota_user: form.value.nota_user,
+    // Numero de serie que va al backend: si es el current ejercicio usamos el
+    // contador global; si es el partner de superset usamos el contador local
+    // de ese ejercicio (el store ya lo calcula, pero acá lo necesitamos
+    // antes de llamar a recordSetAt para la persistencia offline).
+    let currentSerieNum;
+    if (isCurrent) {
+        currentSerieNum = isWarmup
+            ? (store.session.currentCalentamientoNumero || 1)
+            : store.session.currentSerieNumero;
+    } else {
+        const completedEffective = (ej.sets || []).filter(
+            (s) => s.tipo_serie !== 'calentamiento'
+        ).length;
+        currentSerieNum = completedEffective + 1;
+    }
+
+    // 1. Guardar en Pinia store (en el índice correcto)
+    store.recordSetAt(ejercicioIndex, {
+        peso,
+        reps,
+        tipo_serie,
+        esfuerzo_tipo,
+        esfuerzo_valor,
+        nota_user,
     });
 
     // 2. Haptic feedback
@@ -1013,34 +997,35 @@ const completarSerie = async () => {
             series_completadas: 1,
             reps_min: String(ej.reps_min || '8'),
             reps_max: String(ej.reps_max || '10'),
-            reps_realizadas: repsNum,
+            reps_realizadas: reps,
             descanso_min: Number(ej.descanso_min || 1.5),
-            peso: pesoNum,
+            peso,
             completado: true,
-            tipo_serie: form.value.tipo_serie,
+            tipo_serie,
             sesion_uuid: store.session.id,
-            esfuerzo_tipo: form.value.esfuerzo_tipo,
-            esfuerzo_valor: form.value.esfuerzo_valor,
-            nota_user: form.value.nota_user,
+            esfuerzo_tipo,
+            esfuerzo_valor,
+            nota_user,
         });
     } catch (e) {
         console.warn('Error guardando serie en offline/API:', e);
     }
 
-    // 4. Iniciar temporizador de descanso
+    // 4. Iniciar temporizador de descanso del ejercicio que se acaba de
+    // registrar. En superseries, esto es subóptimo (el descanso debería
+    // empezar DESPUÉS de los dos ejercicios del round), pero mantiene
+    // compatibilidad con el comportamiento previo. Si querés que el timer
+    // arranque solo al completar el segundo del par, decime y lo cambiamos.
     const descansoSegundos = Math.max(15, Math.round((Number(ej.descanso_min) || 1.5) * 60));
     restTimer.start(descansoSegundos, ej.nombre);
 };
 
 const deshacer = () => {
-    const last = store.undoLastSet();
-    if (last) {
-        form.value.peso = last.peso;
-        form.value.reps = last.reps;
-        form.value.tipo_serie = last.tipo_serie;
-        form.value.esfuerzo_tipo = last.esfuerzo_tipo || 'rir';
-        form.value.esfuerzo_valor = last.esfuerzo_valor;
-    }
+    // El form local ahora vive dentro del SetConfigCard del ejercicio
+    // principal, así que solo necesitamos pedirle al store que revierta
+    // la última serie del current ejercicio. La card re-renderiza con
+    // los valores previos al watch interno.
+    store.undoLastSet();
 };
 
 const handleFinalizar = () => {

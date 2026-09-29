@@ -394,4 +394,159 @@ describe('useTrainingSessionStore', () => {
             expect(store.elapsed).toBe(30 * 60);
         });
     });
+
+    describe('Superseries (recordSetAt + superseriePartnerFor)', () => {
+        const startSupersetSession = () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'Torso A',
+                dia: 'Día 1',
+                ejercicios: [
+                    {
+                        nombre: 'Press de banca',
+                        series_objetivo: 3,
+                        superserie_grupo: 1,
+                    },
+                    {
+                        nombre: 'Aperturas en polea',
+                        series_objetivo: 3,
+                        superserie_grupo: 1,
+                    },
+                    {
+                        nombre: 'Remo con barra',
+                        series_objetivo: 3,
+                    },
+                ],
+            });
+            return store;
+        };
+
+        it('superseriePartnerFor devuelve el compañero cuando ambos comparten grupo', () => {
+            const store = startSupersetSession();
+            const partner = store.superseriePartnerFor(0);
+            expect(partner).toBeTruthy();
+            expect(partner.index).toBe(1);
+            expect(partner.ejercicio.nombre).toBe('Aperturas en polea');
+
+            // Y al revés: desde el partner, devuelve el principal
+            const partnerBack = store.superseriePartnerFor(1);
+            expect(partnerBack.index).toBe(0);
+            expect(partnerBack.ejercicio.nombre).toBe('Press de banca');
+        });
+
+        it('superseriePartnerFor devuelve null para ejercicios sin grupo', () => {
+            const store = startSupersetSession();
+            expect(store.superseriePartnerFor(2)).toBeNull();
+        });
+
+        it('recordSetAt sobre el current ejercicio mantiene el comportamiento previo', () => {
+            const store = startSupersetSession();
+            store.recordSetAt(0, { peso: 60, reps: 10 });
+
+            expect(store.session.ejercicios[0].sets.length).toBe(1);
+            expect(store.session.ejercicios[0].series_completadas).toBe(1);
+            expect(store.session.currentEjercicioIndex).toBe(0);
+            expect(store.session.currentSerieNumero).toBe(2);
+        });
+
+        it('recordSetAt sobre el partner NO avanza currentEjercicioIndex ni currentSerieNumero', () => {
+            const store = startSupersetSession();
+            store.recordSetAt(1, { peso: 20, reps: 12 });
+
+            // El set se registra en el partner
+            expect(store.session.ejercicios[1].sets.length).toBe(1);
+            expect(store.session.ejercicios[1].series_completadas).toBe(1);
+            expect(store.session.ejercicios[1].sets[0].series_numero).toBe(1);
+
+            // Pero los cursores globales quedan donde estaban
+            expect(store.session.currentEjercicioIndex).toBe(0);
+            expect(store.session.currentSerieNumero).toBe(1);
+        });
+
+        it('series_numero del partner se incrementa independiente del current', () => {
+            const store = startSupersetSession();
+            // Registramos 2 series en el partner
+            store.recordSetAt(1, { peso: 20, reps: 12 });
+            store.recordSetAt(1, { peso: 20, reps: 12 });
+
+            expect(store.session.ejercicios[1].sets.length).toBe(2);
+            expect(store.session.ejercicios[1].sets[0].series_numero).toBe(1);
+            expect(store.session.ejercicios[1].sets[1].series_numero).toBe(2);
+
+            // El current sigue en 0/1
+            expect(store.session.currentEjercicioIndex).toBe(0);
+            expect(store.session.ejercicios[0].sets.length).toBe(0);
+        });
+    });
+
+    describe('unidadProgreso (contar superseries como 1 unidad)', () => {
+        it('cuenta superseries como 1 sola unidad lógica', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'Torso A',
+                dia: 'Día 1',
+                ejercicios: [
+                    // SS 1: 2 ejercicios
+                    { nombre: 'Press banca', series_objetivo: 3, superserie_grupo: 1 },
+                    { nombre: 'Aperturas', series_objetivo: 3, superserie_grupo: 1 },
+                    // Ejercicio simple
+                    { nombre: 'Remo', series_objetivo: 3 },
+                    // SS 2: 2 ejercicios
+                    { nombre: 'Curl', series_objetivo: 3, superserie_grupo: 2 },
+                    { nombre: 'Triceps', series_objetivo: 3, superserie_grupo: 2 },
+                    // Ejercicio simple final
+                    { nombre: 'Prensa', series_objetivo: 3 },
+                ],
+            });
+
+            // 6 ejercicios físicos → 4 unidades lógicas
+            expect(store.unidadProgreso.totalEjercicios).toBe(6);
+            expect(store.unidadProgreso.total).toBe(4);
+
+            // Empezamos en el current (Press banca), que pertenece a la unidad 1
+            expect(store.session.currentEjercicioIndex).toBe(0);
+            expect(store.unidadProgreso.actual).toBe(1);
+
+            // Si pasamos al compañero de SS1 (Aperturas) seguimos en la MISMA unidad 1
+            store.session.currentEjercicioIndex = 1;
+            expect(store.unidadProgreso.actual).toBe(1);
+
+            // Remo es la unidad 2
+            store.session.currentEjercicioIndex = 2;
+            expect(store.unidadProgreso.actual).toBe(2);
+
+            // Curl y Triceps son la unidad 3
+            store.session.currentEjercicioIndex = 3;
+            expect(store.unidadProgreso.actual).toBe(3);
+            store.session.currentEjercicioIndex = 4;
+            expect(store.unidadProgreso.actual).toBe(3);
+
+            // Prensa es la unidad 4
+            store.session.currentEjercicioIndex = 5;
+            expect(store.unidadProgreso.actual).toBe(4);
+        });
+
+        it('ejercicio con grupo sin compañero cuenta como 1 unidad (caso degenerado)', () => {
+            const store = useTrainingSessionStore();
+            store.start({
+                rutina_nombre: 'X',
+                dia: 'Y',
+                ejercicios: [
+                    { nombre: 'Press banca', series_objetivo: 3, superserie_grupo: 1 },
+                    { nombre: 'Remo', series_objetivo: 3 },
+                ],
+            });
+
+            // 2 unidades, ninguna colapsada
+            expect(store.unidadProgreso.total).toBe(2);
+            expect(store.unidadProgreso.totalEjercicios).toBe(2);
+        });
+
+        it('sesión sin ejercicios devuelve totales en cero', () => {
+            const store = useTrainingSessionStore();
+            // Sesión vacía (recién creado el store)
+            expect(store.unidadProgreso.actual).toBe(0);
+            expect(store.unidadProgreso.total).toBe(0);
+        });
+    });
 });

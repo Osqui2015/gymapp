@@ -185,8 +185,10 @@ describe('ActiveWorkoutModal', () => {
         expect(btnCalentamiento).toBeDefined();
         await btnCalentamiento.trigger('click');
 
-        // Header y boton ahora deben mostrar Calentamiento #1.
-        expect(wrapper.text()).toContain('Configurar Calentamiento #1');
+        // Header de la card y boton ahora deben mostrar Calentamiento #1.
+        // (Con el refactor a SetConfigCard, el texto "Configurar Calentamiento"
+        // lo emite la card directamente como "Calentamiento #N".)
+        expect(wrapper.text()).toContain('Calentamiento #1');
         expect(wrapper.text()).toContain('COMPLETAR CALENTAMIENTO #1');
 
         // 2) Completar la primera serie de calentamiento.
@@ -255,5 +257,199 @@ describe('ActiveWorkoutModal', () => {
         // resumen / cierra la sesion).
         await btnFinalizar.trigger('click');
         expect(wrapper.emitted('finish')).toBeTruthy();
+    });
+
+    describe('Superseries', () => {
+        const startSupersetSession = () => {
+            store.discard();
+            store.start({
+                rutina_nombre: 'Torso A',
+                dia: 'Día 1',
+                ejercicios: [
+                    {
+                        nombre: 'Press de banca',
+                        series_objetivo: 3,
+                        reps_min: '8',
+                        reps_max: '10',
+                        descanso_min: 1.5,
+                        superserie_grupo: 1,
+                    },
+                    {
+                        nombre: 'Aperturas en polea',
+                        series_objetivo: 3,
+                        reps_min: '10',
+                        reps_max: '12',
+                        descanso_min: 1.5,
+                        superserie_grupo: 1,
+                    },
+                    {
+                        nombre: 'Remo con barra',
+                        series_objetivo: 3,
+                        reps_min: '8',
+                        reps_max: '10',
+                        descanso_min: 1.5,
+                    },
+                ],
+            });
+        };
+
+        it('muestra el banner y dos cards cuando el ejercicio activo tiene compañero de superset', async () => {
+            startSupersetSession();
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            // Banner de superset arriba
+            expect(wrapper.find('[data-testid="superset-banner"]').exists()).toBe(true);
+            // Grid con dos cards
+            expect(wrapper.find('[data-testid="superset-grid"]').exists()).toBe(true);
+            // Bloque de superserie en la columna izquierda con los DOS nombres
+            // en orden primero (current) → segundo (partner)
+            expect(
+                wrapper.find('[data-testid="superset-left-block"]').exists()
+            ).toBe(true);
+            expect(
+                wrapper.find('[data-testid="superset-left-first-0"]').exists()
+            ).toBe(true);
+            expect(
+                wrapper.find('[data-testid="superset-left-second-1"]').exists()
+            ).toBe(true);
+            // Banner debe indicar el orden correcto cuando estamos en el PRIMERO
+            expect(wrapper.text()).toContain(
+                'Hacé'
+            );
+            expect(wrapper.text()).toContain(
+                'y seguí directo con'
+            );
+            // Ambos nombres presentes en pantalla (banner + bloque izq + headers de cards)
+            expect(wrapper.text()).toContain('Press de banca');
+            expect(wrapper.text()).toContain('Aperturas en polea');
+            // Headers de nombre en AMBAS cards (clave para no perder de vista
+            // qué ejercicio se está registrando sin mirar la columna izq)
+            expect(
+                wrapper.find('[data-testid="set-card-name-0"]').exists()
+            ).toBe(true);
+            expect(
+                wrapper.find('[data-testid="set-card-name-1"]').exists()
+            ).toBe(true);
+            // Ambos botones de completar serie existen
+            expect(
+                wrapper.find('[data-testid="btn-completar-0"]').exists()
+            ).toBe(true);
+            expect(
+                wrapper.find('[data-testid="btn-completar-1"]').exists()
+            ).toBe(true);
+        });
+
+        it('cuando estamos en el SEGUNDO del par, el banner refleja el orden real (ya hiciste el primero)', async () => {
+            startSupersetSession();
+            // Nos paramos en el SEGUNDO del par (Aperturas, índice 1)
+            store.session.currentEjercicioIndex = 1;
+            await new Promise((r) => setTimeout(r, 0));
+            await Promise.resolve();
+
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            // El bloque izq ahora debe mostrar el primero como "Ya hiciste"
+            // (con tachado) y el segundo como "Ahora" (resaltado).
+            expect(wrapper.text()).toContain('Ya hiciste');
+            expect(wrapper.text()).toContain('Ahora');
+
+            // El banner debe decir algo tipo "Hacé Aperturas — ya hiciste Press
+            // de banca antes, seguí sin descansar".
+            expect(wrapper.text()).toContain('ya hiciste');
+            expect(wrapper.text()).toContain('antes');
+        });
+
+        it('registrar serie en el partner de superset NO avanza currentEjercicioIndex', async () => {
+            startSupersetSession();
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            // Marcar serie en el partner (índice 1)
+            const btnPartner = wrapper.find('[data-testid="btn-completar-1"]');
+            expect(btnPartner.exists()).toBe(true);
+            await btnPartner.trigger('click');
+
+            // currentEjercicioIndex sigue siendo 0 (Press de banca)
+            expect(store.session.currentEjercicioIndex).toBe(0);
+            // Pero el partner (Aperturas) ya tiene su primer set registrado
+            expect(store.session.ejercicios[1].sets.length).toBe(1);
+            expect(store.session.ejercicios[1].sets[0].series_numero).toBe(1);
+        });
+
+        it('el header "EJERCICIO X DE Y" cuenta superseries como 1 unidad', async () => {
+            startSupersetSession();
+            // Sesión de 3 ejercicios donde 2 son superserie → 2 unidades lógicas
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            const pill = wrapper.find('[data-testid="ejercicio-progress-pill"]');
+            expect(pill.exists()).toBe(true);
+            // Como las superseries colapsan a 1 unidad, el header muestra
+            // "EJERCICIO 1 DE 2" (sin sufijo "· 3 ej" porque sería redundante
+            // una vez que la unidad ya está colapsada).
+            expect(pill.text()).toContain('EJERCICIO 1 DE 2');
+            expect(pill.text()).not.toContain('ej');
+        });
+
+        it('las flechas de "Vista del ejercicio" permiten alternar current ↔ partner', async () => {
+            startSupersetSession();
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            // Esperar a que cargue la media (mock async) antes de chequear.
+            await new Promise((r) => setTimeout(r, 0));
+            await wrapper.vm.$nextTick();
+
+            // Inicialmente solo se muestra la flecha "siguiente" (porque estamos viendo el current)
+            expect(wrapper.find('[data-testid="media-next"]').exists()).toBe(true);
+            expect(wrapper.find('[data-testid="media-prev"]').exists()).toBe(false);
+
+            // Click en la flecha → ahora vemos el partner
+            await wrapper.find('[data-testid="media-next"]').trigger('click');
+
+            // Aparece la flecha "anterior" y se oculta la "siguiente"
+            expect(wrapper.find('[data-testid="media-prev"]').exists()).toBe(true);
+            expect(wrapper.find('[data-testid="media-next"]').exists()).toBe(false);
+
+            // El header "Vista: ..." ahora muestra el nombre del compañero
+            const mediaSection = wrapper.find('[data-testid="exercise-media"]');
+            expect(mediaSection.text()).toContain('Aperturas en polea');
+
+            // Click en la flecha "anterior" → volvemos al current
+            await wrapper.find('[data-testid="media-prev"]').trigger('click');
+            expect(wrapper.find('[data-testid="media-next"]').exists()).toBe(true);
+            expect(wrapper.find('[data-testid="media-prev"]').exists()).toBe(false);
+            expect(
+                wrapper.find('[data-testid="exercise-media"]').text()
+            ).toContain('Press de banca');
+        });
+
+        it('NO muestra banner ni grid cuando el ejercicio activo NO es parte de superset', async () => {
+            startSupersetSession();
+            // Avanzamos al tercer ejercicio (Remo) que NO es superset
+            store.session.currentEjercicioIndex = 2;
+            await new Promise((r) => setTimeout(r, 0));
+            await Promise.resolve();
+
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            expect(wrapper.find('[data-testid="superset-banner"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="superset-grid"]').exists()).toBe(false);
+            expect(
+                wrapper.find('[data-testid="superset-left-block"]').exists()
+            ).toBe(false);
+            // Solo hay un card de completar serie
+            expect(
+                wrapper.find('[data-testid="btn-completar-2"]').exists()
+            ).toBe(true);
+            expect(
+                wrapper.find('[data-testid="btn-completar-1"]').exists()
+            ).toBe(false);
+            // Y como hay una sola card (no superset), NO debe mostrar el
+            // header de nombre adentro (ya está en la columna izquierda).
+            expect(
+                wrapper.find('[data-testid="set-card-name-2"]').exists()
+            ).toBe(false);
+            // Sin superset → no hay flechas para alternar media
+            expect(wrapper.find('[data-testid="media-prev"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="media-next"]').exists()).toBe(false);
+        });
     });
 });

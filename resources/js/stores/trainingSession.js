@@ -254,6 +254,10 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
 
     /**
      * Registra datos detallados de la serie actual y avanza.
+     *
+     * Internamente delega a `recordSetAt` para soportar registros en
+     * ejercicios que no son el "current" (caso típico de superseries, donde
+     * ambos ejercicios comparten pantalla).
      */
     const recordSet = ({
         peso = 0,
@@ -263,17 +267,61 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         esfuerzo_valor = null,
         nota_user = '',
     } = {}) => {
+        return recordSetAt(session.value.currentEjercicioIndex, {
+            peso,
+            reps,
+            tipo_serie,
+            esfuerzo_tipo,
+            esfuerzo_valor,
+            nota_user,
+        });
+    };
+
+    /**
+     * Variante que permite registrar una serie sobre un ejercicio específico
+     * por índice. Usado por ActiveWorkoutModal cuando hay superseries y cada
+     * panel debe poder registrar series sin afectar el cursor del store.
+     *
+     * Si el ejercicio índice coincide con el currentEjercicioIndex, mantiene
+     * el comportamiento de avance automático (avanza serie / pasa al
+     * siguiente ejercicio cuando se completa). Si es otro índice
+     * (superserie partner), SOLO registra el set en ese ejercicio y avanza
+     * su contador interno; no toca currentEjercicioIndex / currentSerieNumero.
+     */
+    const recordSetAt = (
+        ejercicioIndex,
+        {
+            peso = 0,
+            reps = 0,
+            tipo_serie = 'efectiva',
+            esfuerzo_tipo = null,
+            esfuerzo_valor = null,
+            nota_user = '',
+        } = {}
+    ) => {
         if (!isActive.value) return null;
-        const ej = session.value.ejercicios[session.value.currentEjercicioIndex];
+        const ej = session.value.ejercicios[ejercicioIndex];
         if (!ej) return null;
 
-        // Las series de calentamiento tienen su propio contador y NO cuentan
-        // para el progreso de la rutina (la barra global). Solo efectiva /
-        // dropset / al_fallo avanzan el contador de series de trabajo.
+        const isCurrent = ejercicioIndex === session.value.currentEjercicioIndex;
         const isWarmup = tipo_serie === 'calentamiento';
-        const currentSerieNum = isWarmup
-            ? (session.value.currentCalentamientoNumero || 1)
-            : session.value.currentSerieNumero;
+
+        // Número de serie que se persiste en el set:
+        //  - Si es el current: usa los contadores globales del store.
+        //  - Si es partner de superset: cuenta los sets en ej.sets
+        //    directamente, así cada ejercicio lleva su propio contador
+        //    independiente.
+        let currentSerieNum;
+        if (isCurrent) {
+            currentSerieNum = isWarmup
+                ? (session.value.currentCalentamientoNumero || 1)
+                : session.value.currentSerieNumero;
+        } else {
+            const completedEffective = (ej.sets || []).filter(
+                (s) => s.tipo_serie !== 'calentamiento'
+            ).length;
+            currentSerieNum = completedEffective + 1;
+        }
 
         const setData = {
             ejercicio_nombre: ej.nombre,
@@ -293,47 +341,144 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         if (!session.value.completedSets) session.value.completedSets = [];
         session.value.completedSets.push(setData);
 
-        // Guardar para Deshacer. Guardamos ambos contadores al momento de
-        // registrar la serie para poder restaurarlos exactamente.
-        undoStack.value.push({
-            ejercicioIndex: session.value.currentEjercicioIndex,
-            serieNumero: currentSerieNum,
-            calentamientoNumero: session.value.currentCalentamientoNumero || 1,
-            serieNumeroAntes: session.value.currentSerieNumero,
-            isWarmup,
-            setData,
-        });
+        // Guardar para Deshacer. Solo si estamos registrando en el current
+        // ejercicio (los partners no tienen flujo de "deshacer" desde su
+        // propio panel — usar el botón general de deshacer en el padre).
+        if (isCurrent) {
+            undoStack.value.push({
+                ejercicioIndex,
+                serieNumero: currentSerieNum,
+                calentamientoNumero: session.value.currentCalentamientoNumero || 1,
+                serieNumeroAntes: session.value.currentSerieNumero,
+                isWarmup,
+                setData,
+            });
 
-        // Avance automático
-        if (isWarmup) {
-            // Calentamiento: solo avanza su propio contador. El contador de
-            // series de trabajo queda intacto (el próximo efectivo sigue
-            // siendo "Serie #1").
-            session.value.currentCalentamientoNumero =
-                (session.value.currentCalentamientoNumero || 1) + 1;
-        } else if (ej.series_completadas + 1 >= ej.series_objetivo) {
-            ej.series_completadas += 1;
-            ej.completed = true;
-            if (session.value.currentEjercicioIndex < session.value.ejercicios.length - 1) {
-                session.value.currentEjercicioIndex += 1;
-                session.value.currentSerieNumero = 1;
-                session.value.currentCalentamientoNumero = 1;
+            // Avance automático solo si es el current ejercicio.
+            if (isWarmup) {
+                session.value.currentCalentamientoNumero =
+                    (session.value.currentCalentamientoNumero || 1) + 1;
+            } else if (ej.series_completadas + 1 >= ej.series_objetivo) {
+                ej.series_completadas += 1;
+                ej.completed = true;
+                if (
+                    session.value.currentEjercicioIndex <
+                    session.value.ejercicios.length - 1
+                ) {
+                    session.value.currentEjercicioIndex += 1;
+                    session.value.currentSerieNumero = 1;
+                    session.value.currentCalentamientoNumero = 1;
+                } else {
+                    // Último ejercicio completado
+                    session.value.currentSerieNumero = ej.series_completadas + 1;
+                    session.value.currentCalentamientoNumero = 1;
+                }
             } else {
-                // Último ejercicio completado
-                session.value.currentSerieNumero = ej.series_completadas + 1;
+                ej.series_completadas += 1;
+                session.value.currentSerieNumero += 1;
                 session.value.currentCalentamientoNumero = 1;
             }
         } else {
-            ej.series_completadas += 1;
-            session.value.currentSerieNumero += 1;
-            // Al arrancar el ciclo de series efectivas, reseteamos el
-            // contador de calentamiento: si el usuario vuelve a registrar un
-            // calentamiento mas adelante arrancara desde "Calentamiento 1".
-            session.value.currentCalentamientoNumero = 1;
+            // Partner de superset: no tocamos cursores globales, solo
+            // marcamos el set como registrado. Para mantener compatibilidad
+            // con el contador global de progreso / series completadas,
+            // incrementamos `series_completadas` local del ejercicio.
+            if (!isWarmup) {
+                ej.series_completadas += 1;
+                if (ej.series_completadas >= ej.series_objetivo) {
+                    ej.completed = true;
+                }
+            }
         }
 
         return setData;
     };
+
+    /**
+     * Devuelve el "compañero" de superserie del ejercicio en el índice dado,
+     * o `null` si el ejercicio no pertenece a una superserie o no tiene
+     * compañero. La búsqueda es por `superserie_grupo` (mismo número de
+     * grupo).
+     */
+    const superseriePartnerFor = (ejercicioIndex) => {
+        if (!isActive.value) return null;
+        const ej = session.value.ejercicios[ejercicioIndex];
+        if (!ej || !ej.superserie_grupo) return null;
+        const grupo = ej.superserie_grupo;
+        const partnerIndex = session.value.ejercicios.findIndex(
+            (other, idx) =>
+                idx !== ejercicioIndex &&
+                other &&
+                other.superserie_grupo === grupo
+        );
+        if (partnerIndex < 0) return null;
+        return {
+            index: partnerIndex,
+            ejercicio: session.value.ejercicios[partnerIndex],
+        };
+    };
+
+    /**
+     * Progreso de la sesión medido en UNIDADES lógicas en vez de ejercicios
+     * crudos. Una superserie cuenta como 1 sola unidad (porque al usuario
+     * le importa el "bloque de trabajo", no los ejercicios individuales).
+     *
+     * Devuelve:
+     *   { actual, total, totalEjercicios }
+     *
+     * - `actual`: número de la unidad actual (1-based, igual al que se muestra
+     *   en el header "EJERCICIO X DE Y").
+     * - `total`: total de unidades lógicas de la sesión.
+     * - `totalEjercicios`: cantidad cruda de ejercicios (útil para debug o
+     *   para mostrar entre paréntesis si se quiere).
+     *
+     * Algoritmo: recorremos los ejercicios; si el actual pertenece a una
+     * superserie cuyo compañero todavía no fue visitado, agrupamos ambos en
+     * una sola unidad. Si ya visitamos al compañero, el actual es parte de
+     * la misma unidad (no incrementa contador).
+     */
+    const unidadProgreso = computed(() => {
+        const ejs = session.value.ejercicios || [];
+        if (ejs.length === 0) {
+            return { actual: 0, total: 0, totalEjercicios: 0 };
+        }
+
+        const visitados = new Set();
+        let totalUnidades = 0;
+        const unidadPorEjercicio = new Array(ejs.length).fill(0);
+
+        ejs.forEach((ej, idx) => {
+            if (visitados.has(idx)) return;
+            visitados.add(idx);
+            totalUnidades += 1;
+            unidadPorEjercicio[idx] = totalUnidades;
+
+            // Si pertenece a una superserie y tiene compañero, lo agrupamos
+            // en la misma unidad.
+            if (ej && ej.superserie_grupo) {
+                const partnerIdx = ejs.findIndex(
+                    (other, i) =>
+                        i !== idx &&
+                        !visitados.has(i) &&
+                        other &&
+                        other.superserie_grupo === ej.superserie_grupo
+                );
+                if (partnerIdx >= 0) {
+                    visitados.add(partnerIdx);
+                    unidadPorEjercicio[partnerIdx] = totalUnidades;
+                }
+            }
+        });
+
+        const actualIndex = session.value.currentEjercicioIndex;
+        const actualUnidad = unidadPorEjercicio[actualIndex] || 1;
+
+        return {
+            actual: actualUnidad,
+            total: totalUnidades,
+            totalEjercicios: ejs.length,
+        };
+    });
 
     /**
      * Backward-compatible: marca serie completada genérica sin parámetros.
@@ -468,10 +613,13 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         totalSeriesObjetivo,
         totalSeriesCompletadas,
         progresoPorcentaje,
+        unidadProgreso,
         isSessionComplete,
         canUndo,
         start,
         recordSet,
+        recordSetAt,
+        superseriePartnerFor,
         completeCurrentSerie,
         undoLastSet,
         updateSet,
