@@ -240,6 +240,11 @@
                                                 >
                                                     Descanso
                                                 </th>
+                                                <th
+                                                    class="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-400"
+                                                >
+                                                    Notas
+                                                </th>
                                                 <th class="px-4 py-2"></th>
                                             </tr>
                                         </thead>
@@ -343,6 +348,16 @@
                                                         @mousedown.stop
                                                         @dragstart.stop
                                                         class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-center dark:bg-gray-700 dark:text-gray-200"
+                                                    />
+                                                </td>
+                                                <td
+                                                    class="px-4 py-2 min-w-[220px]"
+                                                    @mousedown.stop
+                                                    @dragstart.stop
+                                                >
+                                                    <NotasEditor
+                                                        v-model="ej.notas"
+                                                        :series-totales="ej.series"
                                                     />
                                                 </td>
                                                 <td class="px-4 py-2 text-center">
@@ -501,6 +516,7 @@ import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import Breadcrumbs from './Breadcrumbs.vue';
 import EmptyState from './EmptyState.vue';
+import NotasEditor from './config/NotasEditor.vue';
 
 const toast = useToast();
 
@@ -610,6 +626,7 @@ const agregarEjercicioADia = (diaIndex, ejercicio) => {
         descanso_min: 1.5,
         orden: diasConfigurados.value[diaIndex].ejercicios.length,
         superserie_grupo: null,
+        notas: '',
     });
     diasConfigurados.value[diaIndex].busquedaEjercicio = '';
     diasConfigurados.value[diaIndex].resultadosBusqueda = [];
@@ -694,6 +711,7 @@ const guardarRutina = async () => {
                     descanso_min: ej.descanso_min,
                     orden: ejIndex,
                     superserie_grupo: ej.superserie_grupo,
+                    notas: ej.notas ?? '',
                 });
             });
         });

@@ -187,6 +187,56 @@ class UserRutinaController extends Controller
     }
 
     /**
+     * Devuelve los ejercicios del día actual de la rutina del user con sus
+     * notas frescas desde el backend. Pensado para que el frontend pueda
+     * refrescar el snapshot stale de `trainingSession.ejercicios[*].notas`
+     * sin tener que finalizar y reiniciar la sesión.
+     *
+     * Query params:
+     *   - dia (opcional): si no se manda, usa el `dia_actual` del user_rutina.
+     *
+     * Response: { dia, nivel, modalidad, ejercicios: [{ nombre, notas, series, reps_min, reps_max, descanso_min, superserie_grupo, orden }] }
+     */
+    public function ejerciciosActuales(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+        if (! $userRutina || ! $userRutina->rutina) {
+            return response()->json(['ejercicios' => []]);
+        }
+
+        $rutina = $userRutina->rutina;
+        $dia = $request->input('dia') ?: ($userRutina->dia_actual ?: 'Día 1');
+
+        $rows = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad)
+            ->where('dia', $dia)
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get(['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas']);
+
+        return response()->json([
+            'dia' => $dia,
+            'nivel' => $rutina->nivel,
+            'modalidad' => $rutina->modalidad,
+            'ejercicios' => $rows->map(fn ($r) => [
+                'nombre' => $r->ejercicio_nombre,
+                'series' => (int) $r->series,
+                'reps_min' => $r->reps_min,
+                'reps_max' => $r->reps_max,
+                'descanso_min' => (float) $r->descanso_min,
+                'superserie_grupo' => $r->superserie_grupo,
+                'orden' => $r->orden,
+                'notas' => $r->notas,
+            ])->all(),
+        ]);
+    }
+
+    /**
      * Devuelve los días disponibles de la rutina actual del user.
      * Útil para popular el selector de reschedule.
      */

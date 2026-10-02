@@ -224,57 +224,133 @@
             </div>
         </div>
 
-        <!-- Esfuerzo (RIR / RPE) -->
+        <!-- Esfuerzo (RIR / RPE / AL FALLO) -->
         <div class="bg-[var(--color-obsidian-surface)] rounded-xl p-2.5 sm:p-3 border border-[var(--color-obsidian-border)] space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-gray-300">Esfuerzo percibido:</span>
                 <div class="inline-flex rounded-lg bg-[var(--color-obsidian-elevated)] p-0.5 text-[10px] font-black border border-[var(--color-obsidian-border)]">
                     <button
                         type="button"
-                        @click="form.esfuerzo_tipo = 'rir'"
+                        @click="selectEsfuerzoTipo('rir')"
                         :class="
                             form.esfuerzo_tipo === 'rir'
                                 ? 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                                 : 'text-gray-400'
                         "
                         class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                        data-testid="esfuerzo-tipo-rir"
                     >
                         RIR
                     </button>
                     <button
                         type="button"
-                        @click="form.esfuerzo_tipo = 'rpe'"
+                        @click="selectEsfuerzoTipo('rpe')"
                         :class="
                             form.esfuerzo_tipo === 'rpe'
                                 ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                 : 'text-gray-400'
                         "
                         class="px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                        data-testid="esfuerzo-tipo-rpe"
                     >
                         RPE
+                    </button>
+                    <button
+                        type="button"
+                        @click="selectEsfuerzoTipo('fallo')"
+                        :class="
+                            form.esfuerzo_tipo === 'fallo'
+                                ? 'bg-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                                : 'text-gray-400'
+                        "
+                        class="px-2 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+                        data-testid="esfuerzo-tipo-fallo"
+                        title="Al fallo absoluto — no podés sacar ni una rep más"
+                    >
+                        <span>⚠</span>
+                        <span>FALLO</span>
                     </button>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between gap-1 overflow-x-auto py-0.5">
+            <!-- Target esfuerzo prescrito en notas (p.ej. "2x6 RIR 1 + 2x6 RIR 0" o "2x8 FALLO") -->
+            <div
+                v-if="targetLabel"
+                :class="[
+                    'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border',
+                    targetEsfuerzo?.tipo === 'fallo'
+                        ? 'bg-rose-500/15 border-rose-500/35 text-rose-200'
+                        : 'bg-amber-500/15 border-amber-500/35 text-amber-200',
+                ]"
+                data-testid="esfuerzo-target-banner"
+            >
+                <span>🎯</span>
+                <span>Objetivo de esta serie: {{ targetLabel }}</span>
+            </div>
+
+            <!-- Selector numérico (solo RIR / RPE). Si el tipo es 'fallo', mostramos
+                 un panel de confirmación en lugar de los botones numéricos. -->
+            <div
+                v-if="form.esfuerzo_tipo !== 'fallo'"
+                class="flex items-center justify-between gap-1 overflow-x-auto py-0.5"
+            >
                 <button
                     v-for="val in esfuerzoOptions"
                     :key="val"
                     type="button"
                     @click="form.esfuerzo_valor = form.esfuerzo_valor === val ? null : val"
                     :class="[
-                        'min-w-8 sm:min-w-9 h-10 px-1.5 sm:px-2 rounded-xl font-black text-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5',
+                        'relative min-w-8 sm:min-w-9 h-10 px-1.5 sm:px-2 rounded-xl font-black text-xs transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5',
                         form.esfuerzo_valor === val
                             ? form.esfuerzo_tipo === 'rir'
                                 ? 'bg-emerald-500 text-white shadow-[0_0_18px_rgba(16,185,129,0.5)] scale-105'
                                 : 'bg-amber-500 text-white shadow-[0_0_18px_rgba(245,158,11,0.5)] scale-105'
-                            : 'bg-[var(--color-obsidian-elevated)] text-gray-300 hover:bg-[var(--color-obsidian-overlay)] hover:text-white border border-[var(--color-obsidian-border)]',
+                            : 'bg-[var(--color-obsidian-elevated)] text-gray-300 hover:bg-[var(--color-obsidian-overlay)] hover:text-white border',
+                        targetEsfuerzo
+                            && form.esfuerzo_tipo === 'rir'
+                            && targetEsfuerzo.tipo === 'rir'
+                            && targetEsfuerzo.valor === val
+                            ? 'border-amber-400 ring-2 ring-amber-400/60'
+                            : 'border-[var(--color-obsidian-border)]',
                     ]"
                 >
+                    <!-- Indicador de target (estrella) -->
+                    <span
+                        v-if="targetEsfuerzo
+                            && form.esfuerzo_tipo === 'rir'
+                            && targetEsfuerzo.tipo === 'rir'
+                            && targetEsfuerzo.valor === val"
+                        class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 text-[8px] font-black text-amber-950 flex items-center justify-center shadow-[0_0_8px_rgba(245,158,11,0.7)]"
+                        aria-hidden="true"
+                    >★</span>
                     <span>{{ val }}</span>
                     <span class="text-[8px] uppercase opacity-80">
                         {{ esfuerzoLabel(val) }}
                     </span>
+                </button>
+            </div>
+
+            <!-- Panel "AL FALLO" cuando el tipo seleccionado es fallo absoluto -->
+            <div
+                v-else
+                class="rounded-xl bg-rose-500/10 border border-rose-500/40 p-2.5 sm:p-3 text-rose-200 space-y-1"
+                data-testid="esfuerzo-fallo-panel"
+            >
+                <div class="flex items-center gap-1.5">
+                    <span class="text-base">⚠</span>
+                    <span class="text-xs font-black uppercase tracking-wider">Serie al fallo absoluto</span>
+                </div>
+                <p class="text-[10px] leading-snug text-rose-300/90">
+                    Distinto de <strong class="text-rose-200">RIR 0</strong>: no podés sacar ni una rep más,
+                    ni con técnica ni con trampa. El músculo/técnica/techo ya colapsaron.
+                </p>
+                <button
+                    v-if="form.esfuerzo_valor !== null"
+                    type="button"
+                    @click="form.esfuerzo_valor = null"
+                    class="text-[10px] underline opacity-80 hover:opacity-100"
+                >
+                    Limpiar selección
                 </button>
             </div>
         </div>
@@ -374,11 +450,13 @@ const ejercicioCompleto = computed(() => {
 });
 
 const esfuerzoOptions = computed(() => {
-    return form.value.esfuerzo_tipo === 'rir' ? [0, 1, 2, 3, 4, 5] : [6, 7, 8, 9, 10];
+    if (form.value.esfuerzo_tipo === 'rir') return [0, 1, 2, 3, 4, 5];
+    if (form.value.esfuerzo_tipo === 'rpe') return [6, 7, 8, 9, 10];
+    return []; // 'fallo' no usa botones numéricos
 });
 
 const esfuerzoLabel = (val) => {
-    const rir = ['Fallo', 'Máx', 'Óptimo', 'Medio', 'Fácil', 'Calent.'];
+    const rir = ['Límite', 'Máx', 'Óptimo', 'Medio', 'Fácil', 'Calent.'];
     const rpe = ['Fácil', 'Fácil+', 'Medio', 'Medio+', 'Máx'];
     if (form.value.esfuerzo_tipo === 'rir') {
         return rir[Math.min(val, 5)] || '';
@@ -386,10 +464,73 @@ const esfuerzoLabel = (val) => {
     return rpe[Math.min(Math.max(val - 6, 0), 4)] || '';
 };
 
+// Helper: cambia el tipo de esfuerzo y resetea el valor (a menos que el target
+// de la serie actual indique un valor para el nuevo tipo).
+const selectEsfuerzoTipo = (tipo) => {
+    form.value.esfuerzo_tipo = tipo;
+    if (tipo === 'fallo') {
+        // Para 'fallo' no usamos valor numérico; usamos 1 como marcador interno
+        // para que `form.esfuerzo_valor === null` represente "no seleccionado".
+        form.value.esfuerzo_valor = null;
+        return;
+    }
+    // Si veníamos de 'fallo' o cambiamos entre rir/rpe, dejamos que el usuario elija
+    // un nuevo número (no auto-seleccionamos para no pisar la decisión manual).
+};
+
+// Parsea bloques de esfuerzo desde las notas del ejercicio. Soporta:
+//   "2x6 RIR 1"     → { series:2, reps:6, tipo:'rir',   valor:1 }
+//   "2x6 RPE 8"     → { series:2, reps:6, tipo:'rpe',   valor:8 }
+//   "2x8 FALLO"     → { series:2, reps:8, tipo:'fallo', valor:null }
+//   "2x8 AL FALLO"  → idem
+//   "1x20 AL FALLO TÉCNICO" → idem
+const rirBlocks = computed(() => {
+    const notas = props.ejercicio?.notas;
+    if (!notas) return [];
+    const blocks = [];
+    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    for (const m of String(notas).matchAll(re)) {
+        if (m[3] !== undefined) {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
+        } else if (m[4] !== undefined) {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rpe', valor: Number(m[4]) });
+        } else {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'fallo', valor: null });
+        }
+    }
+    return blocks;
+});
+
+// Devuelve el target de esfuerzo (RIR/RPE/FALLO) para la serie actual según los bloques.
+const targetEsfuerzo = computed(() => {
+    if (rirBlocks.value.length === 0) return null;
+    const setNum = setsEfectivos.value.length + 1; // 1-indexed
+    let acumulado = 0;
+    for (const b of rirBlocks.value) {
+        acumulado += b.series;
+        if (setNum <= acumulado) {
+            return { tipo: b.tipo, valor: b.valor, bloque: b };
+        }
+    }
+    return null; // más allá del bloque prescrito, no forzamos target
+});
+
+// Etiqueta legible del target actual: "RIR 1 (Óptimo)" | "RPE 8 (Medio)" | "AL FALLO" | null
+const targetLabel = computed(() => {
+    const t = targetEsfuerzo.value;
+    if (!t) return null;
+    if (t.tipo === 'fallo') return 'AL FALLO';
+    const rir = ['Límite', 'Máx', 'Óptimo', 'Medio', 'Fácil', 'Calent.'];
+    const rpe = ['Fácil', 'Fácil+', 'Medio', 'Medio+', 'Máx'];
+    const label = t.tipo === 'rir' ? rir[Math.min(t.valor, 5)] : rpe[Math.min(Math.max(t.valor - 6, 0), 4)];
+    return `${t.tipo.toUpperCase()} ${t.valor}${label ? ` (${label})` : ''}`;
+});
+
 // Pre-rellenar el form con el último set del ejercicio (si hay) o con la
-// recomendación por defecto de reps_min.
+// recomendación por defecto de reps_min. Si el ejercicio trae bloques RIR
+// en notas, pre-seleccionamos el RIR objetivo de la serie actual.
 watch(
-    () => [props.ejercicio?.nombre, (props.ejercicio?.sets || []).length],
+    () => [props.ejercicio?.nombre, (props.ejercicio?.sets || []).length, props.ejercicio?.notas],
     () => {
         const sets = props.ejercicio?.sets || [];
         if (sets.length > 0) {
@@ -408,6 +549,13 @@ watch(
             form.value.tipo_serie = 'efectiva';
             form.value.esfuerzo_tipo = 'rir';
             form.value.esfuerzo_valor = null;
+        }
+        // Si la serie actual tiene target de esfuerzo prescrito en notas,
+        // pre-seleccionarlo (manteniendo el último si ya hay sets previos
+        // para no sobreescribir el esfuerzo que el usuario acaba de marcar).
+        if (sets.length === 0 && targetEsfuerzo.value) {
+            form.value.esfuerzo_tipo = targetEsfuerzo.value.tipo;
+            form.value.esfuerzo_valor = targetEsfuerzo.value.valor;
         }
     },
     { immediate: true }

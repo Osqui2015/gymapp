@@ -97,7 +97,10 @@ class HistorialController extends Controller
                 // Nota libre por set (cómo se sintió, dolor, RPE subjetivo, etc.)
                 'nota_user' => ['nullable', 'string', 'max:500'],
                 // Fase 3: esfuerzo por set
-                'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
+                //   rir   = RIR 0-5 (0 = al límite, 5 = muy fácil)
+                //   rpe   = RPE 6-10 (10 = al límite percibido)
+                //   fallo = al fallo absoluto (no podés sacar ni una rep más)
+                'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe,fallo'],
                 'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
                 // Nivel 4: tipo de serie y sesión activa
                 'tipo_serie' => ['nullable', 'string', 'in:efectiva,calentamiento,dropset,al_fallo'],
@@ -209,7 +212,7 @@ class HistorialController extends Controller
             'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
             'completado' => ['nullable', 'boolean'],
             'tipo_serie' => ['nullable', 'string', 'in:efectiva,calentamiento,dropset,al_fallo'],
-            'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe'],
+            'esfuerzo_tipo' => ['nullable', 'string', 'in:rir,rpe,fallo'],
             'esfuerzo_valor' => ['nullable', 'integer', 'min:0', 'max:10'],
             'nota_user' => ['nullable', 'string', 'max:500'],
             'descanso_min' => ['nullable', 'numeric', 'min:0', 'max:30'],

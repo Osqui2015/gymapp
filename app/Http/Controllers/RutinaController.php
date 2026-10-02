@@ -122,6 +122,8 @@ class RutinaController extends Controller
             'descanso_min' => 'required|numeric',
             'orden' => 'required|integer',
             'superserie_grupo' => 'nullable|integer',
+            // Notas libres para prescripción (RIR/RPE/FALLO blocks + técnicas).
+            'notas' => 'nullable|string|max:1000',
         ]);
 
         $data['created_by'] = $request->user()->id;

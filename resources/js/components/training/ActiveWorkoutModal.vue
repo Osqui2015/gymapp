@@ -176,6 +176,18 @@
                             >
                                 SS {{ store.currentEjercicio.superserie_grupo }}
                             </span>
+                            <!-- Bloques de esfuerzo del ejercicio actual (RIR / RPE / FALLO) -->
+                            <template v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length">
+                                <span
+                                    v-for="(block, i) in parseEsfuerzoBlocksActive(store.currentEjercicio.notas)"
+                                    :key="i"
+                                    class="obs-pill text-[10px] sm:text-xs font-black"
+                                    :class="esfuerzoBlockClass(block)"
+                                >
+                                    {{ block.series }}×{{ block.reps }}
+                                    <span class="opacity-75">{{ esfuerzoBlockLabel(block) }}</span>
+                                </span>
+                            </template>
                         </div>
                     </div>
 
@@ -1032,9 +1044,46 @@ const handleFinalizar = () => {
     emit('finish');
 };
 
+// Parsea bloques de esfuerzo desde notas (mismo formato que RutinaAcordeon.vue).
+//   "2x6 RIR 1" | "2x6 RPE 8" | "2x8 FALLO" | "2x8 AL FALLO TÉCNICO"
+//   → { series, reps, tipo:'rir'|'rpe'|'fallo', valor|null }
+const parseEsfuerzoBlocksActive = (notas) => {
+    if (!notas) return [];
+    const blocks = [];
+    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    for (const m of String(notas).matchAll(re)) {
+        if (m[3] !== undefined) {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
+        } else if (m[4] !== undefined) {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rpe', valor: Number(m[4]) });
+        } else {
+            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'fallo', valor: null });
+        }
+    }
+    return blocks;
+};
+
+// Retrocompat: alias al parser nuevo.
+const parseRirBlocksActive = (notas) => parseEsfuerzoBlocksActive(notas);
+
+const esfuerzoBlockLabel = (b) => {
+    if (b.tipo === 'fallo') return 'FALLO';
+    return `${b.tipo.toUpperCase()} ${b.valor}`;
+};
+
+const esfuerzoBlockClass = (b) => {
+    if (b.tipo === 'fallo') return 'bg-rose-500/25 text-rose-200 border border-rose-500/40';
+    if (b.tipo === 'rir' && b.valor === 0) return 'bg-rose-500/25 text-rose-300 border border-rose-500/40';
+    return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+};
+
 onMounted(() => {
     if (props.open) {
         wakeLock.requestWakeLock();
+        // Refrescar las `notas` (y metadata liviana) desde el backend por si
+        // la rutina fue editada desde otro dispositivo mientras la sesión
+        // estaba activa. No-op si no hay sesión o si el backend no responde.
+        store.refreshNotasActuales();
     }
 });
 

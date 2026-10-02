@@ -36,6 +36,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
+import axios from 'axios';
 
 const STORAGE_KEY = 'gymapp:training-session:v1';
 
@@ -66,6 +67,12 @@ const migrateSessionShape = (parsed) => {
     }
     if (!Array.isArray(parsed.ejercicios)) parsed.ejercicios = [];
     if (!Array.isArray(parsed.completedSets)) parsed.completedSets = [];
+    // Migración: asegurar que cada ejercicio tenga `notas` (puede ser null
+    // para sesiones iniciadas antes de que este campo se copiara al store).
+    parsed.ejercicios = parsed.ejercicios.map((e) => ({
+        ...e,
+        notas: e.notas ?? null,
+    }));
     return parsed;
 };
 
@@ -237,6 +244,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                 reps_max: e.reps_max || '10',
                 descanso_min: Number(e.descanso_min ?? 1.5),
                 superserie_grupo: e.superserie_grupo || null,
+                notas: e.notas || null,
                 series_completadas: 0,
                 completed: false,
                 sets: [],
@@ -603,6 +611,64 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         stopTick();
     };
 
+    /**
+     * Refresca las `notas` (y metadata liviana como series/reps) de los
+     * ejercicios de la sesión activa desde el backend. Pensado para cuando
+     * el trainer edita una rutina mientras el alumno está entrenando:
+     * el snapshot stale del localStorage se actualiza sin perder los sets
+     * ya registrados en esta sesión.
+     *
+     * No-op si no hay sesión activa o si el backend no responde. Nunca
+     * pisa los `sets` ya cargados ni los cursores (currentEjercicioIndex,
+     * series_completadas).
+     */
+    const refreshNotasActuales = async () => {
+        if (!isActive.value) return { refreshed: 0, total: 0 };
+        const dia = session.value.dia;
+        if (!dia) return { refreshed: 0, total: 0 };
+
+        try {
+            const res = await axios.get('/api/user-rutina/ejercicios-actuales', {
+                params: { dia },
+            });
+            const list = res?.data?.ejercicios;
+            if (!Array.isArray(list) || list.length === 0) {
+                return { refreshed: 0, total: session.value.ejercicios.length };
+            }
+
+            // Index por nombre para matchear contra los ejercicios del store
+            // (mismo nombre puede aparecer 2 veces si hay superseries).
+            const pool = [...list];
+            let refreshed = 0;
+            session.value.ejercicios.forEach((ej, idx) => {
+                const matchIdx = pool.findIndex(
+                    (r) => r.nombre === ej.nombre && (r.notas ?? null) !== (ej.notas ?? null)
+                );
+                if (matchIdx >= 0) {
+                    const fresh = pool[matchIdx];
+                    session.value.ejercicios[idx] = {
+                        ...ej,
+                        notas: fresh.notas ?? null,
+                        // refrescamos también la metadata liviana por si el trainer la cambió
+                        series_objetivo: fresh.series || ej.series_objetivo,
+                        reps_min: fresh.reps_min || ej.reps_min,
+                        reps_max: fresh.reps_max || ej.reps_max,
+                        descanso_min: fresh.descanso_min ?? ej.descanso_min,
+                        superserie_grupo: fresh.superserie_grupo ?? ej.superserie_grupo,
+                    };
+                    pool.splice(matchIdx, 1);
+                    refreshed++;
+                }
+            });
+            return { refreshed, total: session.value.ejercicios.length };
+        } catch (e) {
+            // Silencioso: si el endpoint falla, la sesión sigue funcionando
+            // con los datos stale. Logueamos para debug.
+            console.warn('[trainingSession] refreshNotasActuales falló', e?.message);
+            return { refreshed: 0, total: 0, error: e?.message };
+        }
+    };
+
     return {
         session,
         isActive,
@@ -630,5 +696,6 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         setCurrent,
         end,
         discard,
+        refreshNotasActuales,
     };
 });

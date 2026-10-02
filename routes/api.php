@@ -71,6 +71,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/user-rutina/dia', [UserRutinaController::class, 'updateDia']);
     Route::post('/user-rutina/reschedule', [UserRutinaController::class, 'reschedule']);
     Route::get('/user-rutina/available-days', [UserRutinaController::class, 'availableDays']);
+    Route::get('/user-rutina/ejercicios-actuales', [UserRutinaController::class, 'ejerciciosActuales']);
 
     Route::middleware('role:administrador,trainer')->group(function () {
         Route::get('/trainer/mis-rutinas', [UserRutinaController::class, 'misRutinas']);

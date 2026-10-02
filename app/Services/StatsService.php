@@ -179,7 +179,7 @@ class StatsService
                 'window' => $this->windowInfo($window),
                 'total_sets' => 0,
                 'sets_with_esfuerzo' => 0,
-                'avg_por_tipo' => ['rir' => null, 'rpe' => null],
+                'avg_por_tipo' => ['rir' => null, 'rpe' => null, 'fallo' => null],
                 'avg_hard' => 0,
                 'distribucion' => $this->emptyDistribucion(),
                 'por_ejercicio' => [],
@@ -199,15 +199,18 @@ class StatsService
         $avgPorTipo = [
             'rir' => $avgs['rir'] ?? null,
             'rpe' => $avgs['rpe'] ?? null,
+            'fallo' => $avgs['fallo'] ?? null, // no es avg real, sólo para señal
         ];
 
-        // % de sets "duros" (RIR ≤ 2 o RPE ≥ 8) — coherente con la métrica de openGym "RIR 3 or harder"
+        // % de sets "duros" (RIR ≤ 2, RPE ≥ 8, o al fallo absoluto)
         $hardCount = (clone $base)
             ->where(function ($q) {
                 $q->where(function ($q2) {
                     $q2->where('esfuerzo_tipo', 'rir')->where('esfuerzo_valor', '<=', 2);
                 })->orWhere(function ($q2) {
                     $q2->where('esfuerzo_tipo', 'rpe')->where('esfuerzo_valor', '>=', 8);
+                })->orWhere(function ($q2) {
+                    $q2->where('esfuerzo_tipo', 'fallo');
                 });
             })
             ->count();
@@ -222,12 +225,14 @@ class StatsService
         $dist = $this->emptyDistribucion();
         foreach ($distRows as $r) {
             $tipo = $r->esfuerzo_tipo;
-            $val = (int) $r->esfuerzo_valor;
-            // RIR: keys 0..5. RPE: keys 0..4 (acceso por val-6).
-            if ($tipo === 'rir' && $val >= 0 && $val <= 5) {
+            $val = $r->esfuerzo_valor !== null ? (int) $r->esfuerzo_valor : null;
+            if ($tipo === 'rir' && $val !== null && $val >= 0 && $val <= 5) {
                 $dist['rir'][$val]['count'] = (int) $r->n;
-            } elseif ($tipo === 'rpe' && $val >= 6 && $val <= 10) {
+            } elseif ($tipo === 'rpe' && $val !== null && $val >= 6 && $val <= 10) {
                 $dist['rpe'][$val - 6]['count'] = (int) $r->n;
+            } elseif ($tipo === 'fallo') {
+                // Fallo absoluto es un único bucket (key 0)
+                $dist['fallo'][0]['count'] = (int) $r->n;
             }
         }
 
@@ -322,6 +327,7 @@ class StatsService
                 $byWeek[$weekStart] = [
                     'rir_sum' => 0, 'rir_n' => 0,
                     'rpe_sum' => 0, 'rpe_n' => 0,
+                    'fallo_sets' => 0,
                     'sets' => 0,
                 ];
             }
@@ -332,6 +338,8 @@ class StatsService
             } elseif ($r->esfuerzo_tipo === 'rpe') {
                 $byWeek[$weekStart]['rpe_sum'] += (int) $r->esfuerzo_valor;
                 $byWeek[$weekStart]['rpe_n']++;
+            } elseif ($r->esfuerzo_tipo === 'fallo') {
+                $byWeek[$weekStart]['fallo_sets']++;
             }
         }
 
@@ -346,6 +354,7 @@ class StatsService
                 'rpe' => $bucket['rpe_n'] > 0 ? round($bucket['rpe_sum'] / $bucket['rpe_n'], 2) : null,
                 'rir_sets' => $bucket['rir_n'],
                 'rpe_sets' => $bucket['rpe_n'],
+                'fallo_sets' => $bucket['fallo_sets'],
                 'sets' => $bucket['sets'],
             ];
         }
@@ -646,6 +655,7 @@ class StatsService
         return [
             'rir' => array_map($make, range(0, 5)),
             'rpe' => array_map($make, range(6, 10)),
+            'fallo' => [['valor' => 0, 'count' => 0]],
         ];
     }
 }

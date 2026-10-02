@@ -40,8 +40,10 @@ class Historial extends Model
         'trainer_id',
         'superserie_grupo',
         // Fase 3: tracking de esfuerzo por set (opcional)
-        'esfuerzo_tipo',     // 'rir' o 'rpe'
-        'esfuerzo_valor',    // 0..5 (RIR) o 6..10 (RPE)
+        //   esfuerzo_tipo  = 'rir' (0..5) | 'rpe' (6..10) | 'fallo' (al fallo absoluto)
+        //   esfuerzo_valor = número o NULL para 'fallo'
+        'esfuerzo_tipo',
+        'esfuerzo_valor',
         // Nivel 4: tipo de serie y vínculo a sesión de entrenamiento
         'tipo_serie',        // 'efectiva', 'calentamiento', 'dropset', 'al_fallo'
         'sesion_uuid',
