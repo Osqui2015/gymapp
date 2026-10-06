@@ -330,13 +330,16 @@ describe('ActiveWorkoutModal', () => {
             expect(
                 wrapper.find('[data-testid="set-card-name-1"]').exists()
             ).toBe(true);
-            // Ambos botones de completar serie existen
+            // En superseries existe UN SOLO botón unificado para completar la ronda
+            expect(
+                wrapper.find('[data-testid="btn-completar-superset"]').exists()
+            ).toBe(true);
             expect(
                 wrapper.find('[data-testid="btn-completar-0"]').exists()
-            ).toBe(true);
+            ).toBe(false);
             expect(
                 wrapper.find('[data-testid="btn-completar-1"]').exists()
-            ).toBe(true);
+            ).toBe(false);
         });
 
         it('cuando estamos en el SEGUNDO del par, el banner refleja el orden real (ya hiciste el primero)', async () => {
@@ -359,20 +362,70 @@ describe('ActiveWorkoutModal', () => {
             expect(wrapper.text()).toContain('antes');
         });
 
-        it('registrar serie en el partner de superset NO avanza currentEjercicioIndex', async () => {
+        it('el botón unificado de superset completa ambos ejercicios de la ronda', async () => {
             startSupersetSession();
             const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
 
-            // Marcar serie en el partner (índice 1)
-            const btnPartner = wrapper.find('[data-testid="btn-completar-1"]');
-            expect(btnPartner.exists()).toBe(true);
-            await btnPartner.trigger('click');
+            // Marcar serie con el botón único de superserie
+            const btnSuperset = wrapper.find('[data-testid="btn-completar-superset"]');
+            expect(btnSuperset.exists()).toBe(true);
+            await btnSuperset.trigger('click');
 
-            // currentEjercicioIndex sigue siendo 0 (Press de banca)
-            expect(store.session.currentEjercicioIndex).toBe(0);
-            // Pero el partner (Aperturas) ya tiene su primer set registrado
+            // Ambos ejercicios del par tienen su primer set registrado
+            expect(store.session.ejercicios[0].sets.length).toBe(1);
+            expect(store.session.ejercicios[0].sets[0].series_numero).toBe(1);
             expect(store.session.ejercicios[1].sets.length).toBe(1);
             expect(store.session.ejercicios[1].sets[0].series_numero).toBe(1);
+        });
+
+        it('muestra min y max para cada ejercicio del superset en el Hero card', async () => {
+            const axiosModule = await import('axios');
+            axiosModule.default.get = vi.fn().mockImplementation((url, config) => {
+                const ej = config?.params?.ejercicio;
+                if (ej === 'Press de banca') {
+                    return Promise.resolve({
+                        data: {
+                            encontrado: true,
+                            peso_min: 50,
+                            reps_en_peso_min: 10,
+                            peso_max: 70,
+                            reps_en_peso_max: 8,
+                            ultimo_esfuerzo: { tipo: 'rir', valor: 2 },
+                        },
+                    });
+                }
+                if (ej === 'Aperturas en polea') {
+                    return Promise.resolve({
+                        data: {
+                            encontrado: true,
+                            peso_min: 15,
+                            reps_en_peso_min: 12,
+                            peso_max: 25,
+                            reps_en_peso_max: 10,
+                            ultimo_esfuerzo: { tipo: 'rir', valor: 1 },
+                        },
+                    });
+                }
+                return Promise.resolve({ data: {} });
+            });
+            window.axios = axiosModule.default;
+
+            startSupersetSession();
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+            await new Promise((r) => setTimeout(r, 30));
+            await wrapper.vm.$nextTick();
+
+            const card1 = wrapper.find('[data-testid="superset-history-card-1"]');
+            expect(card1.exists()).toBe(true);
+            expect(card1.text()).toContain('Press de banca');
+            expect(card1.text()).toContain('50 kg');
+            expect(card1.text()).toContain('70 kg');
+
+            const card2 = wrapper.find('[data-testid="superset-history-card-2"]');
+            expect(card2.exists()).toBe(true);
+            expect(card2.text()).toContain('Aperturas en polea');
+            expect(card2.text()).toContain('15 kg');
+            expect(card2.text()).toContain('25 kg');
         });
 
         it('el header "EJERCICIO X DE Y" cuenta superseries como 1 unidad', async () => {

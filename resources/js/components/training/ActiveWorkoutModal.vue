@@ -14,16 +14,15 @@
                 <button
                     type="button"
                     @click="$emit('minimize')"
-                    class="p-2 rounded-xl bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-300 transition-colors cursor-pointer border border-[var(--color-obsidian-border)]"
+                    class="w-10 h-10 rounded-full bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-300 hover:text-white transition-colors cursor-pointer border border-[var(--color-obsidian-border)] flex items-center justify-center shrink-0"
                     aria-label="Minimizar sesión"
-                    title="Minimizar (continúa en segundo plano)"
+                    title="Volver / Minimizar (continúa en segundo plano)"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
+                            d="M15 19l-7-7 7-7"
                         />
                     </svg>
                 </button>
@@ -77,9 +76,12 @@
                 <button
                     type="button"
                     @click="handleFinalizar"
-                    class="px-4 py-2.5 rounded-xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white text-xs font-black shadow-[0_8px_24px_var(--color-violet-glow)] transition-all cursor-pointer active:scale-95"
+                    class="px-4 py-2.5 rounded-xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white text-xs font-black shadow-[0_8px_24px_var(--color-violet-glow)] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
                 >
-                    Finalizar
+                    <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                        <rect x="5" y="5" width="14" height="14" rx="2.5" />
+                    </svg>
+                    <span>Finalizar</span>
                 </button>
             </div>
         </header>
@@ -114,121 +116,385 @@
             >
                 <!-- COLUMNA IZQUIERDA (Desktop: col-span-5) -->
                 <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-3">
-                    <!-- Selector de Ejercicios / Carrusel de navegación -->
-                    <div class="obs-card-elevated p-3 sm:p-4 space-y-2">
-                        <div class="flex items-center justify-between gap-2">
-                            <button
-                                type="button"
-                                @click="store.prevEjercicio"
-                                :disabled="store.session.currentEjercicioIndex === 0"
-                                class="p-2 sm:p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
-                                aria-label="Ejercicio anterior"
-                            >
-                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
+                    <!-- CARD HERO UNIFICADA DEL EJERCICIO (Visual + Ejercicio + Mínimo / Máximo + Sugerencia) -->
+                    <section
+                        class="obs-card-elevated p-3 sm:p-4 rounded-2xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-surface)] shadow-xl relative"
+                        data-testid="exercise-media"
+                    >
+                        <!-- Metadata invisible para accesibilidad y tests -->
+                        <span class="sr-only" data-testid="ejercicio-progress-pill">
+                            EJERCICIO {{ store.unidadProgreso.actual }} DE {{ store.unidadProgreso.total }}
+                        </span>
+                        <span class="sr-only">
+                            {{ store.currentEjercicio.series_objetivo }} series
+                        </span>
 
-                            <div class="text-center min-w-0 flex-1">
-                                <span
-                                    class="obs-pill obs-pill-violet text-[10px]"
-                                    data-testid="ejercicio-progress-pill"
-                                >
-                                    EJERCICIO {{ store.unidadProgreso.actual }} DE
-                                    {{ store.unidadProgreso.total }}
-                                </span>
-                                <h2 class="text-lg sm:text-xl md:text-2xl font-black text-white truncate mt-1">
-                                    {{ store.currentEjercicio.nombre }}
-                                </h2>
-                            </div>
-
-                            <button
-                                type="button"
-                                @click="store.nextEjercicio"
-                                :disabled="
-                                    store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1
-                                "
-                                class="p-2 sm:p-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border-strong)] text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer hover:bg-[var(--color-obsidian-overlay)] transition-colors"
-                                aria-label="Siguiente ejercicio"
-                            >
-                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap pt-0.5">
-                            <span class="obs-pill obs-pill-violet text-[10px] sm:text-xs">
-                                🎯 {{ store.currentEjercicio.reps_min }}–{{
-                                    store.currentEjercicio.reps_max
-                                }} reps
-                            </span>
-                            <span class="obs-pill obs-pill-emerald text-[10px] sm:text-xs">
-                                💪 {{ store.currentEjercicio.series_objetivo }}
-                                {{ store.currentEjercicio.series_objetivo === 1 ? 'serie' : 'series' }}
-                            </span>
-                            <span class="obs-pill obs-pill-orange text-[10px] sm:text-xs">
-                                ⏱ {{ store.currentEjercicio.descanso_min }} min rest
-                            </span>
-                            <span
-                                v-if="store.currentEjercicio.superserie_grupo"
-                                class="obs-pill obs-pill-emerald text-[10px] sm:text-xs"
-                            >
-                                SS {{ store.currentEjercicio.superserie_grupo }}
-                            </span>
-                        </div>
-
-                        <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (ej: 2x6 con RIR 1 + 2x4 con RIR 0) -->
-                        <div
-                            v-if="store.currentEjercicio.notas"
-                            class="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-violet-950/40 via-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border border-violet-500/30 text-left space-y-2 shadow-inner"
-                            data-testid="ejercicio-prescripcion-box"
-                        >
-                            <div class="flex items-center justify-between gap-2 border-b border-violet-500/20 pb-1.5">
-                                <span class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-violet-300">
-                                    <span>📋</span>
-                                    <span>Plan de series y esfuerzo</span>
-                                </span>
-                            </div>
-
-                            <!-- Desglose por bloques estructurados (ej: 2x6 con RIR 1) -->
+                        <div class="flex items-start gap-3 sm:gap-4">
+                            <!-- Demostración Visual con fondo blanco (Lado Izquierdo) -->
                             <div
-                                v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length"
-                                class="grid grid-cols-1 sm:grid-cols-2 gap-1.5"
+                                class="relative w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 rounded-2xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-inner cursor-pointer group"
+                                @click="gifHovered = !gifHovered"
+                                :title="gifHovered ? 'Animación activa (tocá para pausar)' : 'Tocá para animar'"
                             >
+                                <img
+                                    v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
+                                    :key="mediaEjercicio?.nombre"
+                                    :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
+                                    :alt="`Demostración de ${mediaEjercicio?.nombre}`"
+                                    class="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105 select-none"
+                                    loading="lazy"
+                                />
                                 <div
-                                    v-for="(block, i) in parseEsfuerzoBlocksActive(store.currentEjercicio.notas)"
-                                    :key="i"
-                                    class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border text-xs"
-                                    :class="esfuerzoBlockClass(block)"
+                                    v-else-if="!vistaVisible"
+                                    class="flex flex-col items-center justify-center text-gray-500 text-[10px] text-center p-2"
                                 >
-                                    <span class="font-bold text-white flex items-center gap-1.5">
-                                        <span class="text-violet-400 font-black">⚡</span>
-                                        {{ block.series }} {{ block.series === 1 ? 'serie' : 'series' }} × {{ block.reps }} reps
+                                    <span class="text-sm">👁️</span>
+                                    <span>Vista oculta</span>
+                                </div>
+                                <div
+                                    v-else
+                                    class="flex flex-col items-center justify-center text-gray-400 text-xs"
+                                >
+                                    <span class="text-2xl">🏋️</span>
+                                </div>
+
+                                <!-- Flechas para alternar media en superset -->
+                                <button
+                                    v-if="superseriePartner && mediaEjercicioIndex !== store.session.currentEjercicioIndex"
+                                    type="button"
+                                    @click.stop="mediaEjercicioIndex = store.session.currentEjercicioIndex"
+                                    data-testid="media-prev"
+                                    :title="`Ver ${store.currentEjercicio.nombre}`"
+                                    aria-label="Ver imagen del ejercicio actual"
+                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-violet-600/90 hover:bg-violet-500 text-white shadow transition-all cursor-pointer"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    v-if="superseriePartner && mediaEjercicioIndex === store.session.currentEjercicioIndex"
+                                    type="button"
+                                    @click.stop="mediaEjercicioIndex = superseriePartner.index"
+                                    data-testid="media-next"
+                                    :title="`Ver ${superseriePartner.ejercicio.nombre}`"
+                                    aria-label="Ver imagen del compañero de superset"
+                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-violet-600/90 hover:bg-violet-500 text-white shadow transition-all cursor-pointer"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Información y Métricas (Lado Derecho) -->
+                            <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                                <!-- Fila 1: Badge Serie y Selector 1/6 con navegación y toggle ojo -->
+                                <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                                    <span
+                                        class="px-2.5 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider"
+                                    >
+                                        SERIE #{{ store.currentSerieNumero || 1 }}
                                     </span>
-                                    <span class="font-black">
-                                        con {{ esfuerzoBlockLabel(block) }}
+
+                                    <!-- Controles de Navegación de Ejercicio (Anterior / Contador / Siguiente) -->
+                                    <div class="flex items-center gap-1 bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border-strong)] rounded-xl p-0.5 shadow-sm">
+                                        <!-- Botón Ejercicio Anterior -->
+                                        <button
+                                            type="button"
+                                            @click="store.prevEjercicio"
+                                            :disabled="store.session.currentEjercicioIndex === 0"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
+                                            title="Ejercicio anterior"
+                                            aria-label="Ejercicio anterior"
+                                        >
+                                            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+
+                                        <!-- Contador X / Total -->
+                                        <span class="px-1.5 text-[11px] sm:text-xs font-black text-white tabular-nums tracking-wide">
+                                            {{ store.unidadProgreso.actual }}/{{ store.unidadProgreso.total }}
+                                        </span>
+
+                                        <!-- Botón Siguiente Ejercicio (Destacado y fácil de ver) -->
+                                        <button
+                                            type="button"
+                                            @click="store.nextEjercicio"
+                                            :disabled="store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-violet-600/40 hover:bg-violet-600/70 border border-violet-500/50 text-violet-200 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_rgba(139,92,246,0.25)]"
+                                            title="Siguiente ejercicio"
+                                            aria-label="Siguiente ejercicio"
+                                        >
+                                            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+
+                                        <!-- Botón Ojito para ocultar/mostrar vista del ejercicio -->
+                                        <button
+                                            type="button"
+                                            @click="vistaVisible = !vistaVisible"
+                                            :aria-pressed="!vistaVisible"
+                                            :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
+                                            :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
+                                            data-testid="toggle-exercise-view"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-[var(--color-obsidian-overlay)] transition-colors cursor-pointer"
+                                        >
+                                            <svg v-if="vistaVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Fila 2: Nombre del Ejercicio (o par de superserie) -->
+                                <div v-if="!superserieOrder" class="mt-1">
+                                    <h2 class="text-sm sm:text-base font-black text-white leading-tight truncate" :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre">
+                                        {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
+                                    </h2>
+                                </div>
+                                <div v-else class="flex items-center gap-1.5 mt-1 min-w-0">
+                                    <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/40">
+                                        ⚡ SUPERSERIE
+                                    </span>
+                                    <h2 class="text-xs sm:text-sm font-black text-white leading-tight truncate" :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`">
+                                        {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
+                                    </h2>
+                                </div>
+
+                                <!-- Fila 3: Bloques MÍNIMO y MÁXIMO (Última vez) -->
+                                <!-- Caso 1: Ejercicio individual -->
+                                <div
+                                    v-if="!superserieOrder"
+                                    class="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2"
+                                    data-testid="last-exercise-card"
+                                >
+                                    <!-- MÍNIMO -->
+                                    <div
+                                        class="p-1.5 sm:p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-cyan-500/25 flex flex-col justify-between"
+                                        data-testid="last-exercise-min"
+                                    >
+                                        <div class="flex items-center gap-1 text-[9px] font-black text-teal-400 uppercase tracking-wider mb-0.5">
+                                            <svg class="w-3 h-3 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
+                                            </svg>
+                                            <span class="truncate">MÍNIMO</span>
+                                        </div>
+                                        <div class="text-xs sm:text-sm font-black text-white tabular-nums">
+                                            {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg
+                                        </div>
+                                        <div class="text-[10px] text-gray-400 tabular-nums">
+                                            x {{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps
+                                        </div>
+                                    </div>
+
+                                    <!-- MÁXIMO (TOP) -->
+                                    <div
+                                        class="p-1.5 sm:p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-fuchsia-500/25 flex flex-col justify-between"
+                                        data-testid="last-exercise-max"
+                                    >
+                                        <div class="flex items-center justify-between gap-1 mb-0.5">
+                                            <div class="flex items-center gap-1 text-[9px] font-black text-fuchsia-400 uppercase tracking-wider min-w-0">
+                                                <span class="text-[8px]">▲</span>
+                                                <span class="truncate">MÁXIMO (TOP)</span>
+                                            </div>
+                                            <span
+                                                v-if="lastExerciseData?.ultimo_esfuerzo"
+                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
+                                            >
+                                                {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                            </span>
+                                        </div>
+                                        <div class="text-xs sm:text-sm font-black text-white tabular-nums">
+                                            {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg
+                                        </div>
+                                        <div class="text-[10px] text-gray-400 tabular-nums">
+                                            x {{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Caso 2: Superserie (muestra min y max para CADA UNO de los 2 ejercicios) -->
+                                <div
+                                    v-else
+                                    class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2"
+                                    data-testid="superset-dual-history"
+                                >
+                                    <!-- Ejercicio 1 de la superserie -->
+                                    <div
+                                        class="p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/30 flex flex-col justify-between space-y-1.5"
+                                        data-testid="superset-history-card-1"
+                                    >
+                                        <div class="flex items-center justify-between gap-1 border-b border-violet-500/20 pb-1">
+                                            <span class="text-[10px] sm:text-[11px] font-black text-violet-200 uppercase truncate" :title="superserieOrder.first.ejercicio.nombre">
+                                                1. {{ superserieOrder.first.ejercicio.nombre }}
+                                            </span>
+                                            <span
+                                                v-if="lastExerciseDataFirst?.ultimo_esfuerzo"
+                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
+                                            >
+                                                {{ lastExerciseDataFirst.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseDataFirst.ultimo_esfuerzo.valor }}
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-1.5">
+                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-cyan-500/20 text-left">
+                                                <div class="text-[8px] font-black text-teal-400 uppercase">MÍNIMO</div>
+                                                <div class="text-xs font-black text-white tabular-nums">
+                                                    {{ formatPeso(lastExerciseDataFirst?.peso_min ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg
+                                                </div>
+                                                <div class="text-[9px] text-gray-400 tabular-nums">
+                                                    x {{ (lastExerciseDataFirst?.reps_en_peso_min ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps
+                                                </div>
+                                            </div>
+                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-fuchsia-500/20 text-left">
+                                                <div class="text-[8px] font-black text-fuchsia-400 uppercase">MÁXIMO</div>
+                                                <div class="text-xs font-black text-white tabular-nums">
+                                                    {{ formatPeso(lastExerciseDataFirst?.peso_max ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg
+                                                </div>
+                                                <div class="text-[9px] text-gray-400 tabular-nums">
+                                                    x {{ (lastExerciseDataFirst?.reps_en_peso_max ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Ejercicio 2 de la superserie -->
+                                    <div
+                                        class="p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/30 flex flex-col justify-between space-y-1.5"
+                                        data-testid="superset-history-card-2"
+                                    >
+                                        <div class="flex items-center justify-between gap-1 border-b border-violet-500/20 pb-1">
+                                            <span class="text-[10px] sm:text-[11px] font-black text-violet-200 uppercase truncate" :title="superserieOrder.second.ejercicio.nombre">
+                                                2. {{ superserieOrder.second.ejercicio.nombre }}
+                                            </span>
+                                            <span
+                                                v-if="lastExerciseDataSecond?.ultimo_esfuerzo"
+                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
+                                            >
+                                                {{ lastExerciseDataSecond.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseDataSecond.ultimo_esfuerzo.valor }}
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-1.5">
+                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-cyan-500/20 text-left">
+                                                <div class="text-[8px] font-black text-teal-400 uppercase">MÍNIMO</div>
+                                                <div class="text-xs font-black text-white tabular-nums">
+                                                    {{ formatPeso(lastExerciseDataSecond?.peso_min ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg
+                                                </div>
+                                                <div class="text-[9px] text-gray-400 tabular-nums">
+                                                    x {{ (lastExerciseDataSecond?.reps_en_peso_min ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps
+                                                </div>
+                                            </div>
+                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-fuchsia-500/20 text-left">
+                                                <div class="text-[8px] font-black text-fuchsia-400 uppercase">MÁXIMO</div>
+                                                <div class="text-xs font-black text-white tabular-nums">
+                                                    {{ formatPeso(lastExerciseDataSecond?.peso_max ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg
+                                                </div>
+                                                <div class="text-[9px] text-gray-400 tabular-nums">
+                                                    x {{ (lastExerciseDataSecond?.reps_en_peso_max ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fila 4: Sugerencia -->
+                                <div
+                                    v-if="!superserieOrder && recomendacion"
+                                    class="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-emerald-400 leading-tight mt-1.5 font-medium"
+                                >
+                                    <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>
+                                        <strong class="font-bold">Sugerencia:</strong>
+                                        {{ recomendacion.mensaje }}
+                                        <span
+                                            v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData?.peso_max ?? lastExerciseData?.peso_top)"
+                                            class="font-black tabular-nums"
+                                        >
+                                            ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
+                                        </span>
                                     </span>
                                 </div>
+                                <div
+                                    v-else-if="superserieOrder && (recomendacionFirst || recomendacionSecond)"
+                                    class="flex flex-col gap-1 mt-1.5 text-[10px] sm:text-[11px] text-emerald-400 leading-tight font-medium"
+                                >
+                                    <div v-if="recomendacionFirst" class="flex items-start gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>
+                                            <strong class="font-bold">Sugerencia {{ superserieOrder.first.ejercicio.nombre }}:</strong>
+                                            {{ recomendacionFirst.mensaje }}
+                                        </span>
+                                    </div>
+                                    <div v-if="recomendacionSecond" class="flex items-start gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>
+                                            <strong class="font-bold">Sugerencia {{ superserieOrder.second.ejercicio.nombre }}:</strong>
+                                            {{ recomendacionSecond.mensaje }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+                    </section>
 
-                            <!-- Nota textual adicional (Rest-pause, técnicas, etc.) o completa si no coincide con el regex -->
+                    <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (visible en pantallas grandes o complementario) -->
+                    <div
+                        v-if="store.currentEjercicio.notas"
+                        class="hidden md:block p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-violet-950/40 via-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border border-violet-500/30 text-left space-y-2 shadow-inner"
+                        data-testid="ejercicio-prescripcion-box"
+                    >
+                        <div class="flex items-center justify-between gap-2 border-b border-violet-500/20 pb-1.5">
+                            <span class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-violet-300">
+                                <span>📋</span>
+                                <span>Plan de series y esfuerzo</span>
+                            </span>
+                        </div>
+
+                        <!-- Desglose por bloques estructurados (ej: 2x6 con RIR 1) -->
+                        <div
+                            v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length"
+                            class="grid grid-cols-1 sm:grid-cols-2 gap-1.5"
+                        >
                             <div
-                                v-if="!parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length || extraNotasText(store.currentEjercicio.notas)"
-                                class="text-[11px] text-gray-300 flex items-start gap-1.5 pt-0.5"
+                                v-for="(block, i) in parseEsfuerzoBlocksActive(store.currentEjercicio.notas)"
+                                :key="i"
+                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border text-xs"
+                                :class="esfuerzoBlockClass(block)"
                             >
-                                <span class="text-amber-400 font-bold shrink-0">ℹ</span>
-                                <span class="font-medium">
-                                    {{ extraNotasText(store.currentEjercicio.notas) || store.currentEjercicio.notas }}
+                                <span class="font-bold text-white flex items-center gap-1.5">
+                                    <span class="text-violet-400 font-black">⚡</span>
+                                    {{ block.series }} {{ block.series === 1 ? 'serie' : 'series' }} × {{ block.reps }} reps
+                                </span>
+                                <span class="font-black">
+                                    con {{ esfuerzoBlockLabel(block) }}
                                 </span>
                             </div>
+                        </div>
+
+                        <!-- Nota textual adicional (Rest-pause, técnicas, etc.) o completa si no coincide con el regex -->
+                        <div
+                            v-if="!parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length || extraNotasText(store.currentEjercicio.notas)"
+                            class="text-[11px] text-gray-300 flex items-start gap-1.5 pt-0.5"
+                        >
+                            <span class="text-amber-400 font-bold shrink-0">ℹ</span>
+                            <span class="font-medium">
+                                {{ extraNotasText(store.currentEjercicio.notas) || store.currentEjercicio.notas }}
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Bloque "Superserie" en la columna izquierda: muestra los
-                         DOS ejercicios del par en el ORDEN correcto (primero →
-                         segundo), adaptando la etiqueta "Ahora / Después" según
-                         si estás en el primero o en el segundo del par. -->
+                    <!-- Bloque "Superserie" en la columna izquierda -->
                     <div
                         v-if="superseriePartner && superserieOrder"
                         class="obs-card p-3 border-violet-500/30 bg-violet-500/5"
@@ -242,7 +508,7 @@
                         </div>
 
                         <div class="space-y-1.5">
-                            <!-- PRIMERO del par (el de menor índice) -->
+                            <!-- PRIMERO del par -->
                             <div
                                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
                                 :class="
@@ -290,7 +556,7 @@
                                 </span>
                             </div>
 
-                            <!-- SEGUNDO del par (el de mayor índice) -->
+                            <!-- SEGUNDO del par -->
                             <div
                                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
                                 :class="
@@ -319,12 +585,7 @@
                                     {{ superserieOrder.currentRole === 'second' ? 'Ahora' : 'Después' }}
                                 </span>
                                 <span
-                                    class="text-xs sm:text-sm font-bold truncate"
-                                    :class="
-                                        superserieOrder.currentRole === 'second'
-                                            ? 'text-white'
-                                            : 'text-white'
-                                    "
+                                    class="text-xs sm:text-sm font-bold truncate text-white"
                                 >
                                     {{ superserieOrder.second.ejercicio.nombre }}
                                 </span>
@@ -338,225 +599,6 @@
                             <template v-else>
                                 Último del par. Después de esta serie arranca el descanso.
                             </template>
-                        </p>
-                    </div>
-
-                    <!-- Demostración Visual / GIF Animado (data-testid="exercise-media") -->
-                    <section
-                        v-if="ejercicioMedia && (ejercicioMedia.gif_url || ejercicioMedia.image_url)"
-                        class="obs-card p-3 relative flex flex-col items-center justify-center overflow-hidden"
-                        data-testid="exercise-media"
-                    >
-                        <div class="w-full flex items-center justify-between gap-2 mb-2">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-violet-300 flex items-center gap-1.5 min-w-0">
-                                <span class="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0"></span>
-                                <span class="truncate">
-                                    Vista:&nbsp;
-                                    <span class="text-white">{{ mediaEjercicio?.nombre }}</span>
-                                </span>
-                            </span>
-                            <div class="flex items-center gap-1.5">
-                                <!-- Ojito: ocultar / mostrar toda la vista del ejercicio -->
-                                <button
-                                    type="button"
-                                    @click="vistaVisible = !vistaVisible"
-                                    :aria-pressed="!vistaVisible"
-                                    :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
-                                    :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
-                                    data-testid="toggle-exercise-view"
-                                    class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
-                                >
-                                    <svg
-                                        v-if="vistaVisible"
-                                        class="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    <svg
-                                        v-else
-                                        class="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18"
-                                        />
-                                    </svg>
-                                </button>
-                                <button
-                                    v-if="ejercicioMedia.gif_url"
-                                    type="button"
-                                    @click="gifHovered = !gifHovered"
-                                    class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[var(--color-obsidian-elevated)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white transition-colors cursor-pointer"
-                                >
-                                    {{ gifHovered ? '⏸ Pausar animación' : '▶ Ver animación' }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Contenedor con flechas para alternar entre el ejercicio
-                             actual y el compañero de superset (si lo hay). -->
-                        <div
-                            v-if="vistaVisible"
-                            class="relative w-full"
-                        >
-                            <!-- Flecha izquierda (solo si hay superset y NO estamos mirando al current) -->
-                            <button
-                                v-if="superseriePartner && mediaEjercicioIndex !== store.session.currentEjercicioIndex"
-                                type="button"
-                                @click="mediaEjercicioIndex = store.session.currentEjercicioIndex"
-                                data-testid="media-prev"
-                                :title="`Ver ${store.currentEjercicio.nombre}`"
-                                aria-label="Ver imagen del ejercicio actual"
-                                class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-violet-600/80 hover:bg-violet-500 text-white shadow-lg transition-all cursor-pointer"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-
-                            <!-- Flecha derecha (solo si hay superset y estamos mirando al current) -->
-                            <button
-                                v-if="superseriePartner && mediaEjercicioIndex === store.session.currentEjercicioIndex"
-                                type="button"
-                                @click="mediaEjercicioIndex = superseriePartner.index"
-                                data-testid="media-next"
-                                :title="`Ver ${superseriePartner.ejercicio.nombre}`"
-                                aria-label="Ver imagen del compañero de superset"
-                                class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-violet-600/80 hover:bg-violet-500 text-white shadow-lg transition-all cursor-pointer"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-
-                            <div
-                                class="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 rounded-xl overflow-hidden bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex items-center justify-center cursor-pointer group"
-                                @click="gifHovered = !gifHovered"
-                                @mouseenter="gifHovered = true"
-                            >
-                                <img
-                                    :key="mediaEjercicio?.nombre"
-                                    :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
-                                    :alt="`Demostración de ${mediaEjercicio?.nombre}`"
-                                    class="h-full w-full object-contain p-1.5 rounded-xl transition-transform duration-200 group-hover:scale-105"
-                                    loading="lazy"
-                                />
-                                <div
-                                    v-if="!gifHovered && ejercicioMedia.gif_url"
-                                    class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center text-white text-xs font-bold gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <span class="p-2 rounded-full bg-violet-600/80 shadow-lg">▶</span>
-                                    <span>Pasá el mouse o tocá para ver animación</span>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Referencia del ejercicio: última vez (mínimo y máximo) + recomendación -->
-                    <div
-                        v-if="lastExerciseData && lastExerciseData.encontrado"
-                        class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-2.5 sm:p-3 space-y-2 text-xs"
-                        data-testid="last-exercise-card"
-                    >
-                        <div class="flex items-center justify-between gap-2 flex-wrap border-b border-violet-500/20 pb-1.5">
-                            <span class="text-[10px] font-black uppercase tracking-[0.14em] text-violet-200 flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Última vez
-                            </span>
-                            <span class="text-[10px] text-gray-400 font-semibold">
-                                {{ lastExerciseData.fecha }}
-                            </span>
-                        </div>
-
-                        <!-- Métricas de Peso Mínimo y Máximo -->
-                        <div class="grid grid-cols-2 gap-2">
-                            <!-- Peso Mínimo -->
-                            <div
-                                class="p-2 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex flex-col justify-between"
-                                data-testid="last-exercise-min"
-                            >
-                                <span class="text-[9px] uppercase tracking-wider font-black text-cyan-300 block mb-0.5 flex items-center gap-1">
-                                    <span>🔻</span> Mínimo
-                                </span>
-                                <div class="flex items-baseline gap-1 text-white font-bold tabular-nums flex-wrap">
-                                    <span class="text-sm sm:text-base font-black text-cyan-200">
-                                        {{ formatPeso(lastExerciseData.peso_min ?? lastExerciseData.peso_top ?? 0) }} kg
-                                    </span>
-                                    <span
-                                        v-if="(lastExerciseData.reps_en_peso_min ?? lastExerciseData.reps_en_peso_top) != null"
-                                        class="text-[11px] text-gray-400"
-                                    >
-                                        × {{ lastExerciseData.reps_en_peso_min ?? lastExerciseData.reps_en_peso_top }} reps
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Peso Máximo (Top) -->
-                            <div
-                                class="p-2 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex flex-col justify-between"
-                                data-testid="last-exercise-max"
-                            >
-                                <div class="flex items-center justify-between gap-1 mb-0.5">
-                                    <span class="text-[9px] uppercase tracking-wider font-black text-emerald-300 flex items-center gap-1">
-                                        <span>🔺</span> Máximo (Top)
-                                    </span>
-                                    <span
-                                        v-if="lastExerciseData.ultimo_esfuerzo"
-                                        class="obs-pill text-[9px] font-black shrink-0"
-                                        :class="
-                                            lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
-                                                ? 'obs-pill-violet'
-                                                : 'obs-pill-orange'
-                                        "
-                                    >
-                                        {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
-                                    </span>
-                                </div>
-                                <div class="flex items-baseline gap-1 text-white font-bold tabular-nums flex-wrap">
-                                    <span class="text-sm sm:text-base font-black text-emerald-200">
-                                        {{ formatPeso(lastExerciseData.peso_max ?? lastExerciseData.peso_top ?? 0) }} kg
-                                    </span>
-                                    <span
-                                        v-if="(lastExerciseData.reps_en_peso_max ?? lastExerciseData.reps_en_peso_top) != null"
-                                        class="text-[11px] text-gray-400"
-                                    >
-                                        × {{ lastExerciseData.reps_en_peso_max ?? lastExerciseData.reps_en_peso_top }} reps
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p
-                            v-if="recomendacion"
-                            class="text-[11px] sm:text-xs flex items-start gap-1.5 pt-0.5"
-                            :class="recomendacion.colorClass"
-                        >
-                            <span class="font-black">{{ recomendacion.icon }}</span>
-                            <span>
-                                <span class="font-bold">Sugerencia:</span>
-                                {{ recomendacion.mensaje }}
-                                <span
-                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData.peso_max ?? lastExerciseData.peso_top)"
-                                    class="font-black tabular-nums"
-                                >
-                                    ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
-                                </span>
-                            </span>
                         </p>
                     </div>
 
@@ -660,31 +702,67 @@
                         v-if="!superseriePartner"
                         :ejercicio="store.currentEjercicio"
                         :ejercicio-index="store.session.currentEjercicioIndex"
+                        :last-data="lastExerciseData"
                         @complete="onSetComplete"
                     />
 
-                    <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile).
-                         Las cards se renderizan en el ORDEN del par (primero →
-                         segundo), no del current. Así el usuario ve siempre
-                         la misma disposición: "izquierda = primero, derecha =
-                         segundo", sin importar en cuál de los dos esté parado. -->
+                    <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile) + 1 solo botón de completar -->
                     <div
                         v-else-if="superserieOrder"
-                        class="grid grid-cols-1 lg:grid-cols-2 gap-3"
-                        data-testid="superset-grid"
+                        class="space-y-3"
                     >
-                        <SetConfigCard
-                            :ejercicio="superserieOrder.first.ejercicio"
-                            :ejercicio-index="superserieOrder.first.index"
-                            :show-exercise-name="true"
-                            @complete="onSetComplete"
-                        />
-                        <SetConfigCard
-                            :ejercicio="superserieOrder.second.ejercicio"
-                            :ejercicio-index="superserieOrder.second.index"
-                            :show-exercise-name="true"
-                            @complete="onSetComplete"
-                        />
+                        <div
+                            class="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                            data-testid="superset-grid"
+                        >
+                            <SetConfigCard
+                                ref="cardFirstRef"
+                                :ejercicio="superserieOrder.first.ejercicio"
+                                :ejercicio-index="superserieOrder.first.index"
+                                :show-exercise-name="true"
+                                :hide-submit-button="true"
+                                :last-data="lastExerciseDataFirst"
+                                @complete="onSetComplete"
+                            />
+                            <SetConfigCard
+                                ref="cardSecondRef"
+                                :ejercicio="superserieOrder.second.ejercicio"
+                                :ejercicio-index="superserieOrder.second.index"
+                                :show-exercise-name="true"
+                                :hide-submit-button="true"
+                                :last-data="lastExerciseDataSecond"
+                                @complete="onSetComplete"
+                            />
+                        </div>
+
+                        <!-- Botón Único para completar la ronda de la Superserie -->
+                        <div class="pt-1">
+                            <button
+                                v-if="!isSupersetComplete"
+                                type="button"
+                                @click="completarRondaSuperserie"
+                                data-testid="btn-completar-superset"
+                                class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base md:text-lg font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/10"
+                            >
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="3"
+                                        d="M5 13l4 4L19 7"
+                                    />
+                                </svg>
+                                <span>
+                                    ⚡ COMPLETAR RONDA #{{ supersetRondaNumero }} DE SUPERSERIE
+                                </span>
+                            </button>
+                            <div
+                                v-else
+                                class="w-full py-4 sm:py-4.5 rounded-2xl bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2.5"
+                            >
+                                ✓ Superserie completa
+                            </div>
+                        </div>
                     </div>
 
                     <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
@@ -832,7 +910,12 @@ watch(
 // Datos de la última vez que el usuario hizo este ejercicio.
 // null mientras carga, {} sin encontrado=true si no hay histórico.
 const lastExerciseData = ref(null);
+const lastExerciseDataFirst = ref(null);
+const lastExerciseDataSecond = ref(null);
 let lastExerciseFetchToken = 0;
+
+const cardFirstRef = ref(null);
+const cardSecondRef = ref(null);
 
 // Formateo del cronómetro de la sesión
 const formattedTime = computed(() => {
@@ -904,25 +987,58 @@ const superserieOrder = computed(() => {
 });
 
 /**
- * Trae el "última vez" del ejercicio actual para la card de la columna
- * izquierda. El SetConfigCard maneja su propio form / prefill localmente.
+ * Trae el "última vez" del ejercicio actual (o de ambos si es superserie)
+ * para el Hero card y las cards de configuración.
  */
 watch(
-    () => store.currentEjercicio,
-    async (ej) => {
-        if (!ej) return;
-        lastExerciseData.value = null;
+    [
+        () => store.currentEjercicio?.nombre,
+        () => superserieOrder.value?.first.ejercicio.nombre,
+        () => superserieOrder.value?.second.ejercicio.nombre,
+    ],
+    async ([currentNombre, firstNombre, secondNombre]) => {
+        if (!currentNombre) {
+            lastExerciseData.value = null;
+            lastExerciseDataFirst.value = null;
+            lastExerciseDataSecond.value = null;
+            return;
+        }
+
         const token = ++lastExerciseFetchToken;
-        try {
-            const client = window?.axios || axios;
-            const { data } = await client.get('/api/historial/ultimo', {
-                params: { ejercicio: ej.nombre },
-            });
-            if (token !== lastExerciseFetchToken) return;
-            lastExerciseData.value = data || null;
-        } catch (err) {
-            if (token === lastExerciseFetchToken) {
-                lastExerciseData.value = null;
+        const client = window?.axios || axios;
+
+        if (superserieOrder.value && firstNombre && secondNombre) {
+            try {
+                const [res1, res2] = await Promise.all([
+                    client.get('/api/historial/ultimo', { params: { ejercicio: firstNombre } }),
+                    client.get('/api/historial/ultimo', { params: { ejercicio: secondNombre } }),
+                ]);
+                if (token !== lastExerciseFetchToken) return;
+                lastExerciseDataFirst.value = res1?.data || null;
+                lastExerciseDataSecond.value = res2?.data || null;
+                lastExerciseData.value = res1?.data || null;
+            } catch (err) {
+                if (token === lastExerciseFetchToken) {
+                    lastExerciseDataFirst.value = null;
+                    lastExerciseDataSecond.value = null;
+                    lastExerciseData.value = null;
+                }
+            }
+        } else {
+            try {
+                const { data } = await client.get('/api/historial/ultimo', {
+                    params: { ejercicio: currentNombre },
+                });
+                if (token !== lastExerciseFetchToken) return;
+                lastExerciseData.value = data || null;
+                lastExerciseDataFirst.value = null;
+                lastExerciseDataSecond.value = null;
+            } catch (err) {
+                if (token === lastExerciseFetchToken) {
+                    lastExerciseData.value = null;
+                    lastExerciseDataFirst.value = null;
+                    lastExerciseDataSecond.value = null;
+                }
             }
         }
     },
@@ -937,13 +1053,7 @@ const formatPeso = (val) => {
 };
 
 // Recomendación basada en el esfuerzo percibido del set top de la última vez.
-// Reglas conservadoras para principiantes / amateur:
-//   - RIR >= 3  o  RPE <= 7   → margen → subir peso (+2.5kg)
-//   - RIR 1..2  o  RPE 8..9   → zona óptima → mantener
-//   - RIR 0     o  RPE 10     → al fallo → bajar (-2.5kg) o repetir
-//   - sin esfuerzo registrado → mantener mismo peso
-const recomendacion = computed(() => {
-    const data = lastExerciseData.value;
+const computeRecomendacion = (data) => {
     if (!data || !data.encontrado || data.peso_top == null) return null;
 
     const esf = data.ultimo_esfuerzo;
@@ -1020,7 +1130,58 @@ const recomendacion = computed(() => {
         pesoSugerido: pesoBase,
         mensaje: `repetí ${formatPeso(pesoBase)} kg × ${repsBase || '?'} reps como en la última sesión.`,
     };
+};
+
+const recomendacion = computed(() => computeRecomendacion(lastExerciseData.value));
+const recomendacionFirst = computed(() => computeRecomendacion(lastExerciseDataFirst.value));
+const recomendacionSecond = computed(() => computeRecomendacion(lastExerciseDataSecond.value));
+
+const isSupersetComplete = computed(() => {
+    if (!superserieOrder.value) return false;
+    const ej1 = superserieOrder.value.first.ejercicio;
+    const ej2 = superserieOrder.value.second.ejercicio;
+    const eff1 = (ej1.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
+    const eff2 = (ej2.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
+    const target1 = Number(ej1.series_objetivo) || 0;
+    const target2 = Number(ej2.series_objetivo) || 0;
+    return eff1 >= target1 && eff2 >= target2;
 });
+
+const supersetRondaNumero = computed(() => {
+    if (!superserieOrder.value) return 1;
+    const ej1 = superserieOrder.value.first.ejercicio;
+    const ej2 = superserieOrder.value.second.ejercicio;
+    const eff1 = (ej1.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
+    const eff2 = (ej2.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
+    return Math.max(eff1, eff2) + 1;
+});
+
+const completarRondaSuperserie = async () => {
+    if (!superserieOrder.value) return;
+
+    const payloadFirst = cardFirstRef.value?.getPayload();
+    const payloadSecond = cardSecondRef.value?.getPayload();
+
+    const firstComplete = cardFirstRef.value?.ejercicioCompleto;
+    const secondComplete = cardSecondRef.value?.ejercicioCompleto;
+
+    // Completar en orden lineal (primero el first, luego el second)
+    if (payloadFirst && !firstComplete) {
+        await onSetComplete(payloadFirst, { skipTimer: true });
+    }
+    if (payloadSecond && !secondComplete) {
+        await onSetComplete(payloadSecond, { skipTimer: true });
+    }
+
+    // Iniciar temporizador de descanso combinado de la superserie
+    const ej1 = superserieOrder.value.first.ejercicio;
+    const ej2 = superserieOrder.value.second.ejercicio;
+    const d1 = Number(ej1.descanso_min) || 1.5;
+    const d2 = Number(ej2.descanso_min) || 1.5;
+    const descansoFinal = Math.max(d1, d2);
+    const descansoSegundos = Math.max(15, Math.round(descansoFinal * 60));
+    restTimer.start(descansoSegundos, `${ej1.nombre} + ${ej2.nombre}`);
+};
 
 /**
  * Handler que recibe el evento `complete` del SetConfigCard (sea el del
@@ -1028,7 +1189,7 @@ const recomendacion = computed(() => {
  * para el ejercicioIndex correcto y dispara el rest timer del ejercicio
  * que se acaba de registrar.
  */
-const onSetComplete = async (payload) => {
+const onSetComplete = async (payload, { skipTimer = false } = {}) => {
     const {
         ejercicioIndex,
         peso,
@@ -1100,13 +1261,11 @@ const onSetComplete = async (payload) => {
         console.warn('Error guardando serie en offline/API:', e);
     }
 
-    // 4. Iniciar temporizador de descanso del ejercicio que se acaba de
-    // registrar. En superseries, esto es subóptimo (el descanso debería
-    // empezar DESPUÉS de los dos ejercicios del round), pero mantiene
-    // compatibilidad con el comportamiento previo. Si querés que el timer
-    // arranque solo al completar el segundo del par, decime y lo cambiamos.
-    const descansoSegundos = Math.max(15, Math.round((Number(ej.descanso_min) || 1.5) * 60));
-    restTimer.start(descansoSegundos, ej.nombre);
+    // 4. Iniciar temporizador de descanso si no se saltea (por superserie)
+    if (!skipTimer) {
+        const descansoSegundos = Math.max(15, Math.round((Number(ej.descanso_min) || 1.5) * 60));
+        restTimer.start(descansoSegundos, ej.nombre);
+    }
 };
 
 const deshacer = () => {
