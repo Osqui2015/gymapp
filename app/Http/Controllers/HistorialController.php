@@ -418,8 +418,7 @@ class HistorialController extends Controller
             return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
         }
 
-        // Calculamos el peso top entre las series EFECTIVAS (descartamos calentamiento,
-        // dropset y al_fallo porque no son representativas del "techo" de trabajo).
+        // Calculamos el peso top y peso mínimo entre las series EFECTIVAS
         $efectivas = $series->filter(function ($s) {
             $tipo = strtolower((string) ($s->tipo_serie ?? 'efectiva'));
             return $tipo === '' || $tipo === 'efectiva';
@@ -429,43 +428,45 @@ class HistorialController extends Controller
             $efectivas = $series;
         }
 
-        $pesoTop = null;
-        $repsEnPesoTop = null;
-        foreach ($efectivas as $s) {
-            $peso = (float) ($s->peso ?? 0);
-            if ($peso <= 0) {
-                continue;
-            }
-            if ($pesoTop === null || $peso > $pesoTop) {
-                $pesoTop = $peso;
-                $repsEnPesoTop = (int) ($s->reps_realizadas ?? 0);
-            }
-        }
+        // Si hay series con peso > 0, usamos esas; de lo contrario usamos todas
+        $conPeso = $efectivas->filter(fn ($s) => (float) ($s->peso ?? 0) > 0);
+        $pool = $conPeso->isNotEmpty() ? $conPeso : $efectivas;
 
-        // Si ninguna serie efectiva tuvo peso, caemos al primer registro con peso.
-        if ($pesoTop === null) {
-            foreach ($series as $s) {
-                $peso = (float) ($s->peso ?? 0);
-                if ($peso > 0) {
-                    $pesoTop = $peso;
-                    $repsEnPesoTop = (int) ($s->reps_realizadas ?? 0);
-                    break;
-                }
+        // Ordenamos por peso desc, luego reps desc para encontrar el Máximo (Top)
+        $sortedDesc = $pool->sort(function ($a, $b) {
+            $pesoA = (float) ($a->peso ?? 0);
+            $pesoB = (float) ($b->peso ?? 0);
+            if ($pesoA !== $pesoB) {
+                return $pesoB <=> $pesoA;
             }
-        }
+            return ((int) ($b->reps_realizadas ?? 0)) <=> ((int) ($a->reps_realizadas ?? 0));
+        })->values();
 
-        // Ultimo esfuerzo percibido del set mas pesado.
+        // Ordenamos por peso asc, luego reps asc para encontrar el Mínimo
+        $sortedAsc = $pool->sort(function ($a, $b) {
+            $pesoA = (float) ($a->peso ?? 0);
+            $pesoB = (float) ($b->peso ?? 0);
+            if ($pesoA !== $pesoB) {
+                return $pesoA <=> $pesoB;
+            }
+            return ((int) ($a->reps_realizadas ?? 0)) <=> ((int) ($b->reps_realizadas ?? 0));
+        })->values();
+
+        $setTop = $sortedDesc->first();
+        $pesoTop = $setTop ? (float) ($setTop->peso ?? 0) : 0.0;
+        $repsEnPesoTop = $setTop ? (int) ($setTop->reps_realizadas ?? 0) : 0;
+
+        $setMin = $sortedAsc->first();
+        $pesoMin = $setMin ? (float) ($setMin->peso ?? 0) : 0.0;
+        $repsEnPesoMin = $setMin ? (int) ($setMin->reps_realizadas ?? 0) : 0;
+
+        // Ultimo esfuerzo percibido del set mas pesado
         $ultimoEsfuerzo = null;
-        if ($pesoTop !== null) {
-            $setReferencia = $efectivas->first(function ($s) use ($pesoTop) {
-                return (float) ($s->peso ?? 0) === $pesoTop;
-            });
-            if ($setReferencia && $setReferencia->esfuerzo_tipo !== null && $setReferencia->esfuerzo_valor !== null) {
-                $ultimoEsfuerzo = [
-                    'tipo' => $setReferencia->esfuerzo_tipo,
-                    'valor' => (int) $setReferencia->esfuerzo_valor,
-                ];
-            }
+        if ($setTop && $setTop->esfuerzo_tipo !== null && $setTop->esfuerzo_valor !== null) {
+            $ultimoEsfuerzo = [
+                'tipo' => $setTop->esfuerzo_tipo,
+                'valor' => (int) $setTop->esfuerzo_valor,
+            ];
         }
 
         return response()->json([
@@ -483,6 +484,10 @@ class HistorialController extends Controller
             })->values(),
             'peso_top' => $pesoTop,
             'reps_en_peso_top' => $repsEnPesoTop,
+            'peso_max' => $pesoTop,
+            'reps_en_peso_max' => $repsEnPesoTop,
+            'peso_min' => $pesoMin,
+            'reps_en_peso_min' => $repsEnPesoMin,
             'ultimo_esfuerzo' => $ultimoEsfuerzo,
         ]);
     }

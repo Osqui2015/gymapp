@@ -192,4 +192,39 @@ class HistorialUltimoTest extends TestCase
         $response->assertOk()
             ->assertJson(['encontrado' => false]);
     }
+
+    public function test_returns_peso_min_and_peso_max_when_different_weights_used(): void
+    {
+        $user = User::factory()->create(['role' => User::ROLE_ALUMNO]);
+        $fecha = now()->toDateString();
+
+        // Serie 1: 50kg x 8 reps
+        $this->makeSerie($user, [
+            'fecha' => $fecha,
+            'series_numero' => 1,
+            'peso' => 50,
+            'reps_realizadas' => 8,
+            'tipo_serie' => 'efectiva',
+        ]);
+        // Serie 2: 70kg x 5 reps
+        $this->makeSerie($user, [
+            'fecha' => $fecha,
+            'series_numero' => 2,
+            'peso' => 70,
+            'reps_realizadas' => 5,
+            'tipo_serie' => 'efectiva',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/historial/ultimo?ejercicio=Press%20Banca');
+
+        $response->assertOk()
+            ->assertJson([
+                'encontrado' => true,
+                'peso_max' => 70.0,
+                'reps_en_peso_max' => 5,
+                'peso_min' => 50.0,
+                'reps_en_peso_min' => 8,
+            ]);
+    }
 }

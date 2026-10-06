@@ -83,6 +83,29 @@
             </span>
         </div>
 
+        <!-- Prescripción o plan del ejercicio -->
+        <div
+            v-if="ejercicio.notas"
+            class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/25 -mt-1 mb-1 text-left"
+            data-testid="set-plan-banner"
+        >
+            <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-xs">📋</span>
+                <span class="text-[10px] font-black text-violet-300 uppercase tracking-wider shrink-0">
+                    Plan:
+                </span>
+                <span class="text-xs font-bold text-white truncate" :title="ejercicio.notas">
+                    {{ ejercicio.notas }}
+                </span>
+            </div>
+            <span
+                v-if="targetEsfuerzo"
+                class="obs-pill obs-pill-emerald text-[10px] font-black shrink-0 whitespace-nowrap"
+            >
+                Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque?.reps }} reps · {{ targetLabel }}
+            </span>
+        </div>
+
         <!-- CARGA / PESO -->
         <div class="space-y-1.5">
             <div class="flex items-center justify-between">
@@ -167,7 +190,12 @@
                     REPETICIONES
                 </label>
                 <span class="text-[10px] text-emerald-300 font-bold tabular-nums">
-                    Objetivo: {{ ejercicio.reps_min }}–{{ ejercicio.reps_max }}
+                    <template v-if="targetEsfuerzo?.bloque?.reps">
+                        Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque.reps }} reps
+                    </template>
+                    <template v-else>
+                        Objetivo: {{ ejercicio.reps_min }}–{{ ejercicio.reps_max }}
+                    </template>
                 </span>
             </div>
 
@@ -277,7 +305,7 @@
             <div
                 v-if="targetLabel"
                 :class="[
-                    'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border',
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border',
                     targetEsfuerzo?.tipo === 'fallo'
                         ? 'bg-rose-500/15 border-rose-500/35 text-rose-200'
                         : 'bg-amber-500/15 border-amber-500/35 text-amber-200',
@@ -285,7 +313,7 @@
                 data-testid="esfuerzo-target-banner"
             >
                 <span>🎯</span>
-                <span>Objetivo de esta serie: {{ targetLabel }}</span>
+                <span>Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo?.bloque?.reps ? targetEsfuerzo.bloque.reps + ' reps con ' : '' }}{{ targetLabel }}</span>
             </div>
 
             <!-- Selector numérico (solo RIR / RPE). Si el tipo es 'fallo', mostramos
@@ -539,23 +567,35 @@ watch(
             const lastEffective = [...sets].reverse().find((s) => s.tipo_serie !== 'calentamiento');
             const source = lastEffective || sets[sets.length - 1];
             form.value.peso = source.peso || 0;
-            form.value.reps = source.reps || 0;
+            // Si la serie actual tiene un target de repeticiones en el bloque actual
+            if (targetEsfuerzo.value?.bloque?.reps) {
+                form.value.reps = targetEsfuerzo.value.bloque.reps;
+            } else {
+                form.value.reps = source.reps || 0;
+            }
             form.value.tipo_serie = source.tipo_serie || 'efectiva';
-            form.value.esfuerzo_tipo = source.esfuerzo_tipo || 'rir';
-            form.value.esfuerzo_valor = source.esfuerzo_valor ?? null;
+            if (targetEsfuerzo.value) {
+                form.value.esfuerzo_tipo = targetEsfuerzo.value.tipo;
+                form.value.esfuerzo_valor = targetEsfuerzo.value.valor;
+            } else {
+                form.value.esfuerzo_tipo = source.esfuerzo_tipo || 'rir';
+                form.value.esfuerzo_valor = source.esfuerzo_valor ?? null;
+            }
         } else {
             form.value.peso = 0;
-            form.value.reps = Number(props.ejercicio?.reps_min) || 8;
+            if (targetEsfuerzo.value?.bloque?.reps) {
+                form.value.reps = targetEsfuerzo.value.bloque.reps;
+            } else {
+                form.value.reps = Number(props.ejercicio?.reps_min) || 8;
+            }
             form.value.tipo_serie = 'efectiva';
-            form.value.esfuerzo_tipo = 'rir';
-            form.value.esfuerzo_valor = null;
-        }
-        // Si la serie actual tiene target de esfuerzo prescrito en notas,
-        // pre-seleccionarlo (manteniendo el último si ya hay sets previos
-        // para no sobreescribir el esfuerzo que el usuario acaba de marcar).
-        if (sets.length === 0 && targetEsfuerzo.value) {
-            form.value.esfuerzo_tipo = targetEsfuerzo.value.tipo;
-            form.value.esfuerzo_valor = targetEsfuerzo.value.valor;
+            if (targetEsfuerzo.value) {
+                form.value.esfuerzo_tipo = targetEsfuerzo.value.tipo;
+                form.value.esfuerzo_valor = targetEsfuerzo.value.valor;
+            } else {
+                form.value.esfuerzo_tipo = 'rir';
+                form.value.esfuerzo_valor = null;
+            }
         }
     },
     { immediate: true }

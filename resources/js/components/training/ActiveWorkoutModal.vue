@@ -176,18 +176,52 @@
                             >
                                 SS {{ store.currentEjercicio.superserie_grupo }}
                             </span>
-                            <!-- Bloques de esfuerzo del ejercicio actual (RIR / RPE / FALLO) -->
-                            <template v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length">
-                                <span
+                        </div>
+
+                        <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (ej: 2x6 con RIR 1 + 2x4 con RIR 0) -->
+                        <div
+                            v-if="store.currentEjercicio.notas"
+                            class="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-violet-950/40 via-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border border-violet-500/30 text-left space-y-2 shadow-inner"
+                            data-testid="ejercicio-prescripcion-box"
+                        >
+                            <div class="flex items-center justify-between gap-2 border-b border-violet-500/20 pb-1.5">
+                                <span class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-violet-300">
+                                    <span>📋</span>
+                                    <span>Plan de series y esfuerzo</span>
+                                </span>
+                            </div>
+
+                            <!-- Desglose por bloques estructurados (ej: 2x6 con RIR 1) -->
+                            <div
+                                v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length"
+                                class="grid grid-cols-1 sm:grid-cols-2 gap-1.5"
+                            >
+                                <div
                                     v-for="(block, i) in parseEsfuerzoBlocksActive(store.currentEjercicio.notas)"
                                     :key="i"
-                                    class="obs-pill text-[10px] sm:text-xs font-black"
+                                    class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border text-xs"
                                     :class="esfuerzoBlockClass(block)"
                                 >
-                                    {{ block.series }}×{{ block.reps }}
-                                    <span class="opacity-75">{{ esfuerzoBlockLabel(block) }}</span>
+                                    <span class="font-bold text-white flex items-center gap-1.5">
+                                        <span class="text-violet-400 font-black">⚡</span>
+                                        {{ block.series }} {{ block.series === 1 ? 'serie' : 'series' }} × {{ block.reps }} reps
+                                    </span>
+                                    <span class="font-black">
+                                        con {{ esfuerzoBlockLabel(block) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Nota textual adicional (Rest-pause, técnicas, etc.) o completa si no coincide con el regex -->
+                            <div
+                                v-if="!parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length || extraNotasText(store.currentEjercicio.notas)"
+                                class="text-[11px] text-gray-300 flex items-start gap-1.5 pt-0.5"
+                            >
+                                <span class="text-amber-400 font-bold shrink-0">ℹ</span>
+                                <span class="font-medium">
+                                    {{ extraNotasText(store.currentEjercicio.notas) || store.currentEjercicio.notas }}
                                 </span>
-                            </template>
+                            </div>
                         </div>
                     </div>
 
@@ -431,12 +465,13 @@
                         </div>
                     </section>
 
-                    <!-- Referencia del ejercicio: última vez + recomendación -->
+                    <!-- Referencia del ejercicio: última vez (mínimo y máximo) + recomendación -->
                     <div
                         v-if="lastExerciseData && lastExerciseData.encontrado"
-                        class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-2.5 sm:p-3 space-y-1 text-xs"
+                        class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-2.5 sm:p-3 space-y-2 text-xs"
+                        data-testid="last-exercise-card"
                     >
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center justify-between gap-2 flex-wrap border-b border-violet-500/20 pb-1.5">
                             <span class="text-[10px] font-black uppercase tracking-[0.14em] text-violet-200 flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -447,27 +482,68 @@
                                 {{ lastExerciseData.fecha }}
                             </span>
                         </div>
-                        <p class="text-xs sm:text-sm font-bold text-white tabular-nums">
-                            Top:
-                            <span class="text-violet-200">{{ formatPeso(lastExerciseData.peso_top) }} kg</span>
-                            <span class="text-gray-500 mx-1">×</span>
-                            <span class="text-emerald-200">{{ lastExerciseData.reps_en_peso_top }} reps</span>
-                            <span
-                                v-if="lastExerciseData.ultimo_esfuerzo"
-                                class="ml-1.5 obs-pill text-[9px]"
-                                :class="
-                                    lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
-                                        ? 'obs-pill-violet'
-                                        : 'obs-pill-orange'
-                                "
+
+                        <!-- Métricas de Peso Mínimo y Máximo -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <!-- Peso Mínimo -->
+                            <div
+                                class="p-2 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex flex-col justify-between"
+                                data-testid="last-exercise-min"
                             >
-                                {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }}
-                                {{ lastExerciseData.ultimo_esfuerzo.valor }}
-                            </span>
-                        </p>
+                                <span class="text-[9px] uppercase tracking-wider font-black text-cyan-300 block mb-0.5 flex items-center gap-1">
+                                    <span>🔻</span> Mínimo
+                                </span>
+                                <div class="flex items-baseline gap-1 text-white font-bold tabular-nums flex-wrap">
+                                    <span class="text-sm sm:text-base font-black text-cyan-200">
+                                        {{ formatPeso(lastExerciseData.peso_min ?? lastExerciseData.peso_top ?? 0) }} kg
+                                    </span>
+                                    <span
+                                        v-if="(lastExerciseData.reps_en_peso_min ?? lastExerciseData.reps_en_peso_top) != null"
+                                        class="text-[11px] text-gray-400"
+                                    >
+                                        × {{ lastExerciseData.reps_en_peso_min ?? lastExerciseData.reps_en_peso_top }} reps
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Peso Máximo (Top) -->
+                            <div
+                                class="p-2 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] flex flex-col justify-between"
+                                data-testid="last-exercise-max"
+                            >
+                                <div class="flex items-center justify-between gap-1 mb-0.5">
+                                    <span class="text-[9px] uppercase tracking-wider font-black text-emerald-300 flex items-center gap-1">
+                                        <span>🔺</span> Máximo (Top)
+                                    </span>
+                                    <span
+                                        v-if="lastExerciseData.ultimo_esfuerzo"
+                                        class="obs-pill text-[9px] font-black shrink-0"
+                                        :class="
+                                            lastExerciseData.ultimo_esfuerzo.tipo === 'rir'
+                                                ? 'obs-pill-violet'
+                                                : 'obs-pill-orange'
+                                        "
+                                    >
+                                        {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                    </span>
+                                </div>
+                                <div class="flex items-baseline gap-1 text-white font-bold tabular-nums flex-wrap">
+                                    <span class="text-sm sm:text-base font-black text-emerald-200">
+                                        {{ formatPeso(lastExerciseData.peso_max ?? lastExerciseData.peso_top ?? 0) }} kg
+                                    </span>
+                                    <span
+                                        v-if="(lastExerciseData.reps_en_peso_max ?? lastExerciseData.reps_en_peso_top) != null"
+                                        class="text-[11px] text-gray-400"
+                                    >
+                                        × {{ lastExerciseData.reps_en_peso_max ?? lastExerciseData.reps_en_peso_top }} reps
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         <p
                             v-if="recomendacion"
-                            class="text-[11px] sm:text-xs flex items-start gap-1.5"
+                            class="text-[11px] sm:text-xs flex items-start gap-1.5 pt-0.5"
                             :class="recomendacion.colorClass"
                         >
                             <span class="font-black">{{ recomendacion.icon }}</span>
@@ -475,7 +551,7 @@
                                 <span class="font-bold">Sugerencia:</span>
                                 {{ recomendacion.mensaje }}
                                 <span
-                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== lastExerciseData.peso_top"
+                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData.peso_max ?? lastExerciseData.peso_top)"
                                     class="font-black tabular-nums"
                                 >
                                     ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
@@ -838,7 +914,8 @@ watch(
         lastExerciseData.value = null;
         const token = ++lastExerciseFetchToken;
         try {
-            const { data } = await window.axios.get('/api/historial/ultimo', {
+            const client = window?.axios || axios;
+            const { data } = await client.get('/api/historial/ultimo', {
                 params: { ejercicio: ej.nombre },
             });
             if (token !== lastExerciseFetchToken) return;
@@ -1063,6 +1140,18 @@ const parseEsfuerzoBlocksActive = (notas) => {
     return blocks;
 };
 
+// Obtiene texto descriptivo adicional de notas que no sea la parte de series/RIR/RPE
+const extraNotasText = (notas) => {
+    if (!notas) return '';
+    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    const cleaned = String(notas)
+        .replace(re, '')
+        .replace(/^\s*\+\s*/g, '')
+        .replace(/\s*\+\s*$/g, '')
+        .trim();
+    return cleaned;
+};
+
 // Retrocompat: alias al parser nuevo.
 const parseRirBlocksActive = (notas) => parseEsfuerzoBlocksActive(notas);
 
@@ -1092,6 +1181,7 @@ watch(
     (isOpen) => {
         if (isOpen) {
             wakeLock.requestWakeLock();
+            store.refreshNotasActuales();
         } else {
             wakeLock.releaseWakeLock();
         }

@@ -212,12 +212,25 @@ class UserRutinaController extends Controller
         $rutina = $userRutina->rutina;
         $dia = $request->input('dia') ?: ($userRutina->dia_actual ?: 'Día 1');
 
-        $rows = Rutina::where('nivel', $rutina->nivel)
-            ->where('modalidad', $rutina->modalidad)
+        $baseQuery = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad);
+
+        $rows = (clone $baseQuery)
             ->where('dia', $dia)
             ->orderBy('orden')
             ->orderBy('id')
             ->get(['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas']);
+
+        if ($rows->isEmpty()) {
+            $rows = (clone $baseQuery)
+                ->where(function ($q) use ($dia) {
+                    $q->where('dia', 'like', $dia . '%')
+                      ->orWhere('dia', 'like', '%' . $dia . '%');
+                })
+                ->orderBy('orden')
+                ->orderBy('id')
+                ->get(['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas']);
+        }
 
         return response()->json([
             'dia' => $dia,

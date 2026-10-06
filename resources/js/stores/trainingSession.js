@@ -140,16 +140,19 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         tickInterval = null;
     };
 
+    const isActive = computed(() => !!session.value.id && !session.value.endedAt);
+
     // Si arranca con una sesion restaurada desde localStorage, ya hay que
     // empezar a contar el tiempo (no a partir de ahora, sino desde startedAt).
     if (session.value.id && !session.value.endedAt) {
         startTick();
+        if (isBrowser) {
+            refreshNotasActuales();
+        }
     }
 
     // Persistir automaticamente cada vez que cambia.
     watch(session, (value) => saveToStorage(value), { deep: true });
-
-    const isActive = computed(() => !!session.value.id && !session.value.endedAt);
 
     const currentEjercicio = computed(() => {
         if (!isActive.value) return null;
@@ -622,7 +625,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
      * pisa los `sets` ya cargados ni los cursores (currentEjercicioIndex,
      * series_completadas).
      */
-    const refreshNotasActuales = async () => {
+    async function refreshNotasActuales() {
         if (!isActive.value) return { refreshed: 0, total: 0 };
         const dia = session.value.dia;
         if (!dia) return { refreshed: 0, total: 0 };
@@ -641,14 +644,15 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             const pool = [...list];
             let refreshed = 0;
             session.value.ejercicios.forEach((ej, idx) => {
-                const matchIdx = pool.findIndex(
-                    (r) => r.nombre === ej.nombre && (r.notas ?? null) !== (ej.notas ?? null)
-                );
+                const matchIdx = pool.findIndex((r) => r.nombre === ej.nombre);
                 if (matchIdx >= 0) {
                     const fresh = pool[matchIdx];
+                    if ((fresh.notas ?? null) !== (ej.notas ?? null) || !ej.notas) {
+                        refreshed++;
+                    }
                     session.value.ejercicios[idx] = {
                         ...ej,
-                        notas: fresh.notas ?? null,
+                        notas: fresh.notas ?? ej.notas ?? null,
                         // refrescamos también la metadata liviana por si el trainer la cambió
                         series_objetivo: fresh.series || ej.series_objetivo,
                         reps_min: fresh.reps_min || ej.reps_min,
@@ -657,7 +661,6 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                         superserie_grupo: fresh.superserie_grupo ?? ej.superserie_grupo,
                     };
                     pool.splice(matchIdx, 1);
-                    refreshed++;
                 }
             });
             return { refreshed, total: session.value.ejercicios.length };

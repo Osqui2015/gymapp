@@ -1362,6 +1362,7 @@ const abrirModoEntrenamiento = async () => {
                     reps_max: f.reps_max,
                     descanso_min: f.descanso_min,
                     superserie_grupo: f.superserie_grupo,
+                    notas: f.notas || null,
                 });
             }
             exercisesMap.get(f.ejercicio_nombre).series_objetivo += 1;

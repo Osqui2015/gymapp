@@ -452,4 +452,84 @@ describe('ActiveWorkoutModal', () => {
             expect(wrapper.find('[data-testid="media-next"]').exists()).toBe(false);
         });
     });
+
+    describe('Prescripción y notas de esfuerzo (RIR / series)', () => {
+        it('muestra el desglose de prescripción en la columna izquierda y en SetConfigCard', async () => {
+            store.start({
+                rutina_nombre: 'Personalizada 3 Días',
+                dia: 'Día 1 (Torso)',
+                ejercicios: [
+                    {
+                        nombre: 'Press de banca',
+                        series_objetivo: 4,
+                        reps_min: '4',
+                        reps_max: '6',
+                        descanso_min: 2,
+                        notas: '2x6 RIR 1 + 2x4 RIR 0',
+                    },
+                ],
+            });
+
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+
+            // 1. En la columna izquierda debe existir el box de prescripción
+            const prescripcionBox = wrapper.find('[data-testid="ejercicio-prescripcion-box"]');
+            expect(prescripcionBox.exists()).toBe(true);
+            expect(prescripcionBox.text()).toContain('2 series × 6 reps');
+            expect(prescripcionBox.text()).toContain('RIR 1');
+            expect(prescripcionBox.text()).toContain('2 series × 4 reps');
+            expect(prescripcionBox.text()).toContain('RIR 0');
+
+            // 2. En SetConfigCard debe mostrar el banner de plan
+            const planBanner = wrapper.find('[data-testid="set-plan-banner"]');
+            expect(planBanner.exists()).toBe(true);
+            expect(planBanner.text()).toContain('2x6 RIR 1 + 2x4 RIR 0');
+            expect(planBanner.text()).toContain('Serie #1: 6 reps');
+
+            // 3. El banner de esfuerzo target debe indicar el objetivo para la Serie #1
+            const esfuerzoBanner = wrapper.find('[data-testid="esfuerzo-target-banner"]');
+            expect(esfuerzoBanner.exists()).toBe(true);
+            expect(esfuerzoBanner.text()).toContain('Objetivo Serie #1: 6 reps con RIR 1');
+        });
+
+        it('muestra peso mínimo y máximo en el card de última vez', async () => {
+            const axiosModule = await import('axios');
+            const fakeUltimoData = {
+                encontrado: true,
+                fecha: '2026-10-01',
+                peso_min: 40,
+                reps_en_peso_min: 8,
+                peso_max: 60,
+                reps_en_peso_max: 6,
+                ultimo_esfuerzo: { tipo: 'rir', valor: 1 },
+            };
+            axiosModule.default.get = vi.fn().mockImplementation((url) => {
+                if (String(url).includes('/api/historial/ultimo')) {
+                    return Promise.resolve({ data: fakeUltimoData });
+                }
+                return Promise.resolve({ data: {} });
+            });
+            window.axios = axiosModule.default;
+
+            store.start({
+                rutina_nombre: 'Test',
+                dia: 'Día 1',
+                ejercicios: [{ nombre: 'Press de banca', series_objetivo: 3 }],
+            });
+
+            const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
+            await new Promise((r) => setTimeout(r, 20));
+            await wrapper.vm.$nextTick();
+
+            const card = wrapper.find('[data-testid="last-exercise-card"]');
+            expect(card.exists()).toBe(true);
+            const minBox = wrapper.find('[data-testid="last-exercise-min"]');
+            expect(minBox.text()).toContain('40 kg');
+            expect(minBox.text()).toContain('8 reps');
+            const maxBox = wrapper.find('[data-testid="last-exercise-max"]');
+            expect(maxBox.text()).toContain('60 kg');
+            expect(maxBox.text()).toContain('6 reps');
+            expect(maxBox.text()).toContain('RIR 1');
+        });
+    });
 });
