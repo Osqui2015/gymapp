@@ -1351,7 +1351,15 @@ const formattedActiveTime = computed(() => {
 });
 
 const abrirModoEntrenamiento = async () => {
+    if (session.isActive && (!session.session.ejercicios || session.session.ejercicios.length === 0)) {
+        session.discard();
+    }
+
     if (!session.isActive) {
+        if (!filasSerie.value.length && rutinaStore.seleccionada) {
+            await fetchRutinasDelDia();
+        }
+
         const exercisesMap = new Map();
         filasSerie.value.forEach((f) => {
             if (!exercisesMap.has(f.ejercicio_nombre)) {
@@ -1370,22 +1378,24 @@ const abrirModoEntrenamiento = async () => {
 
         const ejerciciosList = Array.from(exercisesMap.values());
 
-        session.start({
-            rutina_nombre: getRutinaNombre(),
-            dia: diaActual.value,
-            ejercicios: ejerciciosList,
-        });
-
-        try {
-            await axios.post('/api/sesiones/iniciar', {
-                uuid: session.session.id,
+        if (ejerciciosList.length > 0) {
+            session.start({
                 rutina_nombre: getRutinaNombre(),
                 dia: diaActual.value,
-                started_at: session.session.startedAt,
-                series_totales: filasSerie.value.length,
+                ejercicios: ejerciciosList,
             });
-        } catch (e) {
-            console.warn('Sesión iniciada offline:', e);
+
+            try {
+                await axios.post('/api/sesiones/iniciar', {
+                    uuid: session.session.id,
+                    rutina_nombre: getRutinaNombre(),
+                    dia: diaActual.value,
+                    started_at: session.session.startedAt,
+                    series_totales: filasSerie.value.length,
+                });
+            } catch (e) {
+                console.warn('Sesión iniciada offline:', e);
+            }
         }
     }
     showActiveWorkoutModal.value = true;
@@ -1549,7 +1559,15 @@ const construirFilasSerie = (rutinasDelDia) => {
             .map((r) => [`${r.ejercicio_nombre}-${r.series_numero}`, r])
     );
 
-    const filteredRutinas = rutinasDelDia.filter((r) => r.dia === diaActual.value);
+    const matchDay = (rDia, targetDia) => {
+        if (!rDia || !targetDia) return false;
+        if (rDia === targetDia) return true;
+        const a = rDia.trim().toLowerCase();
+        const b = targetDia.trim().toLowerCase();
+        return a === b || a.startsWith(b) || b.startsWith(a);
+    };
+
+    const filteredRutinas = rutinasDelDia.filter((r) => matchDay(r.dia, diaActual.value));
     const blocks = [];
     const processedSuperseries = new Set();
 
@@ -1666,6 +1684,17 @@ const fetchRutinasDelDia = async () => {
         const response = await axios.get('/api/rutinas', { params: { nivel, modalidad } });
         const diasUnicos = [...new Set(response.data.map((r) => r.dia))].sort();
         todosLosDias.value = diasUnicos;
+
+        if (diasUnicos.length > 0 && !diasUnicos.includes(diaActual.value)) {
+            const match = diasUnicos.find((d) =>
+                d.toLowerCase().startsWith(diaActual.value.toLowerCase()) ||
+                diaActual.value.toLowerCase().startsWith(d.toLowerCase())
+            );
+            if (match) {
+                diaActual.value = match;
+            }
+        }
+
         await fetchHistorialRutina();
         construirFilasSerie(response.data);
         cargarTrend30d();
@@ -1917,7 +1946,7 @@ onMounted(async () => {
     await fetchUserRutina();
     if (rutinaStore.seleccionada) {
         await fetchHistorialRutina();
-        fetchRutinasDelDia();
+        await fetchRutinasDelDia();
     }
     await cargarDashboardToday();
 

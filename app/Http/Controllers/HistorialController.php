@@ -391,6 +391,8 @@ class HistorialController extends Controller
 
         $data = $request->validate([
             'ejercicio' => 'required|string|max:255',
+            'dia' => 'nullable|string|max:255',
+            'rutina_nombre' => 'nullable|string|max:255',
         ]);
 
         $nombre = trim($data['ejercicio']);
@@ -398,18 +400,62 @@ class HistorialController extends Controller
             return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
         }
 
-        // Tomamos la fecha maxima en la que hay sets del ejercicio.
-        $ultimaFecha = Historial::where('user_id', $user->id)
+        $queryBase = Historial::where('user_id', $user->id)
             ->where('ejercicio_nombre', $nombre)
-            ->where('completado', true)
+            ->where('completado', true);
+
+        // Si se especificó rutina_nombre, filtramos preferentemente por esa rutina
+        if (! empty($data['rutina_nombre'])) {
+            $rutinaQuery = (clone $queryBase)->where('rutina_nombre', $data['rutina_nombre']);
+            if ($rutinaQuery->exists()) {
+                $queryBase = $rutinaQuery;
+            }
+        }
+
+        // Si se especificó día, priorizamos el historial correspondiente a ese día específico
+        // (por ejemplo si el mismo ejercicio existe en Día 1 y en Día 3, cada día tiene su propio récord)
+        if (! empty($data['dia'])) {
+            $diaParam = trim($data['dia']);
+            $diaQuery = (clone $queryBase)->where(function ($q) use ($diaParam) {
+                $q->where('dia', $diaParam)
+                  ->orWhere('dia', 'like', $diaParam . '%')
+                  ->orWhere('dia', 'like', '%' . $diaParam . '%');
+            });
+            if ($diaQuery->exists()) {
+                $queryBase = $diaQuery;
+            }
+        }
+
+        // Buscamos la fecha más reciente:
+        // 1. Priorizamos fechas que tengan series efectivas CON peso > 0
+        $ultimaFecha = (clone $queryBase)
+            ->where(function ($q) {
+                $q->whereNull('tipo_serie')
+                  ->orWhere('tipo_serie', '!=', 'calentamiento');
+            })
+            ->where('peso', '>', 0)
             ->max('fecha');
+
+        // 2. Si no hay con peso > 0 (ej. ejercicios de peso corporal), tomamos cualquier fecha con series efectivas
+        if (! $ultimaFecha) {
+            $ultimaFecha = (clone $queryBase)
+                ->where(function ($q) {
+                    $q->whereNull('tipo_serie')
+                      ->orWhere('tipo_serie', '!=', 'calentamiento');
+                })
+                ->max('fecha');
+        }
+
+        // 3. Fallback: cualquier fecha completada
+        if (! $ultimaFecha) {
+            $ultimaFecha = (clone $queryBase)->max('fecha');
+        }
 
         if (! $ultimaFecha) {
             return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
         }
 
-        $series = Historial::where('user_id', $user->id)
-            ->where('ejercicio_nombre', $nombre)
+        $series = (clone $queryBase)
             ->where('fecha', $ultimaFecha)
             ->orderBy('series_numero')
             ->get(['peso', 'reps_realizadas', 'tipo_serie', 'esfuerzo_tipo', 'esfuerzo_valor', 'series_numero']);
@@ -418,12 +464,13 @@ class HistorialController extends Controller
             return response()->json(['encontrado' => false, 'ejercicio' => $nombre]);
         }
 
-        // Calculamos el peso top y peso mínimo entre las series EFECTIVAS
+        // Calculamos el peso top y peso mínimo EXCLUSIVAMENTE entre las series EFECTIVAS (excluyendo calentamiento)
         $efectivas = $series->filter(function ($s) {
-            $tipo = strtolower((string) ($s->tipo_serie ?? 'efectiva'));
-            return $tipo === '' || $tipo === 'efectiva';
+            $tipo = strtolower(trim((string) ($s->tipo_serie ?? 'efectiva')));
+            return $tipo !== 'calentamiento';
         });
 
+        // Solo si no hubo ninguna serie efectiva en ese día caemos a todas
         if ($efectivas->isEmpty()) {
             $efectivas = $series;
         }

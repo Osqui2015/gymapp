@@ -18,11 +18,11 @@
 -->
 <template>
     <section
-        class="obs-card-elevated p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 shadow-[0_12px_40px_rgba(0,0,0,0.5)] relative"
+        class="obs-card-elevated p-3.5 sm:p-5 space-y-3 sm:space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.5)] relative"
         :data-testid="`set-config-card-${ejercicioIndex}`"
     >
         <!-- Header: label + selector de tipo de serie -->
-        <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-3 flex-wrap gap-2">
+        <div class="flex items-center justify-between border-b border-[var(--color-obsidian-border)] pb-2.5 flex-wrap gap-2">
             <span class="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-gray-300 min-w-0">
                 <span
                     class="w-2 h-2 rounded-full shrink-0"
@@ -37,7 +37,7 @@
                         Calentamiento #{{ calentamientoNumero }}
                     </template>
                     <template v-else>
-                        Serie #{{ serieNumero }}
+                        Serie #{{ serieNumero }} de {{ ejercicio.series_objetivo || serieNumero }}
                     </template>
                 </span>
                 <span
@@ -49,14 +49,14 @@
             </span>
 
             <!-- Selector de Tipo de Serie -->
-            <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-1 text-[10px] sm:text-xs font-bold border border-[var(--color-obsidian-border)]">
+            <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold border border-[var(--color-obsidian-border)]">
                 <button
                     v-for="tipo in tiposSerie"
                     :key="tipo.id"
                     type="button"
                     @click="form.tipo_serie = tipo.id"
                     :class="[
-                        'px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap',
+                        'px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap',
                         form.tipo_serie === tipo.id
                             ? tipo.activeClass
                             : 'text-gray-400 hover:text-white',
@@ -67,55 +67,105 @@
             </div>
         </div>
 
+        <!-- Tracker visual de series del ejercicio con detalle de objetivo por serie -->
+        <div
+            v-if="Number(ejercicio.series_objetivo) > 0"
+            class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5"
+            data-testid="sets-progress-tracker"
+        >
+            <div
+                v-for="idx in Number(ejercicio.series_objetivo)"
+                :key="idx"
+                class="flex-1 min-w-[55px] py-1 px-1 rounded-xl text-center border text-[10px] sm:text-[11px] font-black transition-all flex flex-col items-center justify-center gap-0.5 select-none"
+                :class="[
+                    idx < serieNumero
+                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                        : idx === serieNumero && form.tipo_serie !== 'calentamiento'
+                          ? 'bg-violet-600/30 border-violet-500 text-white shadow-[0_0_12px_rgba(139,92,246,0.25)] ring-1 ring-violet-400'
+                          : 'bg-[var(--color-obsidian-surface)] border-[var(--color-obsidian-border)] text-gray-500'
+                ]"
+            >
+                <div class="flex items-center gap-1">
+                    <span v-if="idx < serieNumero" class="text-emerald-400">✓</span>
+                    <span v-else-if="idx === serieNumero && form.tipo_serie !== 'calentamiento'" class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+                    <span>Serie {{ idx }}</span>
+                </div>
+                <span
+                    v-if="getTargetForSetIndex(idx)"
+                    class="text-[9px] font-black tabular-nums tracking-tight leading-none"
+                    :class="[
+                        idx < serieNumero
+                            ? 'text-emerald-400/80'
+                            : idx === serieNumero && form.tipo_serie !== 'calentamiento'
+                              ? 'text-violet-200'
+                              : 'text-gray-400'
+                    ]"
+                >
+                    {{ getTargetForSetIndex(idx).reps }}r · {{ getTargetForSetIndex(idx).tipo === 'fallo' ? 'FALLO' : 'RIR ' + getTargetForSetIndex(idx).valor }}
+                </span>
+            </div>
+        </div>
+
         <!-- Nombre del ejercicio (header prominente cuando se muestra; clave
              en superseries para identificar cada card sin mirar la col izq) -->
         <div
             v-if="showExerciseName"
-            class="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/25"
+            class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/25"
             :data-testid="`set-card-name-${ejercicioIndex}`"
         >
-            <span class="w-2 h-2 rounded-full bg-violet-400 shrink-0"></span>
-            <span
-                class="text-xs sm:text-sm font-black text-white truncate uppercase tracking-tight"
-                :title="ejercicio.nombre"
-            >
-                {{ ejercicio.nombre }}
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="w-2 h-2 rounded-full bg-violet-400 shrink-0"></span>
+                <span
+                    class="text-xs sm:text-sm font-black text-white truncate uppercase tracking-tight"
+                    :title="ejercicio.nombre"
+                >
+                    {{ ejercicio.nombre }}
+                </span>
+            </div>
+            <span class="text-[10px] sm:text-xs font-bold text-emerald-300 shrink-0">
+                {{ ejercicio.series_objetivo }}s × {{ repsObjetivoTexto }}
             </span>
         </div>
 
-        <!-- Prescripción o plan del ejercicio -->
+        <!-- Prescripción o plan del ejercicio (solo si hay notas personalizadas o target de esfuerzo) -->
         <div
-            v-if="ejercicio.notas"
-            class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left"
+            v-if="ejercicio.notas || targetEsfuerzo"
+            class="flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left"
             data-testid="set-plan-banner"
         >
-            <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-7 h-7 rounded-lg bg-violet-600/40 text-violet-200 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 rounded-lg bg-violet-600/40 text-violet-200 flex items-center justify-center shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </div>
                 <div class="flex flex-col min-w-0 leading-tight">
-                    <span class="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                        PLAN
+                    <span class="text-[9px] font-black uppercase tracking-wider text-violet-300">
+                        {{ ejercicio.notas ? 'PLAN Y NOTAS' : 'OBJETIVO PROGRAMADO' }}
                     </span>
-                    <span class="text-xs sm:text-sm font-bold text-white truncate" :title="ejercicio.notas">
-                        {{ ejercicio.notas }}
+                    <span class="text-xs sm:text-sm font-bold text-white truncate" :title="ejercicio.notas || `${ejercicio.series_objetivo} series de ${repsObjetivoTexto}`">
+                        {{ ejercicio.notas || `${ejercicio.series_objetivo} series programadas de ${repsObjetivoTexto}` }}
                     </span>
                 </div>
             </div>
             <span
                 v-if="targetEsfuerzo"
-                class="px-2.5 py-1 rounded-full border border-teal-500/50 bg-teal-500/15 text-teal-300 text-[10px] sm:text-xs font-black shrink-0 whitespace-nowrap"
+                class="px-2 py-0.5 rounded-full border border-teal-500/50 bg-teal-500/15 text-teal-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
             >
                 Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque?.reps }} reps · {{ targetLabel }}
             </span>
+            <span
+                v-else
+                class="px-2 py-0.5 rounded-full border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
+            >
+                {{ ejercicio.series_objetivo }} series × {{ repsObjetivoTexto }}
+            </span>
         </div>
 
-        <!-- Historial última vez (Mínimo / Máximo) del ejercicio -->
+        <!-- Historial última vez (Mínimo / Máximo) del ejercicio: solo se muestra en superseries para no duplicar el hero card -->
         <div
-            v-if="lastData && lastData.encontrado"
-            class="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/25 text-left"
+            v-if="showExerciseName && lastData && lastData.encontrado"
+            class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/25 text-left"
             :data-testid="`set-card-last-history-${ejercicioIndex}`"
         >
             <div class="flex items-center gap-1.5 text-gray-300 font-bold uppercase text-[9px] sm:text-[10px] tracking-wider shrink-0">
@@ -136,10 +186,10 @@
         </div>
 
         <!-- CARGA / PESO -->
-        <div class="space-y-2">
+        <div class="space-y-1.5">
             <div class="flex items-center justify-between">
                 <label class="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-gray-300 flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
                     </svg>
                     <span>CARGA / PESO</span>
@@ -147,33 +197,33 @@
                 <span class="text-[10px] sm:text-xs text-violet-300 font-bold">Toques rápidos (kg)</span>
             </div>
 
-            <div class="flex items-center gap-1.5 sm:gap-2">
-                <div class="grid grid-cols-3 gap-1 sm:gap-1.5 shrink-0">
+            <div class="flex items-center gap-1 sm:gap-1.5">
+                <div class="grid grid-cols-3 gap-1 shrink-0">
                     <button
                         type="button"
                         @click="ajustarPeso(-5)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         -5
                     </button>
                     <button
                         type="button"
                         @click="ajustarPeso(-2.5)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         -2.5
                     </button>
                     <button
                         type="button"
                         @click="ajustarPeso(-1)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         -1
                     </button>
                 </div>
 
                 <div
-                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-violet-500/30 rounded-2xl h-12 sm:h-13 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-violet-500/30 rounded-2xl h-10 sm:h-11 shadow-[0_0_16px_rgba(139,92,246,0.12)]"
                 >
                     <input
                         v-model.number="form.peso"
@@ -181,33 +231,33 @@
                         inputmode="decimal"
                         step="0.5"
                         min="0"
-                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
+                        class="w-full bg-transparent text-center text-xl sm:text-2xl font-black text-white outline-none tabular-nums"
                         placeholder="0"
                     />
                     <span
-                        class="absolute right-2.5 sm:right-3.5 text-[11px] sm:text-xs font-black text-violet-300 uppercase tracking-wider"
+                        class="absolute right-2 sm:right-3 text-[10px] sm:text-xs font-black text-violet-300 uppercase tracking-wider"
                     >kg</span>
                 </div>
 
-                <div class="grid grid-cols-3 gap-1 sm:gap-1.5 shrink-0">
+                <div class="grid grid-cols-3 gap-1 shrink-0">
                     <button
                         type="button"
                         @click="ajustarPeso(1)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         +1
                     </button>
                     <button
                         type="button"
                         @click="ajustarPeso(2.5)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         +2.5
                     </button>
                     <button
                         type="button"
                         @click="ajustarPeso(5)"
-                        class="w-9.5 sm:w-11 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9 sm:w-10 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         +5
                     </button>
@@ -216,70 +266,70 @@
         </div>
 
         <!-- REPETICIONES -->
-        <div class="space-y-2">
+        <div class="space-y-1.5">
             <div class="flex items-center justify-between">
                 <label class="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-gray-300 flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     <span>REPETICIONES</span>
                 </label>
-                <span class="text-[10px] sm:text-xs text-emerald-300 font-bold tabular-nums">
+                <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] sm:text-xs text-emerald-300 font-black tabular-nums">
                     <template v-if="targetEsfuerzo?.bloque?.reps">
-                        Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque.reps }} reps
+                        Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque.reps }} reps{{ targetEsfuerzo.tipo === 'fallo' ? ' (AL FALLO)' : ' (RIR ' + targetEsfuerzo.valor + ')' }}
                     </template>
                     <template v-else>
-                        Objetivo: {{ ejercicio.reps_min }}–{{ ejercicio.reps_max }}
+                        Objetivo: {{ repsObjetivoTexto }}
                     </template>
                 </span>
             </div>
 
-            <div class="flex items-center gap-1.5 sm:gap-2">
-                <div class="grid grid-cols-2 gap-1 sm:gap-1.5 shrink-0">
+            <div class="flex items-center gap-1 sm:gap-1.5">
+                <div class="grid grid-cols-2 gap-1 shrink-0">
                     <button
                         type="button"
                         @click="ajustarReps(-2)"
-                        class="w-10 sm:w-12 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9.5 sm:w-11 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         -2
                     </button>
                     <button
                         type="button"
                         @click="ajustarReps(-1)"
-                        class="w-10 sm:w-12 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9.5 sm:w-11 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-rose-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-rose-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         -1
                     </button>
                 </div>
 
                 <div
-                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-emerald-500/30 rounded-2xl h-12 sm:h-13 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                    class="flex-1 relative flex items-center justify-center bg-gradient-to-br from-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border-2 border-emerald-500/30 rounded-2xl h-10 sm:h-11 shadow-[0_0_16px_rgba(16,185,129,0.12)]"
                 >
                     <input
                         v-model.number="form.reps"
                         type="number"
                         inputmode="numeric"
                         min="0"
-                        class="w-full bg-transparent text-center text-2xl sm:text-3xl font-black text-white outline-none tabular-nums"
+                        class="w-full bg-transparent text-center text-xl sm:text-2xl font-black text-white outline-none tabular-nums"
                         placeholder="0"
                     />
                     <span
-                        class="absolute right-2.5 sm:right-3.5 text-[11px] sm:text-xs font-black text-emerald-300 uppercase tracking-wider"
+                        class="absolute right-2 sm:right-3 text-[10px] sm:text-xs font-black text-emerald-300 uppercase tracking-wider"
                     >reps</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-1 sm:gap-1.5 shrink-0">
+                <div class="grid grid-cols-2 gap-1 shrink-0">
                     <button
                         type="button"
                         @click="ajustarReps(1)"
-                        class="w-10 sm:w-12 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9.5 sm:w-11 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         +1
                     </button>
                     <button
                         type="button"
                         @click="ajustarReps(2)"
-                        class="w-10 sm:w-12 h-12 sm:h-13 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
+                        class="w-9.5 sm:w-11 h-10 sm:h-11 bg-[var(--color-obsidian-elevated)] hover:bg-emerald-500/20 active:scale-95 rounded-xl font-bold text-xs sm:text-sm text-emerald-300 cursor-pointer border border-[var(--color-obsidian-border)] transition-colors"
                     >
                         +2
                     </button>
@@ -288,17 +338,17 @@
         </div>
 
         <!-- Esfuerzo (RIR / RPE / AL FALLO) -->
-        <div class="bg-[var(--color-obsidian-surface)] rounded-2xl p-3.5 sm:p-4.5 border border-[var(--color-obsidian-border)] space-y-3 sm:space-y-3.5">
+        <div class="bg-[var(--color-obsidian-surface)] rounded-2xl p-2.5 sm:p-3.5 border border-[var(--color-obsidian-border)] space-y-2 sm:space-y-2.5">
             <div class="flex items-center justify-between">
                 <span class="text-xs sm:text-sm font-bold text-gray-300 flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <circle cx="12" cy="12" r="6" />
                         <circle cx="12" cy="12" r="2" />
                     </svg>
                     <span>Esfuerzo percibido:</span>
                 </span>
-                <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-1 text-[10px] sm:text-xs font-black border border-[var(--color-obsidian-border)]">
+                <div class="inline-flex rounded-xl bg-[var(--color-obsidian-elevated)] p-0.5 sm:p-1 text-[10px] sm:text-xs font-black border border-[var(--color-obsidian-border)]">
                     <button
                         type="button"
                         @click="selectEsfuerzoTipo('rir')"
@@ -307,7 +357,7 @@
                                 ? 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                                 : 'text-gray-400'
                         "
-                        class="px-2.5 sm:px-3 py-1 rounded-lg transition-colors cursor-pointer"
+                        class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-colors cursor-pointer"
                         data-testid="esfuerzo-tipo-rir"
                     >
                         RIR
@@ -320,7 +370,7 @@
                                 ? 'bg-amber-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                                 : 'text-gray-400'
                         "
-                        class="px-2.5 sm:px-3 py-1 rounded-lg transition-colors cursor-pointer"
+                        class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-colors cursor-pointer"
                         data-testid="esfuerzo-tipo-rpe"
                     >
                         RPE
@@ -333,7 +383,7 @@
                                 ? 'bg-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.4)]'
                                 : 'text-gray-400'
                         "
-                        class="px-2.5 sm:px-3 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                         data-testid="esfuerzo-tipo-fallo"
                         title="Al fallo absoluto — no podés sacar ni una rep más"
                     >
@@ -347,22 +397,27 @@
             <div
                 v-if="targetLabel"
                 :class="[
-                    'flex items-center gap-2 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider border',
+                    'flex items-center justify-between px-2.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider border gap-2',
                     targetEsfuerzo?.tipo === 'fallo'
                         ? 'bg-rose-500/15 border-rose-500/35 text-rose-200'
                         : 'bg-amber-500/15 border-amber-500/35 text-amber-200',
                 ]"
                 data-testid="esfuerzo-target-banner"
             >
-                <span class="text-base">🎯</span>
-                <span>Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo?.bloque?.reps ? targetEsfuerzo.bloque.reps + ' reps con ' : '' }}{{ targetLabel }}</span>
+                <div class="flex items-center gap-1.5 min-w-0 truncate">
+                    <span class="text-sm">🎯</span>
+                    <span class="truncate">Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo?.bloque?.reps ? targetEsfuerzo.bloque.reps + ' reps con ' : '' }}{{ targetLabel }}</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/30">
+                    Planificado
+                </span>
             </div>
 
             <!-- Selector numérico (solo RIR / RPE). Si el tipo es 'fallo', mostramos
                  un panel de confirmación en lugar de los botones numéricos. -->
             <div
                 v-if="form.esfuerzo_tipo !== 'fallo'"
-                class="grid grid-cols-6 gap-1.5 sm:gap-2 py-1"
+                class="grid grid-cols-6 gap-1 sm:gap-1.5 py-0.5"
             >
                 <button
                     v-for="val in esfuerzoOptions"
@@ -370,7 +425,7 @@
                     type="button"
                     @click="form.esfuerzo_valor = form.esfuerzo_valor === val ? null : val"
                     :class="[
-                        'relative w-full h-12.5 sm:h-14 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 py-1',
+                        'relative w-full h-10 sm:h-11 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 py-0.5',
                         form.esfuerzo_valor === val
                             ? form.esfuerzo_tipo === 'rir'
                                 ? 'bg-emerald-500 text-white shadow-[0_0_18px_rgba(16,185,129,0.5)] scale-105'
@@ -403,11 +458,11 @@
             <!-- Panel "AL FALLO" cuando el tipo seleccionado es fallo absoluto -->
             <div
                 v-else
-                class="rounded-xl bg-rose-500/10 border border-rose-500/40 p-3 sm:p-3.5 text-rose-200 space-y-1.5"
+                class="rounded-xl bg-rose-500/10 border border-rose-500/40 p-2.5 sm:p-3 text-rose-200 space-y-1"
                 data-testid="esfuerzo-fallo-panel"
             >
                 <div class="flex items-center gap-1.5">
-                    <span class="text-base">⚠</span>
+                    <span class="text-sm">⚠</span>
                     <span class="text-xs sm:text-sm font-black uppercase tracking-wider">Serie al fallo absoluto</span>
                 </div>
                 <p class="text-[10px] sm:text-xs leading-snug text-rose-300/90">
@@ -425,16 +480,16 @@
             </div>
         </div>
 
-        <!-- Botón gigante COMPLETAR SERIE (se oculta en superseries para usar el botón unificado global) -->
+        <!-- Botón COMPLETAR SERIE (se oculta en superseries para usar el botón unificado global) -->
         <template v-if="!hideSubmitButton">
             <button
                 v-if="!ejercicioCompleto"
                 type="button"
                 @click="onCompletar"
                 :data-testid="`btn-completar-${ejercicioIndex}`"
-                class="w-full py-4 sm:py-4.5 mt-2 sm:mt-3 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-white/10"
+                class="w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_8px_24px_var(--color-violet-glow)] flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/10"
             >
-                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -446,13 +501,13 @@
                     COMPLETAR CALENTAMIENTO #{{ calentamientoNumero }}
                 </span>
                 <span v-else>
-                    COMPLETAR SERIE #{{ serieNumero }}
+                    COMPLETAR SERIE #{{ serieNumero }} DE {{ ejercicio.series_objetivo || serieNumero }}
                 </span>
             </button>
 
             <div
                 v-else
-                class="w-full py-4 sm:py-4.5 mt-2 sm:mt-3 rounded-2xl bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2.5"
+                class="w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2"
             >
                 ✓ Ejercicio completo
             </div>
@@ -535,6 +590,15 @@ const ejercicioCompleto = computed(() => {
     return setsEfectivos.value.length >= Number(props.ejercicio.series_objetivo || 0);
 });
 
+const repsObjetivoTexto = computed(() => {
+    const min = props.ejercicio?.reps_min;
+    const max = props.ejercicio?.reps_max;
+    if (min != null && max != null && min !== '' && max !== '') {
+        return String(min) === String(max) ? `${min} reps` : `${min}–${max} reps`;
+    }
+    return `${min || max || 8} reps`;
+});
+
 const esfuerzoOptions = computed(() => {
     if (form.value.esfuerzo_tipo === 'rir') return [0, 1, 2, 3, 4, 5];
     if (form.value.esfuerzo_tipo === 'rpe') return [6, 7, 8, 9, 10];
@@ -566,6 +630,7 @@ const selectEsfuerzoTipo = (tipo) => {
 
 // Parsea bloques de esfuerzo desde las notas del ejercicio. Soporta:
 //   "2x6 RIR 1"     → { series:2, reps:6, tipo:'rir',   valor:1 }
+//   "2*6 RIP 1"     → { series:2, reps:6, tipo:'rir',   valor:1 }
 //   "2x6 RPE 8"     → { series:2, reps:6, tipo:'rpe',   valor:8 }
 //   "2x8 FALLO"     → { series:2, reps:8, tipo:'fallo', valor:null }
 //   "2x8 AL FALLO"  → idem
@@ -574,7 +639,7 @@ const rirBlocks = computed(() => {
     const notas = props.ejercicio?.notas;
     if (!notas) return [];
     const blocks = [];
-    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
     for (const m of String(notas).matchAll(re)) {
         if (m[3] !== undefined) {
             blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
@@ -587,18 +652,22 @@ const rirBlocks = computed(() => {
     return blocks;
 });
 
-// Devuelve el target de esfuerzo (RIR/RPE/FALLO) para la serie actual según los bloques.
-const targetEsfuerzo = computed(() => {
+// Devuelve el target de esfuerzo y repeticiones para cualquier número de serie dado (1-indexed)
+const getTargetForSetIndex = (idx) => {
     if (rirBlocks.value.length === 0) return null;
-    const setNum = setsEfectivos.value.length + 1; // 1-indexed
     let acumulado = 0;
     for (const b of rirBlocks.value) {
         acumulado += b.series;
-        if (setNum <= acumulado) {
-            return { tipo: b.tipo, valor: b.valor, bloque: b };
+        if (idx <= acumulado) {
+            return { tipo: b.tipo, valor: b.valor, reps: b.reps, bloque: b };
         }
     }
-    return null; // más allá del bloque prescrito, no forzamos target
+    return null;
+};
+
+// Devuelve el target de esfuerzo (RIR/RPE/FALLO) para la serie actual según los bloques.
+const targetEsfuerzo = computed(() => {
+    return getTargetForSetIndex(setsEfectivos.value.length + 1);
 });
 
 // Etiqueta legible del target actual: "RIR 1 (Óptimo)" | "RPE 8 (Medio)" | "AL FALLO" | null

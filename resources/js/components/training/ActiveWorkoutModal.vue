@@ -8,17 +8,17 @@
     >
         <!-- Top Bar: Cronómetro, Rutina y Controles (Kinetic Obsidian) -->
         <header
-            class="px-4 py-3 bg-[var(--color-obsidian-surface)]/95 border-b border-[var(--color-obsidian-border)] flex items-center justify-between gap-3 backdrop-blur-xl shrink-0"
+            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-[var(--color-obsidian-surface)]/95 border-b border-[var(--color-obsidian-border)] flex items-center justify-between gap-2.5 backdrop-blur-xl shrink-0"
         >
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                     type="button"
                     @click="$emit('minimize')"
-                    class="w-10 h-10 rounded-full bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-300 hover:text-white transition-colors cursor-pointer border border-[var(--color-obsidian-border)] flex items-center justify-center shrink-0"
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-300 hover:text-white transition-colors cursor-pointer border border-[var(--color-obsidian-border)] flex items-center justify-center shrink-0"
                     aria-label="Minimizar sesión"
                     title="Volver / Minimizar (continúa en segundo plano)"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path
                             stroke-linecap="round"
                             stroke-linejoin="round"
@@ -35,7 +35,7 @@
                         {{ store.session.dia }} · {{ store.session.rutina_nombre }}
                     </p>
                     <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-2xl font-mono font-black tracking-tight tabular-nums">
+                        <span class="text-xl sm:text-2xl font-mono font-black tracking-tight tabular-nums">
                             {{ formattedTime }}
                         </span>
                         <span v-if="store.isPaused" class="obs-pill obs-pill-orange">
@@ -50,13 +50,13 @@
                 <button
                     type="button"
                     @click="togglePause"
-                    class="p-2.5 rounded-xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-200 transition-all cursor-pointer"
+                    class="p-2 sm:p-2.5 rounded-xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-200 transition-all cursor-pointer"
                     :title="store.isPaused ? 'Reanudar cronómetro' : 'Pausar cronómetro'"
                     :aria-label="store.isPaused ? 'Reanudar' : 'Pausar'"
                 >
                     <svg
                         v-if="!store.isPaused"
-                        class="w-5 h-5 text-amber-400"
+                        class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                     >
@@ -64,7 +64,7 @@
                     </svg>
                     <svg
                         v-else
-                        class="w-5 h-5 text-emerald-400"
+                        class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                     >
@@ -76,7 +76,7 @@
                 <button
                     type="button"
                     @click="handleFinalizar"
-                    class="px-4 py-2.5 rounded-xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white text-xs font-black shadow-[0_8px_24px_var(--color-violet-glow)] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+                    class="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white text-xs font-black shadow-[0_8px_24px_var(--color-violet-glow)] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
                 >
                     <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
                         <rect x="5" y="5" width="14" height="14" rx="2.5" />
@@ -88,7 +88,7 @@
 
         <!-- Barra de Progreso Global -->
         <div
-            class="w-full bg-[var(--color-obsidian-surface)] border-b border-[var(--color-obsidian-border)] px-4 py-2.5 shrink-0 flex items-center justify-between gap-3 text-xs"
+            class="w-full bg-[var(--color-obsidian-surface)] border-b border-[var(--color-obsidian-border)] px-3 py-1.5 sm:px-4 sm:py-2 shrink-0 flex items-center justify-between gap-3 text-xs"
         >
             <span class="text-gray-300 font-semibold whitespace-nowrap">
                 Progreso:
@@ -97,7 +97,7 @@
                 <span class="text-gray-400">{{ store.totalSeriesObjetivo }}</span>
                 series
             </span>
-            <div class="flex-1 h-2 bg-[var(--color-obsidian-elevated)] rounded-full overflow-hidden mx-1 border border-[var(--color-obsidian-border)]">
+            <div class="flex-1 h-1.5 sm:h-2 bg-[var(--color-obsidian-elevated)] rounded-full overflow-hidden mx-1 border border-[var(--color-obsidian-border)]">
                 <div
                     class="h-full bg-gradient-to-r from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-emerald-400 transition-all duration-300"
                     :style="{ width: `${store.progresoPorcentaje}%` }"
@@ -109,16 +109,16 @@
         </div>
 
         <!-- Contenedor Principal Adaptable (Mobile + Web Responsive 2 Columnas) -->
-        <main class="flex-1 overflow-y-auto px-3 sm:px-4 py-3 sm:py-4 overscroll-contain">
+        <main class="flex-1 overflow-y-auto px-2.5 sm:px-4 py-2.5 sm:py-3.5 overscroll-contain">
             <div
                 v-if="store.currentEjercicio"
-                class="max-w-6xl xl:max-w-7xl mx-auto w-full flex flex-col md:grid md:grid-cols-12 gap-3 lg:gap-5 items-start"
+                class="max-w-6xl xl:max-w-7xl mx-auto w-full flex flex-col md:grid md:grid-cols-12 gap-2.5 sm:gap-3 lg:gap-4 items-start"
             >
                 <!-- COLUMNA IZQUIERDA (Desktop: col-span-5) -->
-                <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-3">
+                <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-2.5 sm:gap-3">
                     <!-- CARD HERO UNIFICADA DEL EJERCICIO (Visual + Ejercicio + Mínimo / Máximo + Sugerencia) -->
                     <section
-                        class="obs-card-elevated p-3 sm:p-4 rounded-2xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-surface)] shadow-xl relative"
+                        class="obs-card-elevated p-2.5 sm:p-3.5 rounded-2xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-surface)] shadow-xl relative"
                         data-testid="exercise-media"
                     >
                         <!-- Metadata invisible para accesibilidad y tests -->
@@ -132,7 +132,7 @@
                         <div class="flex items-start gap-3 sm:gap-4">
                             <!-- Demostración Visual con fondo blanco (Lado Izquierdo) -->
                             <div
-                                class="relative w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 rounded-2xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-inner cursor-pointer group"
+                                class="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-inner cursor-pointer group self-center"
                                 @click="gifHovered = !gifHovered"
                                 :title="gifHovered ? 'Animación activa (tocá para pausar)' : 'Tocá para animar'"
                             >
@@ -194,7 +194,10 @@
                                     <span
                                         class="px-2.5 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider"
                                     >
-                                        SERIE #{{ store.currentSerieNumero || 1 }}
+                                        SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
+                                        <template v-if="currentTargetEsfuerzoHero">
+                                            · 🎯 {{ currentTargetEsfuerzoHero.reps }}r @ {{ currentTargetEsfuerzoHero.tipo === 'fallo' ? 'FALLO' : 'RIR ' + currentTargetEsfuerzoHero.valor }}
+                                        </template>
                                     </span>
 
                                     <!-- Controles de Navegación de Ejercicio (Anterior / Contador / Siguiente) -->
@@ -253,68 +256,81 @@
                                 </div>
 
                                 <!-- Fila 2: Nombre del Ejercicio (o par de superserie) -->
-                                <div v-if="!superserieOrder" class="mt-1">
-                                    <h2 class="text-sm sm:text-base font-black text-white leading-tight truncate" :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre">
-                                        {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
-                                    </h2>
+                                <div v-if="!superserieOrder" class="mt-0.5">
+                                    <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                                        <h2 class="text-sm sm:text-base font-black text-white leading-tight truncate" :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre">
+                                            {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
+                                        </h2>
+                                        <!-- Objetivo compacto de Hoy -->
+                                        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 font-bold text-[11px] sm:text-xs shrink-0">
+                                            <span v-if="planSummaryHero">🎯 {{ planSummaryHero }}</span>
+                                            <span v-else>🎯 {{ store.currentEjercicio.series_objetivo }} series × {{ formatRepsTarget(store.currentEjercicio) }}</span>
+                                            <span v-if="store.currentEjercicio.descanso_min" class="text-emerald-400/40">·</span>
+                                            <span v-if="store.currentEjercicio.descanso_min" class="text-gray-300 font-semibold text-[10px]">⏱️ {{ store.currentEjercicio.descanso_min }}m</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div v-else class="flex items-center gap-1.5 mt-1 min-w-0">
-                                    <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/40">
-                                        ⚡ SUPERSERIE
-                                    </span>
-                                    <h2 class="text-xs sm:text-sm font-black text-white leading-tight truncate" :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`">
-                                        {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
-                                    </h2>
+                                <div v-else class="mt-0.5 min-w-0">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/40">
+                                            ⚡ SUPERSERIE
+                                        </span>
+                                        <h2 class="text-xs sm:text-sm font-black text-white leading-tight truncate" :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`">
+                                            {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
+                                        </h2>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px] sm:text-[11px]">
+                                        <span class="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
+                                            1. {{ superserieOrder.first.ejercicio.series_objetivo }}s × {{ formatRepsTarget(superserieOrder.first.ejercicio) }}
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
+                                            2. {{ superserieOrder.second.ejercicio.series_objetivo }}s × {{ formatRepsTarget(superserieOrder.second.ejercicio) }}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <!-- Fila 3: Bloques MÍNIMO y MÁXIMO (Última vez) -->
                                 <!-- Caso 1: Ejercicio individual -->
-                                <div
-                                    v-if="!superserieOrder"
-                                    class="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2"
-                                    data-testid="last-exercise-card"
-                                >
-                                    <!-- MÍNIMO -->
+                                <div v-if="!superserieOrder" class="mt-1">
                                     <div
-                                        class="p-1.5 sm:p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-cyan-500/25 flex flex-col justify-between"
-                                        data-testid="last-exercise-min"
+                                        class="grid grid-cols-2 gap-1.5"
+                                        data-testid="last-exercise-card"
                                     >
-                                        <div class="flex items-center gap-1 text-[9px] font-black text-teal-400 uppercase tracking-wider mb-0.5">
-                                            <svg class="w-3 h-3 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
-                                            </svg>
-                                            <span class="truncate">MÍNIMO</span>
-                                        </div>
-                                        <div class="text-xs sm:text-sm font-black text-white tabular-nums">
-                                            {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg
-                                        </div>
-                                        <div class="text-[10px] text-gray-400 tabular-nums">
-                                            x {{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps
-                                        </div>
-                                    </div>
-
-                                    <!-- MÁXIMO (TOP) -->
-                                    <div
-                                        class="p-1.5 sm:p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-fuchsia-500/25 flex flex-col justify-between"
-                                        data-testid="last-exercise-max"
-                                    >
-                                        <div class="flex items-center justify-between gap-1 mb-0.5">
-                                            <div class="flex items-center gap-1 text-[9px] font-black text-fuchsia-400 uppercase tracking-wider min-w-0">
-                                                <span class="text-[8px]">▲</span>
-                                                <span class="truncate">MÁXIMO (TOP)</span>
+                                        <!-- MÍNIMO -->
+                                        <div
+                                            class="px-2 py-1 rounded-xl bg-[var(--color-obsidian-surface)] border border-cyan-500/25 flex items-center justify-between gap-1"
+                                            data-testid="last-exercise-min"
+                                        >
+                                            <div class="flex items-center gap-1 text-[9px] font-black text-teal-400 uppercase shrink-0">
+                                                <svg class="w-2.5 h-2.5 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
+                                                </svg>
+                                                <span>MÍN</span>
                                             </div>
-                                            <span
-                                                v-if="lastExerciseData?.ultimo_esfuerzo"
-                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
-                                            >
-                                                {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
-                                            </span>
+                                            <div class="text-[11px] sm:text-xs font-black text-white tabular-nums text-right truncate">
+                                                {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg
+                                                <span class="text-[9px] text-gray-400 font-normal">({{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                            </div>
                                         </div>
-                                        <div class="text-xs sm:text-sm font-black text-white tabular-nums">
-                                            {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg
-                                        </div>
-                                        <div class="text-[10px] text-gray-400 tabular-nums">
-                                            x {{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps
+
+                                        <!-- MÁXIMO (TOP) -->
+                                        <div
+                                            class="px-2 py-1 rounded-xl bg-[var(--color-obsidian-surface)] border border-fuchsia-500/25 flex items-center justify-between gap-1"
+                                            data-testid="last-exercise-max"
+                                        >
+                                            <div class="flex items-center gap-1 text-[9px] font-black text-fuchsia-400 uppercase shrink-0">
+                                                <span>▲ TOP</span>
+                                                <span
+                                                    v-if="lastExerciseData?.ultimo_esfuerzo"
+                                                    class="px-1 py-0.2 rounded bg-violet-900/60 text-violet-300 text-[8px] font-black shrink-0"
+                                                >
+                                                    {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                                </span>
+                                            </div>
+                                            <div class="text-[11px] sm:text-xs font-black text-white tabular-nums text-right truncate">
+                                                {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg
+                                                <span class="text-[9px] text-gray-400 font-normal">({{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -602,10 +618,10 @@
                         </p>
                     </div>
 
-                    <!-- Lista de Series ya completadas en este ejercicio -->
+                    <!-- Lista de Series ya completadas en este ejercicio (Desktop) -->
                     <section
                         v-if="store.currentEjercicio?.sets?.length"
-                        class="obs-card p-3 space-y-2 max-h-48 overflow-y-auto"
+                        class="obs-card p-3 space-y-2 max-h-48 overflow-y-auto hidden md:block"
                     >
                         <div class="flex items-center justify-between">
                             <h3 class="text-[11px] font-black uppercase tracking-wider text-gray-300">
@@ -662,7 +678,7 @@
                 </div>
 
                 <!-- COLUMNA DERECHA (Desktop: col-span-7) Focus Card: Configurar Serie -->
-                <div class="w-full md:col-span-7 lg:col-span-7 flex flex-col gap-3">
+                <div class="w-full md:col-span-7 lg:col-span-7 flex flex-col gap-2.5 sm:gap-3">
                     <!-- Header explicativo cuando es superset -->
                     <div
                         v-if="superseriePartner && superserieOrder"
@@ -675,10 +691,6 @@
                                 Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
                             </p>
                             <p class="text-[11px] text-gray-400">
-                                <!-- Si estamos en el primero del par, hay que
-                                     decir "hacé X y seguí con Y". Si ya
-                                     estamos en el segundo, el orden ya pasó
-                                     y hay que reflejarlo. -->
                                 <template v-if="superserieOrder.currentRole === 'first'">
                                     Hacé
                                     <strong class="text-white">{{ superserieOrder.first.ejercicio.nombre }}</strong>
@@ -698,13 +710,73 @@
                     </div>
 
                     <!-- Cuando NO es superserie: una sola card -->
-                    <SetConfigCard
-                        v-if="!superseriePartner"
-                        :ejercicio="store.currentEjercicio"
-                        :ejercicio-index="store.session.currentEjercicioIndex"
-                        :last-data="lastExerciseData"
-                        @complete="onSetComplete"
-                    />
+                    <template v-if="!superseriePartner">
+                        <SetConfigCard
+                            :ejercicio="store.currentEjercicio"
+                            :ejercicio-index="store.session.currentEjercicioIndex"
+                            :last-data="lastExerciseData"
+                            @complete="onSetComplete"
+                        />
+
+                        <!-- En mobile: lista desplegable debajo de la botonera para no empujarla fuera de pantalla -->
+                        <div
+                            v-if="store.currentEjercicio?.sets?.length"
+                            class="md:hidden"
+                        >
+                            <details class="obs-card p-2 rounded-xl border border-[var(--color-obsidian-border)] group">
+                                <summary class="flex items-center justify-between text-xs font-bold text-gray-300 cursor-pointer list-none select-none px-1">
+                                    <span class="flex items-center gap-1.5">
+                                        <span class="text-emerald-400 font-black">✓</span>
+                                        <span>Series registradas de {{ store.currentEjercicio.nombre }} ({{ store.currentEjercicio.sets.length }})</span>
+                                    </span>
+                                    <span class="text-[10px] text-violet-400 group-open:rotate-180 transition-transform">▼</span>
+                                </summary>
+                                <div class="space-y-1 mt-2 pt-2 border-t border-[var(--color-obsidian-border)]">
+                                    <div
+                                        v-for="(s, idx) in store.currentEjercicio.sets"
+                                        :key="idx"
+                                        class="flex items-center justify-between px-2 py-1 rounded-lg bg-[var(--color-obsidian-surface)] text-[11px]"
+                                    >
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span
+                                                class="font-black tabular-nums"
+                                                :class="
+                                                    s.tipo_serie === 'calentamiento'
+                                                        ? 'text-indigo-300'
+                                                        : 'text-emerald-300'
+                                                "
+                                            >
+                                                <template v-if="s.tipo_serie === 'calentamiento'">
+                                                    Calentamiento {{ s.series_numero }}
+                                                </template>
+                                                <template v-else>
+                                                    #{{ s.series_numero }}
+                                                </template>
+                                            </span>
+                                            <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
+                                            <span class="text-gray-500">×</span>
+                                            <span class="font-black text-white tabular-nums">{{ s.reps }} reps</span>
+                                            <span
+                                                v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
+                                                class="obs-pill obs-pill-amber text-[9px]"
+                                            >
+                                                {{ s.tipo_serie }}
+                                            </span>
+                                            <span
+                                                v-if="s.esfuerzo_valor != null"
+                                                class="obs-pill obs-pill-neutral text-[9px]"
+                                            >
+                                                {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
+                                            </span>
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 font-mono tabular-nums">
+                                            {{ formatSetTime(s.completed_at) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </template>
 
                     <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile) + 1 solo botón de completar -->
                     <div
@@ -804,6 +876,34 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Estado de recuperación si por algún motivo no hay ejercicios activos cargados -->
+            <div
+                v-else
+                class="max-w-md mx-auto my-12 text-center p-6 rounded-2xl bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)]"
+            >
+                <div class="text-4xl mb-3">🏋️</div>
+                <h3 class="text-lg font-black text-white mb-2">No hay ejercicios activos en esta sesión</h3>
+                <p class="text-xs text-gray-400 mb-5">
+                    La sesión se inició antes de sincronizar los ejercicios del día.
+                </p>
+                <div class="flex items-center justify-center gap-3">
+                    <button
+                        type="button"
+                        @click="store.refreshNotasActuales"
+                        class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                        🔄 Sincronizar ejercicios
+                    </button>
+                    <button
+                        type="button"
+                        @click="store.discard(); $emit('minimize')"
+                        class="px-4 py-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] border border-[var(--color-obsidian-border)] text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                        Reiniciar sesión
+                    </button>
+                </div>
+            </div>
         </main>
     </div>
 </template>
@@ -853,6 +953,16 @@ const mediaEjercicio = computed(() => {
     const ejs = store.session.ejercicios || [];
     return ejs[mediaEjercicioIndex.value] || ejs[store.session.currentEjercicioIndex] || null;
 });
+
+const formatRepsTarget = (ej) => {
+    if (!ej) return '';
+    const min = ej.reps_min;
+    const max = ej.reps_max;
+    if (min != null && max != null && min !== '' && max !== '') {
+        return String(min) === String(max) ? `${min} reps` : `${min}–${max} reps`;
+    }
+    return `${min || max || 8} reps`;
+};
 
 async function loadEjercicioMedia(nombre) {
     if (!nombre) {
@@ -995,8 +1105,10 @@ watch(
         () => store.currentEjercicio?.nombre,
         () => superserieOrder.value?.first.ejercicio.nombre,
         () => superserieOrder.value?.second.ejercicio.nombre,
+        () => store.session?.dia,
+        () => store.session?.rutina_nombre,
     ],
-    async ([currentNombre, firstNombre, secondNombre]) => {
+    async ([currentNombre, firstNombre, secondNombre, dia, rutinaNombre]) => {
         if (!currentNombre) {
             lastExerciseData.value = null;
             lastExerciseDataFirst.value = null;
@@ -1006,12 +1118,16 @@ watch(
 
         const token = ++lastExerciseFetchToken;
         const client = window?.axios || axios;
+        const baseParams = {
+            dia: dia || undefined,
+            rutina_nombre: rutinaNombre || undefined,
+        };
 
         if (superserieOrder.value && firstNombre && secondNombre) {
             try {
                 const [res1, res2] = await Promise.all([
-                    client.get('/api/historial/ultimo', { params: { ejercicio: firstNombre } }),
-                    client.get('/api/historial/ultimo', { params: { ejercicio: secondNombre } }),
+                    client.get('/api/historial/ultimo', { params: { ...baseParams, ejercicio: firstNombre } }),
+                    client.get('/api/historial/ultimo', { params: { ...baseParams, ejercicio: secondNombre } }),
                 ]);
                 if (token !== lastExerciseFetchToken) return;
                 lastExerciseDataFirst.value = res1?.data || null;
@@ -1027,7 +1143,7 @@ watch(
         } else {
             try {
                 const { data } = await client.get('/api/historial/ultimo', {
-                    params: { ejercicio: currentNombre },
+                    params: { ...baseParams, ejercicio: currentNombre },
                 });
                 if (token !== lastExerciseFetchToken) return;
                 lastExerciseData.value = data || null;
@@ -1281,12 +1397,12 @@ const handleFinalizar = () => {
 };
 
 // Parsea bloques de esfuerzo desde notas (mismo formato que RutinaAcordeon.vue).
-//   "2x6 RIR 1" | "2x6 RPE 8" | "2x8 FALLO" | "2x8 AL FALLO TÉCNICO"
+//   "2x6 RIR 1" | "2*6 RIP 1" | "2x6 RPE 8" | "2x8 FALLO" | "2x8 AL FALLO TÉCNICO"
 //   → { series, reps, tipo:'rir'|'rpe'|'fallo', valor|null }
 const parseEsfuerzoBlocksActive = (notas) => {
     if (!notas) return [];
     const blocks = [];
-    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
     for (const m of String(notas).matchAll(re)) {
         if (m[3] !== undefined) {
             blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
@@ -1302,7 +1418,7 @@ const parseEsfuerzoBlocksActive = (notas) => {
 // Obtiene texto descriptivo adicional de notas que no sea la parte de series/RIR/RPE
 const extraNotasText = (notas) => {
     if (!notas) return '';
-    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
     const cleaned = String(notas)
         .replace(re, '')
         .replace(/^\s*\+\s*/g, '')
@@ -1324,6 +1440,38 @@ const esfuerzoBlockClass = (b) => {
     if (b.tipo === 'rir' && b.valor === 0) return 'bg-rose-500/25 text-rose-300 border border-rose-500/40';
     return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
 };
+
+const activeSetsEfectivos = computed(() => {
+    return (store.currentEjercicio?.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
+});
+
+const activeSerieNumero = computed(() => {
+    return activeSetsEfectivos.value + 1;
+});
+
+const rirBlocksHero = computed(() => {
+    return parseEsfuerzoBlocksActive(store.currentEjercicio?.notas);
+});
+
+const currentTargetEsfuerzoHero = computed(() => {
+    if (!rirBlocksHero.value || rirBlocksHero.value.length === 0) return null;
+    const setNum = activeSerieNumero.value;
+    let acumulado = 0;
+    for (const b of rirBlocksHero.value) {
+        acumulado += b.series;
+        if (setNum <= acumulado) {
+            return { tipo: b.tipo, valor: b.valor, reps: b.reps, bloque: b };
+        }
+    }
+    return null;
+});
+
+const planSummaryHero = computed(() => {
+    if (!rirBlocksHero.value || rirBlocksHero.value.length === 0) return null;
+    return rirBlocksHero.value
+        .map((b) => `${b.series}×${b.reps} ${b.tipo === 'fallo' ? 'FALLO' : 'RIR ' + b.valor}`)
+        .join(' + ');
+});
 
 onMounted(() => {
     if (props.open) {

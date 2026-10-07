@@ -215,6 +215,12 @@ class UserRutinaController extends Controller
         $baseQuery = Rutina::where('nivel', $rutina->nivel)
             ->where('modalidad', $rutina->modalidad);
 
+        if ($rutina->created_by) {
+            $baseQuery->where('created_by', $rutina->created_by);
+        } else {
+            $baseQuery->whereNull('created_by');
+        }
+
         $rows = (clone $baseQuery)
             ->where('dia', $dia)
             ->orderBy('orden')
@@ -266,8 +272,16 @@ class UserRutinaController extends Controller
         }
 
         $rutina = $userRutina->rutina;
-        $days = Rutina::where('nivel', $rutina->nivel)
-            ->where('modalidad', $rutina->modalidad)
+        $baseDaysQuery = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad);
+
+        if ($rutina->created_by) {
+            $baseDaysQuery->where('created_by', $rutina->created_by);
+        } else {
+            $baseDaysQuery->whereNull('created_by');
+        }
+
+        $days = $baseDaysQuery
             ->selectRaw('DISTINCT dia')
             ->orderBy('dia')
             ->pluck('dia')

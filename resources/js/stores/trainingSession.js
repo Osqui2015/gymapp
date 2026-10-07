@@ -91,6 +91,11 @@ const loadFromStorage = () => {
         const parsed = JSON.parse(raw);
         // Si termino, no restaurar.
         if (parsed.endedAt) return null;
+        // Si no tiene ejercicios válidos (sesión corrupta/vacía), limpiar y no restaurar.
+        if (!Array.isArray(parsed.ejercicios) || parsed.ejercicios.length === 0) {
+            localStorage.removeItem(STORAGE_KEY);
+            return null;
+        }
         return migrateSessionShape(parsed);
     } catch {
         return null;
@@ -234,24 +239,31 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
      */
     const start = ({ rutina_nombre, dia, ejercicios }) => {
         undoStack.value = [];
+        const parsedEjercicios = (ejercicios || []).map((e) => ({
+            nombre: e.ejercicio_nombre || e.nombre,
+            series_objetivo: Number(e.series_objetivo || e.series || 0),
+            reps_min: e.reps_min || '8',
+            reps_max: e.reps_max || '10',
+            descanso_min: Number(e.descanso_min ?? 1.5),
+            superserie_grupo: e.superserie_grupo || null,
+            notas: e.notas || null,
+            series_completadas: 0,
+            completed: false,
+            sets: [],
+        }));
+
+        if (parsedEjercicios.length === 0) {
+            console.warn('[trainingSession] Intento de iniciar sesión sin ejercicios ignorado.');
+            return false;
+        }
+
         session.value = {
             id: generateId(),
             startedAt: new Date().toISOString(),
             endedAt: null,
             rutina_nombre,
             dia,
-            ejercicios: (ejercicios || []).map((e) => ({
-                nombre: e.ejercicio_nombre || e.nombre,
-                series_objetivo: Number(e.series_objetivo || e.series || 0),
-                reps_min: e.reps_min || '8',
-                reps_max: e.reps_max || '10',
-                descanso_min: Number(e.descanso_min ?? 1.5),
-                superserie_grupo: e.superserie_grupo || null,
-                notas: e.notas || null,
-                series_completadas: 0,
-                completed: false,
-                sets: [],
-            })),
+            ejercicios: parsedEjercicios,
             currentEjercicioIndex: 0,
             currentSerieNumero: 1,
             currentCalentamientoNumero: 1,
@@ -261,6 +273,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             completedSets: [],
         };
         startTick();
+        return true;
     };
 
     /**
@@ -637,6 +650,27 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             const list = res?.data?.ejercicios;
             if (!Array.isArray(list) || list.length === 0) {
                 return { refreshed: 0, total: session.value.ejercicios.length };
+            }
+
+            // AUTO-CURACIÓN: Si la sesión activa quedó con 0 ejercicios
+            // (ej. snapshot corrupto o iniciada antes de cargar el día),
+            // populamos inmediatamente los ejercicios oficiales devueltos por el backend.
+            if (!session.value.ejercicios || session.value.ejercicios.length === 0) {
+                session.value.ejercicios = list.map((e) => ({
+                    nombre: e.nombre,
+                    series_objetivo: Number(e.series || 0),
+                    reps_min: e.reps_min || '8',
+                    reps_max: e.reps_max || '10',
+                    descanso_min: Number(e.descanso_min ?? 1.5),
+                    superserie_grupo: e.superserie_grupo || null,
+                    notas: e.notas || null,
+                    series_completadas: 0,
+                    completed: false,
+                    sets: [],
+                }));
+                session.value.currentEjercicioIndex = 0;
+                session.value.currentSerieNumero = 1;
+                return { refreshed: list.length, total: list.length };
             }
 
             // Index por nombre para matchear contra los ejercicios del store
