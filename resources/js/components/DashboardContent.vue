@@ -1,903 +1,5 @@
-<template>
-    <div
-        class="min-h-screen bg-[#090D16] text-gray-100 py-0 pb-28 md:py-6 md:pb-8 overflow-x-hidden"
-    >
-        <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
-
-        <!-- Indicador pull-to-refresh (mobile) -->
-        <div
-            v-show="pullOffset > 4 || isRefreshing"
-            :style="{ height: pullOffset + 'px' }"
-            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-md mx-auto"
-            aria-live="polite"
-            role="status"
-        >
-            <div
-                class="flex flex-col items-center gap-1 text-xs font-semibold text-gray-400"
-            >
-                <svg
-                    class="w-5 h-5 animate-spin text-[#6366F1]"
-                    v-if="isRefreshing"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                    ></circle>
-                    <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    ></path>
-                </svg>
-                <svg
-                    class="w-5 h-5 text-[#6366F1]"
-                    v-else
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                    />
-                </svg>
-                <span>{{ isRefreshing ? 'Actualizando…' : 'Deslizá hacia abajo' }}</span>
-            </div>
-        </div>
-
-        <template v-if="rutinaStore.seleccionada">
-            <!-- ============================================================ -->
-            <!-- MOBILE-FIRST: shell exacto del mockup Figma Kinetic Obsidian -->
-            <!-- ============================================================ -->
-            <div class="w-full">
-                <!-- BEGIN: TopBar (sticky) -->
-                <header
-                    class="sticky top-0 z-40 bg-[#090D16]/90 backdrop-blur-md px-5 pt-3 pb-3 border-b border-[#232F4D]/60 flex items-center justify-between"
-                >
-                    <!-- Brand + saludo -->
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex items-center justify-center shadow-lg shadow-[#6366F1]/25 ring-1 ring-white/20"
-                        >
-                            <span class="text-white font-extrabold text-xl tracking-tight">G</span>
-                        </div>
-                        <div>
-                            <span
-                                class="text-[11px] font-bold tracking-widest text-[#8B5CF6] uppercase"
-                            >
-                                {{ diaSemanaEs }}, {{ fechaCorta }}
-                            </span>
-                            <h1 class="text-base font-bold text-white flex items-center gap-1.5">
-                                ¡A entrenar, {{ userFirstName }}!
-                            </h1>
-                        </div>
-                    </div>
-                    <!-- Streak chip + bell -->
-                    <div class="flex items-center gap-2.5">
-                        <div
-                            v-if="stats.streak > 0"
-                            class="flex items-center gap-1.5 bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-3 py-1.5 rounded-full"
-                            title="Racha activa de entrenamientos"
-                        >
-                            <svg
-                                class="w-4 h-4 text-[#F59E0B] animate-pulse fill-current"
-                                viewbox="0 0 24 24"
-                            >
-                                <path
-                                    d="M12.7 1.8c-.4-.4-1.1-.3-1.3.2-.6 1.4-1.5 2.8-2.6 3.9C6.8 8.1 5 11.2 5 14.5 5 18.6 8.1 22 12 22s7-3.4 7-7.5c0-4.1-2.5-7.9-5-10.4-.6-.6-1-1.4-1.3-2.3zM12 20c-2.8 0-5-2.2-5-5 0-2.3 1.3-4.5 2.8-6.1.4-.4.8-.8 1.2-1.3.5 1.5 1.4 3 2.6 4.2 1.3 1.3 2.4 2.8 2.4 4.2 0 2.2-1.8 4-4 4z"
-                                ></path>
-                            </svg>
-                            <span class="text-xs font-black text-[#F59E0B]">{{ stats.streak }} DÍAS</span>
-                        </div>
-                        <button
-                            aria-label="Notificaciones"
-                            type="button"
-                            class="h-9 w-9 rounded-full bg-[#111726] border border-[#232F4D] flex items-center justify-center text-gray-300 hover:text-white transition-colors"
-                        >
-                            <svg
-                                class="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                viewbox="0 0 24 24"
-                            >
-                                <path
-                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                ></path>
-                            </svg>
-                        </button>
-                    </div>
-                </header>
-                <!-- END: TopBar -->
-
-                <!-- BEGIN: MainContent -->
-                <main class="px-4 pt-4 space-y-5 max-w-md md:max-w-5xl mx-auto w-full pb-32 md:pb-10">
-                    <!-- Active session banner -->
-                    <div
-                        v-if="session.isActive"
-                        class="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
-                    >
-                        <div
-                            class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"
-                        ></div>
-                        <div class="flex items-center gap-3">
-                            <span class="relative flex h-3.5 w-3.5">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
-                                ></span>
-                                <span
-                                    class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
-                                ></span>
-                            </span>
-                            <div>
-                                <p
-                                    class="text-sm font-black tracking-tight flex items-center gap-2"
-                                >
-                                    <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
-                                    <span
-                                        v-if="session.isPaused"
-                                        class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
-                                        >Pausado</span
-                                    >
-                                </p>
-                                <p class="text-xs text-emerald-200/80">
-                                    {{
-                                        session.currentEjercicio?.nombre ||
-                                        'Sesión iniciada'
-                                    }}
-                                    · {{ session.totalSeriesCompletadas }}/{{
-                                        session.totalSeriesObjetivo
-                                    }}
-                                    series
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="abrirModoEntrenamiento"
-                                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md active:scale-95 transition-all"
-                            >
-                                ⚡ Continuar
-                            </button>
-                            <button
-                                type="button"
-                                @click="descartarSesion"
-                                title="Descartar entrenamiento en curso"
-                                aria-label="Descartar entrenamiento en curso"
-                                class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-rose-500/30 text-gray-300 hover:text-rose-200 text-xs font-semibold border border-gray-700/50 hover:border-rose-500/50 transition-all"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- BEGIN: HeroCard (Principal Routine CTA) -->
-                    <section
-                        class="relative overflow-hidden rounded-3xl border border-[#8B5CF6]/30 p-5 shadow-xl shadow-[#1c1f38]/40"
-                        style="
-                            background: radial-gradient(
-                                    circle at 80% 20%,
-                                    rgba(139, 92, 246, 0.22) 0%,
-                                    rgba(99, 102, 241, 0.05) 55%,
-                                    transparent 70%
-                                ),
-                                linear-gradient(180deg, #1c1f38 0%, #14182b 50%, #0f1424 100%);
-                        "
-                        data-purpose="active-workout-hero"
-                        data-tour="rutina-header"
-                    >
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="space-y-1">
-                                <div
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#6366F1]/20 border border-[#8B5CF6]/30 text-[11px] font-semibold text-[#A78BFA]"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]"></span>
-                                    {{ nombreRutina }}
-                                </div>
-                                <h2 class="text-2xl font-black text-white tracking-tight pt-1">
-                                    {{ diaActual }}: {{ diaActualGrupo }}
-                                </h2>
-                                <p
-                                    class="text-xs text-gray-300 font-medium flex items-center gap-2"
-                                >
-                                    <span>{{ ejerciciosDelDia.length }} ejercicios</span>
-                                    <span class="text-gray-600">•</span>
-                                    <span>{{ seriesTotales }} series</span>
-                                    <span class="text-gray-600">•</span>
-                                    <span>~{{ duracionEstimada }} min</span>
-                                </p>
-                            </div>
-                            <button
-                                v-if="!session.isActive"
-                                aria-pressed="true"
-                                type="button"
-                                class="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-400"
-                            >
-                                <svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24">
-                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                </svg>
-                                Focus Mode
-                            </button>
-                        </div>
-
-                        <button
-                            type="button"
-                            @click="abrirModoEntrenamiento"
-                            class="w-full mt-3 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#6366F1] via-[#6366F1] to-[#8B5CF6] text-white font-bold text-base shadow-lg shadow-[#6366F1]/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
-                        >
-                            <div class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                                <svg
-                                    class="w-4 h-4 fill-white translate-x-0.5"
-                                    viewbox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z"></path>
-                                </svg>
-                            </div>
-                            <span>Comenzar entrenamiento</span>
-                        </button>
-
-                        <div
-                            class="mt-4 pt-3 border-t border-[#232F4D] flex items-center justify-between text-xs text-gray-400"
-                        >
-                            <span class="font-medium text-gray-300">Progreso de la sesión</span>
-                            <span class="font-bold text-[#A78BFA]">
-                                {{ seriesCompletadas }} / {{ seriesTotales }} series
-                                ({{ progresoDia }}%)
-                            </span>
-                        </div>
-                        <div class="w-full h-1.5 bg-[#111726] rounded-full mt-1.5 overflow-hidden">
-                            <div
-                                class="h-full bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] rounded-full transition-all"
-                                :style="{ width: progresoDia + '%' }"
-                            ></div>
-                        </div>
-                    </section>
-                    <!-- END: HeroCard -->
-
-                    <!-- BEGIN: QuickStatsGrid -->
-                    <section class="space-y-2.5">
-                        <div class="grid grid-cols-3 gap-2.5 md:gap-3" data-tour="stats">
-                        <div
-                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                        >
-                            <div
-                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                            >
-                                Sets 30 días
-                            </div>
-                            <div class="mt-1 flex items-baseline gap-1">
-                                <span class="text-xl font-extrabold text-white">
-                                    {{ stats.totalSets30d }}
-                                </span>
-                                <span
-                                    v-if="stats.trend30d !== 0"
-                                    class="text-[10px] font-semibold"
-                                    :class="
-                                        stats.trend30d > 0 ? 'text-emerald-400' : 'text-rose-400'
-                                    "
-                                >
-                                    {{ stats.trend30d > 0 ? '+' : '' }}{{ stats.trend30d }}%
-                                </span>
-                            </div>
-                            <div class="text-[10px] text-gray-300 mt-0.5">Volumen alto</div>
-                        </div>
-                        <div
-                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                        >
-                            <div
-                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                            >
-                                Último entreno
-                            </div>
-                            <div class="mt-1 text-lg font-extrabold text-white">
-                                {{ ultimoEntrenoLabel }}
-                            </div>
-                            <div class="text-[10px] text-gray-300 mt-0.5">
-                                {{ ultimoEntrenoSub }}
-                            </div>
-                        </div>
-                        <div
-                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                        >
-                            <div
-                                class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                            >
-                                Racha actual
-                            </div>
-                            <div class="mt-1 flex items-center gap-1">
-                                <span class="text-xl font-extrabold text-[#F59E0B]">
-                                    {{ stats.streak }}
-                                </span>
-                                <span class="text-xs">🔥</span>
-                            </div>
-                            <div class="text-[10px] text-gray-300 mt-0.5">
-                                Récord: {{ stats.longestStreak }} días
-                            </div>
-                        </div>
-                        </div>
-
-                        <!-- Resumen de la sesión (desktop): conserva las métricas del layout web -->
-                        <div class="hidden md:grid md:grid-cols-4 gap-3">
-                            <div
-                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                            >
-                                <div
-                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                                >
-                                    Series del día
-                                </div>
-                                <div class="mt-1 text-lg font-extrabold text-white">
-                                    {{ seriesCompletadas }}/{{ seriesTotales }}
-                                </div>
-                                <div class="text-[10px] text-gray-300 mt-0.5">
-                                    {{ seriesPendientes }} pendientes
-                                </div>
-                            </div>
-                            <div
-                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                            >
-                                <div
-                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                                >
-                                    Peso registrado
-                                </div>
-                                <div class="mt-1 text-lg font-extrabold text-white">
-                                    {{ pesoRegistrado }} kg
-                                </div>
-                                <div class="text-[10px] text-gray-300 mt-0.5">
-                                    Volumen de la sesión
-                                </div>
-                            </div>
-                            <div
-                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                            >
-                                <div
-                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                                >
-                                    Peso promedio
-                                </div>
-                                <div class="mt-1 text-lg font-extrabold text-white">
-                                    {{ pesoPromedio }} kg
-                                </div>
-                                <div class="text-[10px] text-gray-300 mt-0.5">
-                                    Por serie registrada
-                                </div>
-                            </div>
-                            <div
-                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
-                            >
-                                <div
-                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-                                >
-                                    Reps realizadas
-                                </div>
-                                <div class="mt-1 text-lg font-extrabold text-white">
-                                    {{ repsRegistradas }}
-                                </div>
-                                <div class="text-[10px] text-gray-300 mt-0.5">
-                                    Repeticiones del día
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    <!-- END: QuickStatsGrid -->
-
-                    <!-- BEGIN: DaySelectorTabs -->
-                    <section data-tour="day-selector">
-                        <div class="flex items-center justify-between mb-2">
-                            <span
-                                class="text-xs font-bold uppercase tracking-wider text-gray-400"
-                                >Plan actual</span
-                            >
-                            <button
-                                type="button"
-                                @click="cambiarRutina"
-                                class="text-xs font-semibold text-[#A78BFA] hover:text-[#8B5CF6] transition-colors"
-                            >
-                                Cambiar rutina
-                            </button>
-                        </div>
-                        <div class="flex items-center gap-2 overflow-x-auto pb-1" style="-ms-overflow-style: none; scrollbar-width: none;">
-                            <button
-                                v-for="dia in todosLosDias"
-                                :key="dia"
-                                @click="cambiarDia(dia)"
-                                type="button"
-                                :class="[
-                                    'px-4 py-2 rounded-xl text-xs shrink-0 whitespace-nowrap transition-colors',
-                                    diaActual === dia
-                                        ? 'bg-[#6366F1] text-white font-bold shadow-md shadow-[#6366F1]/30 ring-1 ring-[#A78BFA] flex items-center gap-1.5'
-                                        : 'bg-[#111726]/90 text-gray-400 hover:text-white border border-[#232F4D] font-semibold',
-                                ]"
-                            >
-                                <span
-                                    v-if="diaActual === dia"
-                                    class="w-2 h-2 rounded-full bg-white"
-                                ></span>
-                                {{ dia }}
-                                <span v-if="diaGrupoPara(dia)" class="opacity-80">
-                                    ({{ diaGrupoPara(dia) }})
-                                </span>
-                            </button>
-                        </div>
-                    </section>
-                    <!-- END: DaySelectorTabs -->
-
-                    <!-- BEGIN: ExerciseListSection -->
-                    <section class="space-y-3" data-purpose="todays-exercise-list" data-tour="series-list">
-                        <div class="flex items-center justify-between pt-1">
-                            <div class="flex items-baseline gap-2">
-                                <h3
-                                    class="text-sm font-bold text-white uppercase tracking-wider"
-                                >
-                                    Ejercicios de hoy
-                                </h3>
-                                <span class="text-xs font-semibold text-gray-300">
-                                    {{ ejerciciosCompletadosCount }}/{{
-                                        ejerciciosDelDia.length
-                                    }}
-                                    completados
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                @click="expandirTodos = !expandirTodos"
-                                class="text-xs font-medium text-gray-400 bg-[#111726] border border-[#232F4D] px-2.5 py-1 rounded-lg hover:text-white"
-                            >
-                                {{ expandirTodos ? 'Colapsar' : 'Expandir todos' }}
-                            </button>
-                        </div>
-
-                        <div v-if="isInitialLoading" class="space-y-3">
-                            <SkeletonLoader variant="card" />
-                            <SkeletonLoader variant="card" />
-                            <SkeletonLoader variant="card" />
-                        </div>
-
-                        <div v-else class="grid gap-3 md:gap-4">
-                        <article
-                            v-for="(ej, idx) in ejerciciosDelDia"
-                            :key="ej.nombre"
-                            class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3.5 shadow-sm"
-                        >
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        :class="[
-                                            'w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs',
-                                            ej.estaCompleto
-                                                ? 'bg-[#10B981]/15 border border-[#10B981]/40 text-emerald-400'
-                                                : ej.tieneAlgunaCompletada
-                                                  ? 'bg-[#6366F1]/15 border border-[#6366F6]/40 text-[#A78BFA]'
-                                                  : 'bg-[#161F36] border border-[#232F4D] text-gray-300',
-                                        ]"
-                                    >
-                                        {{ idx + 1 }}
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-bold text-white">
-                                            {{ ej.nombre }}
-                                        </h4>
-                                        <p class="text-[11px] text-gray-300">
-                                            {{ ej.meta }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <span
-                                    class="text-xs font-bold px-2 py-0.5 rounded-md"
-                                    :class="
-                                        ej.estaCompleto
-                                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
-                                            : 'bg-[#161F36] border border-[#232F4D] text-[#A78BFA]'
-                                    "
-                                >
-                                    {{ ej.completadas }}/{{ ej.sets.length }} series
-                                </span>
-                            </div>
-                            <!-- Series pills -->
-                            <div
-                                v-if="expandirTodos || ej.estaCompleto"
-                                class="grid grid-cols-4 md:grid-cols-6 gap-1.5 pt-2"
-                            >
-                                <div
-                                    v-for="(set, sIdx) in ej.sets"
-                                    :key="sIdx"
-                                    :title="
-                                        esSetHistorico(set)
-                                            ? 'Valor del ciclo anterior (histórico)'
-                                            : null
-                                    "
-                                    :class="[
-                                        'rounded-lg py-1 text-center border',
-                                        set.completado
-                                            ? 'bg-emerald-500/10 border-emerald-500/30'
-                                            : esSetHistorico(set)
-                                              ? 'bg-[#111726] border-dashed border-[#3B4A6B]'
-                                              : 'bg-[#161F36] border-[#232F4D]',
-                                    ]"
-                                >
-                                    <span
-                                        class="text-[10px] block font-mono"
-                                        :class="
-                                            set.completado
-                                                ? 'text-emerald-400'
-                                                : esSetHistorico(set)
-                                                  ? 'text-[#A78BFA]'
-                                                  : 'text-gray-400'
-                                        "
-                                        >S{{ sIdx + 1 }}</span
-                                    >
-                                    <span
-                                        class="text-xs font-bold"
-                                        :class="
-                                            set.completado
-                                                ? 'text-emerald-200'
-                                                : esSetHistorico(set)
-                                                  ? 'text-gray-300'
-                                                  : 'text-gray-200'
-                                        "
-                                    >
-                                        {{ formatSetLabel(set) }}
-                                    </span>
-                                </div>
-                            </div>
-                        </article>
-                        </div>
-                    </section>
-                    <!-- END: ExerciseListSection -->
-
-                    <!-- BEGIN: ProgressChartSection -->
-                    <section
-                        v-if="chartPoints.length > 0"
-                        class="bg-[#111726]/80 border border-[#232F4D] rounded-3xl p-4 space-y-3"
-                    >
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-base">📈</span>
-                                    <h3 class="text-sm font-bold text-white">
-                                        Peso máximo por día (30d)
-                                    </h3>
-                                </div>
-                                <p class="text-xs text-gray-400">
-                                    Progreso registrado en Press de banca
-                                </p>
-                            </div>
-                            <span
-                                class="text-xs font-bold text-[#A5B4FC] bg-[#1E1B4B]/60 border border-[#6366F1]/30 px-2.5 py-1 rounded-lg"
-                            >
-                                Max: {{ maxPesoChart }} kg
-                            </span>
-                        </div>
-                        <div class="pt-2">
-                            <div class="w-full h-36 relative">
-                                <svg
-                                    class="w-full h-full overflow-visible"
-                                    preserveaspectratio="none"
-                                    viewbox="0 0 320 120"
-                                >
-                                    <defs>
-                                        <linearGradient
-                                            id="chartGradient"
-                                            x1="0%"
-                                            x2="0%"
-                                            y1="0%"
-                                            y2="100%"
-                                        >
-                                            <stop
-                                                offset="0%"
-                                                stop-color="#8B5CF6"
-                                                stop-opacity="0.45"
-                                            ></stop>
-                                            <stop
-                                                offset="100%"
-                                                stop-color="#6366F1"
-                                                stop-opacity="0.0"
-                                            ></stop>
-                                        </linearGradient>
-                                    </defs>
-                                    <line
-                                        stroke="#2A354F"
-                                        stroke-dasharray="2 3"
-                                        stroke-width="0.75"
-                                        x1="0"
-                                        x2="320"
-                                        y1="20"
-                                        y2="20"
-                                    ></line>
-                                    <line
-                                        stroke="#2A354F"
-                                        stroke-dasharray="2 3"
-                                        stroke-width="0.75"
-                                        x1="0"
-                                        x2="320"
-                                        y1="60"
-                                        y2="60"
-                                    ></line>
-                                    <line
-                                        stroke="#2A354F"
-                                        stroke-dasharray="2 3"
-                                        stroke-width="0.75"
-                                        x1="0"
-                                        x2="320"
-                                        y1="100"
-                                        y2="100"
-                                    ></line>
-                                    <path :d="chartAreaPath" fill="url(#chartGradient)"></path>
-                                    <path
-                                        :d="chartLinePath"
-                                        fill="none"
-                                        stroke="#8B5CF6"
-                                        stroke-linecap="round"
-                                        stroke-width="3"
-                                    ></path>
-                                    <circle
-                                        v-for="(pt, i) in chartPoints"
-                                        :key="i"
-                                        :cx="pt.x"
-                                        :cy="pt.y"
-                                        :fill="pt.highlight ? '#A78BFA' : '#6366F1'"
-                                        :r="pt.highlight ? 5 : 4"
-                                        stroke="#ffffff"
-                                        :stroke-width="pt.highlight ? 2.5 : 2"
-                                    ></circle>
-                                </svg>
-                            </div>
-                            <div
-                                class="flex justify-between text-[10px] text-gray-500 font-mono pt-2 border-t border-[#232F4D]"
-                            >
-                                <span v-for="(l, i) in chartLabels" :key="i">{{ l }}</span>
-                            </div>
-                        </div>
-                    </section>
-                    <!-- END: ProgressChartSection -->
-
-                    <!-- Acciones desktop (la barra inferior fija es solo mobile) -->
-                    <div class="hidden md:flex gap-3">
-                        <button
-                            v-if="diaIndex > 0"
-                            type="button"
-                            @click="diaAnterior"
-                            class="px-5 py-3 rounded-2xl bg-[#111726] border border-[#232F4D] text-gray-300 hover:text-white hover:border-[#2a354f] font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                        >
-                            ← Día anterior
-                        </button>
-                        <button
-                            type="button"
-                            @click="guardarSesion"
-                            class="flex-1 py-3 px-4 rounded-2xl bg-[#6366F1] hover:bg-[#4F46E5] text-white font-bold text-sm shadow-lg shadow-[#6366F1]/30 active:scale-[0.99] transition-all"
-                        >
-                            Guardar sesión
-                        </button>
-                    </div>
-
-                    <!-- Footer CTA -->
-                    <div class="pt-1 pb-4">
-                        <button
-                            v-if="!esUltimoDia"
-                            type="button"
-                            @click="siguienteDia"
-                            class="w-full py-3 px-4 rounded-2xl bg-[#111726] border border-[#232F4D] text-gray-300 hover:text-white hover:border-[#2a354f] font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-                        >
-                            <span>
-                                Avanzar al siguiente día:
-                                <strong>{{ diasSiguienteLabel }}</strong>
-                            </span>
-                            <svg
-                                class="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                viewbox="0 0 24 24"
-                            >
-                                <path
-                                    d="M9 5l7 7-7 7"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                ></path>
-                            </svg>
-                        </button>
-                        <button
-                            v-else
-                            type="button"
-                            @click="finalizarRutina"
-                            class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all"
-                        >
-                            🎉 Finalizar rutina
-                        </button>
-                    </div>
-                </main>
-                <!-- END: MainContent -->
-
-                <!-- BEGIN: Bottom Fixed Save Button -->
-                <div
-                    class="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[#232F4D] bg-[#090D16]/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
-                >
-                    <div class="max-w-md mx-auto px-4 py-3">
-                        <button
-                            @click="guardarSesion"
-                            class="w-full rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] text-white px-4 py-3 text-sm font-bold shadow-lg shadow-[#6366F1]/30 active:scale-[0.99] transition-all"
-                        >
-                            Guardar sesión
-                        </button>
-                    </div>
-                </div>
-                <!-- END: Bottom Fixed Save Button -->
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- DESKTOP-ONLY: constancia + volumen semanal (complemento) -->
-            <!-- ============================================================ -->
-            <div class="hidden md:block">
-                <DashboardHeatmap
-                    :historial="historialRutina"
-                    class="mt-6 max-w-5xl mx-auto px-4 sm:px-6"
-                    data-tour="heatmap"
-                />
-                <DashboardWeeklyChart
-                    :historial="historialRutina"
-                    class="mt-6 max-w-5xl mx-auto px-4 sm:px-6"
-                    data-tour="weekly-chart"
-                />
-            </div>
-        </template>
-
-        <EmptyStateIllustrated
-            v-else
-            variant="no-rutinas"
-            title="No hay rutina seleccionada"
-            description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
-            cta-text="Seleccionar Rutina"
-            cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            @cta="window.location.href = '/rutinas'"
-        />
-
-        <!-- Onboarding tour -->
-        <OnboardingTour :tour="onboarding" />
-
-        <!-- Modales de Modo Entrenamiento Activo -->
-        <ActiveWorkoutModal
-            :open="showActiveWorkoutModal"
-            @minimize="showActiveWorkoutModal = false"
-            @finish="onFinishActiveWorkout"
-        />
-
-        <WorkoutSummaryModal
-            :open="showWorkoutSummaryModal"
-            @cancel="
-                showWorkoutSummaryModal = false;
-                showActiveWorkoutModal = true;
-            "
-            @saved="onWorkoutSummarySaved"
-        />
-
-        <!-- Bottom sheet: resumen al cambiar de día -->
-        <Teleport to="body">
-            <Transition name="sheet-fade">
-                <div
-                    v-if="showDaySummary"
-                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-                    @click.self="showDaySummary = false"
-                >
-                    <div
-                        class="sheet-content w-full sm:max-w-md bg-[#161F36] sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-[#232F4D] overflow-hidden max-h-[90vh] flex flex-col"
-                    >
-                        <div class="sm:hidden pt-2 pb-1 flex justify-center">
-                            <div class="w-10 h-1.5 rounded-full bg-[#2a354f]"></div>
-                        </div>
-
-                        <div
-                            class="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-5 text-white"
-                        >
-                            <div
-                                class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90"
-                            >
-                                <span>✓</span>
-                                <span>Día completado</span>
-                            </div>
-                            <h3 class="mt-1 text-2xl font-black">
-                                {{ daySummary.diaLabel }}
-                            </h3>
-                        </div>
-
-                        <div class="px-6 py-5 space-y-4 overflow-y-auto">
-                            <div class="grid grid-cols-3 gap-3 text-center">
-                                <div class="rounded-xl bg-[#6366F1]/15 px-3 py-3">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA]">
-                                        Series
-                                    </p>
-                                    <p class="mt-0.5 text-2xl font-black text-[#A5B4FC] tabular-nums">
-                                        {{ daySummary.completadas }}/{{ daySummary.total }}
-                                    </p>
-                                </div>
-                                <div class="rounded-xl bg-[#F59E0B]/15 px-3 py-3">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#F59E0B]">
-                                        Volumen
-                                    </p>
-                                    <p class="mt-0.5 text-2xl font-black text-[#FBBF24] tabular-nums">
-                                        {{ formatVolumen(daySummary.volumen) }}
-                                    </p>
-                                    <p class="text-[10px] text-[#F59E0B]/80">kg totales</p>
-                                </div>
-                                <div class="rounded-xl bg-[#10B981]/15 px-3 py-3">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                                        PRs
-                                    </p>
-                                    <p class="mt-0.5 text-2xl font-black text-emerald-400 tabular-nums">
-                                        {{ daySummary.prs }}
-                                    </p>
-                                    <p class="text-[10px] text-emerald-400/80">récords</p>
-                                </div>
-                            </div>
-
-                            <div
-                                v-if="daySummary.mejorSet"
-                                class="rounded-xl bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-700/40 px-4 py-3"
-                            >
-                                <div
-                                    class="flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wider"
-                                >
-                                    <span>🏆</span>
-                                    <span>Mejor set</span>
-                                </div>
-                                <p class="mt-1 text-base font-bold text-white">
-                                    {{ daySummary.mejorSet.ejercicio }}
-                                </p>
-                                <p class="text-sm font-semibold text-emerald-300 tabular-nums">
-                                    {{ daySummary.mejorSet.peso }} kg ×
-                                    {{ daySummary.mejorSet.reps }} reps
-                                </p>
-                            </div>
-                        </div>
-
-                        <div
-                            class="px-6 py-4 bg-[#090D16]/60 border-t border-[#232F4D] flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
-                        >
-                            <button
-                                type="button"
-                                @click="showDaySummary = false"
-                                class="flex-1 px-4 py-2.5 rounded-xl border border-[#232F4D] bg-[#111726] text-sm font-semibold text-gray-300 hover:bg-[#161F36] transition-colors"
-                            >
-                                Quedarme acá
-                            </button>
-                            <button
-                                v-if="daySummary.tieneSiguiente"
-                                type="button"
-                                @click="avanzarAlSiguienteDia"
-                                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-md transition-all"
-                            >
-                                Ir al {{ daySummary.siguienteLabel }} →
-                            </button>
-                            <button
-                                v-else
-                                type="button"
-                                @click="finalizarRutinaDesdeResumen"
-                                class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold shadow-md transition-all"
-                            >
-                                🎉 Finalizar rutina
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
-    </div>
-</template>
-
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, shallowRef, computed, watch, onMounted } from 'vue';
 import { useRutinaStore } from '../stores/rutina';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
@@ -907,12 +9,9 @@ import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useTrainingSessionStore } from '@/stores/trainingSession';
 import SyncBadge from './training/SyncBadge.vue';
-import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyStateIllustrated gradualmente
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
-import DashboardHeatmap from './dashboard/DashboardHeatmap.vue';
-import DashboardWeeklyChart from './dashboard/DashboardWeeklyChart.vue';
 import SkeletonLoader from './common/SkeletonLoader.vue';
 import { useRestTimerStore } from '../stores/restTimer';
 import ActiveWorkoutModal from './training/ActiveWorkoutModal.vue';
@@ -920,7 +19,7 @@ import WorkoutSummaryModal from './training/WorkoutSummaryModal.vue';
 
 const rutinaStore = useRutinaStore();
 
-// === Modo entrenamiento (Oleada 1) ===
+// === Modo entrenamiento ===
 const offline = useOfflineSeries();
 const wake = useWakeLock();
 const session = useTrainingSessionStore();
@@ -936,13 +35,7 @@ const onboarding = useOnboarding('dashboard-tour', [
     {
         selector: '[data-tour="rutina-header"]',
         title: 'Tu rutina actual',
-        body: 'Acá ves el nombre, nivel y días de tu rutina activa. Tocá el nombre para cambiarla.',
-        position: 'bottom',
-    },
-    {
-        selector: '[data-tour="stats"]',
-        title: 'Stats del día',
-        body: 'Tu progreso en tiempo real: series completadas vs pendientes, peso levantado, reps.',
+        body: 'Acá ves el nombre, nivel y días de tu rutina activa. Tocá el botón para comenzar a entrenar.',
         position: 'bottom',
     },
     {
@@ -952,18 +45,25 @@ const onboarding = useOnboarding('dashboard-tour', [
         position: 'bottom',
     },
     {
+        selector: '[data-tour="stats"]',
+        title: 'Stats del día',
+        body: 'Tu progreso en tiempo real: series completadas vs pendientes, peso levantado, reps.',
+        position: 'bottom',
+    },
+    {
         selector: '[data-tour="series-list"]',
         title: 'Tus series',
-        body: 'Registrá cada serie acá. Marcá como completada cuando termines, y guardá al final.',
+        body: 'Revisá el detalle de cada serie del día y su progreso.',
         position: 'top',
     },
     {
-        selector: '[data-tour="heatmap"]',
-        title: 'Tu constancia',
-        body: 'Acá ves todos los días que entrenaste. ¡La constancia es la clave!',
+        selector: '[data-tour="telemetry-charts"]',
+        title: 'Telemetría y PRs',
+        body: 'Analizá la evolución de tus cargas máximas y récords diarios.',
         position: 'top',
     },
 ]);
+
 const toast = useToast();
 const showSuccess = (m) => toast.success(m);
 const showError = (m) => toast.error(m);
@@ -971,32 +71,27 @@ const showWarning = (m) => toast.warning(m);
 
 const filasSerie = ref([]);
 const historialRutina = ref([]);
-const diaActual = ref('Día 1');
-const cicloInicio = ref(null);
+const diaActual = shallowRef('Día 1');
+const cicloInicio = shallowRef(null);
 const todosLosDias = ref([]);
 
-const showActiveWorkoutModal = ref(false);
-const showWorkoutSummaryModal = ref(false);
-const isInitialLoading = ref(true);
+const showActiveWorkoutModal = shallowRef(false);
+const showWorkoutSummaryModal = shallowRef(false);
+const isInitialLoading = shallowRef(true);
+const expandirTodos = shallowRef(true);
 
-// =====================================================================
-// === MOBILE-FIRST HELPERS (Kinetic Obsidian) ===
-// =====================================================================
-
-// === Topbar / Hero ===
+// === Header / Hero Computeds ===
 const userFirstName = computed(() => {
     const n = (window.__user?.name || '').trim();
-    if (!n) return 'crack';
+    if (!n) return 'Oscar';
     return n.split(' ')[0];
 });
 
 const diaSemanaEs = computed(() => {
     if (dashboardToday.value?.hoy?.dia_semana_es) {
-        // viene como "Domingo" — perfecto
-        return dashboardToday.value.hoy.dia_semana_es;
+        return dashboardToday.value.hoy.dia_semana_es.toUpperCase();
     }
-    // fallback: cálculo local
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
     return dias[new Date().getDay()];
 });
 
@@ -1004,13 +99,29 @@ const fechaCorta = computed(() => {
     const d = dashboardToday.value?.hoy?.fecha
         ? new Date(dashboardToday.value.hoy.fecha + 'T00:00:00')
         : new Date();
-    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
     return `${d.getDate()} ${meses[d.getMonth()]}`;
+});
+
+const anioActual = computed(() => {
+    const d = dashboardToday.value?.hoy?.fecha
+        ? new Date(dashboardToday.value.hoy.fecha + 'T00:00:00')
+        : new Date();
+    return d.getFullYear();
 });
 
 const nombreRutina = computed(() => {
     const r = dashboardToday.value?.rutina?.nombre;
     return r || rutinaStore.seleccionada?.nivel || 'Personalizada';
+});
+
+const semanaCicloLabel = computed(() => {
+    if (!cicloInicio.value) return 'Semana 1';
+    const inicio = new Date(cicloInicio.value + 'T00:00:00');
+    const hoy = new Date();
+    const diffDias = Math.max(0, Math.floor((hoy.getTime() - inicio.getTime()) / 86400000));
+    const semana = Math.min(Math.floor(diffDias / 7) + 1, 12);
+    return `Semana ${semana}`;
 });
 
 // === Stats del hero ===
@@ -1041,9 +152,7 @@ const cargarDashboardToday = async () => {
     }
 };
 
-// Trend 30d: comparar sets 30d actuales vs. los 30 días anteriores
-const cargarTrend30d = async () => {
-    // Lo calculamos en cliente desde historialRutina si está disponible
+const cargarTrend30d = () => {
     const h = historialRutina.value || [];
     if (!h.length) return;
     const hoy = new Date();
@@ -1065,8 +174,10 @@ const cargarTrend30d = async () => {
 };
 
 // === "Último entreno" labels ===
+const daysSinceLastWorkout = computed(() => dashboardToday.value?.stats?.days_since_last_workout);
+
 const ultimoEntrenoLabel = computed(() => {
-    const d = dashboardToday.value?.stats?.days_since_last_workout;
+    const d = daysSinceLastWorkout.value;
     if (d === null || d === undefined) return '—';
     if (d === 0) return 'Hoy';
     if (d === 1) return 'Ayer';
@@ -1076,84 +187,61 @@ const ultimoEntrenoLabel = computed(() => {
 });
 
 const ultimoEntrenoSub = computed(() => {
-    const d = dashboardToday.value?.stats?.days_since_last_workout;
+    const d = daysSinceLastWorkout.value;
     if (d === null || d === undefined) return 'Sin registros aún';
-    if (d === 0) return 'Entrenaste hoy 💪';
+    if (d === 0) return 'Entrenaste hoy';
     if (d === 1) return 'Día de descanso OK';
     if (d >= 2 && d <= 3) return 'Volvé a la carga';
     if (d >= 4 && d <= 6) return 'Pasaron varios días';
     return 'Hacés rato que no entrás';
 });
 
-// === Día / grupo muscular ===
-// Mapea "Día 1" → "Torso" según los grupos musculares únicos del día
-const grupoDelDiaActual = computed(() => {
-    // Agrupa filasSerie por grupo muscular del día actual
-    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
-    if (!filasDelDia.length) return '';
-    // Sin un campo "grupo_muscular" directo en la tabla, usamos heurística:
-    // los nombres de ejercicio suelen tener el músculo al inicio (ej. "Press banca")
-    // y los días se nombran por grupo. Si el día es "Día 1" genérico,
-    // sacamos el grupo más frecuente como aproximación.
-    // Por simplicidad: devolver lo que diga el nombre del día si incluye paréntesis,
-    // si no, devolver string vacío.
-    return '';
+const ultimoEntrenoAlerta = computed(() => {
+    const d = daysSinceLastWorkout.value;
+    return d === null || d === undefined || d >= 4;
 });
 
-// Grupo "Torso"/"Pierna"/etc para mostrar en el h2 del hero.
-// Lo derivamos del campo `notas` del ejercicio o del nombre del día
-// (muchas rutinas lo ponen en `rutina.dia_actual` con formato "Día 1: Torso").
+// === Día / grupo muscular ===
+const diaIndex = computed(() => todosLosDias.value.indexOf(diaActual.value));
+const esUltimoDia = computed(() => diaIndex.value === todosLosDias.value.length - 1);
+
 const diaActualGrupo = computed(() => {
-    // 1) Si el nombre del día actual ya trae un grupo entre paréntesis/":" lo usamos
-    const m = String(diaActual.value).match(/(?:\(|:)\s*([^)\:]+)\s*\)?/);
-    if (m) return m[1];
-    // 2) Mapeo por índice de día (heurística común: 1=Torso, 2=Pierna, 3=Full Body)
+    const m = String(diaActual.value).match(/(?:\(|:)\s*([^):]+)\s*\)?/);
+    if (m) return m[1].trim();
     const i = diaIndex.value;
-    const fallback = ['', 'Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
+    const fallback = ['Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
     return fallback[i] || '';
 });
 
-// Misma lógica para el nombre de un día cualquiera (usado en el pill "Día 1 (Torso)")
 const diaGrupoPara = (dia) => {
-    const m = String(dia).match(/(?:\(|:)\s*([^)\:]+)\s*\)?/);
-    if (m) return m[1];
+    const m = String(dia).match(/(?:\(|:)\s*([^):]+)\s*\)?/);
+    if (m) return m[1].trim();
     const i = todosLosDias.value.indexOf(dia);
-    const fallback = ['', 'Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
+    const fallback = ['Torso', 'Pierna', 'Full Body', 'Torso', 'Pierna'];
     return fallback[i] || '';
 };
 
-// === Ejercicios del día (agrupados por nombre) ===
-const ejerciciosDelDia = computed(() => {
-    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
-    const map = new Map();
-    filasDelDia.forEach((f) => {
-        if (!map.has(f.ejercicio_nombre)) {
-            map.set(f.ejercicio_nombre, []);
-        }
-        map.get(f.ejercicio_nombre).push(f);
-    });
-    return Array.from(map.entries()).map(([nombre, sets]) => {
-        sets.sort((a, b) => (a.series_numero || 0) - (b.series_numero || 0));
-        const completadas = sets.filter((s) => s.completado).length;
-        return {
-            nombre,
-            sets,
-            completadas,
-            total: sets.length,
-            estaCompleto: completadas === sets.length && sets.length > 0,
-            tieneAlgunaCompletada: completadas > 0,
-            meta: buildMeta(sets[0]),
-        };
-    });
+const formatDiaTabLabel = (dia) => {
+    const str = String(dia);
+    if (str.includes('(') || str.includes(':')) return str;
+    const grupo = diaGrupoPara(dia);
+    return grupo ? `${str} (${grupo})` : str;
+};
+
+const tituloHeroDia = computed(() => {
+    const str = String(diaActual.value);
+    const grupo = diaActualGrupo.value;
+    if (!grupo) return str;
+    if (str.includes('(')) {
+        return `${str}: ${grupo}`;
+    }
+    if (str.includes(':')) {
+        return str;
+    }
+    return `${str} (${grupo}): ${grupo}`;
 });
 
-const ejerciciosCompletadosCount = computed(
-    () => ejerciciosDelDia.value.filter((e) => e.estaCompleto).length
-);
-
 // === Datos históricos (ciclo anterior) ===
-// Si la serie todavía no tiene registro en el ciclo actual, se muestra el valor
-// del ciclo anterior: así la vista nunca queda vacía y se ve el histórico.
 const valorHistoricoSet = (set) => {
     const prev = set?.previous_record;
     if (!prev) return null;
@@ -1167,17 +255,78 @@ const setSinRegistroActual = (set) =>
     (set.reps_realizadas === null || set.reps_realizadas === undefined) &&
     (set.peso === null || set.peso === undefined);
 
-// true cuando la serie no tiene valor en el ciclo actual y mostramos el histórico
 const esSetHistorico = (set) => setSinRegistroActual(set) && !!valorHistoricoSet(set);
 
-const buildMeta = (fila) => {
-    if (!fila) return '';
-    const partes = [];
-    if (fila.reps_min && fila.reps_max) partes.push(`${fila.reps_min}–${fila.reps_max} reps`);
-    const peso = fila.peso ?? fila.previous_record?.peso ?? null;
-    if (peso) partes.push(`Último: ${peso} kg`);
-    return partes.join(' · ');
+const formatPeso2Dec = (val) => {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return String(val);
+    return n.toFixed(2);
 };
+
+const inferirMusculo = (nombre) => {
+    const n = String(nombre || '').toLowerCase();
+    if (n.includes('banca') || n.includes('apertura') || n.includes('pecho') || n.includes('pectoral')) {
+        return 'Pectoral Mayor';
+    }
+    if (n.includes('jalón') || n.includes('remo') || n.includes('dominada') || n.includes('espalda')) {
+        return 'Dorsal Ancho';
+    }
+    if (n.includes('lateral') || n.includes('militar') || n.includes('hombro')) {
+        return 'Deltoides Lateral';
+    }
+    if (n.includes('bíceps') || n.includes('biceps') || n.includes('curl')) {
+        return 'Bíceps Braquial';
+    }
+    if (n.includes('tríceps') || n.includes('triceps') || n.includes('extensión de tríceps')) {
+        return 'Tríceps Braquial';
+    }
+    if (n.includes('prensa') || n.includes('sentadilla') || n.includes('cuádriceps') || n.includes('cuadriceps')) {
+        return 'Cuádriceps';
+    }
+    if (n.includes('femoral') || n.includes('peso muerto') || n.includes('isquio')) {
+        return 'Isquiotibiales';
+    }
+    return '';
+};
+
+// === Ejercicios del día (agrupados por nombre) ===
+const ejerciciosDelDia = computed(() => {
+    const filasDelDia = filasSerie.value.filter((f) => f.dia === diaActual.value);
+    const map = new Map();
+    filasDelDia.forEach((f) => {
+        if (!map.has(f.ejercicio_nombre)) {
+            map.set(f.ejercicio_nombre, []);
+        }
+        map.get(f.ejercicio_nombre).push(f);
+    });
+    return Array.from(map.entries()).map(([nombre, sets], idx) => {
+        sets.sort((a, b) => (a.series_numero || 0) - (b.series_numero || 0));
+        const completadas = sets.filter((s) => s.completado).length;
+        const first = sets[0];
+        const repsLabel =
+            first?.reps_min && first?.reps_max ? `${first.reps_min}-${first.reps_max} reps` : '';
+        const rawPeso = first?.peso ?? first?.previous_record?.peso ?? null;
+        const ultimoPesoLabel =
+            rawPeso !== null && rawPeso !== undefined && rawPeso !== ''
+                ? `Último: ${formatPeso2Dec(rawPeso)} kg`
+                : '';
+        return {
+            nombre,
+            sets,
+            completadas,
+            total: sets.length,
+            estaCompleto: completadas === sets.length && sets.length > 0,
+            tieneAlgunaCompletada: completadas > 0,
+            repsLabel,
+            ultimoPesoLabel,
+            musculoLabel: idx === 0 ? inferirMusculo(nombre) : '',
+        };
+    });
+});
+
+const ejerciciosCompletadosCount = computed(
+    () => ejerciciosDelDia.value.filter((e) => e.estaCompleto).length
+);
 
 const formatSetLabel = (set) => {
     if (!set) return '—';
@@ -1185,58 +334,109 @@ const formatSetLabel = (set) => {
     const tieneActual = !setSinRegistroActual(set);
     const r = tieneActual ? set.reps_realizadas ?? set.reps_min ?? '' : hist?.reps ?? '';
     const p = tieneActual ? set.peso ?? '' : hist?.peso ?? '';
-    if (r && p) return `${r} × ${p}kg`;
-    if (p) return `${p}kg`;
-    if (r) return `${r} reps`;
+    const esFallo =
+        String(set.esfuerzo_tipo || '').toLowerCase() === 'fallo' ||
+        String(set?.previous_record?.esfuerzo_tipo || '').toLowerCase() === 'fallo';
+
+    if (r && p !== '' && p !== null && Number(p) > 0) {
+        return `${r} × ${formatPeso2Dec(p)} kg`;
+    }
+    if (p !== '' && p !== null && Number(p) > 0) {
+        return `${formatPeso2Dec(p)} kg`;
+    }
+    if (r) {
+        return esFallo ? `${r} reps (Fallo)` : `${r} reps`;
+    }
     if (tieneActual) return '—';
     return set.reps_min ? `${set.reps_min} reps` : '—';
 };
 
-// === Duración estimada ===
+// === Duración y calorías estimadas ===
 const duracionEstimada = computed(() => {
     const totalSets = filasSerie.value.filter((f) => f.dia === diaActual.value).length;
     if (!totalSets) return 0;
-    // ~45s por serie + descanso promedio (1.5min) entre series
     const mins = Math.round((totalSets * (45 + 90)) / 60);
     return Math.max(mins, 10);
 });
 
-// === Día siguiente / último ===
+const caloriasEstimadas = computed(() => {
+    const totalSets = seriesTotales.value;
+    if (!totalSets) return 0;
+    return Math.round(totalSets * 17.42);
+});
+
+const estadoUltimoRegistroHero = computed(() => {
+    if (seriesCompletadas.value > 0 || daysSinceLastWorkout.value === 0) {
+        return 'Último registro completado hoy';
+    }
+    if (ultimoEntrenoLabel.value && ultimoEntrenoLabel.value !== '—') {
+        return `Último registro: ${ultimoEntrenoLabel.value}`;
+    }
+    return 'Listo para comenzar la sesión';
+});
+
 const diasSiguienteLabel = computed(() => {
     const i = diaIndex.value;
     if (i < 0 || i >= todosLosDias.value.length - 1) return '';
     return todosLosDias.value[i + 1];
 });
 
-// === Expandir / colapsar todos los sets ===
-const expandirTodos = ref(true);
+// === Métricas de la sesión ===
+const seriesTotales = computed(() => filasSerie.value.length);
+const seriesCompletadas = computed(() => filasSerie.value.filter((f) => f.completado).length);
+const seriesPendientes = computed(() =>
+    Math.max(seriesTotales.value - seriesCompletadas.value, 0)
+);
 
-// === Chart "Peso máximo por día (30d)" ===
-const maxPesoChart = computed(() => {
-    if (!chartPoints.value.length) return 0;
-    return Math.max(...chartPoints.value.map((p) => p.value || 0));
+const pesoRegistrado = computed(() =>
+    filasSerie.value
+        .reduce((t, f) => {
+            const p = Number(f.peso ?? f.previous_record?.peso);
+            return Number.isFinite(p) ? t + p : t;
+        }, 0)
+        .toFixed(1)
+);
+
+const pesoPromedio = computed(() => {
+    const pesos = filasSerie.value
+        .map((f) => Number(f.peso ?? f.previous_record?.peso))
+        .filter((p) => Number.isFinite(p) && p > 0);
+    if (!pesos.length) return '0.0';
+    return (pesos.reduce((t, p) => t + p, 0) / pesos.length).toFixed(1);
 });
 
-// Construimos puntos a partir del historialRutina: por día, max peso en
-// ejercicio "Press de banca" (o primer ejercicio con peso, como fallback).
+const repsRegistradas = computed(() =>
+    filasSerie.value.reduce((t, f) => {
+        const r = Number(f.reps_realizadas ?? f.previous_record?.reps_realizadas);
+        return Number.isFinite(r) ? t + r : t;
+    }, 0)
+);
+
+const progresoDia = computed(() =>
+    seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0
+);
+
+// === Telemetry Chart 1: Peso máximo por día (30d) en ejercicio principal ===
+const chartEjercicioNombre = computed(() => {
+    const first = ejerciciosDelDia.value[0]?.nombre;
+    return first || 'Press de banca';
+});
+
 const chartSeries = computed(() => {
     const h = historialRutina.value || [];
-    if (!h.length) return { points: [], labels: [] };
     const hoy = new Date();
     const desde = new Date(hoy.getTime() - 30 * 86400000);
-    // 7 puntos distribuidos entre hace30 y hoy
     const N = 7;
     const puntos = [];
     for (let i = 0; i < N; i++) {
         const f = new Date(desde.getTime() + ((hoy.getTime() - desde.getTime()) * i) / (N - 1));
         puntos.push({ fecha: f, peso: 0 });
     }
-    // Para cada punto, tomar el peso máximo registrado entre los 5 días previos
+
     h.forEach((r) => {
         if (!r.completado || !r.peso || Number(r.peso) <= 0) return;
         const fr = new Date(r.fecha);
         if (fr < desde || fr > hoy) return;
-        // Buscar el punto más cercano
         let mejorI = 0;
         let mejorDelta = Infinity;
         for (let i = 0; i < N; i++) {
@@ -1248,76 +448,146 @@ const chartSeries = computed(() => {
         }
         puntos[mejorI].peso = Math.max(puntos[mejorI].peso, Number(r.peso));
     });
-    // Si todos los puntos quedaron en 0 (sin datos), devolvemos array vacío
-    const max = Math.max(...puntos.map((p) => p.peso));
-    if (max === 0) return { points: [], labels: [] };
-    // Labels: dd/mm
+
     const labels = puntos.map((p) => {
         const dd = String(p.fecha.getDate()).padStart(2, '0');
         const mm = String(p.fecha.getMonth() + 1).padStart(2, '0');
         return `${dd}/${mm}`;
     });
+
     return { points: puntos, labels };
 });
 
-const chartPoints = computed(() => {
+const maxPesoChart = computed(() => {
+    const pts = chartSeries.value.points;
+    if (!pts.length) return 80;
+    const max = Math.max(...pts.map((p) => p.peso || 0));
+    return max > 0 ? max : 80;
+});
+
+const buildSmoothSvgCurve = (coords, baselineY = 170) => {
+    if (!coords.length) return { line: '', area: '' };
+    if (coords.length === 1) {
+        const p = coords[0];
+        const line = `M 20 ${p.y} L 480 ${p.y}`;
+        const area = `${line} L 480 ${baselineY} L 20 ${baselineY} Z`;
+        return { line, area };
+    }
+    let line = `M ${coords[0].x} ${coords[0].y}`;
+    for (let i = 1; i < coords.length; i++) {
+        const prev = coords[i - 1];
+        const cur = coords[i];
+        const dx = (cur.x - prev.x) * 0.45;
+        const cp1x = Math.round(prev.x + dx);
+        const cp2x = Math.round(cur.x - dx);
+        line += ` C ${cp1x} ${prev.y}, ${cp2x} ${cur.y}, ${cur.x} ${cur.y}`;
+    }
+    const last = coords[coords.length - 1];
+    const first = coords[0];
+    const area = `${line} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
+    return { line, area };
+};
+
+const chart1Telemetry = computed(() => {
     const { points, labels } = chartSeries.value;
-    if (!points.length) return [];
-    const W = 320;
-    const H = 120;
-    const max = Math.max(...points.map((p) => p.peso));
+    const max = Math.max(...points.map((p) => p.peso), 0);
+    if (max <= 0) {
+        // Fallback curva de telemetría cuando aún no hay puntos en los últimos 30d
+        const fallbackNodes = [
+            { x: 20, y: 145, peak: false, muted: false },
+            { x: 95, y: 90, peak: false, muted: false },
+            { x: 165, y: 30, peak: true, muted: false },
+            { x: 235, y: 150, peak: false, muted: false },
+            { x: 360, y: 150, peak: false, muted: true },
+            { x: 480, y: 150, peak: false, muted: true },
+        ];
+        const { line, area } = buildSmoothSvgCurve(fallbackNodes, 170);
+        return { nodes: fallbackNodes, line, area, labels };
+    }
     const min = Math.min(...points.map((p) => p.peso));
     const rango = Math.max(max - min, 1);
-    return points.map((p, i) => {
-        const x = 15 + ((W - 30) * i) / (points.length - 1);
-        // Invertir Y (SVG: 0 arriba)
-        const y = 100 - ((p.peso - min) / rango) * 80 + 5;
+    let peakAssigned = false;
+    const nodes = points.map((p, i) => {
+        const x = Math.round(20 + (460 * i) / (points.length - 1));
+        const y = Math.round(150 - ((p.peso - min) / rango) * 120);
+        const isPeak = !peakAssigned && p.peso === max && max > 0;
+        if (isPeak) peakAssigned = true;
         return {
-            x: Math.round(x),
-            y: Math.round(y),
+            x,
+            y,
             value: p.peso,
-            label: labels[i],
-            highlight: p.peso === max && max > 0,
+            peak: isPeak,
+            muted: p.peso === 0,
         };
     });
+    const { line, area } = buildSmoothSvgCurve(nodes, 170);
+    return { nodes, line, area, labels };
 });
 
-const chartLinePath = computed(() => {
-    const pts = chartPoints.value;
-    if (!pts.length) return '';
-    let d = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 1; i < pts.length; i++) {
-        const prev = pts[i - 1];
-        const cur = pts[i];
-        const cpx = (prev.x + cur.x) / 2;
-        d += ` Q ${cpx} ${prev.y} ${cur.x} ${cur.y}`;
+// === Telemetry Chart 2: PR diario a lo largo del tiempo (30d) ===
+const chart2Telemetry = computed(() => {
+    const porDia = new Map();
+    (historialRutina.value || []).forEach((row) => {
+        const fecha = row.fecha || (row.created_at ? row.created_at.split('T')[0] : null);
+        if (!fecha) return;
+        const peso = Number(row.peso) || 0;
+        if (peso <= 0) return;
+        if (!porDia.has(fecha) || peso > porDia.get(fecha)) {
+            porDia.set(fecha, peso);
+        }
+    });
+
+    const sorted = [...porDia.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+    if (sorted.length < 2) {
+        const fallbackNodes = [
+            { x: 20, y: 140, isPeak: false, isAccent: false },
+            { x: 90, y: 70, isPeak: false, isAccent: false },
+            { x: 190, y: 145, isPeak: false, isAccent: false },
+            { x: 270, y: 140, isPeak: false, isAccent: false },
+            { x: 370, y: 70, isPeak: false, isAccent: true },
+            { x: 430, y: 62, isPeak: false, isAccent: false },
+            { x: 480, y: 30, isPeak: true, isAccent: false },
+        ];
+        const { line, area } = buildSmoothSvgCurve(fallbackNodes, 170);
+        return {
+            nodes: fallbackNodes,
+            line,
+            area,
+            labels: ['03/09', '09/09', '12/09', '23/09', '30/09'],
+        };
     }
-    return d;
+
+    const pesos = sorted.map(([, p]) => p);
+    const max = Math.max(...pesos);
+    const min = Math.min(...pesos);
+    const rango = Math.max(max - min, 1);
+
+    const nodes = sorted.map(([, peso], i) => {
+        const x = Math.round(20 + (460 * i) / (sorted.length - 1));
+        const y = Math.round(145 - ((peso - min) / rango) * 115);
+        return {
+            x,
+            y,
+            value: peso,
+            isPeak: i === sorted.length - 1 || (peso === max && i > 0),
+            isAccent: i === Math.floor(sorted.length * 0.65),
+        };
+    });
+
+    const labels = sorted.map(([fecha]) => {
+        const iso = typeof fecha === 'string' && fecha.includes('T') ? fecha.split('T')[0] : fecha;
+        const parts = String(iso).split('-');
+        if (parts.length >= 3) {
+            return `${parts[2]}/${parts[1]}`;
+        }
+        return iso;
+    });
+
+    const { line, area } = buildSmoothSvgCurve(nodes, 170);
+    return { nodes, line, area, labels };
 });
 
-const chartAreaPath = computed(() => {
-    const pts = chartPoints.value;
-    if (!pts.length) return '';
-    let d = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 1; i < pts.length; i++) {
-        const prev = pts[i - 1];
-        const cur = pts[i];
-        const cpx = (prev.x + cur.x) / 2;
-        d += ` Q ${cpx} ${prev.y} ${cur.x} ${cur.y}`;
-    }
-    d += ` L ${pts[pts.length - 1].x} 115 L ${pts[0].x} 115 Z`;
-    return d;
-});
-
-const chartLabels = computed(() => {
-    const pts = chartPoints.value;
-    return pts.map((p) => p.label);
-});
-
-// =====================================================================
-// === FIN MOBILE-FIRST HELPERS ===
-// =====================================================================
-
+// === Sesión activa y acciones ===
 const formattedActiveTime = computed(() => {
     const s = session.elapsed;
     const hrs = Math.floor(s / 3600);
@@ -1329,8 +599,13 @@ const formattedActiveTime = computed(() => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
 
+const getRutinaNombre = () => rutinaStore.seleccionada?.nivel || '';
+
 const abrirModoEntrenamiento = async () => {
-    if (session.isActive && (!session.session.ejercicios || session.session.ejercicios.length === 0)) {
+    if (
+        session.isActive &&
+        (!session.session.ejercicios || session.session.ejercicios.length === 0)
+    ) {
         session.discard();
     }
 
@@ -1385,7 +660,7 @@ const onFinishActiveWorkout = () => {
     showWorkoutSummaryModal.value = true;
 };
 
-const onWorkoutSummarySaved = async (resumen) => {
+const onWorkoutSummarySaved = async () => {
     showWorkoutSummaryModal.value = false;
     showSuccess('🎉 ¡Sesión guardada exitosamente!');
     await fetchHistorialRutina();
@@ -1406,48 +681,11 @@ const descartarSesion = async () => {
         if (uuid) {
             await axios.delete(`/api/sesiones/${uuid}`);
         }
-    } catch (e) {
+    } catch {
         // Silencioso si no hay red
     }
     showWarning('Sesión descartada.');
 };
-
-const diaIndex = computed(() => todosLosDias.value.indexOf(diaActual.value));
-const esUltimoDia = computed(() => diaIndex.value === todosLosDias.value.length - 1);
-
-const seriesTotales = computed(() => filasSerie.value.length);
-const seriesCompletadas = computed(() => filasSerie.value.filter((f) => f.completado).length);
-const seriesPendientes = computed(() => Math.max(seriesTotales.value - seriesCompletadas.value, 0));
-
-const pesoRegistrado = computed(() =>
-    filasSerie.value
-        .reduce((t, f) => {
-            const p = Number(f.peso);
-            return Number.isFinite(p) ? t + p : t;
-        }, 0)
-        .toFixed(1)
-);
-
-const pesoPromedio = computed(() => {
-    const pesos = filasSerie.value
-        .map((f) => Number(f.peso))
-        .filter((p) => Number.isFinite(p) && p > 0);
-    if (!pesos.length) return '0.0';
-    return (pesos.reduce((t, p) => t + p, 0) / pesos.length).toFixed(1);
-});
-
-const repsRegistradas = computed(() =>
-    filasSerie.value.reduce((t, f) => {
-        const r = Number(f.reps_realizadas);
-        return Number.isFinite(r) ? t + r : t;
-    }, 0)
-);
-
-const progresoDia = computed(() =>
-    seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0
-);
-
-const getRutinaNombre = () => rutinaStore.seleccionada?.nivel || '';
 
 const triggerConfetti = () => {
     const duration = 3000;
@@ -1649,9 +887,10 @@ const fetchRutinasDelDia = async () => {
         todosLosDias.value = diasUnicos;
 
         if (diasUnicos.length > 0 && !diasUnicos.includes(diaActual.value)) {
-            const match = diasUnicos.find((d) =>
-                d.toLowerCase().startsWith(diaActual.value.toLowerCase()) ||
-                diaActual.value.toLowerCase().startsWith(d.toLowerCase())
+            const match = diasUnicos.find(
+                (d) =>
+                    d.toLowerCase().startsWith(diaActual.value.toLowerCase()) ||
+                    diaActual.value.toLowerCase().startsWith(d.toLowerCase())
             );
             if (match) {
                 diaActual.value = match;
@@ -1765,7 +1004,7 @@ const siguienteDia = async () => {
     showDaySummary.value = true;
 };
 
-const showDaySummary = ref(false);
+const showDaySummary = shallowRef(false);
 const daySummary = ref({
     diaLabel: '',
     siguienteLabel: '',
@@ -1904,6 +1143,10 @@ const finalizarRutina = async () => {
     }
 };
 
+const irARutinas = () => {
+    window.location.href = '/rutinas';
+};
+
 onMounted(async () => {
     rutinaStore.hidratar();
     await fetchUserRutina();
@@ -1936,7 +1179,7 @@ const refreshDashboard = async () => {
     }
     await cargarDashboardToday();
 };
-const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, refreshDashboard);
+const { isRefreshing, pullOffset } = usePullToRefresh(window, refreshDashboard);
 
 const restTimer = useRestTimerStore();
 
@@ -1962,8 +1205,1269 @@ const iniciarTemporizador = (fila) => {
 };
 </script>
 
+<template>
+    <div
+        class="min-h-screen w-full bg-background font-body-md text-on-surface antialiased selection:bg-secondary-container selection:text-on-secondary-container overflow-x-hidden"
+    >
+        <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
+
+        <!-- Indicador pull-to-refresh (mobile) -->
+        <div
+            v-show="pullOffset > 4 || isRefreshing"
+            :style="{ height: pullOffset + 'px' }"
+            class="md:hidden flex items-center justify-center overflow-hidden transition-[height] duration-150 max-w-md mx-auto"
+            aria-live="polite"
+            role="status"
+        >
+            <div class="flex flex-col items-center gap-1 text-xs font-semibold text-outline">
+                <span class="material-symbols-outlined text-secondary animate-spin text-[20px]">
+                    progress_activity
+                </span>
+                <span>{{ isRefreshing ? 'Actualizando…' : 'Deslizá hacia abajo' }}</span>
+            </div>
+        </div>
+
+        <template v-if="rutinaStore.seleccionada">
+            <div
+                class="max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop py-space-lg"
+            >
+                <div class="flex flex-col w-full">
+                    <!-- Subtle ambient canvas glow -->
+                    <div class="relative w-full">
+                        <div
+                            class="absolute -top-32 left-1/2 -translate-x-1/2 w-[720px] h-[360px] bg-secondary-container/15 rounded-full blur-[140px] pointer-events-none"
+                        ></div>
+
+                        <!-- Active session banner -->
+                        <div
+                            v-if="session.isActive"
+                            class="relative mb-space-lg overflow-hidden rounded-xl border border-tertiary/40 bg-surface-container-low p-space-md text-on-surface shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn"
+                        >
+                            <div class="flex items-center gap-space-md">
+                                <span class="relative flex h-3.5 w-3.5">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"
+                                    ></span>
+                                    <span
+                                        class="relative inline-flex rounded-full h-3.5 w-3.5 bg-tertiary"
+                                    ></span>
+                                </span>
+                                <div>
+                                    <p
+                                        class="font-label-lg text-label-lg text-on-surface flex items-center gap-2"
+                                    >
+                                        <span
+                                            >Entrenamiento en curso ·
+                                            {{ formattedActiveTime }}</span
+                                        >
+                                        <span
+                                            v-if="session.isPaused"
+                                            class="font-label-sm text-label-sm bg-secondary-container/60 text-secondary px-2 py-0.5 rounded-full"
+                                        >
+                                            Pausado
+                                        </span>
+                                    </p>
+                                    <p class="font-body-sm text-body-sm text-on-surface-variant">
+                                        {{
+                                            session.currentEjercicio?.nombre || 'Sesión iniciada'
+                                        }}
+                                        · {{ session.totalSeriesCompletadas }}/{{
+                                            session.totalSeriesObjetivo
+                                        }}
+                                        series
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-space-sm">
+                                <button
+                                    type="button"
+                                    @click="abrirModoEntrenamiento"
+                                    class="px-space-md py-space-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md font-bold shadow-md active:scale-95 transition-all flex items-center gap-1"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]">bolt</span>
+                                    <span>Continuar</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="descartarSesion"
+                                    title="Descartar entrenamiento en curso"
+                                    aria-label="Descartar entrenamiento en curso"
+                                    class="px-space-sm py-space-sm rounded-lg bg-surface-container-high hover:bg-error-container text-on-surface-variant hover:text-error font-label-md text-label-md transition-all"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Header / Welcome Banner -->
+                        <div
+                            class="relative flex flex-col md:flex-row md:items-end justify-between gap-space-lg mb-space-xl"
+                        >
+                            <div class="flex flex-col gap-space-xs">
+                                <div class="flex items-center gap-space-sm">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-high text-secondary font-label-sm text-label-sm uppercase tracking-wider"
+                                    >
+                                        <span
+                                            class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"
+                                        ></span>
+                                        {{ diaSemanaEs }}, {{ fechaCorta }}
+                                    </span>
+                                    <span class="font-body-sm text-body-sm text-outline">
+                                        • Temporada {{ anioActual }}
+                                    </span>
+                                </div>
+                                <h1
+                                    class="font-headline-xl text-headline-xl text-on-surface tracking-tight font-bold"
+                                >
+                                    ¡A entrenar,
+                                    <span class="text-secondary">{{ userFirstName }}</span
+                                    >!
+                                </h1>
+                                <p class="font-body-md text-body-md text-on-surface-variant">
+                                    Tu constancia define tus resultados. Hoy completás el ciclo
+                                    semanal de fuerza.
+                                </p>
+                            </div>
+
+                            <!-- Quick Actions Header -->
+                            <div class="flex items-center gap-space-md">
+                                <button
+                                    type="button"
+                                    @click="abrirModoEntrenamiento"
+                                    class="group flex items-center gap-2 px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface transition-all duration-200"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px] group-hover:scale-110 transition-transform"
+                                        >bolt</span
+                                    >
+                                    <span class="font-label-md text-label-md">Focus Mode</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="cambiarRutina"
+                                    class="flex items-center gap-1.5 text-secondary hover:text-on-secondary-container font-label-md text-label-md transition-colors px-space-sm py-space-sm"
+                                >
+                                    <span class="material-symbols-outlined text-[18px]"
+                                        >swap_horiz</span
+                                    >
+                                    <span>Cambiar rutina</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Routine Hero Card -->
+                        <section
+                            class="relative rounded-xl bg-surface-container-low p-space-lg md:p-space-xl mb-space-xl overflow-hidden shadow-xl"
+                            data-purpose="active-workout-hero"
+                            data-tour="rutina-header"
+                        >
+                            <div
+                                class="absolute -right-24 -bottom-24 w-80 h-80 bg-primary-container/10 rounded-full blur-[100px] pointer-events-none"
+                            ></div>
+                            <div
+                                class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-space-xl mb-space-xl"
+                            >
+                                <div class="flex flex-col gap-space-sm max-w-2xl">
+                                    <div class="flex items-center gap-space-sm">
+                                        <span
+                                            class="px-space-md py-0.5 rounded-full bg-secondary-container/60 text-secondary font-label-sm text-label-sm tracking-wide uppercase font-semibold"
+                                        >
+                                            {{ nombreRutina }}
+                                        </span>
+                                        <span
+                                            class="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm"
+                                        >
+                                            <span class="material-symbols-outlined text-[14px]"
+                                                >check_circle</span
+                                            >
+                                            Plan Óptimo
+                                        </span>
+                                    </div>
+                                    <h2
+                                        class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight"
+                                    >
+                                        {{ tituloHeroDia }}
+                                    </h2>
+                                    <div
+                                        class="flex flex-wrap items-center gap-space-md text-on-surface-variant font-label-md text-label-md"
+                                    >
+                                        <span class="flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined text-[16px] text-secondary"
+                                                >fitness_center</span
+                                            >
+                                            {{ ejerciciosDelDia.length }} ejercicios
+                                        </span>
+                                        <span>•</span>
+                                        <span class="flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined text-[16px] text-secondary"
+                                                >repeat</span
+                                            >
+                                            {{ seriesTotales }} series
+                                        </span>
+                                        <span>•</span>
+                                        <span class="flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined text-[16px] text-secondary"
+                                                >timer</span
+                                            >
+                                            ~{{ duracionEstimada }} min
+                                        </span>
+                                        <span>•</span>
+                                        <span class="flex items-center gap-1 text-tertiary">
+                                            <span class="material-symbols-outlined text-[16px]"
+                                                >local_fire_department</span
+                                            >
+                                            {{ caloriasEstimadas }} kcal est.
+                                        </span>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-space-md min-w-[240px]"
+                                >
+                                    <button
+                                        type="button"
+                                        @click="abrirModoEntrenamiento"
+                                        class="w-full sm:w-auto px-space-xl py-space-md rounded-full bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(139,92,246,0.6)] transition-all duration-300"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-[20px]"
+                                            :style="{ fontVariationSettings: '\'FILL\' 1' }"
+                                            >play_arrow</span
+                                        >
+                                        <span>{{
+                                            session.isActive
+                                                ? 'Continuar entrenamiento'
+                                                : 'Comenzar entrenamiento'
+                                        }}</span>
+                                    </button>
+                                    <span
+                                        class="font-label-sm text-label-sm text-outline text-center lg:text-right"
+                                    >
+                                        {{ estadoUltimoRegistroHero }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Session Progress Bar -->
+                            <div
+                                class="flex flex-col gap-space-xs pt-space-md bg-surface-container/50 -mx-space-lg md:-mx-space-xl -mb-space-lg md:-mb-space-xl px-space-lg md:px-space-xl pb-space-lg"
+                            >
+                                <div class="flex items-center justify-between text-on-surface">
+                                    <span
+                                        class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-tertiary text-[16px]"
+                                            >verified</span
+                                        >
+                                        Progreso de la sesión
+                                    </span>
+                                    <span class="font-label-lg text-label-lg font-bold text-tertiary">
+                                        {{ seriesCompletadas }} / {{ seriesTotales }} series ({{
+                                            progresoDia
+                                        }}%)
+                                    </span>
+                                </div>
+                                <div
+                                    class="w-full h-2.5 rounded-full bg-surface-container-highest overflow-hidden"
+                                >
+                                    <div
+                                        class="h-full rounded-full bg-gradient-to-r from-secondary via-primary-container to-tertiary transition-all duration-700"
+                                        :style="{ width: progresoDia + '%' }"
+                                    ></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Plan Selection Segmented Pills -->
+                        <div
+                            class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md mb-space-lg"
+                            data-tour="day-selector"
+                        >
+                            <div
+                                class="flex flex-wrap items-center gap-space-xs p-1 rounded-xl bg-surface-container-low"
+                            >
+                                <button
+                                    v-for="dia in todosLosDias"
+                                    :key="dia"
+                                    type="button"
+                                    @click="cambiarDia(dia)"
+                                    :class="[
+                                        'px-space-md py-space-xs rounded-lg font-label-md text-label-md transition-all',
+                                        diaActual === dia
+                                            ? 'bg-secondary-container text-on-secondary-container font-semibold shadow-sm'
+                                            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
+                                    ]"
+                                >
+                                    {{ formatDiaTabLabel(dia) }}
+                                </button>
+                            </div>
+                            <div
+                                class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm"
+                            >
+                                <span class="material-symbols-outlined text-[16px] text-outline"
+                                    >tune</span
+                                >
+                                <span
+                                    >Ciclo de hipertrofia muscular •
+                                    {{ semanaCicloLabel }}</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Key Metrics Grid -->
+                        <section
+                            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-space-md mb-space-xl"
+                            data-tour="stats"
+                        >
+                            <!-- Sets 30 Días -->
+                            <div
+                                class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <div
+                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
+                                >
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
+                                        >Sets 30 Días</span
+                                    >
+                                    <span
+                                        v-if="stats.trend30d !== 0"
+                                        class="inline-flex items-center px-1.5 py-0.5 rounded-full font-label-sm text-label-sm"
+                                        :class="
+                                            stats.trend30d >= 0
+                                                ? 'bg-tertiary/10 text-tertiary'
+                                                : 'bg-error/10 text-error'
+                                        "
+                                    >
+                                        {{ stats.trend30d > 0 ? '+' : '' }}{{ stats.trend30d }}%
+                                    </span>
+                                </div>
+                                <div>
+                                    <div
+                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
+                                    >
+                                        {{ stats.totalSets30d }}
+                                    </div>
+                                    <div class="font-body-sm text-body-sm text-tertiary">
+                                        Volumen alto sostenido
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Último Entreno -->
+                            <div
+                                class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <div
+                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
+                                >
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
+                                        >Último Entreno</span
+                                    >
+                                    <span
+                                        class="material-symbols-outlined text-[18px]"
+                                        :class="ultimoEntrenoAlerta ? 'text-error' : 'text-tertiary'"
+                                    >
+                                        {{ ultimoEntrenoAlerta ? 'warning' : 'check_circle' }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div
+                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
+                                    >
+                                        {{ ultimoEntrenoLabel }}
+                                    </div>
+                                    <div
+                                        class="font-body-sm text-body-sm"
+                                        :class="ultimoEntrenoAlerta ? 'text-error' : 'text-tertiary'"
+                                    >
+                                        {{ ultimoEntrenoSub }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Racha Actual -->
+                            <div
+                                class="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <div
+                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
+                                >
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
+                                        >Racha Actual</span
+                                    >
+                                    <span
+                                        class="material-symbols-outlined text-secondary text-[18px]"
+                                        >local_fire_department</span
+                                    >
+                                </div>
+                                <div class="flex items-baseline justify-between">
+                                    <div>
+                                        <div
+                                            class="font-headline-lg text-headline-lg font-bold text-on-surface"
+                                        >
+                                            {{ stats.streak }}
+                                            <span
+                                                class="font-body-md text-body-md text-outline font-normal"
+                                                >días</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="font-body-sm text-body-sm text-on-surface-variant"
+                                        >
+                                            Récord previo: {{ stats.longestStreak }} días
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="hidden sm:flex items-center gap-1 text-outline font-label-sm text-label-sm"
+                                    >
+                                        <span>Objetivo: 4/sem</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Series del Día -->
+                            <div
+                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <span
+                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
+                                    >Series del Día</span
+                                >
+                                <div>
+                                    <div
+                                        class="font-headline-lg text-headline-lg font-bold text-tertiary"
+                                    >
+                                        {{ seriesCompletadas }}/{{ seriesTotales }}
+                                    </div>
+                                    <div class="font-body-sm text-body-sm text-outline">
+                                        {{ seriesPendientes }} pendientes
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Peso Registrado -->
+                            <div
+                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <span
+                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
+                                    >Peso Registrado</span
+                                >
+                                <div>
+                                    <div
+                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
+                                    >
+                                        {{ pesoRegistrado }}
+                                        <span class="font-body-sm text-body-sm text-outline"
+                                            >kg</span
+                                        >
+                                    </div>
+                                    <div class="font-body-sm text-body-sm text-outline">
+                                        Volumen de la sesión
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Peso Promedio -->
+                            <div
+                                class="col-span-1 md:col-span-1 lg:col-span-1 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <span
+                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
+                                    >Peso Prom.</span
+                                >
+                                <div>
+                                    <div
+                                        class="font-headline-md text-headline-md font-bold text-on-surface"
+                                    >
+                                        {{ pesoPromedio }}
+                                        <span class="font-body-sm text-body-sm text-outline"
+                                            >kg</span
+                                        >
+                                    </div>
+                                    <div class="font-body-sm text-body-sm text-outline">
+                                        Por serie
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Reps Realizadas -->
+                            <div
+                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+                            >
+                                <span
+                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
+                                    >Reps Realizadas</span
+                                >
+                                <div>
+                                    <div
+                                        class="font-headline-lg text-headline-lg font-bold text-secondary"
+                                    >
+                                        {{ repsRegistradas }}
+                                    </div>
+                                    <div class="font-body-sm text-body-sm text-outline">
+                                        Repeticiones del día
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Workout Exercises Section -->
+                        <section
+                            class="flex flex-col gap-space-md mb-space-xl"
+                            data-purpose="todays-exercise-list"
+                            data-tour="series-list"
+                        >
+                            <!-- Section Header with Controls -->
+                            <div class="flex items-center justify-between pb-space-xs">
+                                <div class="flex items-center gap-space-sm">
+                                    <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                                    <h3
+                                        class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight"
+                                    >
+                                        EJERCICIOS DE HOY
+                                    </h3>
+                                    <span
+                                        class="px-2 py-0.5 rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm font-semibold"
+                                    >
+                                        {{ ejerciciosCompletadosCount }}/{{
+                                            ejerciciosDelDia.length
+                                        }}
+                                        completados
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="expandirTodos = !expandirTodos"
+                                    class="flex items-center gap-1.5 px-space-md py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]">
+                                        {{ expandirTodos ? 'unfold_less' : 'unfold_more' }}
+                                    </span>
+                                    <span>{{ expandirTodos ? 'Colapsar' : 'Expandir' }}</span>
+                                </button>
+                            </div>
+
+                            <div v-if="isInitialLoading" class="space-y-3">
+                                <SkeletonLoader variant="card" />
+                                <SkeletonLoader variant="card" />
+                                <SkeletonLoader variant="card" />
+                            </div>
+
+                            <!-- Exercise Cards Container -->
+                            <div v-else class="flex flex-col gap-space-md transition-all">
+                                <article
+                                    v-for="(ej, idx) in ejerciciosDelDia"
+                                    :key="ej.nombre"
+                                    class="p-space-md md:p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors shadow-sm"
+                                >
+                                    <div
+                                        class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md"
+                                    >
+                                        <div class="flex items-center gap-space-md">
+                                            <div
+                                                class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center font-label-md text-label-md text-on-surface font-bold shrink-0"
+                                            >
+                                                {{ idx + 1 }}
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-space-sm">
+                                                    <h4
+                                                        class="font-headline-md text-headline-md text-on-surface font-bold"
+                                                    >
+                                                        {{ ej.nombre }}
+                                                    </h4>
+                                                    <span
+                                                        v-if="ej.estaCompleto"
+                                                        class="material-symbols-outlined text-tertiary text-[18px]"
+                                                        >verified</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    class="font-body-sm text-body-sm text-outline flex flex-wrap items-center gap-space-xs"
+                                                >
+                                                    <span v-if="ej.repsLabel">{{
+                                                        ej.repsLabel
+                                                    }}</span>
+                                                    <span
+                                                        v-if="ej.repsLabel && ej.ultimoPesoLabel"
+                                                        >•</span
+                                                    >
+                                                    <span v-if="ej.ultimoPesoLabel">{{
+                                                        ej.ultimoPesoLabel
+                                                    }}</span>
+                                                    <template v-if="ej.musculoLabel">
+                                                        <span>•</span>
+                                                        <span class="text-tertiary">{{
+                                                            ej.musculoLabel
+                                                        }}</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-space-sm justify-between lg:justify-end"
+                                        >
+                                            <span
+                                                class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm font-semibold"
+                                                :class="
+                                                    ej.estaCompleto
+                                                        ? 'text-tertiary'
+                                                        : 'text-secondary'
+                                                "
+                                            >
+                                                {{ ej.completadas }}/{{ ej.sets.length }} series
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sets Chips Grid -->
+                                    <div
+                                        v-show="expandirTodos"
+                                        :class="[
+                                            'grid gap-space-sm mt-space-md pt-space-md bg-surface-container-lowest/40 -mx-space-md -mb-space-md md:-mx-space-lg md:-mb-space-lg p-space-md md:p-space-md rounded-b-xl',
+                                            ej.sets.length === 3
+                                                ? 'grid-cols-2 sm:grid-cols-3'
+                                                : 'grid-cols-2 sm:grid-cols-4',
+                                        ]"
+                                    >
+                                        <div
+                                            v-for="(set, sIdx) in ej.sets"
+                                            :key="sIdx"
+                                            :title="
+                                                esSetHistorico(set)
+                                                    ? 'Valor del ciclo anterior (histórico)'
+                                                    : null
+                                            "
+                                            :class="[
+                                                'flex flex-col px-space-md py-2 rounded-lg',
+                                                set.completado
+                                                    ? 'bg-tertiary/10'
+                                                    : esSetHistorico(set)
+                                                      ? 'bg-surface-container-high/50 border border-dashed border-outline-variant/50'
+                                                      : 'bg-surface-container',
+                                            ]"
+                                        >
+                                            <span
+                                                class="font-label-sm text-label-sm"
+                                                :class="
+                                                    set.completado
+                                                        ? 'text-tertiary'
+                                                        : esSetHistorico(set)
+                                                          ? 'text-secondary'
+                                                          : 'text-outline'
+                                                "
+                                            >
+                                                SET {{ sIdx + 1 }}
+                                            </span>
+                                            <span
+                                                class="font-label-md text-label-md text-on-surface font-bold"
+                                            >
+                                                {{ formatSetLabel(set) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+
+                        <!-- Visual Media Interlude (Rich photographic elements) -->
+                        <section class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-xl">
+                            <div class="relative h-44 rounded-xl overflow-hidden group">
+                                <img
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    alt="Sobrecarga Progresiva"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_237cDXPJ5kXFpkwOdgxoIn0ODK9BARrO1MF8UvxwL8MD8b_-c3eyKUBQS9taIQ6Cev_NY2hKw8ioQCSoVTDvku5PSOLJj1nz_m9LdQoF0J6fv8odydpTB844OwrVd5956e5-67mWps8BxjHYgAkqz7M2xIXYxVgOWx5OP0uPo_B6JIQ-5DzGfSFqIcJ_GmFHqGPzeJFMP7EFAfy3wgnUJmYS83AuoE7KcGiekA"
+                                />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
+                                >
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase text-secondary"
+                                        >Sobrecarga Progresiva</span
+                                    >
+                                    <span
+                                        class="font-label-lg text-label-lg text-on-surface font-bold"
+                                        >+12.5% volumen pectoral</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="relative h-44 rounded-xl overflow-hidden group">
+                                <img
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    alt="Intensidad Media (RPE 8.5)"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiu2GeVZel5XiEQKR3umJb6-DQG4eTcj9yFTyNKlZYQQIf0ft4GyA1r5wN9R1dYsXktsfqAMm_fYnfDPpFQq8GgYcAsvEaJCdlcnzrM7S81rjhomiG8Y4QXF7qeb24JCfOOQu_54qWBJupX2rf8LWru2yMFY6er8hXT-cNedZ93gf1ZZ9L2LDisYk1Zwsi8pvvvSdHxIKffbEbmNlwiBN0GHShts8LD7bwVSVQSQ"
+                                />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
+                                >
+                                    <span
+                                        class="font-label-sm text-label-sm uppercase text-tertiary"
+                                        >Intensidad Media (RPE 8.5)</span
+                                    >
+                                    <span
+                                        class="font-label-lg text-label-lg text-on-surface font-bold"
+                                        >Cadencia de empuje controlada</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="relative h-44 rounded-xl overflow-hidden group">
+                                <img
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    alt="Recuperación Sugerida"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8VCHImghNygnLsa-ZE_tPphr3uzTi29mH0QYrt5cwYcxAXlnMbm8-xHOw1wI9EkYV_mYmWNybhrexvw2T2KJj8BSFV48f8v5LwSufQipfcBzfgFfY1bSgqoPt2xS09xxLKfqHOqF-Nn8TGkU9doWQIjh2jp4Ed9IVkKYJQ9llQFXR1EUKa-Y0APNC4ms6d937PGIKpGJTs4gzXqMBiy90iG4qE-9xU37kXYXJdw"
+                                />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
+                                >
+                                    <span class="font-label-sm text-label-sm uppercase text-outline"
+                                        >Recuperación Sugerida</span
+                                    >
+                                    <span
+                                        class="font-label-lg text-label-lg text-on-surface font-bold"
+                                        >48h descanso neuromuscular</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Analytics & Telemetry Charts Section -->
+                        <section
+                            class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg mb-space-xl"
+                            data-tour="telemetry-charts"
+                        >
+                            <!-- Telemetry Chart 1: Press de Banca 30d -->
+                            <div
+                                class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
+                            >
+                                <div class="flex items-start justify-between gap-space-md mb-space-md">
+                                    <div class="flex flex-col">
+                                        <div
+                                            class="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm uppercase tracking-wider"
+                                        >
+                                            <span class="material-symbols-outlined text-[16px]"
+                                                >show_chart</span
+                                            >
+                                            <span>Peso máximo por día (30d)</span>
+                                        </div>
+                                        <h4
+                                            class="font-headline-md text-headline-md text-on-surface font-bold"
+                                        >
+                                            Progreso en {{ chartEjercicioNombre }}
+                                        </h4>
+                                        <span class="font-body-sm text-body-sm text-outline">
+                                            Evolución de carga máxima en series principales
+                                        </span>
+                                    </div>
+                                    <span
+                                        class="px-space-md py-1 rounded-full bg-secondary-container/50 text-secondary font-label-md text-label-md font-bold shrink-0"
+                                    >
+                                        Max: {{ maxPesoChart }} kg
+                                    </span>
+                                </div>
+
+                                <!-- Inline SVG Telemetry Curve 1 -->
+                                <div class="relative w-full h-56 pt-space-sm">
+                                    <svg
+                                        class="w-full h-full overflow-visible"
+                                        fill="none"
+                                        preserveAspectRatio="none"
+                                        viewBox="0 0 500 180"
+                                    >
+                                        <defs>
+                                            <linearGradient
+                                                id="chartGrad1"
+                                                x1="0"
+                                                x2="0"
+                                                y1="0"
+                                                y2="1"
+                                            >
+                                                <stop
+                                                    offset="0%"
+                                                    stop-color="#8083ff"
+                                                    stop-opacity="0.35"
+                                                ></stop>
+                                                <stop
+                                                    offset="100%"
+                                                    stop-color="#8083ff"
+                                                    stop-opacity="0.0"
+                                                ></stop>
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Grid Lines -->
+                                        <line
+                                            stroke="#31353e"
+                                            stroke-dasharray="4 4"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="40"
+                                            y2="40"
+                                        ></line>
+                                        <line
+                                            stroke="#31353e"
+                                            stroke-dasharray="4 4"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="90"
+                                            y2="90"
+                                        ></line>
+                                        <line
+                                            stroke="#31353e"
+                                            stroke-dasharray="4 4"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="140"
+                                            y2="140"
+                                        ></line>
+                                        <!-- Curve fill area -->
+                                        <path :d="chart1Telemetry.area" fill="url(#chartGrad1)"></path>
+                                        <!-- Smooth spline path -->
+                                        <path
+                                            :d="chart1Telemetry.line"
+                                            stroke="#c0c1ff"
+                                            stroke-linecap="round"
+                                            stroke-width="3"
+                                        ></path>
+                                        <!-- Key Metric Nodes -->
+                                        <template
+                                            v-for="(node, nIdx) in chart1Telemetry.nodes"
+                                            :key="nIdx"
+                                        >
+                                            <template v-if="node.peak">
+                                                <circle
+                                                    class="animate-pulse"
+                                                    :cx="node.x"
+                                                    :cy="node.y"
+                                                    fill="#8083ff"
+                                                    r="7"
+                                                ></circle>
+                                                <circle
+                                                    :cx="node.x"
+                                                    :cy="node.y"
+                                                    fill="#dfe2ee"
+                                                    r="4"
+                                                ></circle>
+                                            </template>
+                                            <circle
+                                                v-else
+                                                :cx="node.x"
+                                                :cy="node.y"
+                                                fill="#0f131c"
+                                                :r="node.muted ? 3 : 4"
+                                                :stroke="node.muted ? '#908fa0' : '#c0c1ff'"
+                                                stroke-width="2"
+                                            ></circle>
+                                        </template>
+                                    </svg>
+                                </div>
+                                <!-- Date Axis -->
+                                <div
+                                    class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-space-xs"
+                                >
+                                    <span
+                                        v-for="(lbl, lIdx) in chart1Telemetry.labels"
+                                        :key="lIdx"
+                                        >{{ lbl }}</span
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Telemetry Chart 2: Global PR History 30d -->
+                            <div
+                                class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
+                            >
+                                <div class="flex items-start justify-between gap-space-md mb-space-md">
+                                    <div class="flex flex-col">
+                                        <div
+                                            class="flex items-center gap-space-xs text-primary font-label-sm text-label-sm uppercase tracking-wider"
+                                        >
+                                            <span class="material-symbols-outlined text-[16px]"
+                                                >monitoring</span
+                                            >
+                                            <span>Peso máximo por día (últimos 30 días)</span>
+                                        </div>
+                                        <h4
+                                            class="font-headline-md text-headline-md text-on-surface font-bold"
+                                        >
+                                            Tu PR diario a lo largo del tiempo
+                                        </h4>
+                                        <span class="font-body-sm text-body-sm text-outline">
+                                            Ponderación volumétrica por semana de descarga y pico
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                                        <span
+                                            class="font-label-sm text-label-sm text-on-surface-variant"
+                                            >Peso (kg)</span
+                                        >
+                                    </div>
+                                </div>
+
+                                <!-- Inline SVG Telemetry Curve 2 -->
+                                <div class="relative w-full h-56 pt-space-sm">
+                                    <svg
+                                        class="w-full h-full overflow-visible"
+                                        fill="none"
+                                        preserveAspectRatio="none"
+                                        viewBox="0 0 500 180"
+                                    >
+                                        <defs>
+                                            <linearGradient
+                                                id="chartGrad2"
+                                                x1="0"
+                                                x2="0"
+                                                y1="0"
+                                                y2="1"
+                                            >
+                                                <stop
+                                                    offset="0%"
+                                                    stop-color="#571bc1"
+                                                    stop-opacity="0.4"
+                                                ></stop>
+                                                <stop
+                                                    offset="100%"
+                                                    stop-color="#571bc1"
+                                                    stop-opacity="0.0"
+                                                ></stop>
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Guide markers horizontal -->
+                                        <line
+                                            stroke="#262a33"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="20"
+                                            y2="20"
+                                        ></line>
+                                        <line
+                                            stroke="#262a33"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="60"
+                                            y2="60"
+                                        ></line>
+                                        <line
+                                            stroke="#262a33"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="100"
+                                            y2="100"
+                                        ></line>
+                                        <line
+                                            stroke="#262a33"
+                                            stroke-width="1"
+                                            x1="0"
+                                            x2="500"
+                                            y1="140"
+                                            y2="140"
+                                        ></line>
+                                        <!-- Curve fill area -->
+                                        <path :d="chart2Telemetry.area" fill="url(#chartGrad2)"></path>
+                                        <!-- Smooth spline path -->
+                                        <path
+                                            :d="chart2Telemetry.line"
+                                            stroke="#d0bcff"
+                                            stroke-linecap="round"
+                                            stroke-width="3"
+                                        ></path>
+                                        <!-- Chart Nodes -->
+                                        <circle
+                                            v-for="(node, nIdx) in chart2Telemetry.nodes"
+                                            :key="nIdx"
+                                            :cx="node.x"
+                                            :cy="node.y"
+                                            :fill="
+                                                node.isPeak
+                                                    ? '#4edea3'
+                                                    : node.isAccent
+                                                      ? '#571bc1'
+                                                      : '#0f131c'
+                                            "
+                                            :r="node.isPeak ? 6 : node.isAccent ? 5 : 4"
+                                            :stroke="node.isPeak ? '#dfe2ee' : '#d0bcff'"
+                                            stroke-width="2"
+                                        ></circle>
+                                    </svg>
+                                </div>
+                                <!-- Date Axis -->
+                                <div
+                                    class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-space-xs"
+                                >
+                                    <span
+                                        v-for="(lbl, lIdx) in chart2Telemetry.labels"
+                                        :key="lIdx"
+                                        >{{ lbl }}</span
+                                    >
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Session Actions Bar -->
+                        <section class="flex flex-col gap-space-md pt-space-xs pb-space-xl">
+                            <div class="flex flex-col sm:flex-row items-center gap-space-md">
+                                <!-- Dia Anterior Secondary -->
+                                <button
+                                    v-if="diaIndex > 0"
+                                    type="button"
+                                    @click="diaAnterior"
+                                    class="w-full sm:w-auto px-space-lg py-space-md rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    <span class="material-symbols-outlined text-[20px]"
+                                        >arrow_back</span
+                                    >
+                                    <span>Día anterior</span>
+                                </button>
+                                <!-- Guardar Sesion Primary -->
+                                <button
+                                    type="button"
+                                    @click="guardarSesion"
+                                    class="w-full sm:flex-1 px-space-xl py-space-md rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,131,255,0.35)] transition-all"
+                                >
+                                    <span class="material-symbols-outlined text-[20px]"
+                                        >bookmark</span
+                                    >
+                                    <span>Guardar sesión</span>
+                                </button>
+                            </div>
+
+                            <!-- Siguiente Día (si no es el último día) -->
+                            <button
+                                v-if="!esUltimoDia"
+                                type="button"
+                                @click="siguienteDia"
+                                class="w-full py-space-md px-space-xl rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 transition-all"
+                            >
+                                <span>Avanzar al siguiente día: {{ diasSiguienteLabel }}</span>
+                                <span class="material-symbols-outlined text-[20px]"
+                                    >arrow_forward</span
+                                >
+                            </button>
+
+                            <!-- Finalizar Rutina Full Accent CTA -->
+                            <button
+                                type="button"
+                                @click="finalizarRutina"
+                                class="w-full py-space-md px-space-xl rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2.5 shadow-[0_0_24px_rgba(78,222,163,0.35)] hover:shadow-[0_0_32px_rgba(78,222,163,0.5)] transition-all"
+                            >
+                                <span
+                                    class="material-symbols-outlined text-[22px]"
+                                    :style="{ fontVariationSettings: '\'FILL\' 1' }"
+                                    >check_circle</span
+                                >
+                                <span>Finalizar rutina</span>
+                            </button>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Pro Telemetry -->
+            <footer class="w-full bg-surface-container-lowest mt-space-xl">
+                <div
+                    class="max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-md"
+                >
+                    <div class="flex items-center gap-space-sm">
+                        <div
+                            class="w-6 h-6 rounded-lg bg-secondary-container flex items-center justify-center"
+                        >
+                            <span class="material-symbols-outlined text-secondary text-[16px]"
+                                >fitness_center</span
+                            >
+                        </div>
+                        <span class="font-label-md text-label-md text-on-surface-variant">
+                            © {{ anioActual }} GymApp Pro Telemetry. Todos los derechos reservados.
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-space-lg">
+                        <a
+                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+                            href="#soporte"
+                            >Soporte</a
+                        >
+                        <a
+                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+                            href="#terminos"
+                            >Términos del Servicio</a
+                        >
+                        <a
+                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+                            href="#privacidad"
+                            >Privacidad</a
+                        >
+                    </div>
+                </div>
+            </footer>
+        </template>
+
+        <EmptyStateIllustrated
+            v-else
+            variant="no-rutinas"
+            title="No hay rutina seleccionada"
+            description="Elegí una rutina para empezar a registrar tus series y llevar el control de tu progreso."
+            cta-text="Seleccionar Rutina"
+            cta-icon="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            @cta="irARutinas"
+        />
+
+        <!-- Onboarding tour -->
+        <OnboardingTour :tour="onboarding" />
+
+        <!-- Modales de Modo Entrenamiento Activo -->
+        <ActiveWorkoutModal
+            :open="showActiveWorkoutModal"
+            @minimize="showActiveWorkoutModal = false"
+            @finish="onFinishActiveWorkout"
+        />
+
+        <WorkoutSummaryModal
+            :open="showWorkoutSummaryModal"
+            @cancel="
+                showWorkoutSummaryModal = false;
+                showActiveWorkoutModal = true;
+            "
+            @saved="onWorkoutSummarySaved"
+        />
+
+        <!-- Bottom sheet: resumen al cambiar de día -->
+        <Teleport to="body">
+            <Transition name="sheet-fade">
+                <div
+                    v-if="showDaySummary"
+                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+                    @click.self="showDaySummary = false"
+                >
+                    <div
+                        class="sheet-content w-full sm:max-w-md bg-surface-container sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-surface-variant overflow-hidden max-h-[90vh] flex flex-col"
+                    >
+                        <div class="sm:hidden pt-2 pb-1 flex justify-center">
+                            <div class="w-10 h-1.5 rounded-full bg-surface-variant"></div>
+                        </div>
+
+                        <div
+                            class="bg-gradient-to-br from-tertiary-container to-tertiary px-6 py-5 text-on-tertiary"
+                        >
+                            <div
+                                class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90"
+                            >
+                                <span>✓</span>
+                                <span>Día completado</span>
+                            </div>
+                            <h3 class="mt-1 text-2xl font-black">
+                                {{ daySummary.diaLabel }}
+                            </h3>
+                        </div>
+
+                        <div class="px-6 py-5 space-y-4 overflow-y-auto">
+                            <div class="grid grid-cols-3 gap-3 text-center">
+                                <div class="rounded-xl bg-primary-container/15 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-primary"
+                                    >
+                                        Series
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-on-surface tabular-nums"
+                                    >
+                                        {{ daySummary.completadas }}/{{ daySummary.total }}
+                                    </p>
+                                </div>
+                                <div class="rounded-xl bg-secondary-container/25 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-secondary"
+                                    >
+                                        Volumen
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-on-surface tabular-nums"
+                                    >
+                                        {{ formatVolumen(daySummary.volumen) }}
+                                    </p>
+                                    <p class="text-[10px] text-outline">kg totales</p>
+                                </div>
+                                <div class="rounded-xl bg-tertiary/15 px-3 py-3">
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-tertiary"
+                                    >
+                                        PRs
+                                    </p>
+                                    <p
+                                        class="mt-0.5 text-2xl font-black text-tertiary tabular-nums"
+                                    >
+                                        {{ daySummary.prs }}
+                                    </p>
+                                    <p class="text-[10px] text-tertiary/80">récords</p>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="daySummary.mejorSet"
+                                class="rounded-xl bg-tertiary/10 border border-tertiary/30 px-4 py-3"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-tertiary uppercase tracking-wider"
+                                >
+                                    <span>🏆</span>
+                                    <span>Mejor set</span>
+                                </div>
+                                <p class="mt-1 text-base font-bold text-on-surface">
+                                    {{ daySummary.mejorSet.ejercicio }}
+                                </p>
+                                <p class="text-sm font-semibold text-tertiary tabular-nums">
+                                    {{ daySummary.mejorSet.peso }} kg ×
+                                    {{ daySummary.mejorSet.reps }} reps
+                                </p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="px-6 py-4 bg-surface-container-lowest/60 border-t border-surface-variant flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
+                        >
+                            <button
+                                type="button"
+                                @click="showDaySummary = false"
+                                class="flex-1 px-4 py-2.5 rounded-xl border border-surface-variant bg-surface-container-low text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
+                            >
+                                Quedarme acá
+                            </button>
+                            <button
+                                v-if="daySummary.tieneSiguiente"
+                                type="button"
+                                @click="avanzarAlSiguienteDia"
+                                class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
+                            >
+                                Ir al {{ daySummary.siguienteLabel }} →
+                            </button>
+                            <button
+                                v-else
+                                type="button"
+                                @click="finalizarRutinaDesdeResumen"
+                                class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
+                            >
+                                🎉 Finalizar rutina
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+    </div>
+</template>
+
 <style scoped>
-/* #4 Bottom sheet: slide-up desde abajo en mobile, fade en desktop */
 .sheet-fade-enter-active,
 .sheet-fade-leave-active {
     transition: opacity 0.25s ease;
@@ -1973,7 +2477,6 @@ const iniciarTemporizador = (fila) => {
     opacity: 0;
 }
 
-/* El contenido se desliza desde abajo */
 .sheet-fade-enter-active .sheet-content,
 .sheet-fade-leave-active .sheet-content {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1983,7 +2486,6 @@ const iniciarTemporizador = (fila) => {
     transform: translateY(100%);
 }
 
-/* En desktop (sm:) el slide es solo fade (centrado) */
 @media (min-width: 640px) {
     .sheet-fade-enter-from .sheet-content,
     .sheet-fade-leave-to .sheet-content {
