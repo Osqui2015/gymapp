@@ -58,7 +58,7 @@
             <!-- ============================================================ -->
             <!-- MOBILE-FIRST: shell exacto del mockup Figma Kinetic Obsidian -->
             <!-- ============================================================ -->
-            <div class="md:hidden w-full">
+            <div class="w-full">
                 <!-- BEGIN: TopBar (sticky) -->
                 <header
                     class="sticky top-0 z-40 bg-[#090D16]/90 backdrop-blur-md px-5 pt-3 pb-3 border-b border-[#232F4D]/60 flex items-center justify-between"
@@ -122,7 +122,7 @@
                 <!-- END: TopBar -->
 
                 <!-- BEGIN: MainContent -->
-                <main class="px-4 pt-4 space-y-5 max-w-md mx-auto w-full pb-32">
+                <main class="px-4 pt-4 space-y-5 max-w-md md:max-w-5xl mx-auto w-full pb-32 md:pb-10">
                     <!-- Active session banner -->
                     <div
                         v-if="session.isActive"
@@ -196,6 +196,7 @@
                                 linear-gradient(180deg, #1c1f38 0%, #14182b 50%, #0f1424 100%);
                         "
                         data-purpose="active-workout-hero"
+                        data-tour="rutina-header"
                     >
                         <div class="flex items-start justify-between mb-3">
                             <div class="space-y-1">
@@ -266,7 +267,8 @@
                     <!-- END: HeroCard -->
 
                     <!-- BEGIN: QuickStatsGrid -->
-                    <section class="grid grid-cols-3 gap-2.5">
+                    <section class="space-y-2.5">
+                        <div class="grid grid-cols-3 gap-2.5 md:gap-3" data-tour="stats">
                         <div
                             class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
                         >
@@ -324,11 +326,76 @@
                                 Récord: {{ stats.longestStreak }} días
                             </div>
                         </div>
+                        </div>
+
+                        <!-- Resumen de la sesión (desktop): conserva las métricas del layout web -->
+                        <div class="hidden md:grid md:grid-cols-4 gap-3">
+                            <div
+                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                            >
+                                <div
+                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                                >
+                                    Series del día
+                                </div>
+                                <div class="mt-1 text-lg font-extrabold text-white">
+                                    {{ seriesCompletadas }}/{{ seriesTotales }}
+                                </div>
+                                <div class="text-[10px] text-gray-300 mt-0.5">
+                                    {{ seriesPendientes }} pendientes
+                                </div>
+                            </div>
+                            <div
+                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                            >
+                                <div
+                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                                >
+                                    Peso registrado
+                                </div>
+                                <div class="mt-1 text-lg font-extrabold text-white">
+                                    {{ pesoRegistrado }} kg
+                                </div>
+                                <div class="text-[10px] text-gray-300 mt-0.5">
+                                    Volumen de la sesión
+                                </div>
+                            </div>
+                            <div
+                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                            >
+                                <div
+                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                                >
+                                    Peso promedio
+                                </div>
+                                <div class="mt-1 text-lg font-extrabold text-white">
+                                    {{ pesoPromedio }} kg
+                                </div>
+                                <div class="text-[10px] text-gray-300 mt-0.5">
+                                    Por serie registrada
+                                </div>
+                            </div>
+                            <div
+                                class="bg-[#111726]/90 border border-[#232F4D] rounded-2xl p-3 flex flex-col justify-between"
+                            >
+                                <div
+                                    class="text-[10px] font-bold uppercase tracking-wider text-gray-400"
+                                >
+                                    Reps realizadas
+                                </div>
+                                <div class="mt-1 text-lg font-extrabold text-white">
+                                    {{ repsRegistradas }}
+                                </div>
+                                <div class="text-[10px] text-gray-300 mt-0.5">
+                                    Repeticiones del día
+                                </div>
+                            </div>
+                        </div>
                     </section>
                     <!-- END: QuickStatsGrid -->
 
                     <!-- BEGIN: DaySelectorTabs -->
-                    <section>
+                    <section data-tour="day-selector">
                         <div class="flex items-center justify-between mb-2">
                             <span
                                 class="text-xs font-bold uppercase tracking-wider text-gray-400"
@@ -369,7 +436,7 @@
                     <!-- END: DaySelectorTabs -->
 
                     <!-- BEGIN: ExerciseListSection -->
-                    <section class="space-y-3" data-purpose="todays-exercise-list">
+                    <section class="space-y-3" data-purpose="todays-exercise-list" data-tour="series-list">
                         <div class="flex items-center justify-between pt-1">
                             <div class="flex items-baseline gap-2">
                                 <h3
@@ -393,6 +460,13 @@
                             </button>
                         </div>
 
+                        <div v-if="isInitialLoading" class="space-y-3">
+                            <SkeletonLoader variant="card" />
+                            <SkeletonLoader variant="card" />
+                            <SkeletonLoader variant="card" />
+                        </div>
+
+                        <div v-else class="grid gap-3 md:gap-4">
                         <article
                             v-for="(ej, idx) in ejerciciosDelDia"
                             :key="ej.nombre"
@@ -435,32 +509,52 @@
                             <!-- Series pills -->
                             <div
                                 v-if="expandirTodos || ej.estaCompleto"
-                                class="grid grid-cols-4 gap-1.5 pt-2"
+                                class="grid grid-cols-4 md:grid-cols-6 gap-1.5 pt-2"
                             >
                                 <div
                                     v-for="(set, sIdx) in ej.sets"
                                     :key="sIdx"
+                                    :title="
+                                        esSetHistorico(set)
+                                            ? 'Valor del ciclo anterior (histórico)'
+                                            : null
+                                    "
                                     :class="[
                                         'rounded-lg py-1 text-center border',
                                         set.completado
                                             ? 'bg-emerald-500/10 border-emerald-500/30'
-                                            : 'bg-[#161F36] border-[#232F4D]',
+                                            : esSetHistorico(set)
+                                              ? 'bg-[#111726] border-dashed border-[#3B4A6B]'
+                                              : 'bg-[#161F36] border-[#232F4D]',
                                     ]"
                                 >
                                     <span
                                         class="text-[10px] block font-mono"
-                                        :class="set.completado ? 'text-emerald-400' : 'text-gray-400'"
+                                        :class="
+                                            set.completado
+                                                ? 'text-emerald-400'
+                                                : esSetHistorico(set)
+                                                  ? 'text-[#A78BFA]'
+                                                  : 'text-gray-400'
+                                        "
                                         >S{{ sIdx + 1 }}</span
                                     >
                                     <span
                                         class="text-xs font-bold"
-                                        :class="set.completado ? 'text-emerald-200' : 'text-gray-200'"
+                                        :class="
+                                            set.completado
+                                                ? 'text-emerald-200'
+                                                : esSetHistorico(set)
+                                                  ? 'text-gray-300'
+                                                  : 'text-gray-200'
+                                        "
                                     >
                                         {{ formatSetLabel(set) }}
                                     </span>
                                 </div>
                             </div>
                         </article>
+                        </div>
                     </section>
                     <!-- END: ExerciseListSection -->
 
@@ -570,6 +664,25 @@
                     </section>
                     <!-- END: ProgressChartSection -->
 
+                    <!-- Acciones desktop (la barra inferior fija es solo mobile) -->
+                    <div class="hidden md:flex gap-3">
+                        <button
+                            v-if="diaIndex > 0"
+                            type="button"
+                            @click="diaAnterior"
+                            class="px-5 py-3 rounded-2xl bg-[#111726] border border-[#232F4D] text-gray-300 hover:text-white hover:border-[#2a354f] font-semibold text-xs flex items-center justify-center gap-2 transition-all"
+                        >
+                            ← Día anterior
+                        </button>
+                        <button
+                            type="button"
+                            @click="guardarSesion"
+                            class="flex-1 py-3 px-4 rounded-2xl bg-[#6366F1] hover:bg-[#4F46E5] text-white font-bold text-sm shadow-lg shadow-[#6366F1]/30 active:scale-[0.99] transition-all"
+                        >
+                            Guardar sesión
+                        </button>
+                    </div>
+
                     <!-- Footer CTA -->
                     <div class="pt-1 pb-4">
                         <button
@@ -610,7 +723,7 @@
 
                 <!-- BEGIN: Bottom Fixed Save Button -->
                 <div
-                    class="fixed inset-x-0 bottom-0 z-40 border-t border-[#232F4D] bg-[#090D16]/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+                    class="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[#232F4D] bg-[#090D16]/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
                 >
                     <div class="max-w-md mx-auto px-4 py-3">
                         <button
@@ -625,170 +738,17 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- DESKTOP: layout actual (preservado) -->
+            <!-- DESKTOP-ONLY: constancia + volumen semanal (complemento) -->
             <!-- ============================================================ -->
             <div class="hidden md:block">
-                <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <Breadcrumbs :items="[{ label: 'Inicio' }]" class="mb-3" />
-
-                    <div data-tour="home-hero" class="mb-4">
-                        <HomeHero />
-                    </div>
-
-                    <!-- Banner de Sesión Activa -->
-                    <div
-                        v-if="session.isActive"
-                        class="mb-4 relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-900/95 via-teal-900/95 to-violet-900/95 p-4 text-white shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fade-in"
-                    >
-                        <div
-                            class="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-emerald-500/30 blur-3xl"
-                        ></div>
-                        <div class="flex items-center gap-3">
-                            <span class="relative flex h-3.5 w-3.5">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
-                                ></span>
-                                <span
-                                    class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"
-                                ></span>
-                            </span>
-                            <div>
-                                <p
-                                    class="text-sm font-black tracking-tight flex items-center gap-2"
-                                >
-                                    <span>Entrenamiento en curso · {{ formattedActiveTime }}</span>
-                                    <span
-                                        v-if="session.isPaused"
-                                        class="text-[10px] font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded"
-                                        >Pausado</span
-                                    >
-                                </p>
-                                <p class="text-xs text-emerald-200/80">
-                                    {{
-                                        session.currentEjercicio?.nombre ||
-                                        'Sesión iniciada'
-                                    }}
-                                    · {{ session.totalSeriesCompletadas }}/{{
-                                        session.totalSeriesObjetivo
-                                    }}
-                                    series
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="abrirModoEntrenamiento"
-                                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md cursor-pointer transition-all active:scale-95"
-                            >
-                                ⚡ Continuar
-                            </button>
-                            <button
-                                type="button"
-                                @click="descartarSesion"
-                                class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-rose-300 text-xs font-semibold cursor-pointer transition-all"
-                            >
-                                Descartar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div
-                        v-else
-                        class="mb-4 obs-card-elevated p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                    >
-                        <div>
-                            <h3
-                                class="text-sm sm:text-base font-bold text-gray-900 dark:text-white flex items-center gap-2"
-                            >
-                                <span>⚡ Modo Entrenamiento Activo</span>
-                                <span
-                                    class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
-                                    >Focus Mode</span
-                                >
-                            </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                Seguimiento guiado serie por serie, botones táctiles aumentados y
-                                descanso automático.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            @click="abrirModoEntrenamiento"
-                            class="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
-                        >
-                            <span>▶ Iniciar Sesión de Hoy</span>
-                        </button>
-                    </div>
-
-                    <div data-tour="rutina-header">
-                        <DashboardRutinaHeader
-                            :nivel="rutinaStore.seleccionada.nivel"
-                            :dias="rutinaStore.seleccionada.dias"
-                            :dia-actual="diaActual"
-                            @cambiar="cambiarRutina"
-                        />
-                    </div>
-
-                    <div data-tour="stats">
-                        <DashboardStats
-                            :series-totales="seriesTotales"
-                            :series-completadas="seriesCompletadas"
-                            :series-pendientes="seriesPendientes"
-                            :peso-registrado="pesoRegistrado"
-                            :peso-promedio="pesoPromedio"
-                            :reps-registradas="repsRegistradas"
-                            :progreso-dia="progresoDia"
-                        />
-                    </div>
-
-                    <div
-                        class="mb-5 md:mb-6 sticky top-14 z-20 -mx-4 px-4 py-2 bg-gray-50/90 dark:bg-[var(--color-obsidian-base)]/90 backdrop-blur supports-[backdrop-filter]:bg-gray-50/70 supports-[backdrop-filter]:dark:bg-[var(--color-obsidian-base)]/70 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none"
-                        data-tour="day-selector"
-                    >
-                        <div
-                            class="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible"
-                        >
-                            <button
-                                v-for="dia in todosLosDias"
-                                :key="dia"
-                                @click="cambiarDia(dia)"
-                                :class="[
-                                    'shrink-0 px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap text-sm',
-                                    diaActual === dia
-                                        ? 'bg-[var(--color-violet-primary)] text-white shadow-[0_4px_14px_var(--color-violet-glow)]'
-                                        : 'bg-white dark:bg-[var(--color-obsidian-elevated)] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[var(--color-obsidian-surface)] border border-gray-200 dark:border-[var(--color-obsidian-border)]',
-                                ]"
-                            >
-                                {{ dia }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div data-tour="series-list">
-                        <div v-if="isInitialLoading" class="space-y-3 mb-6">
-                            <SkeletonLoader variant="card" />
-                            <SkeletonLoader variant="card" />
-                            <SkeletonLoader variant="card" />
-                        </div>
-                        <DashboardSeriesList
-                            v-else
-                            :filas-serie="filasSerie"
-                            :dia-index="diaIndex"
-                            :texto-boton-siguiente="textoBotonSiguiente"
-                            :boton-siguiente-class="botonSiguienteClass"
-                            @guardar="guardarFila"
-                            @dia-anterior="diaAnterior"
-                            @guardar-sesion="guardarSesion"
-                            @siguiente-dia="siguienteDia"
-                        />
-                    </div>
-                </div>
-
-                <DashboardHeatmap :historial="historialRutina" class="mt-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" data-tour="heatmap" />
+                <DashboardHeatmap
+                    :historial="historialRutina"
+                    class="mt-6 max-w-5xl mx-auto px-4 sm:px-6"
+                    data-tour="heatmap"
+                />
                 <DashboardWeeklyChart
                     :historial="historialRutina"
-                    class="mt-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+                    class="mt-6 max-w-5xl mx-auto px-4 sm:px-6"
                     data-tour="weekly-chart"
                 />
             </div>
@@ -951,11 +911,6 @@ import EmptyState from './EmptyState.vue'; // legacy, reemplazado por EmptyState
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
-import Breadcrumbs from './Breadcrumbs.vue';
-import HomeHero from './HomeHero.vue';
-import DashboardRutinaHeader from './dashboard/DashboardRutinaHeader.vue';
-import DashboardStats from './dashboard/DashboardStats.vue';
-import DashboardSeriesList from './dashboard/DashboardSeriesList.vue';
 import DashboardHeatmap from './dashboard/DashboardHeatmap.vue';
 import DashboardWeeklyChart from './dashboard/DashboardWeeklyChart.vue';
 import SkeletonLoader from './common/SkeletonLoader.vue';
@@ -1196,21 +1151,45 @@ const ejerciciosCompletadosCount = computed(
     () => ejerciciosDelDia.value.filter((e) => e.estaCompleto).length
 );
 
+// === Datos históricos (ciclo anterior) ===
+// Si la serie todavía no tiene registro en el ciclo actual, se muestra el valor
+// del ciclo anterior: así la vista nunca queda vacía y se ve el histórico.
+const valorHistoricoSet = (set) => {
+    const prev = set?.previous_record;
+    if (!prev) return null;
+    const reps = prev.reps_realizadas ?? null;
+    const peso = prev.peso ?? null;
+    if (reps === null && peso === null) return null;
+    return { reps, peso };
+};
+
+const setSinRegistroActual = (set) =>
+    (set.reps_realizadas === null || set.reps_realizadas === undefined) &&
+    (set.peso === null || set.peso === undefined);
+
+// true cuando la serie no tiene valor en el ciclo actual y mostramos el histórico
+const esSetHistorico = (set) => setSinRegistroActual(set) && !!valorHistoricoSet(set);
+
 const buildMeta = (fila) => {
     if (!fila) return '';
     const partes = [];
     if (fila.reps_min && fila.reps_max) partes.push(`${fila.reps_min}–${fila.reps_max} reps`);
-    if (fila.peso) partes.push(`Último: ${fila.peso} kg`);
+    const peso = fila.peso ?? fila.previous_record?.peso ?? null;
+    if (peso) partes.push(`Último: ${peso} kg`);
     return partes.join(' · ');
 };
 
 const formatSetLabel = (set) => {
-    const r = set.reps_realizadas ?? set.reps_min ?? '';
-    const p = set.peso ?? '';
+    if (!set) return '—';
+    const hist = valorHistoricoSet(set);
+    const tieneActual = !setSinRegistroActual(set);
+    const r = tieneActual ? set.reps_realizadas ?? set.reps_min ?? '' : hist?.reps ?? '';
+    const p = tieneActual ? set.peso ?? '' : hist?.peso ?? '';
     if (r && p) return `${r} × ${p}kg`;
     if (p) return `${p}kg`;
     if (r) return `${r} reps`;
-    return '—';
+    if (tieneActual) return '—';
+    return set.reps_min ? `${set.reps_min} reps` : '—';
 };
 
 // === Duración estimada ===
@@ -1467,22 +1446,6 @@ const repsRegistradas = computed(() =>
 const progresoDia = computed(() =>
     seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0
 );
-
-const textoBotonSiguiente = computed(() => {
-    if (esUltimoDia.value) {
-        return seriesCompletadas.value === seriesTotales.value
-            ? '🎉 Finalizar Rutina'
-            : '⚠️ Terminar e Iniciar';
-    }
-    return seriesPendientes.value > 0 ? '⚠️ Siguiente Día →' : 'Siguiente Día →';
-});
-
-const botonSiguienteClass = computed(() => {
-    if (esUltimoDia.value && seriesPendientes.value > 0) return 'bg-orange-500 hover:bg-orange-600';
-    if (!esUltimoDia.value && seriesPendientes.value > 0)
-        return 'bg-yellow-500 hover:bg-yellow-600';
-    return 'bg-green-600 hover:bg-green-700';
-});
 
 const getRutinaNombre = () => rutinaStore.seleccionada?.nivel || '';
 

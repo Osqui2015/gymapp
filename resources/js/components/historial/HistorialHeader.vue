@@ -33,6 +33,17 @@
                 </div>
                 <div v-if="canExport" class="flex items-center gap-1.5 shrink-0 pt-1">
                     <button
+                        @click="$emit('export-resumen-csv')"
+                        class="flex items-center gap-1.5 bg-[#262a35] hover:bg-[#313540] px-3 py-1.5 rounded-lg text-white transition-colors active:scale-95 shadow-sm"
+                        id="btn-export-resumen-csv"
+                        type="button"
+                        aria-label="Exportar resumen de cargas a CSV"
+                        title="Resumen por ejercicio: carga promedio, mínima, máxima y fecha"
+                    >
+                        <span class="material-symbols-outlined text-[16px] text-[#c0c1ff]">analytics</span>
+                        <span class="text-xs font-bold uppercase tracking-wider">Resumen</span>
+                    </button>
+                    <button
                         @click="$emit('export-csv')"
                         class="flex items-center gap-1.5 bg-[#262a35] hover:bg-[#313540] px-3 py-1.5 rounded-lg text-white transition-colors active:scale-95 shadow-sm"
                         id="btn-export-csv"
@@ -183,7 +194,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['alumno-change', 'tab-change', 'export-csv', 'export-pdf']);
+defineEmits(['alumno-change', 'tab-change', 'export-csv', 'export-pdf', 'export-resumen-csv']);
 
 const localAlumnoId = ref(props.selectedAlumnoId);
 

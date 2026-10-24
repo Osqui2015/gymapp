@@ -47,6 +47,7 @@
                 @tab-change="activeTab = $event"
                 @export-csv="exportarCSV"
                 @export-pdf="exportarPDF"
+                @export-resumen-csv="exportarResumenCSV"
             />
 
             <!-- Pull-to-refresh indicator (mobile) -->
@@ -1751,6 +1752,22 @@ const headerStats = computed(() => ({
 }));
 
 // === Exportar historial a CSV (respeta filtros actuales) ===
+// Escapa comillas dobles y envuelve en comillas si el valor tiene comas/comillas/saltos.
+const escapeCsvValue = (val) => {
+    const s = val == null ? '' : String(val);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+};
+
+// La API devuelve la fecha como ISO (2026-10-07T00:00:00.000000Z).
+// Nos quedamos con YYYY-MM-DD para que en la planilla sea una fecha y no un timestamp.
+const formatFechaHistorial = (fecha) => {
+    if (!fecha) return '';
+    const s = String(fecha);
+    const match = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : s;
+};
+
 const exportarCSV = () => {
     const dataToExport = filteredHistorial.value;
     if (!dataToExport.length) {
@@ -1772,17 +1789,12 @@ const exportarCSV = () => {
         'Completado',
         'Superserie',
     ];
-    const escape = (val) => {
-        const s = val == null ? '' : String(val);
-        // Escapar comillas dobles y envolver en comillas si tiene comas/comillas/saltos
-        if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-        return s;
-    };
+    const escape = escapeCsvValue;
 
     const rows = dataToExport.map((row) =>
         [
-            row.fecha || '',
-            row.rutina || '',
+            formatFechaHistorial(row.fecha),
+            row.rutina_nombre || row.rutina || '',
             row.dia || '',
             row.ejercicio_nombre || '',
             row.series_numero ?? '',
@@ -1815,6 +1827,110 @@ const exportarCSV = () => {
     URL.revokeObjectURL(url);
 
     toast.success(`Historial exportado (${dataToExport.length} registros filtrados).`);
+};
+
+// === Exportar resumen por ejercicio a CSV (promedio / mínima / máxima + fecha) ===
+// Una fila por ejercicio y fecha: qué cargaste, en qué rango y cuándo.
+const exportarResumenCSV = () => {
+    const dataToExport = filteredHistorial.value;
+    if (!dataToExport.length) {
+        toast.warning('No hay datos en el filtro actual para exportar.');
+        return;
+    }
+
+    // Agrupamos por ejercicio + fecha (cada fila es una sesión de ese ejercicio).
+    const groups = new Map();
+    dataToExport.forEach((row) => {
+        const nombre = (row.ejercicio_nombre || '').trim() || 'Sin nombre';
+        const fecha = formatFechaHistorial(row.fecha);
+        const key = `${nombre}::${fecha}`;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                nombre,
+                fecha,
+                rutina: row.rutina_nombre || row.rutina || '',
+                dia: row.dia || '',
+                rows: [],
+            });
+        }
+        groups.get(key).rows.push(row);
+    });
+
+    const round = (value) => Math.round(value * 100) / 100;
+
+    const headers = [
+        'Ejercicio',
+        'Fecha',
+        'Rutina',
+        'Día',
+        'Series',
+        'Carga promedio (kg)',
+        'Carga mínima (kg)',
+        'Carga máxima (kg)',
+        'Reps promedio',
+        'Volumen (kg)',
+    ];
+
+    const rows = [...groups.values()]
+        .sort(
+            (a, b) =>
+                (b.fecha || '').localeCompare(a.fecha || '') || a.nombre.localeCompare(b.nombre)
+        )
+        .map((group) => {
+            // Solo cuentan las series con carga > 0: las de peso corporal (0 kg)
+            // no deben promediar ni bajar la carga mínima.
+            const cargas = group.rows
+                .map((row) => Number(row.peso))
+                .filter((peso) => Number.isFinite(peso) && peso > 0);
+            const reps = group.rows
+                .map((row) => Number(row.reps_realizadas))
+                .filter((value) => Number.isFinite(value) && value > 0);
+
+            const promedio = cargas.length ? cargas.reduce((s, v) => s + v, 0) / cargas.length : null;
+            const minimo = cargas.length ? Math.min(...cargas) : null;
+            const maximo = cargas.length ? Math.max(...cargas) : null;
+            const repsPromedio = reps.length ? reps.reduce((s, v) => s + v, 0) / reps.length : null;
+            const volumen = group.rows.reduce((sum, row) => {
+                const peso = Number(row.peso);
+                const r = Number(row.reps_realizadas);
+                if (!Number.isFinite(peso) || peso <= 0) return sum;
+                if (!Number.isFinite(r) || r <= 0) return sum;
+                return sum + peso * r;
+            }, 0);
+
+            return [
+                group.nombre,
+                group.fecha,
+                group.rutina,
+                group.dia,
+                group.rows.length,
+                promedio === null ? '' : round(promedio),
+                minimo === null ? '' : round(minimo),
+                maximo === null ? '' : round(maximo),
+                repsPromedio === null ? '' : round(repsPromedio),
+                round(volumen),
+            ]
+                .map(escapeCsvValue)
+                .join(',');
+        });
+
+    const csv = '\ufeff' + [headers.map(escapeCsvValue).join(','), ...rows].join('\n'); // BOM para Excel
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const alumnoTag =
+        isTrainerOrAdmin.value && selectedAlumnoId.value ? `-alumno-${selectedAlumnoId.value}` : '';
+    const filename = `historial-resumen${alumnoTag}-${new Date().toISOString().split('T')[0]}.csv`;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Resumen exportado (${rows.length} ejercicios con carga).`);
 };
 
 // === Exportar historial a PDF (respeta filtros actuales) ===
