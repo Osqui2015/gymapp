@@ -1,15 +1,29 @@
-<nav x-data="{ open: false }" class="hidden md:block bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-surface-variant/40 sticky top-0 z-50 font-body-md">
-    <div class="h-20 max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-lg">
-        <div class="flex items-center gap-space-xl">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-space-sm group">
-                <div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-transform group-hover:scale-105">
-                    <span class="material-symbols-outlined text-secondary text-[24px]">fitness_center</span>
+<nav x-data="{ open: false }" class="bg-[#0B0F17]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.2)] border-b border-[#232D42]/80 sticky top-0 z-50 font-body-md">
+    <div class="h-14 md:h-20 max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-md md:gap-space-lg">
+        <div class="flex items-center gap-3 md:gap-space-xl">
+            <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-transform group-hover:scale-105">
+                    <span class="material-symbols-outlined text-white text-[20px] md:text-[24px]">fitness_center</span>
                 </div>
                 <div class="flex flex-col">
-                    <span class="font-headline-md text-headline-md tracking-tight text-on-surface font-bold">Gym<span class="text-secondary">App</span></span>
-                    <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Telemetry Pro</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-headline-md text-sm md:text-headline-md tracking-tight text-on-surface font-bold">Gym<span class="text-secondary">App</span></span>
+                        <span class="text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">PRO</span>
+                    </div>
+                    <span class="hidden sm:block font-label-sm text-label-sm uppercase tracking-wider text-outline">Telemetry Pro</span>
                 </div>
             </a>
+
+            <!-- Acceso rápido en Mobile a Historial -->
+            <div class="flex md:hidden items-center gap-1.5">
+                <a
+                    href="{{ route('historial') }}"
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 {{ request()->routeIs('historial*') ? 'bg-secondary-container text-on-secondary-container shadow-sm' : 'bg-[#131924] text-slate-300 border border-[#232D42] hover:text-white' }}"
+                >
+                    <span class="material-symbols-outlined text-[15px]">history</span>
+                    <span>Historial</span>
+                </a>
+            </div>
 
             <div class="hidden xl:flex xl:items-center">
                 <global-search />

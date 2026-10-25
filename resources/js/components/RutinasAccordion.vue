@@ -1,54 +1,7 @@
 <template>
     <div
-        class="bg-obsidian-950 text-slate-100 min-h-screen pb-28 antialiased selection:bg-indigo-500/30 selection:text-white"
+        class="bg-[#0B0F17] text-slate-100 min-h-screen pb-28 antialiased selection:bg-indigo-500/30 selection:text-white"
     >
-        <!-- TopBar Sticky (Exact Kinetic Obsidian Mockup) - Solo Mobile -->
-        <header
-            class="md:hidden sticky top-0 z-40 bg-obsidian-950/80 backdrop-blur-xl border-b border-slate-800/60 px-4 py-3"
-        >
-            <div class="max-w-md mx-auto flex items-center justify-between">
-                <!-- Logo brand and title -->
-                <div class="flex items-center gap-2.5">
-                    <div
-                        class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-400 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-indigo-600/30 shrink-0"
-                    >
-                        G
-                    </div>
-                    <div>
-                        <span class="font-display font-extrabold text-base tracking-tight text-white block leading-none">
-                            GymApp
-                        </span>
-                        <span class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">
-                            Kinetic Obsidian
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Streak Badge & Notification Bell -->
-                <div class="flex items-center gap-2">
-                    <div
-                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold"
-                    >
-                        <span class="text-sm">🔥</span>
-                        <span>{{ rachaActual > 0 ? `${rachaActual} DÍAS` : '2 DÍAS' }}</span>
-                    </div>
-                    <button
-                        aria-label="Notificaciones"
-                        class="h-9 w-9 rounded-xl bg-obsidian-850 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all"
-                        type="button"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path
-                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            ></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </header>
-
         <SyncBadge :pending="offlinePending" :syncing="offlineSyncing" />
 
         <!-- Indicador pull-to-refresh (mobile) -->

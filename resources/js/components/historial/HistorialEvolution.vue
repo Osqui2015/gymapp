@@ -50,8 +50,68 @@
                 </div>
             </div>
 
-            <!-- Data Table -->
-            <div class="overflow-x-auto">
+            <!-- Mobile Cards View (md:hidden) -->
+            <div class="md:hidden divide-y divide-[#232D42]/60">
+                <div
+                    v-for="(fila, idx) in paginatedRows"
+                    :key="`mob-${fila.fecha}-${fila.nombre}-${idx}`"
+                    class="p-3.5 hover:bg-[#18202F]/60 transition-colors flex flex-col gap-2"
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <div class="font-bold text-white text-xs flex items-center gap-1.5 flex-wrap">
+                                <span>{{ fila.nombre }}</span>
+                                <span
+                                    v-if="fila.superserie_grupo"
+                                    class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
+                                >
+                                    SS {{ fila.superserie_grupo }}
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                                {{ fila.dia }} · {{ fila.fecha }} · {{ fila.seriesCount }} series
+                            </div>
+                        </div>
+
+                        <span
+                            v-if="fila.isPR"
+                            class="inline-flex items-center gap-1 text-amber-400 font-mono text-xs font-bold bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded shrink-0"
+                        >
+                            ★ {{ fila.maxWeight }} kg
+                        </span>
+                        <span v-else class="font-mono text-xs font-bold text-white shrink-0">
+                            {{ fila.maxWeight }} kg
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] font-mono bg-[#101521]/80 px-2.5 py-1.5 rounded-lg border border-[#232D42]/60">
+                        <span class="text-slate-400">
+                            Prom: <strong class="text-slate-200">{{ fila.avgWeight }} kg</strong>
+                        </span>
+                        <span
+                            v-if="(fila.trendDelta ?? 0) > 0"
+                            class="text-emerald-400 font-bold"
+                        >
+                            +{{ Number(fila.trendDelta).toFixed(1) }} kg ↑
+                        </span>
+                        <span
+                            v-else-if="(fila.trendDelta ?? 0) < 0"
+                            class="text-rose-400 font-bold"
+                        >
+                            {{ Number(fila.trendDelta).toFixed(1) }} kg ↓
+                        </span>
+                        <span v-else class="text-slate-400">
+                            0.0 kg =
+                        </span>
+                    </div>
+                </div>
+                <div v-if="paginatedRows.length === 0" class="py-8 text-center text-xs text-slate-400">
+                    No se encontraron registros para "{{ tableSearch }}".
+                </div>
+            </div>
+
+            <!-- Desktop Data Table -->
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr
@@ -346,6 +406,15 @@
                             <div
                                 class="h-44 w-full relative bg-[#0B0F17]/70 rounded-lg p-2 border border-[#232D42]/80 flex items-center justify-center"
                             >
+                                <!-- Interactive Selected Point Pill -->
+                                <div
+                                    v-if="selectedPoints[ejercicio.slug]"
+                                    class="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-lg bg-[#131924]/95 border border-indigo-500/40 text-[11px] font-mono text-slate-200 shadow-lg flex items-center gap-2"
+                                >
+                                    <span class="text-indigo-400 font-bold">{{ selectedPoints[ejercicio.slug].fechaLabel }}</span>
+                                    <span class="text-white font-extrabold">{{ selectedPoints[ejercicio.slug].label }}</span>
+                                    <span v-if="selectedPoints[ejercicio.slug].isMax" class="text-amber-400 font-bold">★ PR</span>
+                                </div>
                                 <svg
                                     class="w-full h-full overflow-visible"
                                     preserveAspectRatio="none"
@@ -419,13 +488,21 @@
                                     <g
                                         v-for="(pt, ptIdx) in buildChartGeometry(ejercicio).points"
                                         :key="`${ejercicio.slug}-pt-${ptIdx}`"
+                                        class="cursor-pointer"
+                                        @click="selectChartPoint(ejercicio.slug, pt)"
                                     >
                                         <circle
                                             :cx="pt.x"
                                             :cy="pt.y"
-                                            :r="pt.isMax ? 6 : 4.5"
+                                            r="14"
+                                            fill="transparent"
+                                        ></circle>
+                                        <circle
+                                            :cx="pt.x"
+                                            :cy="pt.y"
+                                            :r="selectedPoints[ejercicio.slug]?.fechaLabel === pt.fechaLabel ? 7 : pt.isMax ? 6 : 4.5"
                                             :fill="pt.isMax ? themeFor(cardIdx).prFill : '#131924'"
-                                            :stroke="pt.isMax ? '#FFFFFF' : themeFor(cardIdx).stroke"
+                                            :stroke="selectedPoints[ejercicio.slug]?.fechaLabel === pt.fechaLabel || pt.isMax ? '#FFFFFF' : themeFor(cardIdx).stroke"
                                             :stroke-width="pt.isMax ? 2 : 2.5"
                                         ></circle>
                                         <text
@@ -672,6 +749,17 @@ const telemetryWindow = computed(() => {
 
 // Expandable session lists per exercise card
 const expandedSlugs = ref(new Set());
+const selectedPoints = ref({});
+
+const selectChartPoint = (slug, pt) => {
+    if (selectedPoints.value[slug]?.fechaLabel === pt.fechaLabel) {
+        const next = { ...selectedPoints.value };
+        delete next[slug];
+        selectedPoints.value = next;
+    } else {
+        selectedPoints.value = { ...selectedPoints.value, [slug]: pt };
+    }
+};
 
 const toggleExpandSessions = (slug) => {
     const next = new Set(expandedSlugs.value);

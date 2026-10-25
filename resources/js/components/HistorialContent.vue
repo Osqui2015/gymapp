@@ -76,224 +76,9 @@
             </div>
 
             <div v-else class="space-y-4 animate-fadeIn">
-                <!-- ===== MOBILE LAYOUT (mockup Figma) ===== -->
-                <!-- Se renderiza SOLO en mobile (antes coexistían mobile y desktop
-                     en el DOM: se duplicaban requests, gráficos y renders). -->
-                <div v-if="isMobile" class="space-y-4">
-                    <!-- Tab 1: Sesiones (Vista principal idéntica al mockup) -->
-                    <div v-show="activeTab === 'matrix'" class="space-y-4">
-                        <!-- Search bar + pill de días -->
-                        <div class="flex flex-col gap-2">
-                            <div class="relative w-full">
-                                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#c7c4d7] text-[20px]">search</span>
-                                <input
-                                    v-model="searchSesion"
-                                    type="search"
-                                    placeholder="Buscar ejercicio (ej. Press banca, Sentadilla…)"
-                                    class="w-full bg-[#171b26] text-white placeholder:text-slate-500 text-xs rounded-xl pl-11 pr-4 py-2.5 outline-none border border-slate-800/60 focus:border-[#8083ff] focus:bg-[#1c1f2a] transition-all"
-                                />
-                            </div>
-
-                            <!-- Rutina Filter Chips -->
-                            <div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar">
-                                <button
-                                    type="button"
-                                    @click="filtroDiaMobile = 'todas'"
-                                    :class="[
-                                        'whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm',
-                                        filtroDiaMobile === 'todas'
-                                            ? 'bg-[#c0c1ff] text-[#1000a9]'
-                                            : 'bg-[#171b26] text-[#c7c4d7] hover:text-white border border-slate-800/60'
-                                    ]"
-                                >
-                                    Todas
-                                </button>
-                                <button
-                                    v-for="(d, i) in diasParaFiltroMobile.filter((x) => x.id !== 'todas')"
-                                    :key="i"
-                                    type="button"
-                                    @click="filtroDiaMobile = d.id"
-                                    :class="[
-                                        'whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
-                                        filtroDiaMobile === d.id
-                                            ? 'bg-[#c0c1ff] text-[#1000a9] font-bold shadow-sm'
-                                            : 'bg-[#171b26] text-[#c7c4d7] hover:text-white border border-slate-800/60'
-                                    ]"
-                                >
-                                    {{ d.label }}
-                                </button>
-                                <div class="relative shrink-0">
-                                    <select
-                                        v-model="filtroPeriodoMobile"
-                                        class="appearance-none bg-[#171b26] text-[#c7c4d7] hover:text-white border border-slate-800/60 rounded-full pl-3 pr-7 py-1.5 text-xs font-semibold outline-none cursor-pointer"
-                                    >
-                                        <option value="30">Últimos 30 días</option>
-                                        <option value="7">Últimos 7 días</option>
-                                        <option value="90">Últimos 90 días</option>
-                                        <option value="all">Todo el historial</option>
-                                    </select>
-                                    <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#c7c4d7] text-[16px] pointer-events-none">expand_more</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Streak & Micro Week Interactive Module -->
-                        <div class="bg-[#171b26] rounded-xl p-4 flex flex-col gap-4 shadow-sm border border-slate-800/60">
-                            <!-- Streak Header -->
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-[#571bc1] flex items-center justify-center text-xl shadow-sm shrink-0">
-                                        🔥
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <div class="flex items-baseline gap-1.5">
-                                            <span class="font-display font-bold text-white text-lg">
-                                                {{ statsResumen?.current_streak ?? 0 }} días
-                                            </span>
-                                            <span class="text-xs text-[#4edea3] font-semibold">Racha activa</span>
-                                        </div>
-                                        <span class="text-xs text-[#c7c4d7]">Con al menos 1 serie ejecutada</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-[10px] text-[#c7c4d7] font-bold uppercase tracking-wider block">RÉCORD</span>
-                                    <p class="font-display font-bold text-white text-lg">
-                                        {{ statsResumen?.longest_streak ?? 0 }} d
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Micro Week Tracker -->
-                            <div class="flex flex-col gap-2">
-                                <div class="flex justify-between items-center text-xs text-[#c7c4d7]">
-                                    <span>{{ semanaTexto }}</span>
-                                    <span class="text-[#4edea3] font-bold">
-                                        {{ entrenadosCountSemana }}/7 sesiones
-                                    </span>
-                                </div>
-                                <div class="grid grid-cols-7 gap-1.5">
-                                    <div
-                                        v-for="(day, idx) in semanaDias"
-                                        :key="idx"
-                                        :class="[
-                                            'flex flex-col items-center gap-1 p-1.5 rounded-lg text-center transition-all',
-                                            day.isToday
-                                                ? 'bg-[#8083ff] text-[#0d0096] font-bold shadow-sm'
-                                                : day.trained
-                                                    ? 'bg-[#262a35] text-white'
-                                                    : 'bg-[#1c1f2a] text-[#c7c4d7]'
-                                        ]"
-                                    >
-                                        <span :class="['text-[11px]', day.isToday ? 'font-bold' : 'text-[#c7c4d7]']">
-                                            {{ day.letter }}
-                                        </span>
-                                        <span
-                                            :class="[
-                                                'w-2 h-2 rounded-full',
-                                                day.isToday
-                                                    ? 'bg-[#0d0096] shadow-[0_0_8px_rgba(13,0,150,0.6)]'
-                                                    : day.trained
-                                                        ? 'bg-[#4edea3] shadow-[0_0_8px_rgba(78,222,163,0.6)]'
-                                                        : 'bg-[#313540]'
-                                            ]"
-                                        ></span>
-                                        <span
-                                            :class="['text-xs font-display', day.isToday || day.trained ? 'font-bold text-white' : 'text-[#c7c4d7]']"
-                                            :style="day.isToday ? 'color: #0d0096' : ''"
-                                        >
-                                            {{ day.dayNum }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Consistencia anual (Heatmap mini) -->
-                            <div class="flex flex-col gap-1 pt-1 border-t border-slate-800/40">
-                                <div class="flex justify-between items-center text-xs text-[#c7c4d7]">
-                                    <span>Consistencia anual ({{ totalSetsAnual }} sets totales)</span>
-                                    <div class="flex items-center gap-1 text-[10px]">
-                                        <span>Menos</span>
-                                        <span class="w-2.5 h-2.5 rounded-xs bg-[#313540]"></span>
-                                        <span class="w-2.5 h-2.5 rounded-xs bg-[#00885d]"></span>
-                                        <span class="w-2.5 h-2.5 rounded-xs bg-[#4edea3]"></span>
-                                        <span>Más</span>
-                                    </div>
-                                </div>
-                                <!-- Mini Matrix Line -->
-                                <div class="grid grid-cols-12 gap-1 py-1">
-                                    <div
-                                        v-for="(bColor, bIdx) in miniHeatmapBlocks"
-                                        :key="bIdx"
-                                        :class="['h-3 rounded-xs', bColor]"
-                                    ></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sesiones Registradas -->
-                        <div class="flex flex-col gap-2.5">
-                            <div class="flex items-center justify-between px-0.5">
-                                <h2 class="font-display text-lg font-bold text-white">Sesiones Registradas</h2>
-                                <span class="text-xs text-[#c7c4d7] font-semibold">
-                                    {{ sesionesParaMostrar.length }} sesiones esta semana
-                                </span>
-                            </div>
-
-                            <div v-if="!sesionesParaMostrar.length" class="bg-[#171b26] p-6 rounded-xl text-center border border-slate-800/60">
-                                <p class="text-sm text-[#c7c4d7]">
-                                    No se encontraron sesiones con los filtros aplicados.
-                                </p>
-                            </div>
-
-                            <HistorialSesionCard
-                                v-for="(s, i) in sesionesParaMostrar.slice(0, 8)"
-                                :key="i"
-                                :fecha="s.fecha"
-                                :fecha-highlight="s.fechaHighlight"
-                                :fecha-label="s.fechaLabel"
-                                :duracion="s.duracion"
-                                :series="s.series"
-                                :tonelaje="s.tonelaje"
-                                :rir-prom="s.rirProm"
-                                :ejercicios="s.ejercicios"
-                                :expanded="expandedSesionIndex === i"
-                                :show-actions="expandedSesionIndex === i"
-                                @toggle="toggleSesionExpand(i)"
-                                @ver-detalles="verDetalleSesion(s)"
-                                @repetir-sesion="repetirSesion(s)"
-                            />
-                        </div>
-
-                        <!-- Esfuerzo y RIR Promedio -->
-                        <EffortCard :user-id="selectedAlumnoId" />
-                    </div>
-
-                    <!-- Tab Matriz Cargas mobile -->
-                    <div v-show="activeTab === 'evolution'" class="space-y-4">
-                        <HistorialMatrix
-                            :pivotData="pivotData"
-                            :dateSortAsc="dateSortAsc"
-                            :prDates="prDates"
-                            @toggle-sort="toggleDateSort"
-                            @cell-click="onMatrixCellClick"
-                        />
-                        <HistorialEvolution
-                            :tablaProgreso="tablaProgreso"
-                            :resumenEjercicios="resumenEjercicios"
-                            :globalMaxWeight="globalMaxWeight"
-                            @export-view="exportarResumenCSV"
-                        />
-                    </div>
-
-                    <!-- Tab Esfuerzo RIR mobile -->
-                    <div v-if="activeTab === 'rir'" class="space-y-4">
-                        <EffortCard :user-id="selectedAlumnoId" />
-                    </div>
-                </div>
-
-                <!-- ===== DESKTOP LAYOUT (todo el historial completo) ===== -->
-                <div v-else class="flex flex-col gap-space-xl">
-                    <!-- Filtros avanzados de Historial -->
+                <!-- ===== UNIFIED RESPONSIVE LAYOUT (Mobile + Desktop) ===== -->
+                <div class="flex flex-col gap-space-xl">
+                    <!-- Filtros avanzados de Historial (con toggle compacto en mobile) -->
                     <HistorialFilters
                         v-model="filtros"
                         :rutinas-disponibles="rutinasDisponibles"
@@ -329,6 +114,36 @@
                         @toggle-sort="toggleDateSort"
                         @cell-click="onMatrixCellClick"
                     />
+
+                    <!-- Mobile Session Cards (Quick Session Accordion on Mobile inside Matrix tab) -->
+                    <div
+                        v-if="activeTab === 'matrix' && sesionesParaMostrar.length > 0"
+                        class="md:hidden flex flex-col gap-2.5"
+                    >
+                        <div class="flex items-center justify-between px-0.5">
+                            <h2 class="font-headline-md text-headline-md text-on-surface">Sesiones Recientes</h2>
+                            <span class="text-label-sm text-outline">
+                                {{ sesionesParaMostrar.length }} sesiones
+                            </span>
+                        </div>
+                        <HistorialSesionCard
+                            v-for="(s, i) in sesionesParaMostrar.slice(0, 6)"
+                            :key="i"
+                            :fecha="s.fecha"
+                            :fecha-highlight="s.fechaHighlight"
+                            :fecha-label="s.fechaLabel"
+                            :duracion="s.duracion"
+                            :series="s.series"
+                            :tonelaje="s.tonelaje"
+                            :rir-prom="s.rirProm"
+                            :ejercicios="s.ejercicios"
+                            :expanded="expandedSesionIndex === i"
+                            :show-actions="expandedSesionIndex === i"
+                            @toggle="toggleSesionExpand(i)"
+                            @ver-detalles="verDetalleSesion(s)"
+                            @repetir-sesion="repetirSesion(s)"
+                        />
+                    </div>
 
                     <!-- Live Session Status Strip -->
                     <section

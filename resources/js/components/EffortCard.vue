@@ -114,6 +114,8 @@ const sparkline = computed(() => {
     };
 });
 
+const selectedPoint = ref(null);
+
 const topTrackedColor = (idx) => {
     const colors = ['text-tertiary', 'text-secondary', 'text-primary', 'text-tertiary', 'text-outline'];
     return colors[idx % colors.length];
@@ -193,7 +195,10 @@ const topTrackedColor = (idx) => {
             <div v-if="data.weekly_trend?.length" class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-between text-[11px] text-outline uppercase tracking-wider">
                     <span>Semana a semana</span>
-                    <span>{{ data.weekly_trend.length }} {{ data.weekly_trend.length === 1 ? 'semana' : 'semanas' }}</span>
+                    <span v-if="selectedPoint" class="font-mono text-tertiary normal-case font-semibold">
+                        {{ selectedPoint.week_start }} · RIR {{ selectedPoint.avg_rir }} ({{ selectedPoint.sets }} sets)
+                    </span>
+                    <span v-else>{{ data.weekly_trend.length }} {{ data.weekly_trend.length === 1 ? 'semana' : 'semanas' }}</span>
                 </div>
                 <div class="p-3 rounded-xl bg-surface-container-lowest/60 relative">
                     <svg class="w-full h-14 overflow-visible" viewBox="0 0 400 60">
@@ -207,20 +212,34 @@ const topTrackedColor = (idx) => {
                             stroke-linecap="round"
                             stroke-width="2.5"
                         ></path>
-                        <circle
+                        <g
                             v-for="(pt, idx) in sparkline.points"
                             :key="idx"
-                            :cx="pt.x"
-                            :cy="pt.y"
-                            fill="#4edea3"
-                            r="4"
-                            class="drop-shadow-[0_0_6px_#4edea3]"
+                            class="cursor-pointer"
+                            @click="selectedPoint = selectedPoint?.week_start === pt.week_start ? null : pt"
                         >
-                            <title>{{ pt.week_start }}: RIR {{ pt.avg_rir }} ({{ pt.sets }} sets)</title>
-                        </circle>
+                            <circle
+                                :cx="pt.x"
+                                :cy="pt.y"
+                                fill="transparent"
+                                r="12"
+                            ></circle>
+                            <circle
+                                :cx="pt.x"
+                                :cy="pt.y"
+                                :fill="selectedPoint?.week_start === pt.week_start ? '#ffffff' : '#4edea3'"
+                                :stroke="selectedPoint?.week_start === pt.week_start ? '#4edea3' : 'none'"
+                                :stroke-width="selectedPoint?.week_start === pt.week_start ? 2.5 : 0"
+                                :r="selectedPoint?.week_start === pt.week_start ? 5.5 : 4"
+                                class="drop-shadow-[0_0_6px_#4edea3] transition-all"
+                            >
+                                <title>{{ pt.week_start }}: RIR {{ pt.avg_rir }} ({{ pt.sets }} sets)</title>
+                            </circle>
+                        </g>
                     </svg>
                     <div class="flex justify-between text-[10px] text-outline mt-1">
                         <span>{{ sparkline.firstLabel }}</span>
+                        <span class="text-[9px] text-outline/60">Tocá un punto para ver detalle</span>
                         <span>{{ sparkline.lastLabel }}</span>
                     </div>
                 </div>

@@ -175,14 +175,14 @@
 
         <!-- View Tabs & Mode Switcher -->
         <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
-            <div class="inline-flex flex-wrap p-1 bg-surface-container-low rounded-xl self-start gap-1">
+            <div class="flex sm:inline-flex overflow-x-auto sm:flex-wrap no-scrollbar snap-x w-full sm:w-auto p-1 bg-surface-container-low rounded-xl self-start gap-1">
                 <button
                     v-for="tab in tabs"
                     :key="tab.id"
                     type="button"
                     @click="$emit('tab-change', tab.id)"
                     :class="[
-                        'flex-1 px-space-lg py-2 rounded-lg font-label-md text-label-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap',
+                        'flex-1 snap-start shrink-0 px-space-md sm:px-space-lg py-2 rounded-lg font-label-md text-label-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap',
                         activeTab === tab.id
                             ? 'bg-secondary-container text-on-secondary-container shadow-sm'
                             : 'text-on-surface-variant hover:text-on-surface',
@@ -192,7 +192,7 @@
                     <span>{{ tab.label }}</span>
                 </button>
             </div>
-            <div class="flex items-center gap-space-sm text-label-sm text-outline">
+            <div class="hidden sm:flex items-center gap-space-sm text-label-sm text-outline">
                 <span>Modo:</span>
                 <button
                     type="button"

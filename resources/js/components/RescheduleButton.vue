@@ -85,10 +85,13 @@ onMounted(loadDays);
         <Transition name="modal">
             <div
                 v-if="open"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4"
                 @click.self="closeModal"
             >
-                <div class="w-full max-w-md rounded-2xl bg-surface-container-low p-6 shadow-2xl border border-outline-variant/20 text-on-surface">
+                <div class="w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-[#131924] p-6 pb-8 sm:pb-6 shadow-2xl border-t sm:border border-[#232D42] text-on-surface">
+                    <div class="sm:hidden flex justify-center -mt-2 mb-3">
+                        <div class="w-10 h-1.5 rounded-full bg-[#232D42]"></div>
+                    </div>
                     <header class="mb-4">
                         <h3 class="font-headline-md text-headline-md text-on-surface">
                             Reprogramar día

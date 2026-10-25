@@ -30,6 +30,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-space-sm">
+                <span class="md:hidden text-[11px] font-mono text-outline flex items-center gap-1">
+                    <span>Deslizá</span>
+                    <span class="material-symbols-outlined text-[14px]">swipe_left</span>
+                </span>
                 <button
                     v-if="isExpanded"
                     type="button"
@@ -42,80 +46,83 @@
             </div>
         </div>
 
-        <!-- Scrollable Table Container -->
-        <div v-show="isExpanded" class="overflow-x-auto -mx-space-lg px-space-lg">
-            <table class="w-full text-left border-collapse min-w-[640px]">
-                <thead>
-                    <tr class="bg-surface-container-high/60 font-label-sm text-label-sm text-outline uppercase tracking-wider">
-                        <th class="py-3 px-4 rounded-l-xl w-[35%] sticky left-0 z-10 bg-surface-container-high">
-                            Ejercicio
-                        </th>
-                        <th
-                            v-for="(date, idx) in pivotData.dates"
-                            :key="date.raw"
-                            class="py-3 px-4 text-center whitespace-nowrap"
-                            :class="{ 'rounded-r-xl': idx === (pivotData.dates || []).length - 1 }"
+        <!-- Scrollable Table Container with Mobile Scroll Shadow -->
+        <div v-show="isExpanded" class="relative -mx-space-lg px-space-lg">
+            <div class="pointer-events-none md:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-surface-container-low to-transparent z-20"></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-surface-container-high/60 font-label-sm text-label-sm text-outline uppercase tracking-wider">
+                            <th class="py-3 px-4 rounded-l-xl w-[35%] max-w-[180px] sm:max-w-none sticky left-0 z-10 bg-surface-container-high shadow-[2px_0_8px_rgba(0,0,0,0.35)]">
+                                Ejercicio
+                            </th>
+                            <th
+                                v-for="(date, idx) in pivotData.dates"
+                                :key="date.raw"
+                                class="py-3 px-4 text-center whitespace-nowrap"
+                                :class="{ 'rounded-r-xl': idx === (pivotData.dates || []).length - 1 }"
+                            >
+                                {{ date.formatted }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-body-md">
+                        <tr
+                            v-for="(row, rowIdx) in normalizedRows"
+                            :key="row.name"
+                            :class="[
+                                'hover:bg-surface-container/60 transition-colors',
+                                rowIdx % 2 === 1 ? 'bg-surface-container-lowest/30' : '',
+                            ]"
                         >
-                            {{ date.formatted }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="text-body-md">
-                    <tr
-                        v-for="(row, rowIdx) in normalizedRows"
-                        :key="row.name"
-                        :class="[
-                            'hover:bg-surface-container/60 transition-colors',
-                            rowIdx % 2 === 1 ? 'bg-surface-container-lowest/30' : '',
-                        ]"
-                    >
-                        <td class="py-3.5 px-4 font-semibold text-on-surface sticky left-0 z-10 bg-surface-container-low">
-                            <div class="flex flex-col">
-                                <span>{{ row.name }}</span>
-                                <span
-                                    v-if="row.superserie"
-                                    class="text-[10px] text-secondary font-semibold uppercase tracking-wider mt-0.5"
-                                >
-                                    Superserie {{ row.superserie }}
-                                </span>
-                            </div>
-                        </td>
-                        <td
-                            v-for="date in pivotData.dates"
-                            :key="date.raw"
-                            class="py-3.5 px-4 text-center whitespace-nowrap group/cell relative"
-                        >
-                            <template v-if="cellDisplay(row, date.raw) !== '-'">
-                                <button
-                                    type="button"
-                                    @click.stop="onCellClick(row.name, date.raw, date.formatted)"
-                                    :title="`Editar series de ${row.name} (${date.formatted})`"
-                                    :class="[
-                                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-label-sm transition-transform hover:scale-105 cursor-pointer tabular-nums',
-                                        isPR(row.name, date.raw)
-                                            ? 'bg-secondary-container text-on-secondary-container font-bold shadow-sm'
-                                            : 'bg-surface-container text-on-surface font-semibold',
-                                    ]"
-                                >
+                            <td class="py-3.5 px-4 font-semibold text-on-surface sticky left-0 z-10 bg-surface-container-low max-w-[180px] sm:max-w-none shadow-[2px_0_8px_rgba(0,0,0,0.35)]">
+                                <div class="flex flex-col">
+                                    <span class="truncate sm:whitespace-normal">{{ row.name }}</span>
                                     <span
-                                        v-if="isPR(row.name, date.raw)"
-                                        class="material-symbols-outlined text-[13px] text-tertiary"
+                                        v-if="row.superserie"
+                                        class="text-[10px] text-secondary font-semibold uppercase tracking-wider mt-0.5"
                                     >
-                                        star
+                                        Superserie {{ row.superserie }}
                                     </span>
-                                    <span
-                                        v-else
-                                        class="w-1.5 h-1.5 rounded-full"
-                                        :class="row.superserie ? 'bg-tertiary' : 'bg-secondary'"
-                                    ></span>
-                                    <span>{{ cellDisplay(row, date.raw) }}</span>
-                                </button>
-                            </template>
-                            <span v-else class="text-outline/40 text-body-sm">-</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                </div>
+                            </td>
+                            <td
+                                v-for="date in pivotData.dates"
+                                :key="date.raw"
+                                class="py-3.5 px-4 text-center whitespace-nowrap group/cell relative"
+                            >
+                                <template v-if="cellDisplay(row, date.raw) !== '-'">
+                                    <button
+                                        type="button"
+                                        @click.stop="onCellClick(row.name, date.raw, date.formatted)"
+                                        :title="`Editar series de ${row.name} (${date.formatted})`"
+                                        :class="[
+                                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-label-sm transition-transform hover:scale-105 cursor-pointer tabular-nums',
+                                            isPR(row.name, date.raw)
+                                                ? 'bg-secondary-container text-on-secondary-container font-bold shadow-sm'
+                                                : 'bg-surface-container text-on-surface font-semibold',
+                                        ]"
+                                    >
+                                        <span
+                                            v-if="isPR(row.name, date.raw)"
+                                            class="material-symbols-outlined text-[13px] text-tertiary"
+                                        >
+                                            star
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="w-1.5 h-1.5 rounded-full"
+                                            :class="row.superserie ? 'bg-tertiary' : 'bg-secondary'"
+                                        ></span>
+                                        <span>{{ cellDisplay(row, date.raw) }}</span>
+                                    </button>
+                                </template>
+                                <span v-else class="text-outline/40 text-body-sm">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </section>
 </template>

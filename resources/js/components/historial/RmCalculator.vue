@@ -16,26 +16,60 @@
                     <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">
                         Peso Levantado (kg)
                     </label>
-                    <input
-                        v-model.number="weight"
-                        type="number"
-                        min="0.1"
-                        step="0.5"
-                        class="w-full bg-[#18202F] border border-[#232D42] text-sm font-mono text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    />
+                    <div class="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            @click="weight = Math.max(0.5, Number((Number(weight || 0) - 2.5).toFixed(2)))"
+                            class="h-10 px-2.5 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+                        >
+                            -2.5
+                        </button>
+                        <input
+                            v-model.number="weight"
+                            type="number"
+                            inputmode="decimal"
+                            min="0.1"
+                            step="0.5"
+                            class="w-full h-10 bg-[#18202F] border border-[#232D42] text-sm font-mono font-bold text-center text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        />
+                        <button
+                            type="button"
+                            @click="weight = Number((Number(weight || 0) + 2.5).toFixed(2))"
+                            class="h-10 px-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-xs font-mono font-bold text-indigo-300 hover:bg-indigo-600/30 active:scale-95 transition-all cursor-pointer"
+                        >
+                            +2.5
+                        </button>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">
                         Repeticiones Realizadas
                     </label>
-                    <input
-                        v-model.number="reps"
-                        type="number"
-                        min="1"
-                        max="30"
-                        class="w-full bg-[#18202F] border border-[#232D42] text-sm font-mono text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    />
+                    <div class="flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            @click="reps = Math.max(1, (parseInt(reps, 10) || 1) - 1)"
+                            class="h-10 px-3 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+                        >
+                            -1
+                        </button>
+                        <input
+                            v-model.number="reps"
+                            type="number"
+                            inputmode="numeric"
+                            min="1"
+                            max="30"
+                            class="w-full h-10 bg-[#18202F] border border-[#232D42] text-sm font-mono font-bold text-center text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        />
+                        <button
+                            type="button"
+                            @click="reps = Math.min(30, (parseInt(reps, 10) || 0) + 1)"
+                            class="h-10 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition-all cursor-pointer"
+                        >
+                            +1
+                        </button>
+                    </div>
                 </div>
 
                 <div>
@@ -161,8 +195,43 @@
                     </div>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto">
+                <!-- Mobile Cards View (md:hidden) -->
+                <div class="md:hidden divide-y divide-[#232D42]/60">
+                    <div
+                        v-for="(row, idx) in filteredRows"
+                        :key="`mob-rm-${row.name ?? row.date}`"
+                        class="p-3.5 hover:bg-[#18202F]/60 transition-colors flex items-center justify-between gap-3"
+                    >
+                        <div class="min-w-0">
+                            <div class="font-bold text-white text-xs flex items-center gap-1.5">
+                                <span class="truncate">{{ row.name }}</span>
+                                <span
+                                    v-if="idx < 3"
+                                    class="w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                                ></span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                                PR: {{ row.weight.toFixed(1) }} kg × {{ row.reps }} reps · {{ row.date }}
+                            </div>
+                        </div>
+                        <span
+                            class="inline-flex items-center gap-1 font-mono text-xs font-bold px-2.5 py-1 rounded border shrink-0"
+                            :class="
+                                idx === 0
+                                    ? 'text-amber-400 bg-amber-400/10 border-amber-400/30'
+                                    : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30'
+                            "
+                        >
+                            ★ {{ row.rm.toFixed(1) }} kg
+                        </span>
+                    </div>
+                    <div v-if="filteredRows.length === 0" class="py-8 text-center text-xs text-slate-400 px-4">
+                        No hay suficientes datos del historial con pesos y repeticiones para estimar récords.
+                    </div>
+                </div>
+
+                <!-- Desktop Table -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr

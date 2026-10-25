@@ -2,7 +2,7 @@
     <section class="p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
         <!-- Filter Header -->
         <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-space-sm">
+            <div class="flex items-center gap-space-sm flex-wrap">
                 <span class="material-symbols-outlined text-secondary text-[20px]">filter_alt</span>
                 <span class="font-headline-md text-headline-md text-on-surface">Filtros y Búsqueda</span>
                 <span
@@ -12,15 +12,25 @@
                     Filtros activos ({{ totalFiltrados }} de {{ totalOriginal }})
                 </span>
             </div>
-            <button
-                v-if="isFilterActive"
-                type="button"
-                @click="onClear"
-                class="text-label-md text-error text-rose-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
-            >
-                <span class="material-symbols-outlined text-[16px]">close</span>
-                <span>Limpiar filtros</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="mobileAdvancedOpen = !mobileAdvancedOpen"
+                    class="sm:hidden px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-label-sm font-label-sm flex items-center gap-1 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[15px]">tune</span>
+                    <span>{{ mobileAdvancedOpen ? 'Ocultar opciones' : 'Más filtros' }}</span>
+                </button>
+                <button
+                    v-if="isFilterActive"
+                    type="button"
+                    @click="onClear"
+                    class="text-label-md text-error text-rose-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                    <span>Limpiar filtros</span>
+                </button>
+            </div>
         </div>
 
         <!-- 4-Column Controls Row -->
@@ -51,7 +61,7 @@
             </div>
 
             <!-- Routine Select -->
-            <div class="flex flex-col gap-1">
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
                 <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Rutina
                 </label>
@@ -75,7 +85,7 @@
             </div>
 
             <!-- Period Select -->
-            <div class="flex flex-col gap-1">
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
                 <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Periodo
                 </label>
@@ -98,7 +108,7 @@
             </div>
 
             <!-- Sort Select -->
-            <div class="flex flex-col gap-1">
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
                 <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Ordenar por
                 </label>
@@ -192,7 +202,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+
+const mobileAdvancedOpen = ref(false);
 
 const props = defineProps({
     modelValue: {

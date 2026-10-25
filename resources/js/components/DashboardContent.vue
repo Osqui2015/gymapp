@@ -79,6 +79,54 @@ const showActiveWorkoutModal = shallowRef(false);
 const showWorkoutSummaryModal = shallowRef(false);
 const isInitialLoading = shallowRef(true);
 const expandirTodos = shallowRef(true);
+const activeInlineSet = ref(null);
+
+const toggleInlineSet = (set) => {
+    if (activeInlineSet.value === set) {
+        activeInlineSet.value = null;
+        return;
+    }
+    if ((set.peso === null || set.peso === undefined) && set.previous_record?.peso != null) {
+        set.peso = Number(set.previous_record.peso);
+    }
+    if (
+        (set.reps_realizadas === null || set.reps_realizadas === undefined) &&
+        (set.previous_record?.reps_realizadas != null || set.reps_min != null)
+    ) {
+        set.reps_realizadas = Number(set.previous_record?.reps_realizadas ?? set.reps_min ?? 8);
+    }
+    activeInlineSet.value = set;
+};
+
+const stepInlinePeso = (set, delta) => {
+    const cur = parseFloat(set.peso ?? set.previous_record?.peso ?? 0) || 0;
+    set.peso = Math.max(0, Math.round((cur + delta) * 100) / 100);
+};
+
+const stepInlineReps = (set, delta) => {
+    const cur = parseInt(set.reps_realizadas ?? set.previous_record?.reps_realizadas ?? set.reps_min ?? 0, 10) || 0;
+    set.reps_realizadas = Math.max(0, cur + delta);
+};
+
+const copyInlineFromPrev = (set) => {
+    const hist = valorHistoricoSet(set);
+    if (!hist) return;
+    if (hist.peso !== null && hist.peso !== undefined) set.peso = Number(hist.peso);
+    if (hist.reps !== null && hist.reps !== undefined) set.reps_realizadas = Number(hist.reps);
+};
+
+const completeInlineSet = async (set, ejSets) => {
+    if (set.peso === null || set.peso === undefined || set.peso === '') {
+        set.peso = Number(set.previous_record?.peso ?? 0);
+    }
+    if (set.reps_realizadas === null || set.reps_realizadas === undefined || set.reps_realizadas === '') {
+        set.reps_realizadas = Number(set.previous_record?.reps_realizadas ?? set.reps_min ?? 8);
+    }
+    set.completado = true;
+    await guardarFila(set, false);
+    const nextPending = (ejSets || []).find((s) => !s.completado && s !== set);
+    activeInlineSet.value = nextPending || null;
+};
 
 // === Header / Hero Computeds ===
 const userFirstName = computed(() => {
@@ -1828,50 +1876,181 @@ const iniciarTemporizador = (fila) => {
                                         </div>
                                     </div>
 
-                                    <!-- Sets Chips Grid -->
+                                    <!-- Sets Chips Grid (Interactive Tap-to-Edit) -->
                                     <div
                                         v-show="expandirTodos"
-                                        :class="[
-                                            'grid gap-space-sm mt-space-md pt-space-md bg-surface-container-lowest/40 -mx-space-md -mb-space-md md:-mx-space-lg md:-mb-space-lg p-space-md md:p-space-md rounded-b-xl',
-                                            ej.sets.length === 3
-                                                ? 'grid-cols-2 sm:grid-cols-3'
-                                                : 'grid-cols-2 sm:grid-cols-4',
-                                        ]"
+                                        class="mt-space-md pt-space-md bg-surface-container-lowest/40 -mx-space-md -mb-space-md md:-mx-space-lg md:-mb-space-lg p-space-md md:p-space-md rounded-b-xl space-y-3"
                                     >
                                         <div
-                                            v-for="(set, sIdx) in ej.sets"
-                                            :key="sIdx"
-                                            :title="
-                                                esSetHistorico(set)
-                                                    ? 'Valor del ciclo anterior (histórico)'
-                                                    : null
-                                            "
                                             :class="[
-                                                'flex flex-col px-space-md py-2 rounded-lg',
-                                                set.completado
-                                                    ? 'bg-tertiary/10'
-                                                    : esSetHistorico(set)
-                                                      ? 'bg-surface-container-high/50 border border-dashed border-outline-variant/50'
-                                                      : 'bg-surface-container',
+                                                'grid gap-space-sm',
+                                                ej.sets.length === 3
+                                                    ? 'grid-cols-2 sm:grid-cols-3'
+                                                    : 'grid-cols-2 sm:grid-cols-4',
                                             ]"
                                         >
-                                            <span
-                                                class="font-label-sm text-label-sm"
-                                                :class="
-                                                    set.completado
-                                                        ? 'text-tertiary'
-                                                        : esSetHistorico(set)
-                                                          ? 'text-secondary'
-                                                          : 'text-outline'
+                                            <button
+                                                v-for="(set, sIdx) in ej.sets"
+                                                :key="sIdx"
+                                                type="button"
+                                                @click="toggleInlineSet(set)"
+                                                :title="
+                                                    esSetHistorico(set)
+                                                        ? 'Tocá para editar o completar serie (valor previo disponible)'
+                                                        : 'Tocá para editar peso y repeticiones'
                                                 "
+                                                :class="[
+                                                    'flex flex-col px-space-md py-2 rounded-lg text-left transition-all cursor-pointer relative group/set',
+                                                    activeInlineSet === set
+                                                        ? 'ring-2 ring-secondary bg-surface-container-high'
+                                                        : set.completado
+                                                          ? 'bg-tertiary/10 hover:bg-tertiary/15'
+                                                          : esSetHistorico(set)
+                                                            ? 'bg-surface-container-high/50 border border-dashed border-outline-variant/50 hover:border-secondary/60'
+                                                            : 'bg-surface-container hover:bg-surface-container-high',
+                                                ]"
                                             >
-                                                SET {{ sIdx + 1 }}
-                                            </span>
-                                            <span
-                                                class="font-label-md text-label-md text-on-surface font-bold"
-                                            >
-                                                {{ formatSetLabel(set) }}
-                                            </span>
+                                                <div class="flex items-center justify-between w-full">
+                                                    <span
+                                                        class="font-label-sm text-label-sm"
+                                                        :class="
+                                                            set.completado
+                                                                ? 'text-tertiary'
+                                                                : esSetHistorico(set)
+                                                                  ? 'text-secondary'
+                                                                  : 'text-outline'
+                                                        "
+                                                    >
+                                                        SET {{ sIdx + 1 }}
+                                                    </span>
+                                                    <span
+                                                        v-if="set.completado"
+                                                        class="material-symbols-outlined text-[14px] text-tertiary"
+                                                    >
+                                                        check_circle
+                                                    </span>
+                                                    <span
+                                                        v-else
+                                                        class="material-symbols-outlined text-[13px] text-outline/60 group-hover/set:text-secondary transition-colors"
+                                                    >
+                                                        edit
+                                                    </span>
+                                                </div>
+                                                <span
+                                                    class="font-label-md text-label-md text-on-surface font-bold tabular-nums"
+                                                >
+                                                    {{ formatSetLabel(set) }}
+                                                </span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Inline Quick Set Telemetry Editor -->
+                                        <div
+                                            v-if="ej.sets.includes(activeInlineSet)"
+                                            class="p-3 rounded-xl bg-[#131924] border border-[#232D42] flex flex-col gap-3 shadow-lg"
+                                        >
+                                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                                                    <span class="text-xs font-bold text-white uppercase tracking-wider">
+                                                        Editar Set #{{ activeInlineSet.series_numero }} · {{ ej.nombre }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        v-if="valorHistoricoSet(activeInlineSet)"
+                                                        type="button"
+                                                        @click="copyInlineFromPrev(activeInlineSet)"
+                                                        class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[11px] font-mono font-bold text-indigo-300 cursor-pointer"
+                                                    >
+                                                        ↺ Copiar anterior ({{ valorHistoricoSet(activeInlineSet).peso ?? 0 }}kg × {{ valorHistoricoSet(activeInlineSet).reps ?? 0 }}r)
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        @click="activeInlineSet = null"
+                                                        class="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                                                        aria-label="Cerrar editor rápido"
+                                                    >
+                                                        <span class="material-symbols-outlined text-[16px]">close</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
+                                                <!-- Peso (kg) con botones +/- -->
+                                                <div>
+                                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                                        Peso (kg)
+                                                    </label>
+                                                    <div class="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            @click="stepInlinePeso(activeInlineSet, -2.5)"
+                                                            class="h-10 px-2.5 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+                                                        >
+                                                            -2.5
+                                                        </button>
+                                                        <input
+                                                            v-model.number="activeInlineSet.peso"
+                                                            type="number"
+                                                            inputmode="decimal"
+                                                            step="0.5"
+                                                            min="0"
+                                                            placeholder="0"
+                                                            class="w-full h-10 rounded-lg bg-[#101521] border border-[#232D42] text-center font-mono text-sm font-bold text-white focus:outline-none focus:border-indigo-500"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            @click="stepInlinePeso(activeInlineSet, 2.5)"
+                                                            class="h-10 px-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-xs font-mono font-bold text-indigo-300 hover:bg-indigo-600/30 active:scale-95 transition-all cursor-pointer"
+                                                        >
+                                                            +2.5
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Reps con botones +/- -->
+                                                <div>
+                                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                                        Repeticiones
+                                                    </label>
+                                                    <div class="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            @click="stepInlineReps(activeInlineSet, -1)"
+                                                            class="h-10 px-3 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
+                                                        >
+                                                            -1
+                                                        </button>
+                                                        <input
+                                                            v-model.number="activeInlineSet.reps_realizadas"
+                                                            type="number"
+                                                            inputmode="numeric"
+                                                            step="1"
+                                                            min="0"
+                                                            placeholder="8"
+                                                            class="w-full h-10 rounded-lg bg-[#101521] border border-[#232D42] text-center font-mono text-sm font-bold text-white focus:outline-none focus:border-indigo-500"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            @click="stepInlineReps(activeInlineSet, 1)"
+                                                            class="h-10 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition-all cursor-pointer"
+                                                        >
+                                                            +1
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Botón Completar Set -->
+                                                <button
+                                                    type="button"
+                                                    @click="completeInlineSet(activeInlineSet, ej.sets)"
+                                                    class="h-10 px-4 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+                                                >
+                                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                                    <span>{{ activeInlineSet.completado ? 'Actualizar serie' : 'Completar serie' }}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </article>

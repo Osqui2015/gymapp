@@ -2,16 +2,19 @@
     <transition name="slide-fade">
         <div
             v-if="isActive"
-            class="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 w-[calc(100%-2rem)] sm:w-88 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-800 p-4 transform transition-all duration-300"
+            class="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 w-[calc(100%-2rem)] sm:w-96 bg-[#131924]/95 backdrop-blur-xl text-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.75)] border border-indigo-500/40 p-4 transform transition-all duration-300"
             role="dialog"
             aria-label="Temporizador de descanso"
         >
             <div class="flex items-center justify-between mb-3">
                 <div class="min-w-0 pr-2">
-                    <p class="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-semibold">
-                        Descanso Activo
-                    </p>
-                    <h4 class="text-xs font-bold truncate text-slate-100">{{ currentExercise }}</h4>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold font-mono">
+                            Descanso Activo · Telemetry Timer
+                        </p>
+                    </div>
+                    <h4 class="text-xs font-extrabold truncate text-white mt-0.5">{{ currentExercise }}</h4>
                 </div>
                 <div class="flex items-center gap-1.5 flex-shrink-0">
                     <!-- Toggle Sonido -->
@@ -19,10 +22,10 @@
                         type="button"
                         @click="handleToggleSound"
                         :class="[
-                            'p-1.5 rounded-lg text-xs transition-colors',
+                            'p-1.5 rounded-lg text-xs transition-colors cursor-pointer border',
                             isSoundOn
-                                ? 'text-indigo-300 hover:text-white bg-slate-800/80 hover:bg-slate-700'
-                                : 'text-slate-500 hover:text-slate-300 bg-slate-800/40',
+                                ? 'text-indigo-300 hover:text-white bg-[#18202F] border-[#232D42] hover:border-indigo-500/40'
+                                : 'text-slate-500 hover:text-slate-300 bg-[#101521] border-[#232D42]',
                         ]"
                         :title="isSoundOn ? 'Silenciar sonido' : 'Activar sonido'"
                         :aria-label="isSoundOn ? 'Silenciar sonido' : 'Activar sonido'"
@@ -35,7 +38,7 @@
                     <button
                         type="button"
                         @click="handleSkip"
-                        class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#18202F] transition-colors cursor-pointer"
                         title="Cerrar temporizador"
                         aria-label="Cerrar temporizador"
                     >
@@ -60,7 +63,7 @@
                                 cx="28"
                                 cy="28"
                                 r="24"
-                                stroke="#1e293b"
+                                stroke="#232D42"
                                 stroke-width="3.5"
                                 fill="transparent"
                             />
@@ -77,7 +80,7 @@
                                 class="transition-all duration-300"
                             />
                         </svg>
-                        <span class="text-xs font-mono font-bold">{{
+                        <span class="text-xs font-mono font-extrabold text-white">{{
                             formattedRemainingTime
                         }}</span>
                     </div>
@@ -89,7 +92,7 @@
                     <button
                         type="button"
                         @click="handleSubtract15s"
-                        class="px-2 py-1.5 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                        class="px-2.5 py-1.5 text-xs font-mono font-bold rounded-xl bg-[#18202F] border border-[#232D42] hover:border-indigo-500/40 text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
                         title="Restar 15 segundos"
                         aria-label="Restar 15 segundos"
                     >
@@ -100,7 +103,7 @@
                     <button
                         type="button"
                         @click="handleAdd30s"
-                        class="px-2 py-1.5 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                        class="px-2.5 py-1.5 text-xs font-mono font-bold rounded-xl bg-[#18202F] border border-[#232D42] hover:border-indigo-500/40 text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
                         title="Añadir 30 segundos"
                         aria-label="Añadir 30 segundos"
                     >
@@ -111,7 +114,7 @@
                     <button
                         type="button"
                         @click="handlePauseResume"
-                        class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+                        class="p-2 rounded-xl bg-[#18202F] border border-[#232D42] hover:border-indigo-500/40 text-white active:scale-95 transition-all cursor-pointer"
                         :title="isPaused ? 'Reanudar' : 'Pausar'"
                         :aria-label="isPaused ? 'Reanudar temporizador' : 'Pausar temporizador'"
                     >
@@ -140,7 +143,7 @@
                     <button
                         type="button"
                         @click="handleSkip"
-                        class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                        class="px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 active:scale-95 transition-all cursor-pointer"
                         title="Saltar descanso"
                         aria-label="Saltar descanso"
                     >

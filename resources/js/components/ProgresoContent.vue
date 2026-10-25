@@ -1,66 +1,8 @@
 <template>
     <div
-        class="min-h-screen bg-obsidian-canvas text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-300"
+        class="min-h-screen bg-[#0B0F17] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-300"
     >
-        <!-- TopBar Mobile -->
-        <header
-            class="sticky top-0 z-40 backdrop-blur-xl bg-obsidian-canvas/85 border-b border-obsidian-border/60 px-5 py-3.5 flex items-center justify-between md:hidden"
-            data-purpose="app-header"
-        >
-            <div class="flex items-center space-x-2.5">
-                <div
-                    class="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-indigo via-accent-violet to-accent-cyan p-[1.5px] shadow-glow flex items-center justify-center"
-                >
-                    <div
-                        class="w-full h-full bg-obsidian-canvas rounded-[10px] flex items-center justify-center"
-                    >
-                        <span
-                            class="font-display text-transparent bg-clip-text bg-gradient-to-r from-accent-indigo to-accent-cyan font-bold text-lg"
-                        >
-                            G
-                        </span>
-                    </div>
-                </div>
-                <span
-                    class="font-display font-bold text-xl tracking-tight text-white flex items-center gap-0.5"
-                >
-                    Gym<span class="text-accent-indigo">App</span>
-                </span>
-            </div>
-            <div class="flex items-center space-x-2.5">
-                <!-- Notification Button with Violet Badge -->
-                <button
-                    aria-label="Notificaciones"
-                    class="relative p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border hover:border-slate-600 text-slate-300 hover:text-white transition-colors duration-200 cursor-pointer"
-                    type="button"
-                >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                    <span
-                        class="absolute top-2 right-2 w-2 h-2 bg-accent-violet rounded-full ring-2 ring-obsidian-surface animate-pulse"
-                    />
-                </button>
-                <!-- User Avatar -->
-                <div
-                    class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-accent-violet text-white font-semibold text-xs flex items-center justify-center shadow-inner cursor-pointer hover:opacity-90 ring-1 ring-white/20 transition-transform active:scale-95"
-                >
-                    {{ userInitials }}
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Desktop Container (Responsive max-w-7xl) -->
+        <!-- Main Container (Responsive max-w-7xl) -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-20 md:py-6">
             <!-- Desktop Breadcrumbs -->
             <Breadcrumbs
