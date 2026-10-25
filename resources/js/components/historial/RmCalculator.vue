@@ -1,65 +1,68 @@
 <template>
-    <div class="grid md:grid-cols-3 gap-8">
-        <!-- Calculadora Manual -->
-        <div
-            class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-5 h-fit md:col-span-1"
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Calculadora Manual (4 cols) -->
+        <section
+            class="lg:col-span-4 bg-[#131924] border border-[#232D42] rounded-xl shadow-lg overflow-hidden h-fit"
         >
-            <h3
-                class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
-            >
-                <span>🧮</span> Calculadora de 1RM
-            </h3>
+            <div class="p-4 bg-[#18202F]/60 border-b border-[#232D42] flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded bg-indigo-500"></div>
+                <h3 class="text-sm font-bold text-white tracking-wide uppercase">
+                    Calculadora de 1RM
+                </h3>
+            </div>
 
-            <div class="space-y-4">
+            <div class="p-5 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                        >Peso Levantado (kg)</label
-                    >
+                    <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">
+                        Peso Levantado (kg)
+                    </label>
                     <input
-                        v-model.number="localCalc.weight"
+                        v-model.number="weight"
                         type="number"
                         min="0.1"
                         step="0.5"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                        class="w-full bg-[#18202F] border border-[#232D42] text-sm font-mono text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                     />
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                        >Repeticiones Realizadas</label
-                    >
+                    <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">
+                        Repeticiones Realizadas
+                    </label>
                     <input
-                        v-model.number="localCalc.reps"
+                        v-model.number="reps"
                         type="number"
                         min="1"
                         max="30"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                        class="w-full bg-[#18202F] border border-[#232D42] text-sm font-mono text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                     />
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1"
-                        >Fórmula de Estimación</label
-                    >
+                    <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">
+                        Fórmula de Estimación
+                    </label>
                     <div class="grid grid-cols-2 gap-2">
                         <button
-                            @click="localCalc.formula = 'epley'"
-                            class="py-1.5 text-xs font-semibold rounded-lg border transition-all"
+                            type="button"
+                            @click="formula = 'epley'"
+                            class="py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer"
                             :class="
-                                localCalc.formula === 'epley'
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'bg-transparent text-gray-500 border-gray-300 dark:border-gray-600'
+                                formula === 'epley'
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                                    : 'bg-[#18202F] text-slate-400 hover:text-white border-[#232D42]'
                             "
                         >
                             Epley
                         </button>
                         <button
-                            @click="localCalc.formula = 'lander'"
-                            class="py-1.5 text-xs font-semibold rounded-lg border transition-all"
+                            type="button"
+                            @click="formula = 'lander'"
+                            class="py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer"
                             :class="
-                                localCalc.formula === 'lander'
-                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                    : 'bg-transparent text-gray-500 border-gray-300 dark:border-gray-600'
+                                formula === 'lander'
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                                    : 'bg-[#18202F] text-slate-400 hover:text-white border-[#232D42]'
                             "
                         >
                             Lander
@@ -69,222 +72,219 @@
 
                 <!-- Output -->
                 <div
-                    class="mt-6 p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-center"
+                    class="mt-4 p-4 bg-[#0B0F17]/80 border border-indigo-500/30 rounded-xl text-center relative overflow-hidden"
                 >
-                    <p
-                        class="text-xs text-indigo-700 dark:text-indigo-400 uppercase tracking-wider font-bold"
-                    >
+                    <div class="absolute -right-6 -top-6 w-20 h-20 rounded-full bg-indigo-500/15 blur-xl pointer-events-none"></div>
+                    <p class="text-[11px] text-indigo-400 uppercase tracking-widest font-bold">
                         1RM Estimado
                     </p>
-                    <p
-                        class="text-4xl font-black text-indigo-600 dark:text-indigo-400 font-mono mt-1"
-                    >
-                        {{ estimated1RM.toFixed(1) }} <span class="text-sm font-normal">kg</span>
+                    <p class="text-3xl sm:text-4xl font-extrabold text-white font-mono mt-1">
+                        {{ estimated1RM.toFixed(1) }}
+                        <span class="text-xs font-normal text-slate-400">kg</span>
                     </p>
                 </div>
 
                 <!-- Porcentajes -->
                 <div
                     v-if="estimated1RM > 0"
-                    class="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4"
+                    class="pt-3 border-t border-[#232D42]"
                 >
-                    <p class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        Porcentajes del 1RM:
+                    <p class="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2.5">
+                        Tabla de Porcentajes 1RM
                     </p>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div
                             v-for="p in percentages1RM"
                             :key="p.percentage"
-                            class="flex justify-between p-2 bg-gray-50 dark:bg-[var(--color-obsidian-base)]/50 rounded"
+                            class="flex items-center justify-between p-2 px-3 bg-[#101521] border border-[#232D42]/80 rounded-lg"
                         >
-                            <span class="font-bold text-gray-500 font-mono"
-                                >{{ p.percentage }}%</span
-                            >
-                            <span class="font-extrabold text-gray-800 dark:text-gray-200 font-mono"
-                                >{{ p.weight }} kg</span
-                            >
+                            <span class="font-bold text-indigo-400 font-mono">
+                                {{ p.percentage }}%
+                            </span>
+                            <span class="font-extrabold text-white font-mono">
+                                {{ p.weight }} kg
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Récords Personales e Historial de 1RM -->
-        <div
-            class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-5 md:col-span-2"
+        <!-- Récords Personales e Historial de 1RM (8 cols) -->
+        <section
+            class="lg:col-span-8 bg-[#131924] border border-[#232D42] rounded-xl shadow-lg overflow-hidden flex flex-col justify-between"
         >
-            <div
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700"
-            >
-                <div>
-                    <h3
-                        class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"
-                    >
-                        <span>🏆</span> Records e 1RM Históricos
-                    </h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Estimación en base a las mayores cargas reales registradas
-                    </p>
-                </div>
-                <select
-                    :value="rmFormula"
-                    @change="$emit('update:rmFormula', $event.target.value)"
-                    class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 text-xs font-bold"
+            <div>
+                <div
+                    class="p-4 bg-[#18202F]/60 border-b border-[#232D42] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
-                    <option value="epley">Epley formula</option>
-                    <option value="lander">Lander formula</option>
-                </select>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <div class="w-2.5 h-2.5 rounded bg-amber-400"></div>
+                        <h3 class="text-sm font-bold text-white tracking-wide uppercase">
+                            Récords e 1RM Históricos
+                        </h3>
+                        <span class="text-xs bg-[#232D42] text-slate-300 px-2 py-0.5 rounded-full font-mono">
+                            {{ filteredRows.length }} ejercicios
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="relative w-full sm:w-52">
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Buscar ejercicio..."
+                                class="w-full bg-[#101521] border border-[#232D42] text-xs text-white rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-slate-500"
+                            />
+                            <svg
+                                class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                ></path>
+                            </svg>
+                        </div>
+
+                        <select
+                            v-model="formula"
+                            class="bg-[#101521] border border-[#232D42] rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                        >
+                            <option value="epley">Fórmula Epley</option>
+                            <option value="lander">Fórmula Lander</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr
+                                class="border-b border-[#232D42] bg-[#101521]/70 text-[11px] font-semibold text-slate-400 uppercase tracking-wider"
+                            >
+                                <th class="py-3 px-4">Ejercicio</th>
+                                <th class="py-3 px-4 text-center">Récord de Carga (PR)</th>
+                                <th class="py-3 px-4 text-right">1RM Estimado</th>
+                                <th class="py-3 px-4 text-center">Fecha del Récord</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#232D42]/60 font-medium">
+                            <tr
+                                v-for="(row, idx) in filteredRows"
+                                :key="row.name ?? row.date"
+                                class="hover:bg-[#18202F]/60 transition-colors"
+                            >
+                                <td class="py-3.5 px-4 font-bold text-white">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ row.name }}</span>
+                                        <span
+                                            v-if="idx < 3"
+                                            class="w-2 h-2 rounded-full bg-amber-400"
+                                            title="Top 3 Fuerza"
+                                        ></span>
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-mono text-slate-300">
+                                    {{ row.weight.toFixed(1) }} kg × {{ row.reps }} reps
+                                </td>
+                                <td class="py-3.5 px-4 text-right">
+                                    <span
+                                        class="inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded border"
+                                        :class="
+                                            idx === 0
+                                                ? 'text-amber-400 bg-amber-400/10 border-amber-400/30'
+                                                : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30'
+                                        "
+                                    >
+                                        ★ {{ row.rm.toFixed(1) }} kg
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-mono text-slate-400">
+                                    {{ row.date }}
+                                </td>
+                            </tr>
+                            <tr v-if="filteredRows.length === 0">
+                                <td colspan="4" class="py-8 text-center text-slate-400">
+                                    No hay suficientes datos del historial con pesos y repeticiones para estimar récords.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <ResponsiveTable
-                :rows="historical1RMs"
-                :columns="[
-                    {
-                        key: 'name',
-                        label: 'Ejercicio',
-                        thClass: '',
-                        tdClass: 'font-bold text-gray-900 dark:text-white',
-                        sortable: true,
-                        searchable: true,
-                    },
-                    {
-                        key: 'pr',
-                        label: 'Record de Carga (PR)',
-                        thClass: 'text-center',
-                        tdClass: 'text-center text-gray-700 dark:text-gray-300 font-mono',
-                        sortable: true,
-                    },
-                    {
-                        key: 'rm',
-                        label: '1RM Estimado',
-                        thClass: 'text-right',
-                        tdClass:
-                            'text-right font-black text-indigo-600 dark:text-indigo-400 font-mono text-base',
-                        sortable: true,
-                    },
-                    {
-                        key: 'date',
-                        label: 'Fecha del Record',
-                        thClass: 'text-center',
-                        tdClass: 'text-center text-xs text-gray-500 dark:text-gray-400 font-medium',
-                        sortable: true,
-                    },
-                ]"
-                thead-class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 uppercase text-[10px] tracking-wider"
-                sortable
-                filterable
-                filter-placeholder="Buscar ejercicio…"
-            >
-                <template #rows="{ rows }">
-                    <tr
-                        v-for="row in rows"
-                        :key="row.name ?? row.date"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
-                    >
-                        <td class="px-4 py-3.5 font-bold text-gray-900 dark:text-white">
-                            {{ row.name }}
-                        </td>
-                        <td
-                            class="px-4 py-3.5 text-center text-gray-700 dark:text-gray-300 font-mono"
-                        >
-                            {{ row.weight.toFixed(1) }} kg × {{ row.reps }} reps
-                        </td>
-                        <td
-                            class="px-4 py-3.5 text-right font-black text-indigo-600 dark:text-indigo-400 font-mono text-base"
-                        >
-                            {{ row.rm.toFixed(1) }} kg
-                        </td>
-                        <td
-                            class="px-4 py-3.5 text-center text-xs text-gray-500 dark:text-gray-400 font-medium"
-                        >
-                            {{ row.date }}
-                        </td>
-                    </tr>
-                </template>
-
-                <template #cards="{ rows }">
-                    <div
-                        v-for="row in rows"
-                        :key="row.name ?? row.date"
-                        class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3"
-                    >
-                        <div class="flex items-start justify-between gap-3">
-                            <p
-                                class="font-bold text-gray-900 dark:text-white text-sm flex-1 min-w-0"
-                            >
-                                {{ row.name }}
-                            </p>
-                            <p
-                                class="font-black text-indigo-600 dark:text-indigo-400 font-mono text-lg whitespace-nowrap"
-                            >
-                                {{ row.rm.toFixed(1) }} kg
-                            </p>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span
-                                class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                                >PR</span
-                            >
-                            <span class="text-gray-700 dark:text-gray-300 font-mono">
-                                {{ row.weight.toFixed(1) }} kg × {{ row.reps }} reps
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span
-                                class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                                >Fecha</span
-                            >
-                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                {{ row.date }}
-                            </span>
-                        </div>
-                    </div>
-                </template>
-
-                <template #empty>
-                    <div class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No hay suficientes datos del historial con pesos y repeticiones para estimar
-                        records.
-                    </div>
-                </template>
-            </ResponsiveTable>
-        </div>
+            <div class="px-4 py-3 bg-[#101521] border-t border-[#232D42] flex items-center justify-between text-xs text-slate-400">
+                <span>Mostrando {{ filteredRows.length }} ejercicios con 1RM estimado</span>
+                <span class="font-mono text-indigo-400 uppercase">{{ formula }}</span>
+            </div>
+        </section>
     </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import ResponsiveTable from '../ResponsiveTable.vue';
 
 const props = defineProps({
-    calculator: { type: Object, required: true }, // { weight, reps, formula }
+    calculator: { type: Object, required: true },
     rmFormula: { type: String, required: true },
     historical1RMs: { type: Array, required: true },
 });
 
 const emit = defineEmits(['update:calculator', 'update:rmFormula']);
 
-const localCalc = ref({ ...props.calculator });
+const searchQuery = ref('');
+
+const filteredRows = computed(() => {
+    const q = searchQuery.value.trim().toLowerCase();
+    if (!q) return props.historical1RMs || [];
+    return (props.historical1RMs || []).filter((r) => (r.name || '').toLowerCase().includes(q));
+});
+
+// --- Estado editable ---
+// Antes el componente copiaba el prop entero a un ref local y encadenaba dos
+// watches deep (prop → local → emit → prop → …): al tipear entraba en bucle
+// recursivo ("Maximum recursive updates exceeded").
+// Ahora los campos editables son refs simples. El watch del prop sólo actúa
+// si el valor cambió de verdad, así que el eco termina en el primer vuelta.
+const weight = ref(props.calculator.weight);
+const reps = ref(props.calculator.reps);
+
 watch(
-    () => props.calculator,
-    (val) => {
-        localCalc.value = { ...val };
-    },
-    { deep: true }
+    () => props.calculator.weight,
+    (v) => {
+        if (v !== weight.value) weight.value = v;
+    }
 );
 watch(
-    localCalc,
-    (val) => {
-        emit('update:calculator', { ...val });
-    },
-    { deep: true }
+    () => props.calculator.reps,
+    (v) => {
+        if (v !== reps.value) reps.value = v;
+    }
 );
 
+watch([weight, reps], ([w, r]) => {
+    emit('update:calculator', { ...props.calculator, weight: w, reps: r });
+});
+
+// La fórmula tiene UNA sola fuente. Antes el <select> actualizaba `rmFormula`
+// pero el 1RM se calculaba con la fórmula local: cambiar la fórmula no
+// recalculaba nada.
+const formula = computed({
+    get: () => props.rmFormula,
+    set: (v) => emit('update:rmFormula', v),
+});
+
 const estimated1RM = computed(() => {
-    const w = parseFloat(localCalc.value.weight);
-    const r = parseInt(localCalc.value.reps);
+    const w = parseFloat(weight.value);
+    const r = parseInt(reps.value);
     if (!w || !r || w <= 0 || r <= 0) return 0;
-    if (localCalc.value.formula === 'epley') {
+    if (formula.value === 'epley') {
         return w * (1 + r / 30);
     }
     return (100 * w) / (101.3 - 2.6712 * r);

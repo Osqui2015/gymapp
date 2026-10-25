@@ -1,239 +1,203 @@
 <template>
     <div class="space-y-6">
-        <div
-            class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
+        <section
+            class="bg-[#131924] border border-[#232D42] rounded-xl overflow-hidden shadow-lg"
         >
+            <!-- Header -->
             <div
-                class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4"
+                class="p-4 bg-[#18202F]/60 border-b border-[#232D42] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                        ⚖️ Comparación de pesos por ejercicio
-                    </h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Cuánto levantabas al principio vs. cuánto levantás ahora. ¡Mirá tu
-                        evolución!
-                    </p>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-2.5 h-2.5 rounded bg-indigo-500"></div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white tracking-wide uppercase">
+                            Comparación de Pesos por Ejercicio
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Cuánto levantabas al principio vs. cuánto levantás ahora en telemetría longitudinal.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Selector de ejercicio -->
+                <div v-if="ejerciciosDisponibles.length > 0" class="w-full sm:w-72">
+                    <select
+                        v-model="ejercicioSeleccionado"
+                        class="w-full bg-[#101521] border border-[#232D42] text-xs font-semibold text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                    >
+                        <option v-for="ej in ejerciciosDisponibles" :key="ej" :value="ej">
+                            {{ ej }}
+                        </option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Selector de ejercicio -->
-            <div v-if="ejerciciosDisponibles.length > 1" class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                    >Ejercicio a comparar</label
-                >
-                <select
-                    v-model="ejercicioSeleccionado"
-                    class="w-full sm:w-96 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option v-for="ej in ejerciciosDisponibles" :key="ej" :value="ej">
-                        {{ ej }}
-                    </option>
-                </select>
-            </div>
-
-            <div
-                v-if="!ejercicioSeleccionado"
-                class="text-center py-12 text-gray-500 dark:text-gray-400"
-            >
-                Seleccioná un ejercicio para ver la comparación.
-            </div>
-
-            <div v-else>
-                <!-- Cards "antes vs después" -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div
-                        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-5"
-                    >
-                        <p
-                            class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold"
-                        >
-                            Primer registro
-                        </p>
-                        <p class="mt-2 text-3xl font-bold text-gray-700 dark:text-gray-200">
-                            {{ comparacion.primero.peso
-                            }}<span class="text-base font-normal text-gray-500"> kg</span>
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {{ comparacion.primero.fecha }}
-                        </p>
-                    </div>
-
-                    <div
-                        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-5"
-                    >
-                        <p
-                            class="text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400 font-semibold"
-                        >
-                            Último registro
-                        </p>
-                        <p class="mt-2 text-3xl font-bold text-indigo-700 dark:text-indigo-300">
-                            {{ comparacion.ultimo.peso
-                            }}<span class="text-base font-normal"> kg</span>
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {{ comparacion.ultimo.fecha }}
-                        </p>
-                    </div>
-
-                    <div
-                        :class="[
-                            'rounded-xl border p-5',
-                            comparacion.diferencia > 0
-                                ? 'border-green-300 dark:border-green-700 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30'
-                                : comparacion.diferencia < 0
-                                  ? 'border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30'
-                                  : 'border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800',
-                        ]"
-                    >
-                        <p
-                            class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold"
-                        >
-                            Cambio total
-                        </p>
-                        <p
-                            :class="[
-                                'mt-2 text-3xl font-bold',
-                                comparacion.diferencia > 0
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : comparacion.diferencia < 0
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : 'text-gray-700 dark:text-gray-300',
-                            ]"
-                        >
-                            {{ comparacion.diferencia > 0 ? '+' : ''
-                            }}{{ comparacion.diferencia.toFixed(1)
-                            }}<span class="text-base font-normal"> kg</span>
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {{ comparacion.porcentaje > 0 ? '+' : ''
-                            }}{{ comparacion.porcentaje.toFixed(1) }}% en
-                            {{ comparacion.diasEntre }} días
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Gráfico -->
-                <div class="relative" style="height: 320px">
-                    <canvas ref="chartCanvas"></canvas>
-                </div>
-
-                <!-- Records del ejercicio -->
-                <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div
-                        class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3"
-                    >
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Mejor peso (PR)</p>
-                        <p class="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                            {{ stats.pr.peso }} kg × {{ stats.pr.reps }} reps
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ stats.pr.fecha }}</p>
-                    </div>
-                    <div
-                        class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3"
-                    >
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Total de series registradas
-                        </p>
-                        <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-                            {{ stats.total }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Comparación con la comunidad -->
+            <div class="p-5">
                 <div
-                    class="mt-6 rounded-lg border border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 p-4"
+                    v-if="!ejercicioSeleccionado"
+                    class="text-center py-12 text-slate-400 text-xs"
                 >
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="text-2xl">🌎</span>
-                        <h4 class="font-bold text-gray-900 dark:text-white">
-                            Comparación con la comunidad
-                        </h4>
-                    </div>
-                    <div
-                        v-if="comunidad.cargando"
-                        class="text-sm text-gray-500 dark:text-gray-400 py-3"
-                    >
-                        <svg
-                            class="animate-spin w-4 h-4 inline-block mr-2"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                            ></circle>
-                            <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            ></path>
-                        </svg>
-                        Cargando datos de la comunidad...
-                    </div>
-                    <div
-                        v-else-if="comunidad.error"
-                        class="text-sm text-red-600 dark:text-red-400 py-2"
-                    >
-                        {{ comunidad.error }}
-                    </div>
-                    <div v-else-if="comunidad.total_usuarios > 0">
-                        <div class="mb-3">
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                De <strong>{{ comunidad.total_usuarios }}</strong> usuarios que
-                                entrenan este ejercicio, estás en el
-                                <strong :class="rankingClass">
-                                    {{ rankingTexto }}
-                                </strong>
-                                ({{ comunidad.percentiles.p50 }} kg es la mediana de la comunidad).
+                    Seleccioná un ejercicio para ver la comparación.
+                </div>
+
+                <div v-else class="space-y-6">
+                    <!-- Cards "antes vs después" -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="rounded-xl border border-[#232D42] bg-[#101521] p-4">
+                            <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                                Primer registro
+                            </p>
+                            <p class="mt-2 text-2xl sm:text-3xl font-extrabold text-white font-mono">
+                                {{ comparacion.primero.peso }}
+                                <span class="text-xs font-normal text-slate-400">kg</span>
+                            </p>
+                            <p class="text-xs text-slate-400 font-mono mt-1">
+                                {{ comparacion.primero.fecha }}
                             </p>
                         </div>
-                        <!-- Barra visual de percentiles -->
-                        <div
-                            class="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"
-                        >
-                            <div
-                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-400 to-indigo-500"
-                                :style="{ width: `${posicionBarra(comunidad.percentiles.p25)}%` }"
-                            ></div>
-                            <div
-                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-indigo-600 opacity-90"
-                                :style="{ width: `${posicionBarra(comunidad.percentiles.p50)}%` }"
-                            ></div>
-                            <div
-                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-600 to-indigo-700"
-                                :style="{ width: `${posicionBarra(comunidad.percentiles.p75)}%` }"
-                            ></div>
-                            <!-- Marcador del usuario -->
-                            <div
-                                class="absolute top-0 bottom-0 w-1 bg-yellow-400 shadow-lg"
-                                :style="{ left: `${posicionBarra(comparacion.ultimo.peso)}%` }"
-                            >
-                                <div
-                                    class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full"
-                                ></div>
-                            </div>
+
+                        <div class="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4">
+                            <p class="text-[11px] uppercase tracking-wider text-indigo-300 font-semibold">
+                                Último registro
+                            </p>
+                            <p class="mt-2 text-2xl sm:text-3xl font-extrabold text-white font-mono">
+                                {{ comparacion.ultimo.peso }}
+                                <span class="text-xs font-normal text-indigo-300">kg</span>
+                            </p>
+                            <p class="text-xs text-indigo-300/80 font-mono mt-1">
+                                {{ comparacion.ultimo.fecha }}
+                            </p>
                         </div>
+
                         <div
-                            class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1"
+                            :class="[
+                                'rounded-xl border p-4',
+                                comparacion.diferencia > 0
+                                    ? 'border-emerald-500/30 bg-emerald-500/10'
+                                    : comparacion.diferencia < 0
+                                      ? 'border-rose-500/30 bg-rose-500/10'
+                                      : 'border-[#232D42] bg-[#101521]',
+                            ]"
                         >
-                            <span>p25: {{ comunidad.percentiles.p25 }} kg</span>
-                            <span>p50: {{ comunidad.percentiles.p50 }} kg</span>
-                            <span>p75: {{ comunidad.percentiles.p75 }} kg</span>
-                            <span>p90: {{ comunidad.percentiles.p90 }} kg</span>
+                            <p class="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">
+                                Cambio total
+                            </p>
+                            <p
+                                :class="[
+                                    'mt-2 text-2xl sm:text-3xl font-extrabold font-mono',
+                                    comparacion.diferencia > 0
+                                        ? 'text-emerald-400'
+                                        : comparacion.diferencia < 0
+                                          ? 'text-rose-400'
+                                          : 'text-slate-200',
+                                ]"
+                            >
+                                {{ comparacion.diferencia > 0 ? '+' : '' }}{{ comparacion.diferencia.toFixed(1) }}
+                                <span class="text-xs font-normal">kg</span>
+                            </p>
+                            <p class="text-xs text-slate-300 font-mono mt-1">
+                                {{ comparacion.porcentaje > 0 ? '+' : '' }}{{ comparacion.porcentaje.toFixed(1) }}% en
+                                {{ comparacion.diasEntre }} días
+                            </p>
                         </div>
                     </div>
-                    <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
-                        Aún no hay suficientes datos de la comunidad para este ejercicio.
+
+                    <!-- Gráfico -->
+                    <div class="rounded-xl bg-[#0B0F17]/80 border border-[#232D42] p-4">
+                        <div class="relative h-[300px]">
+                            <canvas ref="chartCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Records del ejercicio -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="rounded-xl border border-[#232D42] bg-[#101521] p-4 flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                                    Mejor peso (PR)
+                                </p>
+                                <p class="mt-1 text-lg font-extrabold text-amber-400 font-mono">
+                                    ★ {{ stats.pr.peso }} kg × {{ stats.pr.reps }} reps
+                                </p>
+                            </div>
+                            <span class="text-xs font-mono text-slate-400 bg-[#18202F] px-2.5 py-1 rounded border border-[#232D42]">
+                                {{ stats.pr.fecha }}
+                            </span>
+                        </div>
+                        <div class="rounded-xl border border-[#232D42] bg-[#101521] p-4 flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                                    Total de series registradas
+                                </p>
+                                <p class="mt-1 text-lg font-extrabold text-white font-mono">
+                                    {{ stats.total }} sets
+                                </p>
+                            </div>
+                            <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/30">
+                                Activo
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Comparación con la comunidad -->
+                    <div class="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="material-symbols-outlined text-violet-400 text-[20px]">public</span>
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider">
+                                Comparación con la comunidad
+                            </h4>
+                        </div>
+                        <div v-if="comunidad.cargando" class="text-xs text-slate-400 py-3">
+                            Cargando datos de la comunidad...
+                        </div>
+                        <div v-else-if="comunidad.error" class="text-xs text-rose-400 py-2">
+                            {{ comunidad.error }}
+                        </div>
+                        <div v-else-if="comunidad.total_usuarios > 0">
+                            <div class="mb-3">
+                                <p class="text-xs text-slate-300">
+                                    De <strong class="text-white">{{ comunidad.total_usuarios }}</strong> atletas que
+                                    entrenan este ejercicio, estás en el
+                                    <strong :class="rankingClass">
+                                        {{ rankingTexto }}
+                                    </strong>
+                                    ({{ comunidad.percentiles.p50 }} kg es la mediana de la comunidad).
+                                </p>
+                            </div>
+                            <!-- Barra visual de percentiles -->
+                            <div class="relative h-6 bg-[#0B0F17] border border-[#232D42] rounded-full overflow-hidden">
+                                <div
+                                    class="absolute inset-y-0 left-0 bg-indigo-500/30"
+                                    :style="{ width: `${posicionBarra(comunidad.percentiles.p25)}%` }"
+                                ></div>
+                                <div
+                                    class="absolute inset-y-0 left-0 bg-indigo-500/50"
+                                    :style="{ width: `${posicionBarra(comunidad.percentiles.p50)}%` }"
+                                ></div>
+                                <div
+                                    class="absolute inset-y-0 left-0 bg-violet-500/70"
+                                    :style="{ width: `${posicionBarra(comunidad.percentiles.p75)}%` }"
+                                ></div>
+                                <!-- Marcador del usuario -->
+                                <div
+                                    class="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-lg"
+                                    :style="{ left: `${posicionBarra(comparacion.ultimo.peso)}%` }"
+                                ></div>
+                            </div>
+                            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1.5">
+                                <span>p25: {{ comunidad.percentiles.p25 }} kg</span>
+                                <span>p50: {{ comunidad.percentiles.p50 }} kg</span>
+                                <span>p75: {{ comunidad.percentiles.p75 }} kg</span>
+                                <span>p90: {{ comunidad.percentiles.p90 }} kg</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-xs text-slate-400 py-2">
+                            Aún no hay suficientes datos de la comunidad para este ejercicio.
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </template>
 
@@ -251,7 +215,6 @@ const ejercicioSeleccionado = ref('');
 const chartCanvas = ref(null);
 let chartInstance = null;
 
-// Datos de la comunidad para el ejercicio seleccionado
 const comunidad = ref({
     cargando: false,
     error: null,
@@ -270,7 +233,7 @@ const cargarComunidad = async () => {
             params: { ejercicio: ejercicioSeleccionado.value },
         });
         comunidad.value = { ...response.data, cargando: false, error: null };
-    } catch (err) {
+    } catch {
         comunidad.value = {
             ...comunidad.value,
             cargando: false,
@@ -298,10 +261,10 @@ const rankingTexto = computed(() => {
 const rankingClass = computed(() => {
     const miPeso = comparacion.value.ultimo.peso;
     const p = comunidad.value.percentiles;
-    if (!p.p50) return 'text-gray-700 dark:text-gray-300';
-    if (miPeso >= p.p75) return 'text-emerald-600 dark:text-emerald-400';
-    if (miPeso >= p.p50) return 'text-indigo-600 dark:text-indigo-400';
-    return 'text-gray-700 dark:text-gray-300';
+    if (!p.p50) return 'text-slate-300';
+    if (miPeso >= p.p75) return 'text-emerald-400';
+    if (miPeso >= p.p50) return 'text-indigo-400';
+    return 'text-slate-300';
 });
 
 const registrosPorEjercicio = computed(() => {
@@ -311,7 +274,6 @@ const registrosPorEjercicio = computed(() => {
         if (!grouped.has(row.ejercicio_nombre)) grouped.set(row.ejercicio_nombre, []);
         grouped.get(row.ejercicio_nombre).push(row);
     });
-    // Ordenar cada grupo por fecha ascendente
     grouped.forEach((rows) => rows.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')));
     return grouped;
 });
@@ -323,10 +285,8 @@ const registrosActuales = computed(() => {
     return registrosPorEjercicio.value.get(ejercicioSeleccionado.value) || [];
 });
 
-// Auto-seleccionar el primer ejercicio que tenga >= 2 registros
 const inicializarSeleccion = () => {
     if (!ejercicioSeleccionado.value && ejerciciosDisponibles.value.length > 0) {
-        // Buscar el primero con al menos 2 registros
         const conHistoria = ejerciciosDisponibles.value.find(
             (ej) => registrosPorEjercicio.value.get(ej).length >= 2
         );
@@ -397,26 +357,26 @@ const renderChart = () => {
                 {
                     label: 'Peso (kg)',
                     data: pesos,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    borderColor: '#818cf8',
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
                     borderWidth: 3,
-                    tension: 0.3,
+                    tension: 0.35,
                     fill: true,
                     pointBackgroundColor: '#6366f1',
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     yAxisID: 'y',
                 },
                 {
                     label: 'Reps',
                     data: reps,
-                    borderColor: '#10b981',
+                    borderColor: '#34d399',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     borderWidth: 2,
                     borderDash: [5, 5],
-                    tension: 0.3,
+                    tension: 0.35,
                     pointBackgroundColor: '#10b981',
-                    pointRadius: 4,
+                    pointRadius: 3,
                     yAxisID: 'y1',
                 },
             ],
@@ -426,7 +386,10 @@ const renderChart = () => {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'top' },
+                legend: {
+                    position: 'top',
+                    labels: { color: '#94a3b8' },
+                },
                 tooltip: {
                     callbacks: {
                         label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}`,
@@ -435,19 +398,21 @@ const renderChart = () => {
             },
             scales: {
                 x: {
-                    ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
-                    grid: { color: 'rgba(107, 114, 128, 0.1)' },
+                    ticks: { color: '#94a3b8', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+                    grid: { color: 'rgba(35, 45, 66, 0.6)' },
                 },
                 y: {
                     type: 'linear',
                     position: 'left',
-                    title: { display: true, text: 'Peso (kg)' },
-                    grid: { color: 'rgba(107, 114, 128, 0.1)' },
+                    ticks: { color: '#94a3b8' },
+                    title: { display: true, text: 'Peso (kg)', color: '#94a3b8' },
+                    grid: { color: 'rgba(35, 45, 66, 0.6)' },
                 },
                 y1: {
                     type: 'linear',
                     position: 'right',
-                    title: { display: true, text: 'Reps' },
+                    ticks: { color: '#94a3b8' },
+                    title: { display: true, text: 'Reps', color: '#94a3b8' },
                     grid: { drawOnChartArea: false },
                 },
             },

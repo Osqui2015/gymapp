@@ -914,6 +914,7 @@ import axios from 'axios';
 import { useTrainingSessionStore } from '@/stores/trainingSession';
 import { useRestTimerStore } from '@/stores/restTimer';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
+import { useToast } from '@/composables/useToast';
 import { useWakeLock } from '@/composables/useWakeLock';
 import SetConfigCard from './SetConfigCard.vue';
 
@@ -930,6 +931,7 @@ const store = useTrainingSessionStore();
 const restTimer = useRestTimerStore();
 const offline = useOfflineSeries();
 const wakeLock = useWakeLock();
+const toast = useToast();
 
 // === Media del ejercicio actual (image_url + gif_url) ===
 // Se carga via /api/ejercicios/media cuando cambia el ejercicio activo.
@@ -1354,7 +1356,7 @@ const onSetComplete = async (payload, { skipTimer = false } = {}) => {
 
     // 3. Persistir en backend / IndexedDB offline
     try {
-        await offline.recordSet({
+        const resultado = await offline.recordSet({
             fecha: new Date().toISOString().split('T')[0],
             rutina_nombre: store.session.rutina_nombre,
             dia: store.session.dia,
@@ -1373,6 +1375,12 @@ const onSetComplete = async (payload, { skipTimer = false } = {}) => {
             esfuerzo_valor,
             nota_user,
         });
+
+        // El server la rechazó de forma permanente (validación/auth): no quedó
+        // encolada en ningún lado, así que hay que avisarle al usuario.
+        if (resultado?.status === 'rejected') {
+            toast.error(`No se pudo guardar la serie: ${resultado.error}`);
+        }
     } catch (e) {
         console.warn('Error guardando serie en offline/API:', e);
     }

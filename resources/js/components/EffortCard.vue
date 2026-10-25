@@ -1,388 +1,277 @@
 <script setup>
-import { computed, onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
     userId: { type: Number, default: null },
 });
 
-const loading = ref(false);
+const loading = ref(true);
 const error = ref(null);
 const data = ref(null);
-const window = ref('30');
-const chartCanvas = ref(null);
-let chartInstance = null;
-let chartConstructor = null;
+const range = ref('30d');
 
-const WINDOWS = [
-    { key: '30', label: '30d' },
-    { key: '90', label: '90d' },
-    { key: '365', label: '1Y' },
-    { key: 'all', label: 'All' },
+const ranges = [
+    { key: '30d', label: '30d', subtitle: '30 días' },
+    { key: '90d', label: '90d', subtitle: '90 días' },
+    { key: '1y', label: '1Y', subtitle: '1 año' },
+    { key: 'all', label: 'All', subtitle: 'Histórico' },
 ];
+
+const currentRangeSubtitle = computed(() => {
+    const found = ranges.find((r) => r.key === range.value);
+    return found ? found.subtitle : '30 días';
+});
 
 const fetchData = async () => {
     loading.value = true;
     error.value = null;
     try {
-        const params = { window: window.value };
+        const params = { range: range.value };
         if (props.userId) params.user_id = props.userId;
-        const res = await axios.get('/api/stats/esfuerzo', { params });
+        const res = await axios.get('/api/historial/effort-analysis', { params });
         data.value = res.data;
     } catch (e) {
-        error.value = e?.response?.data?.message || 'No se pudo cargar el esfuerzo';
+        error.value = e?.response?.data?.message || 'No se pudo cargar el análisis de esfuerzo.';
     } finally {
         loading.value = false;
     }
 };
 
 onMounted(fetchData);
-watch(window, fetchData);
+watch(range, fetchData);
+// Cuando el trainer/admin cambia de alumno hay que recargar: sin esto la
+// tarjeta sigue mostrando el esfuerzo del alumno anterior.
 watch(() => props.userId, fetchData);
 
-const coverage = computed(() => {
-    if (!data.value || data.value.total_sets === 0) return 0;
-    return Math.round((data.value.sets_with_esfuerzo / data.value.total_sets) * 100);
+const maxBucketSets = computed(() => {
+    if (!data.value) return 1;
+    const vals = Object.values(data.value.distribution || {});
+    return Math.max(1, ...vals);
 });
 
-const distribution = computed(() => {
-    if (!data.value) return [];
-    const rows = [];
-    // Cada bucket es {valor, count}. `forEach` da (element, index) pero
-    // ignoramos el index: usamos el campo `valor` que viene del backend.
-    data.value.distribucion.rir.forEach((bucket) => {
-        rows.push({
-            label: `RIR ${bucket.valor}`,
-            val: bucket.valor,
-            tipo: 'rir',
-            count: bucket.count,
-        });
-    });
-    data.value.distribucion.rpe.forEach((bucket) => {
-        rows.push({
-            label: `RPE ${bucket.valor}`,
-            val: bucket.valor,
-            tipo: 'rpe',
-            count: bucket.count,
-        });
-    });
-    return rows;
-});
+const bucketWidth = (count) => {
+    if (!count) return '0%';
+    const pct = Math.round((count / maxBucketSets.value) * 100);
+    return `${Math.max(pct, 6)}%`;
+};
 
-const maxDistCount = computed(() => {
-    if (!data.value) return 0;
-    return Math.max(0, ...distribution.value.map((d) => d.count));
-});
+const bucketColor = (bucket) => {
+    const n = Number(bucket);
+    if (n === 0) return 'bg-primary';
+    if (n === 1) return 'bg-tertiary';
+    if (n === 2) return 'bg-secondary';
+    return 'bg-outline-variant';
+};
 
-const avgLabel = computed(() => {
-    if (!data.value) return '–';
-    const { rir, rpe } = data.value.avg_por_tipo;
-    if (rir !== null) return `RIR ${rir}`;
-    if (rpe !== null) return `RPE ${rpe}`;
-    return '–';
-});
-
-// Para el chart: solo valores no-null en sus semanas
-const chartData = computed(() => {
-    if (!data.value?.tendencia) return [];
-    return data.value.tendencia.map((w) => ({
-        week: w.week_label,
-        rir: w.rir,
-        rpe: w.rpe,
-    }));
-});
-
-const hasRir = computed(
-    () => data.value?.avg_por_tipo?.rir !== null && data.value?.avg_por_tipo?.rir !== undefined
-);
-const hasRpe = computed(
-    () => data.value?.avg_por_tipo?.rpe !== null && data.value?.avg_por_tipo?.rpe !== undefined
-);
-
-const dominant = computed(() => {
-    if (!data.value?.tendencia) return 'rir';
-    const counts = data.value.tendencia.reduce(
-        (acc, w) => {
-            acc.rir += w.rir_sets || 0;
-            acc.rpe += w.rpe_sets || 0;
-            return acc;
-        },
-        { rir: 0, rpe: 0 }
-    );
-    if (counts.rir === 0 && counts.rpe === 0) return 'rir';
-    return counts.rir >= counts.rpe ? 'rir' : 'rpe';
-});
-
-const yDomain = computed(() => {
-    if (dominant.value === 'rir') return [0, 5];
-    return [5, 10];
-});
-
-const reverseY = computed(() => dominant.value === 'rir');
-
-const totalChartPoints = computed(() => chartData.value.length);
-
-function buildChart() {
-    if (!chartCanvas.value || chartData.value.length === 0) return;
-
-    const labels = chartData.value.map((d) => d.week);
-    const datasets = [];
-
-    if (hasRir.value) {
-        datasets.push({
-            label: 'RIR',
-            data: chartData.value.map((d) => d.rir),
-            borderColor: '#10b981',
-            backgroundColor: '#10b981',
-            borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-            tension: 0.3,
-            spanGaps: true,
-        });
+// Sparkline SVG path & points (400 x 60 viewBox)
+const sparkline = computed(() => {
+    if (!data.value || !data.value.weekly_trend?.length) {
+        return { path: '', points: [], firstLabel: '', lastLabel: '' };
     }
-    if (hasRpe.value) {
-        datasets.push({
-            label: 'RPE',
-            data: chartData.value.map((d) => d.rpe),
-            borderColor: '#f59e0b',
-            backgroundColor: '#f59e0b',
-            borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-            tension: 0.3,
-            spanGaps: true,
-        });
+    const items = data.value.weekly_trend;
+    const w = 400;
+    const h = 60;
+    const padX = 12;
+    const padY = 12;
+    const usableW = w - padX * 2;
+    const usableH = h - padY * 2;
+
+    const points = items.map((it, idx) => {
+        const x =
+            items.length === 1
+                ? w / 2
+                : Math.round(padX + (idx / (items.length - 1)) * usableW);
+        // RIR 0 (high effort) at top (padY), RIR 4 at bottom (h - padY)
+        const clamped = Math.max(0, Math.min(4, Number(it.avg_rir ?? 2)));
+        const y = Math.round(padY + (clamped / 4) * usableH);
+        return { x, y, ...it };
+    });
+
+    let path = '';
+    if (points.length === 1) {
+        path = `M ${padX},${points[0].y} L ${w - padX},${points[0].y}`;
+    } else {
+        path = points.reduce((acc, pt, i) => {
+            if (i === 0) return `M ${pt.x},${pt.y}`;
+            const prev = points[i - 1];
+            const cx = Math.round((prev.x + pt.x) / 2);
+            return `${acc} Q ${cx},${prev.y} ${pt.x},${pt.y}`;
+        }, '');
     }
 
-    const config = {
-        type: 'line',
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                x: {
-                    ticks: { color: '#9ca3af', font: { size: 10 } },
-                    grid: { display: false },
-                },
-                y: {
-                    min: yDomain.value[0],
-                    max: yDomain.value[1],
-                    reverse: reverseY.value,
-                    ticks: { color: '#9ca3af', font: { size: 10 } },
-                    grid: { color: 'rgba(156, 163, 175, 0.2)' },
-                },
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                    titleColor: '#a5b4fc',
-                    bodyColor: '#fff',
-                    borderColor: 'transparent',
-                    borderWidth: 0,
-                    cornerRadius: 8,
-                    padding: 8,
-                    titleFont: { weight: 'bold', size: 11 },
-                    bodyFont: { size: 11 },
-                },
-            },
-        },
+    const formatWeek = (iso) => {
+        if (!iso) return '';
+        const parts = iso.split('-');
+        return parts.length === 3 ? `${parts[2]}-${parts[1]}` : iso;
     };
 
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
-    chartInstance = new chartConstructor(chartCanvas.value, config);
-}
-
-async function initChart() {
-    const { Chart, registerables } = await import('chart.js');
-    Chart.register(...registerables);
-    chartConstructor = Chart;
-    await nextTick();
-    buildChart();
-}
-
-onBeforeUnmount(() => {
-    if (chartInstance) {
-        chartInstance.destroy();
-        chartInstance = null;
-    }
+    return {
+        path,
+        points,
+        firstLabel: formatWeek(items[0]?.week_start),
+        lastLabel: formatWeek(items[items.length - 1]?.week_start),
+    };
 });
 
-// Re-render cuando llegan los datos o cambia la ventana
-watch(
-    [chartData, hasRir, hasRpe, yDomain, reverseY],
-    () => {
-        if (chartData.value.length > 0) {
-            if (chartInstance) {
-                buildChart();
-            } else {
-                initChart();
-            }
-        }
-    },
-    { deep: true }
-);
+const topTrackedColor = (idx) => {
+    const colors = ['text-tertiary', 'text-secondary', 'text-primary', 'text-tertiary', 'text-outline'];
+    return colors[idx % colors.length];
+};
 </script>
 
 <template>
-    <div
-        class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-    >
-        <header class="mb-3 flex items-center justify-between gap-2">
+    <div class="p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col justify-between gap-space-md h-full">
+        <!-- Card Header & Range Toggle -->
+        <div class="flex items-start justify-between gap-2">
             <div>
-                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Esfuerzo</h3>
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                    RIR / RPE por set · <span v-if="data?.window">{{ data.window.label }}</span>
+                <h3 class="font-headline-md text-headline-md text-on-surface">Esfuerzo</h3>
+                <p class="text-body-sm text-on-surface-variant">
+                    RIR / RPE por set · {{ currentRangeSubtitle }}
                 </p>
             </div>
-            <div
-                class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-[11px] font-semibold"
-            >
+            <div class="inline-flex p-0.5 bg-surface-container rounded-lg text-[11px] font-semibold">
                 <button
-                    v-for="w in WINDOWS"
-                    :key="w.key"
+                    v-for="r in ranges"
+                    :key="r.key"
                     type="button"
+                    @click="range = r.key"
                     :class="[
-                        'px-2.5 py-1 transition-colors',
-                        window === w.key
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
+                        'px-2 py-1 rounded-md transition-colors cursor-pointer',
+                        range === r.key
+                            ? 'bg-secondary-container text-on-secondary-container'
+                            : 'text-outline hover:text-on-surface',
                     ]"
-                    @click="window = w.key"
                 >
-                    {{ w.label }}
+                    {{ r.label }}
                 </button>
             </div>
-        </header>
-
-        <div v-if="loading" class="py-8 text-center text-sm text-gray-400">Cargando…</div>
-
-        <div v-else-if="error" class="py-6 text-center text-sm text-red-500">{{ error }}</div>
-
-        <div v-else-if="!data || data.sets_with_esfuerzo === 0" class="py-6 text-center">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                Todavía no registraste esfuerzo en tus sets.
-            </p>
-            <p class="mt-1 text-xs text-gray-400">Empezá marcando RIR o RPE al guardar cada set.</p>
         </div>
 
-        <div v-else class="space-y-4">
-            <!-- Promedio + "A alto esfuerzo" -->
-            <div class="grid grid-cols-2 gap-3">
+        <!-- Loading / Error / Empty States -->
+        <div v-if="loading" class="py-10 text-center text-body-sm text-outline">
+            Cargando análisis de esfuerzo…
+        </div>
+        <div v-else-if="error" class="py-6 text-center text-body-sm text-error">
+            {{ error }}
+        </div>
+        <div
+            v-else-if="data && data.summary.sets_with_effort === 0"
+            class="rounded-xl bg-surface-container p-6 text-center text-body-sm text-on-surface-variant"
+        >
+            <p class="font-semibold text-on-surface">Todavía no registraste RIR o RPE</p>
+            <p class="mt-1 text-body-sm text-outline">
+                Al cargar tus series en el workout podés indicar cuántas repeticiones en reserva (RIR 0-5) te quedaron.
+            </p>
+        </div>
+
+        <!-- Main Telemetry Content -->
+        <template v-else-if="data">
+            <!-- Highlight Telemetry Metrics -->
+            <div class="grid grid-cols-2 gap-space-sm p-space-md rounded-xl bg-surface-container">
                 <div>
-                    <p
-                        class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        Promedio
-                    </p>
-                    <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                        {{ avgLabel }}
-                    </p>
-                    <p class="text-[10px] text-gray-400">average effort</p>
+                    <span class="text-[10px] text-outline uppercase tracking-wider">Promedio</span>
+                    <div class="font-headline-lg text-headline-lg text-on-surface font-bold mt-0.5 tabular-nums">
+                        RIR {{ data.summary.avg_rir ?? '—' }}
+                    </div>
+                    <span class="text-[11px] text-on-surface-variant">average effort</span>
                 </div>
-                <div class="text-right">
-                    <p
-                        class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        {{ dominant === 'rir' ? 'A RIR ≤ 2' : 'A RPE ≥ 8' }}
-                    </p>
-                    <p class="text-2xl font-bold text-amber-500">
-                        {{ data.avg_hard }}<span class="text-base">%</span>
-                    </p>
-                    <p class="text-[10px] text-gray-400">at high effort</p>
+                <div>
+                    <span class="text-[10px] text-outline uppercase tracking-wider">A RIR ≤ 2</span>
+                    <div class="font-headline-lg text-headline-lg text-tertiary font-bold mt-0.5 tabular-nums">
+                        {{ data.summary.high_effort_pct ?? 0 }}%
+                    </div>
+                    <span class="text-[11px] text-on-surface-variant">at high effort</span>
                 </div>
             </div>
 
-            <!-- Cobertura -->
-            <div class="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-900/50">
-                <p class="text-[11px] text-gray-600 dark:text-gray-300">
-                    <span class="font-semibold">{{ data.sets_with_esfuerzo }}</span>
-                    de <span class="font-semibold">{{ data.total_sets }}</span> sets con esfuerzo ·
-                    <span class="font-semibold text-indigo-600 dark:text-indigo-400"
-                        >{{ coverage }}%</span
-                    >
-                </p>
-            </div>
+            <p class="text-[11px] text-outline px-1">
+                {{ data.summary.sets_with_effort }} de {{ data.summary.total_sets }} sets con esfuerzo · {{ data.summary.coverage_pct }}%
+            </p>
 
-            <!-- Week by week chart -->
-            <div v-if="totalChartPoints > 0">
-                <div class="mb-1 flex items-center justify-between">
-                    <p
-                        class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        Semana a semana
-                    </p>
-                    <p class="text-[10px] text-gray-400">
-                        {{ totalChartPoints }} semana{{ totalChartPoints > 1 ? 's' : '' }}
-                    </p>
+            <!-- Weekly Trend Sparkline (Inline SVG) -->
+            <div v-if="data.weekly_trend?.length" class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between text-[11px] text-outline uppercase tracking-wider">
+                    <span>Semana a semana</span>
+                    <span>{{ data.weekly_trend.length }} {{ data.weekly_trend.length === 1 ? 'semana' : 'semanas' }}</span>
                 </div>
-                <div style="width: 100%; height: 140px">
-                    <canvas ref="chartCanvas"></canvas>
-                </div>
-            </div>
-
-            <!-- Distribución -->
-            <div v-if="data.distribucion">
-                <p
-                    class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
-                >
-                    Distribución
-                </p>
-                <div class="space-y-1">
-                    <div
-                        v-for="d in distribution"
-                        :key="d.label"
-                        class="flex items-center gap-2 text-[11px]"
-                    >
-                        <span class="w-10 shrink-0 text-gray-500 dark:text-gray-400">{{
-                            d.label
-                        }}</span>
-                        <div
-                            class="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700"
+                <div class="p-3 rounded-xl bg-surface-container-lowest/60 relative">
+                    <svg class="w-full h-14 overflow-visible" viewBox="0 0 400 60">
+                        <line stroke="#262a33" stroke-dasharray="3 3" stroke-width="1" x1="0" x2="400" y1="15" y2="15"></line>
+                        <line stroke="#262a33" stroke-dasharray="3 3" stroke-width="1" x1="0" x2="400" y1="45" y2="45"></line>
+                        <path
+                            v-if="sparkline.path"
+                            :d="sparkline.path"
+                            fill="none"
+                            stroke="#4edea3"
+                            stroke-linecap="round"
+                            stroke-width="2.5"
+                        ></path>
+                        <circle
+                            v-for="(pt, idx) in sparkline.points"
+                            :key="idx"
+                            :cx="pt.x"
+                            :cy="pt.y"
+                            fill="#4edea3"
+                            r="4"
+                            class="drop-shadow-[0_0_6px_#4edea3]"
                         >
-                            <div
-                                class="h-full rounded-full transition-all"
-                                :class="d.tipo === 'rir' ? 'bg-emerald-500' : 'bg-amber-500'"
-                                :style="{
-                                    width:
-                                        maxDistCount > 0
-                                            ? `${(d.count / maxDistCount) * 100}%`
-                                            : '0%',
-                                }"
-                            />
-                        </div>
-                        <span
-                            class="w-5 text-right tabular-nums text-gray-600 dark:text-gray-300"
-                            >{{ d.count }}</span
-                        >
+                            <title>{{ pt.week_start }}: RIR {{ pt.avg_rir }} ({{ pt.sets }} sets)</title>
+                        </circle>
+                    </svg>
+                    <div class="flex justify-between text-[10px] text-outline mt-1">
+                        <span>{{ sparkline.firstLabel }}</span>
+                        <span>{{ sparkline.lastLabel }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Top ejercicios -->
-            <div v-if="data.por_ejercicio.length">
-                <p
-                    class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
-                >
-                    Más trackeados
-                </p>
-                <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-300">
-                    <li
-                        v-for="e in data.por_ejercicio"
-                        :key="e.ejercicio"
-                        class="flex items-center justify-between"
+            <!-- Distribution Bars -->
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[11px] text-outline uppercase tracking-wider">Distribución</span>
+                <div class="flex flex-col gap-1.5 text-label-sm">
+                    <div
+                        v-for="b in [0, 1, 2, 3, 4]"
+                        :key="b"
+                        class="flex items-center gap-2"
                     >
-                        <span class="truncate">{{ e.ejercicio }}</span>
-                        <span class="shrink-0 text-gray-400">{{ e.sets }} sets · {{ e.avg }}</span>
-                    </li>
-                </ul>
+                        <span class="w-10 text-outline">RIR {{ b === 4 ? '4+' : b }}</span>
+                        <div class="flex-1 h-2 rounded-full bg-surface-container overflow-hidden">
+                            <div
+                                class="h-full rounded-full transition-all duration-300"
+                                :class="bucketColor(b)"
+                                :style="{ width: bucketWidth(data.distribution[String(b)] || 0) }"
+                            ></div>
+                        </div>
+                        <span
+                            class="w-6 text-right tabular-nums"
+                            :class="(data.distribution[String(b)] || 0) > 0 ? 'text-on-surface font-semibold' : 'text-outline'"
+                        >
+                            {{ data.distribution[String(b)] || 0 }}
+                        </span>
+                    </div>
+                </div>
             </div>
-        </div>
+
+            <!-- Top Tracked Mini List -->
+            <div v-if="data.by_exercise?.length" class="flex flex-col gap-1.5 pt-1">
+                <span class="text-[11px] text-outline uppercase tracking-wider">Más Trackeados</span>
+                <div class="flex flex-col gap-1 text-body-sm">
+                    <div
+                        v-for="(ex, idx) in data.by_exercise.slice(0, 5)"
+                        :key="ex.ejercicio"
+                        class="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-surface-container transition-colors"
+                    >
+                        <span class="text-on-surface truncate pr-2">{{ ex.ejercicio }}</span>
+                        <span
+                            class="text-label-sm whitespace-nowrap tabular-nums"
+                            :class="topTrackedColor(idx)"
+                        >
+                            {{ ex.sets }} sets · {{ ex.avg_rir }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </template>

@@ -63,9 +63,13 @@ export function useOfflineSeries() {
     };
 
     /**
-     * Envia UNA serie al backend. Devuelve { status, error? }.
+     * Envia UNA serie al backend. Devuelve { status, error?, permanente?, statusCode? }.
      * - 'sent' = llego al server
      * - 'failed' = no se pudo (error de red o del server)
+     *
+     * `permanente` = true cuando el server rechazó la serie por una razón que
+     * no se va a arreglar reintentando (422 validación, 401/403 auth, 404).
+     * Esos casos antes se encolaban igual y bloqueaban la cola para siempre.
      */
     const sendOne = async (record) => {
         try {
@@ -75,8 +79,19 @@ export function useOfflineSeries() {
             });
             return { status: 'sent' };
         } catch (err) {
+            const statusCode = err.response?.status ?? null;
+            // 408 (timeout) y 429 (rate limit) sí son transitorios.
+            const permanente =
+                statusCode !== null &&
+                statusCode >= 400 &&
+                statusCode < 500 &&
+                statusCode !== 408 &&
+                statusCode !== 429;
+
             return {
                 status: 'failed',
+                permanente,
+                statusCode,
                 error: err.response?.data?.message || err.message || 'Error desconocido',
             };
         }
@@ -101,15 +116,25 @@ export function useOfflineSeries() {
                 if (result.status === 'sent') {
                     await removePending(record.client_id);
                     pendingCount.value = Math.max(0, pendingCount.value - 1);
-                } else {
-                    await updatePending(record.client_id, {
-                        attempts: (record.attempts || 0) + 1,
-                        lastError: result.error,
-                    });
-                    // Si una falla, paramos aca para no quemar el server. Reintentara
-                    // en el proximo online event.
-                    break;
+                    continue;
                 }
+
+                if (result.permanente) {
+                    // Reintentar no va a cambiar nada: se descarta la serie para
+                    // que no bloquee el resto de la cola.
+                    await removePending(record.client_id);
+                    pendingCount.value = Math.max(0, pendingCount.value - 1);
+                    lastError.value = `Serie descartada (${result.statusCode}): ${result.error}`;
+                    continue;
+                }
+
+                await updatePending(record.client_id, {
+                    attempts: (record.attempts || 0) + 1,
+                    lastError: result.error,
+                });
+                // Fallo transitorio: paramos aca para no quemar el server.
+                // Reintentara en el proximo online event.
+                break;
             }
             lastSyncedAt.value = new Date().toISOString();
         } finally {
@@ -157,6 +182,18 @@ export function useOfflineSeries() {
         if (result.status === 'sent') {
             lastSyncedAt.value = new Date().toISOString();
             return { status: 'synced', client_id };
+        }
+
+        // El server la rechazó de forma permanente (422/401/403/404): no sirve
+        // encolarla, se perderia en la cola para siempre. Se avisa al usuario.
+        if (result.permanente) {
+            lastError.value = result.error;
+            return {
+                status: 'rejected',
+                client_id,
+                statusCode: result.statusCode,
+                error: result.error,
+            };
         }
 
         // Fallo de red transitorio o 5xx. Encolamos para reintento.

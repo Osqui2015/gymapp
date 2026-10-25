@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Historial;
 use App\Models\User;
+use App\Http\Controllers\Concerns\ResuelveAlumnoObjetivo;
 use App\Services\AchievementService;
+use App\Services\CacheHistorial;
 use App\Services\HistorialService;
 use App\Services\StatsService;
 use Carbon\Carbon;
@@ -12,28 +14,29 @@ use Illuminate\Http\Request;
 
 class HistorialController extends Controller
 {
+    use ResuelveAlumnoObjetivo;
+
     public function __construct(
         private HistorialService $historial,
         private StatsService $stats,
     ) {}
 
+    /**
+     * Columnas que consume el frontend de /historial.
+     * Se trimming el payload: created_at, updated_at, trainer_id,
+     * comentario_trainer, sesion_uuid y series_completadas no los usa nadie
+     * y-each row- eran ~25% del tamaño de la respuesta.
+     */
+    private const COLUMNAS_HISTORIAL = [
+        'id', 'user_id', 'rutina_nombre', 'dia', 'ejercicio_nombre', 'ejercicio_id',
+        'series_numero', 'reps_min', 'reps_max', 'reps_realizadas', 'descanso_min',
+        'peso', 'completado', 'esfuerzo_tipo', 'esfuerzo_valor', 'tipo_serie',
+        'nota_user', 'fecha', 'superserie_grupo',
+    ];
+
     public function index(Request $request)
     {
-        $user = $request->user();
-        $targetUserId = (int) $request->integer('user_id', $user->id);
-
-        if ($targetUserId !== $user->id) {
-            if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-
-            if ($user->hasRole(User::ROLE_TRAINER)) {
-                $target = User::findOrFail($targetUserId);
-                if ($target->trainer_id !== $user->id) {
-                    return response()->json(['error' => 'No autorizado'], 403);
-                }
-            }
-        }
+        $targetUserId = $this->usuarioObjetivo($request);
 
         $query = Historial::where('user_id', $targetUserId)
             ->when($request->filled('rutina_nombre'), function ($query) use ($request) {
@@ -58,7 +61,7 @@ class HistorialController extends Controller
             return response()->json($query->paginate($perPage));
         }
 
-        return response()->json($query->get());
+        return response()->json($query->get(self::COLUMNAS_HISTORIAL));
     }
 
     public function guardar(Request $request)
@@ -142,6 +145,11 @@ class HistorialController extends Controller
             }
         });
 
+        // El historial cambió: el cache de stats/body map/1RM tiene que
+        // invalidarse, si no el usuario ve KPIs de hasta 10 minutos de antigüedad
+        // justo después de guardar la serie.
+        CacheHistorial::invalidate($user->id);
+
         $newMedals = AchievementService::checkWorkoutMilestones($user);
 
         return response()->json([
@@ -164,6 +172,7 @@ class HistorialController extends Controller
 
         if ($historial) {
             $historial->update(['completado' => true]);
+            CacheHistorial::invalidate($user->id);
         }
 
         $newMedals = AchievementService::checkWorkoutMilestones($user);
@@ -221,6 +230,8 @@ class HistorialController extends Controller
         $historial->fill($data);
         $historial->save();
 
+        CacheHistorial::invalidate($historial->user_id);
+
         return response()->json(['data' => $historial->fresh()]);
     }
 
@@ -240,6 +251,8 @@ class HistorialController extends Controller
         }
 
         $historial->delete();
+
+        CacheHistorial::invalidate($historial->user_id);
 
         return response()->json(['ok' => true]);
     }
@@ -291,18 +304,7 @@ class HistorialController extends Controller
      */
     public function calendar(Request $request)
     {
-        $user = $request->user();
-        $targetUserId = (int) $request->integer('user_id', $user->id);
-
-        if ($targetUserId !== $user->id && ! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-        if ($user->hasRole(User::ROLE_TRAINER) && $targetUserId !== $user->id) {
-            $target = User::findOrFail($targetUserId);
-            if ($target->trainer_id !== $user->id) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-        }
+        $targetUserId = $this->usuarioObjetivo($request);
 
         $year = (int) $request->integer('year', now()->year);
         $month = (int) $request->integer('month', now()->month);
@@ -320,18 +322,7 @@ class HistorialController extends Controller
      */
     public function weekSummary(Request $request)
     {
-        $user = $request->user();
-        $targetUserId = (int) $request->integer('user_id', $user->id);
-
-        if ($targetUserId !== $user->id && ! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-        if ($user->hasRole(User::ROLE_TRAINER) && $targetUserId !== $user->id) {
-            $target = User::findOrFail($targetUserId);
-            if ($target->trainer_id !== $user->id) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-        }
+        $targetUserId = $this->usuarioObjetivo($request);
 
         return response()->json(
             $this->historial->buildWeekSummary(
@@ -343,12 +334,50 @@ class HistorialController extends Controller
     }
 
     /**
+     * Análisis de esfuerzo (RIR/RPE) para la card "Esfuerzo" del historial.
+     *
+     * GET /api/historial/effort-analysis?range=30d|90d|1y|all&user_id=X
+     *
+     * - range: ventana temporal del análisis (default '30d').
+     * - user_id: opcional. Permite a trainer/admin consultar el análisis
+     *   de un alumno (misma regla de autorización que /historial/calendar).
+     *
+     * Response 200:
+     *   {
+     *     "range": "30d",
+     *     "summary": {
+     *       "total_sets": 42,          // sets completados en la ventana
+     *       "sets_with_effort": 30,    // sets con esfuerzo registrado
+     *       "avg_rir": 2.1,            // RIR promedio (RPE normalizado)
+     *       "high_effort_pct": 43,     // % de sets con RIR <= 2
+     *       "coverage_pct": 71         // % de sets con esfuerzo
+     *     },
+     *     "distribution": { "0": 2, "1": 5, "2": 8, "3": 9, "4": 6 },
+     *     "weekly_trend": [ { "week_start": "2026-10-19", "avg_rir": 2.0, "sets": 12 } ],
+     *     "by_exercise": [ { "ejercicio": "Press banca", "sets": 8, "avg_rir": 1.8 } ]
+     *   }
+     */
+    public function effortAnalysis(Request $request)
+    {
+        $targetUserId = $this->usuarioObjetivo($request);
+
+        $range = $this->stats->normalizeEffortRange($request->input('range', '30d'));
+
+        $payload = $this->stats->buildEffortAnalysis($targetUserId, $range);
+        // El front espera un mapa {"0": n, "1": n, ...}; sin este cast PHP
+        // lo serializaría como lista indexada y rompería el acceso por clave.
+        $payload['distribution'] = (object) $payload['distribution'];
+
+        return response()->json($payload);
+    }
+
+    /**
      * Compara el rendimiento de un ejercicio entre dos fechas.
      * GET /api/historial/comparar?ejercicio=X&desde=YYYY-MM-DD&hasta=YYYY-MM-DD
      */
     public function comparar(Request $request)
     {
-        $user = $request->user();
+        $targetUserId = $this->usuarioObjetivo($request);
 
         $data = $request->validate([
             'ejercicio' => 'required|string|max:255',
@@ -357,7 +386,7 @@ class HistorialController extends Controller
         ]);
 
         $reporte = $this->historial->compararEjercicio(
-            $user->id,
+            $targetUserId,
             $data['ejercicio'],
             $data['desde'],
             $data['hasta'],
