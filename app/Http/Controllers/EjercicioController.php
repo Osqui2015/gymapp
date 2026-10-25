@@ -7,6 +7,7 @@ use App\Models\Ejercicio;
 use App\Models\EjercicioFavorito;
 use App\Models\Historial;
 use App\Models\Musculo;
+use App\Services\CacheHistorial;
 use Illuminate\Http\Request;
 
 class EjercicioController extends Controller
@@ -243,6 +244,8 @@ class EjercicioController extends Controller
             'completado' => true,
             'fecha' => now()->toDateString(),
         ]);
+
+        CacheHistorial::invalidate($userId);
 
         return response()->json([
             'ok' => true,

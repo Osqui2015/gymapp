@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Controllers\Concerns\ResuelveAlumnoObjetivo;
+use App\Services\CacheHistorial;
 use App\Services\StatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -17,15 +18,17 @@ use Illuminate\Support\Facades\Cache;
  */
 class StatsController extends Controller
 {
+    use ResuelveAlumnoObjetivo;
+
     public function __construct(private StatsService $stats) {}
 
     public function resumen(Request $request)
     {
-        $user = $request->user();
-        $cacheKey = "stats:resumen:user:{$user->id}";
+        $targetUserId = $this->usuarioObjetivo($request);
+        $cacheKey = CacheHistorial::key($targetUserId, 'stats:resumen');
 
-        return Cache::remember($cacheKey, 300, function () use ($user) {
-            $dias = $this->stats->getDiasConActividad($user->id);
+        return Cache::remember($cacheKey, 300, function () use ($targetUserId) {
+            $dias = $this->stats->getDiasConActividad($targetUserId);
 
             return response()->json([
                 'current_streak' => $this->stats->calcCurrentStreak($dias),
@@ -34,19 +37,19 @@ class StatsController extends Controller
                 'this_month' => $this->stats->calcCountInRange($dias, now()->startOfMonth(), now()->endOfMonth()),
                 'last_30_days' => $this->stats->calcCountInRange($dias, now()->subDays(30), now()),
                 'total_workouts' => count($dias),
-                'total_sets' => $this->stats->countSets($user->id),
+                'total_sets' => $this->stats->countSets($targetUserId),
             ]);
         });
     }
 
     public function heatmap(Request $request)
     {
-        $user = $request->user();
-        $weeks = (int) $request->input('weeks', 53);
-        $cacheKey = "stats:heatmap:user:{$user->id}:w{$weeks}";
+        $targetUserId = $this->usuarioObjetivo($request);
+        $weeks = max(1, min(104, (int) $request->input('weeks', 53)));
+        $cacheKey = CacheHistorial::key($targetUserId, "stats:heatmap:w{$weeks}");
 
         return Cache::remember($cacheKey, 600, fn () => response()->json(
-            $this->stats->buildHeatmap($user->id, $weeks)
+            $this->stats->buildHeatmap($targetUserId, $weeks)
         ));
     }
 
@@ -59,12 +62,12 @@ class StatsController extends Controller
      */
     public function esfuerzo(Request $request)
     {
-        $user = $request->user();
+        $targetUserId = $this->usuarioObjetivo($request);
         $window = $this->stats->normalizeWindow($request->input('window', '30'));
-        $cacheKey = "stats:esfuerzo:user:{$user->id}:w{$window}";
+        $cacheKey = CacheHistorial::key($targetUserId, "stats:esfuerzo:w{$window}");
 
         return Cache::remember($cacheKey, 300, fn () => response()->json(
-            $this->stats->buildEsfuerzo($user->id, $window)
+            $this->stats->buildEsfuerzo($targetUserId, $window)
         ));
     }
 
@@ -90,20 +93,9 @@ class StatsController extends Controller
         }
         $months = max(1, min(24, (int) $request->input('months', 6)));
 
-        $targetUserId = (int) $request->integer('user_id', $user->id);
-        if ($targetUserId !== $user->id) {
-            if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-            if ($user->hasRole(User::ROLE_TRAINER)) {
-                $target = User::findOrFail($targetUserId);
-                if ($target->trainer_id !== $user->id) {
-                    return response()->json(['error' => 'No autorizado'], 403);
-                }
-            }
-        }
+        $targetUserId = $this->usuarioObjetivo($request);
 
-        $cacheKey = "stats:1rm:user:{$targetUserId}:ej:".md5($ejercicioNombre).":{$formula}:m{$months}";
+        $cacheKey = CacheHistorial::key($targetUserId, 'stats:1rm:ej:'.md5($ejercicioNombre).":{$formula}:m{$months}");
 
         return Cache::remember($cacheKey, 600, fn () => response()->json(
             $this->stats->buildEstimated1rm($targetUserId, $ejercicioNombre, $formula, $months)
@@ -117,7 +109,7 @@ class StatsController extends Controller
     public function dashboardToday(Request $request)
     {
         $user = $request->user();
-        $cacheKey = "dashboard:today:user:{$user->id}";
+        $cacheKey = CacheHistorial::key($user->id, 'dashboard:today');
 
         return Cache::remember($cacheKey, 60, fn () => response()->json(
             $this->stats->buildDashboardToday($user)

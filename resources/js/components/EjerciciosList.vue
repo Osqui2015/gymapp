@@ -1,57 +1,11 @@
 <template>
-    <div class="min-h-screen bg-[#080b12] text-slate-200 font-sans antialiased selection:bg-neon-indigo selection:text-white pb-32 md:pb-16">
+    <div class="min-h-screen bg-[#0B0F17] text-slate-200 font-sans antialiased selection:bg-neon-indigo selection:text-white pb-32 md:pb-16">
         <!-- ============================================================ -->
-        <!-- HEADER MOBILE (Exact Kinetic Obsidian Prototype)             -->
+        <!-- HEADER MOBILE (Breadcrumbs & Heading)                        -->
         <!-- ============================================================ -->
-        <header class="md:hidden sticky top-0 z-40 pt-safe glass-panel border-b border-white/[0.06]">
+        <header class="md:hidden border-b border-[#232D42]/80 bg-[#0B0F17]/90">
             <div class="max-w-md mx-auto px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
-                    <!-- Logo Brand & Title -->
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-neon-indigo via-neon-violet to-purple-500 p-[1.5px] shadow-glow-indigo flex items-center justify-center">
-                            <div class="w-full h-full bg-obsidian-900 rounded-[10px] flex items-center justify-center">
-                                <span class="font-display font-extrabold text-base bg-gradient-to-tr from-white via-indigo-200 to-neon-indigo bg-clip-text text-transparent">G</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-1.5">
-                                <span class="font-display font-bold text-sm tracking-tight text-white">GymApp</span>
-                                <span class="inline-block w-1 h-1 rounded-full bg-neon-indigo"></span>
-                                <span class="text-[10px] tracking-wider uppercase font-semibold text-slate-400">Library</span>
-                            </div>
-                            <p class="text-[11px] text-slate-400 font-medium">{{ total.toLocaleString() }} Ejercicios</p>
-                        </div>
-                    </div>
-                    <!-- Right Badges: Streak & User -->
-                    <div class="flex items-center gap-2">
-                        <!-- Streak Badge -->
-                        <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400">
-                            <i class="ph-fill ph-fire text-xs animate-pulse"></i>
-                            <span class="font-display text-[11px] font-bold tracking-tight">{{ streak }} DÍAS</span>
-                        </div>
-                        <!-- Notification quick button -->
-                        <button
-                            type="button"
-                            @click="toast.info('Sin notificaciones pendientes')"
-                            aria-label="Notificaciones"
-                            class="w-9 h-9 rounded-xl bg-obsidian-800/80 border border-white/[0.08] flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-all"
-                        >
-                            <i class="ph ph-bell-simple text-base"></i>
-                        </button>
-                        <!-- User Profile Avatar -->
-                        <a
-                            href="/profile"
-                            aria-label="Perfil de usuario"
-                            class="w-9 h-9 rounded-xl overflow-hidden border border-neon-indigo/30 p-[1px] bg-gradient-to-b from-white/20 to-transparent block"
-                        >
-                            <div class="w-full h-full bg-obsidian-700 rounded-[10px] flex items-center justify-center text-xs font-semibold text-indigo-300">
-                                {{ userInitials }}
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <!-- Breadcrumbs & Heading -->
-                <div class="mt-3.5 pb-1">
+                <div class="pb-1">
                     <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mb-1">
                         <a class="hover:text-neon-indigo transition-colors" href="/dashboard">Inicio</a>
                         <i class="ph ph-caret-right text-[10px] text-slate-600"></i>

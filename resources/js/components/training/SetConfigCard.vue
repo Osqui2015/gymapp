@@ -187,14 +187,25 @@
 
         <!-- CARGA / PESO -->
         <div class="space-y-1.5">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-1">
                 <label class="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-gray-300 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
                     </svg>
                     <span>CARGA / PESO</span>
                 </label>
-                <span class="text-[10px] sm:text-xs text-violet-300 font-bold">Toques rápidos (kg)</span>
+                <div class="flex items-center gap-2">
+                    <button
+                        v-if="lastData && lastData.encontrado && (lastData.peso_max || lastData.peso_top)"
+                        type="button"
+                        @click="copiarUltimaSesion"
+                        class="px-2 py-0.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[10px] font-mono font-bold text-indigo-300 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                        title="Copiar peso y repeticiones de la última sesión"
+                    >
+                        <span>↺ Copiar {{ formatPeso(lastData.peso_max ?? lastData.peso_top) }}kg</span>
+                    </button>
+                    <span class="text-[10px] sm:text-xs text-violet-300 font-bold">Toques rápidos (kg)</span>
+                </div>
             </div>
 
             <div class="flex items-center gap-1 sm:gap-1.5">
@@ -735,6 +746,14 @@ const ajustarPeso = (delta) => {
 
 const ajustarReps = (delta) => {
     form.value.reps = Math.max(0, (Number(form.value.reps) || 0) + delta);
+};
+
+const copiarUltimaSesion = () => {
+    if (!props.lastData?.encontrado) return;
+    const p = Number(props.lastData.peso_max ?? props.lastData.peso_top ?? 0);
+    const r = Number(props.lastData.reps_en_peso_max ?? props.lastData.reps_en_peso_top ?? 0);
+    if (p > 0) form.value.peso = p;
+    if (r > 0) form.value.reps = r;
 };
 
 const onCompletar = () => {

@@ -54,7 +54,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-gray-50 dark:bg-[var(--color-obsidian-base)] text-gray-900 dark:text-gray-100 overflow-x-hidden">
+    <body class="font-sans antialiased bg-[#0B0F17] text-slate-200 selection:bg-indigo-500 selection:text-white overflow-x-hidden">
         {{-- Skip to content (a11y: 6.3) --}}
         <a
             href="#main-content"
@@ -63,7 +63,7 @@
             Saltar al contenido principal
         </a>
 
-        <div class="min-h-screen pb-16 md:pb-0">
+        <div class="min-h-screen bg-[#0B0F17] pb-20 md:pb-0">
             @include('layouts.navigation')
 
             @isset($header)

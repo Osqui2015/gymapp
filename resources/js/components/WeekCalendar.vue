@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -9,14 +9,14 @@ const props = defineProps({
 const loading = ref(true);
 const error = ref(null);
 const data = ref(null);
-const weekOffset = ref(0); // 0 = esta semana, -1 = pasada, +1 = próxima
+const weekOffset = ref(0);
 
 const fetchData = async () => {
     loading.value = true;
     error.value = null;
     try {
         const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1 + weekOffset.value * 7); // lunes
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1 + weekOffset.value * 7);
         const dateStr = weekStart.toISOString().split('T')[0];
         const params = { week_start: dateStr };
         if (props.userId) params.user_id = props.userId;
@@ -30,6 +30,10 @@ const fetchData = async () => {
 };
 
 onMounted(fetchData);
+
+// Cuando el trainer/admin cambia de alumno hay que recargar: sin esto la
+// tarjeta sigue mostrando la semana del alumno anterior.
+watch(() => props.userId, fetchData);
 
 const prevWeek = () => {
     weekOffset.value--;
@@ -57,168 +61,118 @@ const goToHistorial = () => {
 </script>
 
 <template>
-    <div
-        class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-    >
-        <header class="mb-3 flex items-center justify-between gap-2">
-            <div>
-                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Esta semana</h3>
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ weekLabel }}</p>
+    <div class="p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-space-sm">
+                <span class="material-symbols-outlined text-secondary text-[20px]">calendar_view_week</span>
+                <div>
+                    <h3 class="font-headline-md text-headline-md text-on-surface leading-tight">Esta semana</h3>
+                    <span class="text-label-sm text-outline">{{ weekLabel }}</span>
+                </div>
             </div>
             <div class="flex items-center gap-1">
                 <button
                     type="button"
                     @click="prevWeek"
-                    class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
                     aria-label="Semana anterior"
+                    class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors cursor-pointer"
                 >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15 19l-7-7 7-7"
-                        />
-                    </svg>
+                    <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                 </button>
                 <button
                     v-if="weekOffset !== 0"
                     type="button"
                     @click="thisWeek"
-                    class="rounded px-2 py-0.5 text-[10px] font-semibold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    class="px-2.5 h-8 rounded-lg bg-secondary-container/40 text-on-secondary-container font-label-sm text-label-sm hover:bg-secondary-container transition-colors cursor-pointer"
                 >
                     Hoy
                 </button>
                 <button
                     type="button"
                     @click="nextWeek"
-                    class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
                     aria-label="Semana siguiente"
+                    class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors cursor-pointer"
                 >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 5l7 7-7 7"
-                        />
-                    </svg>
+                    <span class="material-symbols-outlined text-[18px]">chevron_right</span>
                 </button>
             </div>
-        </header>
+        </div>
 
-        <div v-if="loading" class="py-6 text-center text-sm text-gray-400">Cargando…</div>
-        <div v-else-if="error" class="py-4 text-center text-sm text-red-500">{{ error }}</div>
-        <div v-else-if="data" class="space-y-3">
-            <!-- Grid 7 días -->
-            <div class="grid grid-cols-7 gap-1.5">
+        <div v-if="loading" class="py-6 text-center text-body-sm text-outline">Cargando…</div>
+        <div v-else-if="error" class="py-4 text-center text-body-sm text-error">{{ error }}</div>
+        <template v-else-if="data">
+            <!-- 7 Day Pills -->
+            <div class="grid grid-cols-7 gap-space-xs">
                 <div
                     v-for="d in data.days"
                     :key="d.date"
                     :class="[
-                        'rounded-lg p-1.5 text-center transition-all',
-                        d.completado
-                            ? d.es_hoy
-                                ? 'bg-indigo-100 ring-2 ring-indigo-400 dark:bg-indigo-950/50'
-                                : 'bg-emerald-50 dark:bg-emerald-950/30'
-                            : d.es_hoy
-                              ? 'bg-gray-100 ring-1 ring-gray-300 dark:bg-gray-700'
-                              : 'bg-gray-50 dark:bg-[var(--color-obsidian-base)]/40',
+                        'p-2.5 rounded-xl flex flex-col items-center gap-1 transition-all',
+                        d.completado || d.es_hoy
+                            ? 'bg-secondary-container/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                            : 'bg-surface-container',
                     ]"
                     :title="
                         d.completado ? `${d.sets} sets · ${d.ejercicios.join(', ')}` : 'Descanso'
                     "
                 >
-                    <p
-                        class="text-[9px] font-semibold uppercase tracking-wider"
-                        :class="
-                            d.es_hoy
-                                ? 'text-indigo-700 dark:text-indigo-300'
-                                : 'text-gray-500 dark:text-gray-400'
-                        "
+                    <span
+                        class="text-[10px] font-bold uppercase"
+                        :class="d.completado || d.es_hoy ? 'text-secondary' : 'text-outline'"
                     >
                         {{ d.dia_semana_corto }}
-                    </p>
-                    <p
-                        class="mt-0.5 text-base font-bold"
-                        :class="
-                            d.es_hoy
-                                ? 'text-indigo-900 dark:text-indigo-100'
-                                : 'text-gray-700 dark:text-gray-200'
-                        "
+                    </span>
+                    <span
+                        class="font-headline-md text-headline-md font-bold tabular-nums"
+                        :class="d.completado || d.es_hoy ? 'text-on-surface' : 'text-on-surface-variant'"
                     >
                         {{ d.date.slice(-2) }}
-                    </p>
-                    <!-- dot -->
-                    <div class="mt-1 flex justify-center">
-                        <span
-                            v-if="d.completado"
-                            class="h-2 w-2 rounded-full"
-                            :class="
-                                d.sets >= 20
-                                    ? 'bg-emerald-500'
-                                    : d.sets >= 10
-                                      ? 'bg-indigo-500'
-                                      : 'bg-amber-500'
-                            "
-                        />
-                        <span
-                            v-else
-                            class="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600"
-                        />
+                    </span>
+                    <span
+                        class="w-2 h-2 rounded-full"
+                        :class="
+                            d.completado
+                                ? 'bg-tertiary shadow-[0_0_6px_#4edea3]'
+                                : d.es_hoy
+                                  ? 'bg-secondary'
+                                  : 'w-1.5 h-1.5 bg-outline/30'
+                        "
+                    ></span>
+                </div>
+            </div>
+
+            <!-- Weekly Micro Summary -->
+            <div class="flex flex-wrap items-center justify-between gap-space-sm pt-2 px-1">
+                <div class="flex items-center gap-space-lg">
+                    <div>
+                        <span class="text-[10px] text-outline uppercase tracking-wider block">Sets</span>
+                        <span class="font-headline-md text-headline-md text-on-surface font-bold tabular-nums">
+                            {{ data.totals.sets }}
+                        </span>
                     </div>
-                    <p
-                        v-if="d.completado"
-                        class="mt-0.5 text-[9px] font-semibold text-gray-600 dark:text-gray-300"
-                    >
-                        {{ d.sets }}
-                    </p>
+                    <div>
+                        <span class="text-[10px] text-outline uppercase tracking-wider block">Días</span>
+                        <span class="font-headline-md text-headline-md text-on-surface font-bold tabular-nums">
+                            {{ data.totals.dias_entrenados }}/7
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-outline uppercase tracking-wider block">Racha</span>
+                        <span class="font-headline-md text-headline-md text-tertiary font-bold flex items-center gap-0.5 tabular-nums">
+                            <span class="material-symbols-outlined text-[16px]">bolt</span>
+                            {{ data.streak }}
+                        </span>
+                    </div>
                 </div>
+                <button
+                    type="button"
+                    @click="goToHistorial"
+                    class="text-label-md text-secondary hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                    <span>Ver detalle</span>
+                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
             </div>
-
-            <!-- Resumen -->
-            <div
-                class="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-center dark:border-gray-700"
-            >
-                <div class="min-w-0">
-                    <p
-                        class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        Sets
-                    </p>
-                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
-                        {{ data.totals.sets }}
-                    </p>
-                </div>
-                <div class="min-w-0">
-                    <p
-                        class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        Días
-                    </p>
-                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
-                        {{ data.totals.dias_entrenados }}/7
-                    </p>
-                </div>
-                <div class="min-w-0">
-                    <p
-                        class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                    >
-                        Racha
-                    </p>
-                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
-                        🔥 {{ data.streak }}
-                    </p>
-                </div>
-            </div>
-
-            <button
-                type="button"
-                @click="goToHistorial"
-                class="block w-full rounded-lg bg-gray-50 px-3 py-2 text-center text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:bg-gray-900/40 dark:text-gray-300 dark:hover:bg-gray-900"
-            >
-                Ver detalle →
-            </button>
-        </div>
+        </template>
     </div>
 </template>

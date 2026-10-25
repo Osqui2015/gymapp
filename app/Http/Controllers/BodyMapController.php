@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResuelveAlumnoObjetivo;
 use App\Models\Ejercicio;
 use App\Models\Historial;
 use App\Models\Musculo;
+use App\Services\CacheHistorial;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -18,11 +21,13 @@ use Illuminate\Support\Facades\Cache;
  */
 class BodyMapController extends Controller
 {
+    use ResuelveAlumnoObjetivo;
+
     public function index(Request $request)
     {
-        $userId = $request->user()->id;
-        $windowDays = (int) $request->input('window', 90);  // últimos 90 días
-        $cacheKey = "body-map:user:{$userId}:w{$windowDays}";
+        $userId = $this->targetUserId($request);
+        $windowDays = max(1, min(730, (int) $request->input('window', 90)));  // últimos 90 días
+        $cacheKey = CacheHistorial::key($userId, "body-map:w{$windowDays}");
 
         $payload = Cache::remember($cacheKey, 300, function () use ($userId, $windowDays) {
             $desde = now()->subDays($windowDays);
@@ -31,21 +36,23 @@ class BodyMapController extends Controller
                 ->where('user_id', $userId)
                 ->where('completado', true)
                 ->whereDate('fecha', '>=', $desde)
-                ->with(['ejercicioRef.musculos' => function ($q) {
-                    $q->withPivot('tipo', 'peso');
-                }])
                 ->orderBy('fecha', 'desc')
-                ->get(['id', 'fecha', 'peso', 'reps_realizadas', 'ejercicio_id', 'ejercicio_nombre', 'user_id']);
+                // 'completado' tiene que venir en el select: el map de abajo lo lee
+                // y, con Model::shouldBeStrict() activo en dev, leer un atributo
+                // que no fue recuperado lanza MissingAttributeException (500).
+                ->get(['id', 'fecha', 'peso', 'reps_realizadas', 'ejercicio_id', 'ejercicio_nombre', 'user_id', 'completado']);
 
-            // Transformar al shape que espera useMuscleLoad
-            $items = $historiales->map(function ($h) {
-                $musculos = ($h->ejercicioRef?->musculos ?? collect())->map(function ($m) {
-                    return [
-                        'musculo_slug' => $m->slug,
-                        'tipo' => $m->pivot->tipo,  // 'primario' o 'secundario'
-                        'peso' => (float) $m->pivot->peso,
-                    ];
-                })->values()->all();
+            // Ejercicios de los sets: por FK si la tienen, si no por nombre.
+            $mapa = $this->mapaEjercicios($historiales);
+
+            // Transformar al shape que espera useMuscleLoad.
+            // El mapeo de músculos va en un diccionario por ejercicio (no
+            // repetido en cada serie): el payload bajaba de ~37KB a ~15KB.
+            $items = $historiales->map(function ($h) use ($mapa) {
+                // La rutina linkea ejercicios por NOMBRE, así que la FK
+                // 'ejercicio_id' suele venir en null. Para el body map hace
+                // falta el ejercicio con su mapeo de músculos.
+                $ejercicio = $this->resolverEjercicio($h, $mapa);
 
                 return [
                     'id' => $h->id,
@@ -53,13 +60,24 @@ class BodyMapController extends Controller
                     'peso' => (float) $h->peso,
                     'reps_realizadas' => (int) $h->reps_realizadas,
                     'completado' => (bool) $h->completado,
-                    'ejercicio' => [
-                        'id' => $h->ejercicio_id,
-                        'nombre' => $h->ejercicioRef?->nombre ?? $h->ejercicio_nombre,
-                        'musculos' => $musculos,
-                    ],
+                    'ejercicio_id' => $ejercicio?->id,
+                    'ejercicio_nombre' => $ejercicio?->nombre ?? $h->ejercicio_nombre,
                 ];
             })->values()->all();
+
+            // Diccionario ejercicio_id → { nombre, musculos[] }
+            $ejercicios = $mapa['todos']->keyBy('id')->map(function ($e) {
+                return [
+                    'nombre' => $e->nombre,
+                    'musculos' => $e->musculos->map(function ($m) {
+                        return [
+                            'musculo_slug' => $m->slug,
+                            'tipo' => $m->pivot->tipo,  // 'primario' o 'secundario'
+                            'peso' => (float) $m->pivot->peso,
+                        ];
+                    })->values()->all(),
+                ];
+            })->all();
 
             // Catálogo de músculos para que el frontend pueda mapear slug→label
             $musculos = Musculo::orderBy('orden')->get(['id', 'slug', 'nombre_es', 'nombre_en', 'body_part'])
@@ -72,6 +90,7 @@ class BodyMapController extends Controller
 
             return [
                 'historiales' => $items,
+                'ejercicios' => $ejercicios,
                 'musculos' => $musculos,
                 'total' => count($items),
                 'window_days' => $windowDays,
@@ -88,32 +107,52 @@ class BodyMapController extends Controller
      */
     public function muscleRecency(Request $request)
     {
-        $userId = $request->user()->id;
-        $cacheKey = "muscle-recency:user:{$userId}";
+        $userId = $this->targetUserId($request);
+        $cacheKey = CacheHistorial::key($userId, 'muscle-recency');
 
         $payload = Cache::remember($cacheKey, 300, function () use ($userId) {
-            // Para cada músculo, el MAX(fecha) de los historiales del user
-            // donde ese músculo aparece (vía pivot ejercicio_musculos).
-            $rows = \DB::table('historials as h')
-                ->join('ejercicio_musculos as em', 'em.ejercicio_id', '=', 'h.ejercicio_id')
-                ->join('musculos as m', 'm.id', '=', 'em.musculo_id')
-                ->where('h.user_id', $userId)
-                ->where('h.completado', true)
-                ->whereNotNull('h.ejercicio_id')
-                ->groupBy('m.id', 'm.slug', 'm.nombre_es')
-                ->selectRaw('m.slug, m.nombre_es, MAX(h.fecha) as last_trained_at')
-                ->get();
+            // Para cada músculo, la última fecha en la que el usuario lo
+            // entrenó. Los historiales se guardan con 'ejercicio_nombre'
+            // (la rutina linkea por nombre), así que el ejercicio se resuelve
+            // por FK o, si no hay, por nombre.
+            $historiales = Historial::where('user_id', $userId)
+                ->where('completado', true)
+                ->get(['fecha', 'ejercicio_id', 'ejercicio_nombre']);
+
+            $mapa = $this->mapaEjercicios($historiales);
+
+            $ultimoPorMusculo = [];
+            $nombrePorMusculo = [];
+
+            foreach ($historiales as $h) {
+                $ejercicio = $this->resolverEjercicio($h, $mapa);
+                if (! $ejercicio) {
+                    continue;
+                }
+
+                $fecha = $h->fecha?->toDateString();
+                if (! $fecha) {
+                    continue;
+                }
+
+                foreach ($ejercicio->musculos as $m) {
+                    $slug = $m->slug;
+                    if (! isset($ultimoPorMusculo[$slug]) || $fecha > $ultimoPorMusculo[$slug]) {
+                        $ultimoPorMusculo[$slug] = $fecha;
+                    }
+                    $nombrePorMusculo[$slug] = $m->nombre_es;
+                }
+            }
 
             $hoy = now()->startOfDay();
-            $recency = $rows->map(function ($r) use ($hoy) {
-                $last = Carbon::parse($r->last_trained_at)->startOfDay();
-                $days = (int) $last->diffInDays($hoy, false);
+            $recency = collect($ultimoPorMusculo)->map(function ($last, $slug) use ($hoy, $nombrePorMusculo) {
+                $lastDia = Carbon::parse($last)->startOfDay();
 
                 return [
-                    'slug' => $r->slug,
-                    'nombre_es' => $r->nombre_es,
-                    'last_trained_at' => $r->last_trained_at,
-                    'days_since' => $days,
+                    'slug' => $slug,
+                    'nombre_es' => $nombrePorMusculo[$slug] ?? $slug,
+                    'last_trained_at' => $last,
+                    'days_since' => (int) $lastDia->diffInDays($hoy, false),
                 ];
             })->values()->all();
 
@@ -128,7 +167,7 @@ class BodyMapController extends Controller
 
     public function ejerciciosPorMusculo(Request $request, string $slug)
     {
-        $userId = $request->user()->id;
+        $userId = $this->targetUserId($request);
         $tipo = $request->input('tipo'); // 'primario' | 'secundario' | null
 
         $musculo = Musculo::where('slug', $slug)->first();
@@ -147,27 +186,44 @@ class BodyMapController extends Controller
 
         $ejercicios = $query->get(['id', 'nombre', 'equipamiento', 'grupo_muscular']);
 
-        // Volumen por ejercicio en últimos 30d
+        // Volumen por ejercicio en últimos 30d.
+        // Los historiales se guardan con 'ejercicio_nombre' (la rutina linkea
+        // por nombre), así que el volumen se calcula por FK y por nombre:
+        // un set cuenta si coincide con alguno de los dos.
         $desde = now()->subDays(30);
-        $setsPorEj = Historial::where('user_id', $userId)
+        $historiales = Historial::where('user_id', $userId)
             ->where('completado', true)
             ->whereDate('fecha', '>=', $desde)
-            ->whereIn('ejercicio_id', $ejercicios->pluck('id'))
-            ->selectRaw('ejercicio_id, count(*) as sets, max(peso) as max_peso')
-            ->groupBy('ejercicio_id')
-            ->get()
-            ->keyBy('ejercicio_id');
+            ->where(function ($q) use ($ejercicios) {
+                $q->whereIn('ejercicio_id', $ejercicios->pluck('id'));
+                $q->orWhereIn('ejercicio_nombre', $ejercicios->pluck('nombre')->unique());
+            })
+            ->get(['ejercicio_id', 'ejercicio_nombre', 'peso']);
 
-        $rows = $ejercicios->map(function ($e) use ($setsPorEj) {
-            $s = $setsPorEj[$e->id] ?? null;
+        $porId = [];
+        $porNombre = [];
+        foreach ($historiales as $h) {
+            $nombre = $h->ejercicio_nombre;
+
+            $porNombre[$nombre]['sets'] = ($porNombre[$nombre]['sets'] ?? 0) + 1;
+            $porNombre[$nombre]['max_peso'] = max($porNombre[$nombre]['max_peso'] ?? 0, (float) $h->peso);
+
+            if ($h->ejercicio_id) {
+                $porId[$h->ejercicio_id]['sets'] = ($porId[$h->ejercicio_id]['sets'] ?? 0) + 1;
+                $porId[$h->ejercicio_id]['max_peso'] = max($porId[$h->ejercicio_id]['max_peso'] ?? 0, (float) $h->peso);
+            }
+        }
+
+        $rows = $ejercicios->map(function ($e) use ($porId, $porNombre) {
+            $s = $porId[$e->id] ?? ($porNombre[$e->nombre] ?? null);
 
             return [
                 'id' => $e->id,
                 'nombre' => $e->nombre,
                 'equipamiento' => $e->equipamiento,
                 'grupo_muscular' => $e->grupo_muscular,
-                'sets_30d' => $s ? (int) $s->sets : 0,
-                'max_peso_30d' => $s && $s->max_peso ? (float) $s->max_peso : null,
+                'sets_30d' => $s ? (int) $s['sets'] : 0,
+                'max_peso_30d' => $s && $s['max_peso'] ? (float) $s['max_peso'] : null,
             ];
         })
             ->sortByDesc('sets_30d')
@@ -183,5 +239,78 @@ class BodyMapController extends Controller
             'ejercicios' => $rows,
             'total' => $rows->count(),
         ]);
+    }
+
+    /**
+     * Mapa de ejercicios para resolver los sets del historial: por FK y por
+     * nombre (los historiales se guardan con 'ejercicio_nombre').
+     *
+     * El catálogo tiene nombres homónimos (el mismo ejercicio con distinto
+     * equipamiento: "Press de banca" x3). Cuando hay homónimos gana el que
+     * tenga más músculos mapeados; desempate por id (el más antiguo).
+     *
+     * @param  Collection<int, Historial>  $historiales
+     * @return array{por_id: Collection, por_nombre: array<string, Ejercicio>}
+     */
+    private function mapaEjercicios($historiales): array
+    {
+        $ids = $historiales->pluck('ejercicio_id')->filter()->unique()->values();
+        $nombres = $historiales->pluck('ejercicio_nombre')->filter()->unique()->values();
+
+        if ($ids->isEmpty() && $nombres->isEmpty()) {
+            return ['por_id' => collect(), 'por_nombre' => [], 'todos' => collect()];
+        }
+
+        $ejercicios = Ejercicio::query()
+            ->with('musculos')
+            ->where(function ($q) use ($ids, $nombres) {
+                if ($ids->isNotEmpty()) {
+                    $q->whereIn('id', $ids);
+                }
+                if ($nombres->isNotEmpty()) {
+                    $ids->isNotEmpty()
+                        ? $q->orWhereIn('nombre', $nombres)
+                        : $q->whereIn('nombre', $nombres);
+                }
+            })
+            ->get();
+
+        return [
+            'por_id' => $ejercicios->keyBy('id'),
+            'por_nombre' => $ejercicios->groupBy('nombre')
+                ->map(fn ($grupo) => $grupo
+                    ->sortBy(fn ($e) => [-$e->musculos->count(), $e->id])
+                    ->first()
+                )
+                ->all(),
+            'todos' => $ejercicios,
+        ];
+    }
+
+    /**
+     * Ejercicio efectivo de un set: por FK si la tiene, si no por nombre.
+     */
+    private function resolverEjercicio(Historial $h, array $mapa): ?Ejercicio
+    {
+        if ($h->ejercicio_id && isset($mapa['por_id'][$h->ejercicio_id])) {
+            return $mapa['por_id'][$h->ejercicio_id];
+        }
+
+        return $mapa['por_nombre'][$h->ejercicio_nombre] ?? null;
+    }
+
+    /**
+     * Usuario objetivo del body map.
+     *
+     * Por defecto es el propio usuario. El front manda ?user_id= cuando
+     * quien consulta es trainer/admin y está viendo el body map de un alumno.
+     *
+     * Autorización: mismo criterio que el resto del historial (el usuario
+     * ve lo suyo, el trainer sólo a sus alumnos asignados y el admin a
+     * cualquiera) — ver ResuelveAlumnoObjetivo.
+     */
+    private function targetUserId(Request $request): int
+    {
+        return $this->usuarioObjetivo($request);
     }
 }

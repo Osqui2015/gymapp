@@ -10,6 +10,11 @@
 //                   ejercicio: { musculos: [{ musculo_slug, tipo, peso }] } }
 // Output: para cada slug de músculo, { load, level, lastTrained, best1Rm }
 //
+// También acepta un diccionario de ejercicios (opción `ejercicios`):
+//   { [ejercicio_id]: { nombre, musculos: [...] } }
+// Es la forma que manda /api/body-map/data: repetir la lista de músculos en
+// cada serie inflaba el payload (37KB → 15KB con el diccionario).
+//
 // Por convención openGym, los músculos secundarios cuentan 0.4 (no 1.0).
 // Los sets NO completados (completado=false) no cuentan.
 
@@ -49,7 +54,22 @@ function epley1RM(peso, reps) {
 }
 
 export function useMuscleLoad(historialRef, options = {}) {
-    const { now = () => Date.now() } = options;
+    const { now = () => Date.now(), ejercicios = null } = options;
+
+    /**
+     * Músculos de un set: usa el mapeo anidado si viene, o lo busca en el
+     * diccionario de ejercicios (evita repetirlo en cada serie).
+     */
+    const musculosDe = (h) => {
+        const directos = h.ejercicio?.musculos;
+        if (directos && directos.length) return directos;
+
+        const mapa = ejercicios?.value ?? ejercicios ?? null;
+        if (mapa && h.ejercicio_id != null) {
+            return mapa[h.ejercicio_id]?.musculos || [];
+        }
+        return [];
+    };
 
     /**
      * load: carga cruda por músculo (no normalizada).
@@ -61,7 +81,7 @@ export function useMuscleLoad(historialRef, options = {}) {
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado) continue;
-            const musculos = h.ejercicio?.musculos || [];
+            const musculos = musculosDe(h);
             for (const m of musculos) {
                 const slug = m.musculo_slug;
                 if (!Object.prototype.hasOwnProperty.call(out, slug)) continue;
@@ -80,7 +100,7 @@ export function useMuscleLoad(historialRef, options = {}) {
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado || !h.fecha) continue;
-            const musculos = h.ejercicio?.musculos || [];
+            const musculos = musculosDe(h);
             const t = new Date(h.fecha).getTime();
             for (const m of musculos) {
                 const slug = m.musculo_slug;
@@ -98,7 +118,7 @@ export function useMuscleLoad(historialRef, options = {}) {
         const data = historialRef.value || [];
         for (const h of data) {
             if (!h.completado) continue;
-            const musculos = h.ejercicio?.musculos || [];
+            const musculos = musculosDe(h);
             const oneRm = epley1RM(parseFloat(h.peso), parseInt(h.reps_realizadas));
             if (!oneRm) continue;
             for (const m of musculos) {

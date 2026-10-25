@@ -273,6 +273,166 @@ class StatsService
         ];
     }
 
+    /**
+     * Rangos soportados por el análisis de esfuerzo (días; null = histórico).
+     */
+    public const EFFORT_RANGES = [
+        '30d' => 30,
+        '90d' => 90,
+        '1y' => 365,
+        'all' => null,
+    ];
+
+    /**
+     * Normaliza el rango recibido desde el front ('30d' | '90d' | '1y' | 'all').
+     * Cualquier valor desconocido cae en '30d' (mismo criterio que normalizeWindow).
+     */
+    public function normalizeEffortRange($raw): string
+    {
+        $raw = (string) $raw;
+
+        return array_key_exists($raw, self::EFFORT_RANGES) ? $raw : '30d';
+    }
+
+    /**
+     * Análisis de esfuerzo en formato "telemetry" (card "Esfuerzo" del historial).
+     *
+     * A diferencia de buildEsfuerzo() —que separa RIR y RPE en buckets
+     * paralelos— acá todos los sets con esfuerzo se normalizan a UNA sola
+     * escala de RIR para poder promediar, graficar y comparar en un mismo eje:
+     *
+     *   rir   (0..5)  → RIR = valor
+     *   rpe   (6..10) → RIR = 10 - valor   (RPE 10 = RIR 0, RPE 6 = RIR 4)
+     *   fallo          → RIR = 0
+     *
+     * La conversión conserva la misma definición de "set duro" que ya usa
+     * buildEsfuerzo() (RIR <= 2).
+     *
+     * @param  string  $range  '30d' | '90d' | '1y' | 'all'
+     */
+    public function buildEffortAnalysis(int $userId, string $range): array
+    {
+        $range = $this->normalizeEffortRange($range);
+        $days = self::EFFORT_RANGES[$range];
+        $since = $days === null ? null : now()->subDays($days);
+
+        $base = Historial::where('user_id', $userId)
+            ->where('completado', true);
+        if ($since) {
+            $base->whereDate('fecha', '>=', $since->toDateString());
+        }
+
+        // Sets completados en la ventana (con o sin esfuerzo) → cobertura.
+        $totalSets = (int) (clone $base)->count();
+
+        $rows = (clone $base)
+            ->whereNotNull('esfuerzo_tipo')
+            ->get(['fecha', 'ejercicio_nombre', 'esfuerzo_tipo', 'esfuerzo_valor']);
+
+        // El bucket "4" agrupa RIR 4 y 5: el front lo muestra como "RIR 4+".
+        $distribution = ['0' => 0, '1' => 0, '2' => 0, '3' => 0, '4' => 0];
+        $rirSum = 0;
+        $rirSets = 0;
+        $highSets = 0;
+        $byWeek = [];
+        $byEjercicio = [];
+
+        foreach ($rows as $row) {
+            $rir = $this->normalizarRir($row->esfuerzo_tipo, $row->esfuerzo_valor);
+            if ($rir === null) {
+                continue;
+            }
+
+            $rirSum += $rir;
+            $rirSets++;
+            if ($rir <= 2) {
+                $highSets++;
+            }
+
+            $bucket = $rir >= 4 ? '4' : (string) $rir;
+            $distribution[$bucket]++;
+
+            $weekStart = Carbon::parse($row->fecha)->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+            if (! isset($byWeek[$weekStart])) {
+                $byWeek[$weekStart] = ['sum' => 0, 'n' => 0];
+            }
+            $byWeek[$weekStart]['sum'] += $rir;
+            $byWeek[$weekStart]['n']++;
+
+            $ejercicio = $row->ejercicio_nombre ?: '—';
+            if (! isset($byEjercicio[$ejercicio])) {
+                $byEjercicio[$ejercicio] = ['sum' => 0, 'n' => 0];
+            }
+            $byEjercicio[$ejercicio]['sum'] += $rir;
+            $byEjercicio[$ejercicio]['n']++;
+        }
+
+        ksort($byWeek);
+
+        $weeklyTrend = [];
+        foreach ($byWeek as $weekStart => $bucket) {
+            $weeklyTrend[] = [
+                'week_start' => $weekStart,
+                'avg_rir' => round($bucket['sum'] / $bucket['n'], 1),
+                'sets' => $bucket['n'],
+            ];
+        }
+
+        $byExercise = [];
+        foreach ($byEjercicio as $ejercicio => $bucket) {
+            $byExercise[] = [
+                'ejercicio' => $ejercicio,
+                'sets' => $bucket['n'],
+                'avg_rir' => round($bucket['sum'] / $bucket['n'], 1),
+            ];
+        }
+        usort($byExercise, function (array $a, array $b) {
+            if ($a['sets'] === $b['sets']) {
+                return strcmp($a['ejercicio'], $b['ejercicio']);
+            }
+
+            return $b['sets'] <=> $a['sets'];
+        });
+
+        return [
+            'range' => $range,
+            'summary' => [
+                'total_sets' => $totalSets,
+                'sets_with_effort' => $rirSets,
+                'avg_rir' => $rirSets > 0 ? round($rirSum / $rirSets, 1) : null,
+                'high_effort_pct' => $rirSets > 0 ? (int) round(($highSets / $rirSets) * 100) : 0,
+                'coverage_pct' => $totalSets > 0 ? (int) round(($rirSets / $totalSets) * 100) : 0,
+            ],
+            'distribution' => $distribution,
+            'weekly_trend' => $weeklyTrend,
+            'by_exercise' => array_slice($byExercise, 0, 5),
+        ];
+    }
+
+    /**
+     * Convierte el esfuerzo de un set a una escala RIR unificada (0..5).
+     * Devuelve null si el set no tiene un valor de esfuerzo interpretable.
+     */
+    private function normalizarRir(?string $tipo, $valor): ?int
+    {
+        // "Al fallo" es siempre el máximo esfuerzo (RIR 0), con o sin valor.
+        if ($tipo === 'fallo') {
+            return 0;
+        }
+
+        if ($valor === null) {
+            return null;
+        }
+
+        $valor = (int) $valor;
+
+        return match ($tipo) {
+            'rir' => ($valor >= 0 && $valor <= 5) ? $valor : null,
+            'rpe' => ($valor >= 6 && $valor <= 10) ? 10 - $valor : null,
+            default => null,
+        };
+    }
+
     public function normalizeWindow($raw): string
     {
         $raw = (string) $raw;

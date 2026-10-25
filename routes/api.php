@@ -81,6 +81,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::get('/historial', [HistorialController::class, 'index']);
     Route::post('/historial/guardar', [HistorialController::class, 'guardar']);
+    // Análisis de esfuerzo. Se declara ANTES de /historial/{id} para que el
+    // wildcard no capture el path y devuelva 405 Method Not Allowed.
+    Route::get('/historial/effort-analysis', [HistorialController::class, 'effortAnalysis']);
     Route::put('/historial/{id}', [HistorialController::class, 'update']);
     Route::delete('/historial/{id}', [HistorialController::class, 'destroy']);
     Route::post('/historial/completar', [HistorialController::class, 'marcarCompletado']);

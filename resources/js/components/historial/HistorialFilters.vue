@@ -1,162 +1,210 @@
 <template>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 shadow-sm mb-6 transition-all"
-    >
-        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
-            <div class="flex items-center gap-2">
-                <span class="text-lg">🔍</span>
-                <h3
-                    class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider"
-                >
-                    Filtros y Búsqueda
-                </h3>
+    <section class="p-space-lg rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+        <!-- Filter Header -->
+        <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-space-sm flex-wrap">
+                <span class="material-symbols-outlined text-secondary text-[20px]">filter_alt</span>
+                <span class="font-headline-md text-headline-md text-on-surface">Filtros y Búsqueda</span>
                 <span
-                    v-if="hayFiltrosActivos"
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+                    v-if="isFilterActive"
+                    class="ml-1 inline-flex items-center gap-1 rounded-full bg-secondary-container/40 px-2.5 py-0.5 text-label-sm font-label-sm text-on-secondary-container"
                 >
                     Filtros activos ({{ totalFiltrados }} de {{ totalOriginal }})
                 </span>
             </div>
-
-            <button
-                v-if="hayFiltrosActivos"
-                type="button"
-                @click="limpiarFiltros"
-                class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
-            >
-                <span>✕</span> Limpiar filtros
-            </button>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    @click="mobileAdvancedOpen = !mobileAdvancedOpen"
+                    class="sm:hidden px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-label-sm font-label-sm flex items-center gap-1 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[15px]">tune</span>
+                    <span>{{ mobileAdvancedOpen ? 'Ocultar opciones' : 'Más filtros' }}</span>
+                </button>
+                <button
+                    v-if="isFilterActive"
+                    type="button"
+                    @click="onClear"
+                    class="text-label-md text-error text-rose-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                    <span>Limpiar filtros</span>
+                </button>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <!-- Búsqueda por ejercicio -->
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+        <!-- 4-Column Controls Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+            <!-- Search Input -->
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Buscar ejercicio
                 </label>
-                <div class="relative">
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
                     <input
                         type="text"
                         :value="modelValue.search"
-                        @input="actualizar('search', $event.target.value)"
-                        placeholder="Ej: Press banca, Sentadilla..."
-                        class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        @input="updateField('search', $event.target.value)"
+                        placeholder="Ej: Press Banca, Sentadilla..."
+                        class="w-full h-11 pl-10 pr-4 rounded-xl bg-surface-container-lowest text-on-surface placeholder:text-outline/60 text-body-md focus:outline-none focus:ring-2 focus:ring-secondary transition-all border-0"
                     />
                     <button
                         v-if="modelValue.search"
                         type="button"
-                        @click="actualizar('search', '')"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                        aria-label="Borrar búsqueda"
+                        @click="updateField('search', '')"
+                        class="absolute right-2.5 text-outline hover:text-on-surface cursor-pointer"
                     >
-                        ✕
+                        <span class="material-symbols-outlined text-[16px]">close</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Filtro por Rutina -->
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+            <!-- Routine Select -->
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Rutina
                 </label>
-                <select
-                    :value="modelValue.rutina"
-                    @change="actualizar('rutina', $event.target.value)"
-                    class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option value="">Todas las rutinas</option>
-                    <option v-for="r in rutinasDisponibles" :key="r" :value="r">
-                        {{ r }}
-                    </option>
-                </select>
+                <div class="relative flex items-center">
+                    <select
+                        :value="modelValue.rutina || ''"
+                        @change="updateField('rutina', $event.target.value)"
+                        class="w-full h-11 pl-3 pr-9 rounded-xl bg-surface-container-lowest text-on-surface text-body-md appearance-none focus:outline-none focus:ring-2 focus:ring-secondary transition-all cursor-pointer border-0"
+                    >
+                        <option value="">Todas las rutinas</option>
+                        <option
+                            v-for="(r, idx) in rutinasDisponibles"
+                            :key="typeof r === 'object' ? r.id : idx"
+                            :value="typeof r === 'object' ? String(r.id ?? r.nombre) : r"
+                        >
+                            {{ typeof r === 'object' ? r.nombre : r }}
+                        </option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 text-outline pointer-events-none text-[18px]">expand_more</span>
+                </div>
             </div>
 
-            <!-- Filtro por Período de Tiempo -->
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                    Período
+            <!-- Period Select -->
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                    Periodo
                 </label>
-                <select
-                    :value="modelValue.periodo"
-                    @change="actualizar('periodo', $event.target.value)"
-                    class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option value="30">Últimos 30 días</option>
-                    <option value="90">Últimos 90 días</option>
-                    <option value="365">Último año</option>
-                    <option value="all">Todo el historial</option>
-                </select>
+                <div class="relative flex items-center">
+                    <select
+                        :value="modelValue.periodo || 'all'"
+                        @change="updateField('periodo', $event.target.value)"
+                        class="w-full h-11 pl-3 pr-9 rounded-xl bg-surface-container-lowest text-on-surface text-body-md appearance-none focus:outline-none focus:ring-2 focus:ring-secondary transition-all cursor-pointer border-0"
+                    >
+                        <option value="all">Todo el historial</option>
+                        <option value="7d">Últimos 7 días</option>
+                        <option value="30d">Últimos 30 días</option>
+                        <option value="90d">Últimos 90 días</option>
+                        <option value="365d">Último año</option>
+                        <option value="year">Este año</option>
+                        <option value="custom">Rango personalizado...</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 text-outline pointer-events-none text-[18px]">calendar_today</span>
+                </div>
             </div>
 
-            <!-- Ordenamiento -->
-            <div>
-                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+            <!-- Sort Select -->
+            <div :class="[mobileAdvancedOpen ? 'flex' : 'hidden sm:flex', 'flex-col gap-1']">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
                     Ordenar por
                 </label>
-                <select
-                    :value="modelValue.orden"
-                    @change="actualizar('orden', $event.target.value)"
-                    class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option value="fecha_desc">Fecha (más reciente primero)</option>
-                    <option value="fecha_asc">Fecha (más antigua primero)</option>
-                    <option value="peso_desc">Mayor peso levantado</option>
-                    <option value="reps_desc">Más repeticiones</option>
-                </select>
+                <div class="relative flex items-center">
+                    <select
+                        :value="modelValue.orden || modelValue.sortBy || 'fecha_desc'"
+                        @change="updateSort($event.target.value)"
+                        class="w-full h-11 pl-3 pr-9 rounded-xl bg-surface-container-lowest text-on-surface text-body-md appearance-none focus:outline-none focus:ring-2 focus:ring-secondary transition-all cursor-pointer border-0"
+                    >
+                        <option value="fecha_desc">Orden de rutina</option>
+                        <option value="fecha_asc">Más antiguos primero</option>
+                        <option value="peso_desc">Mayor peso</option>
+                        <option value="volumen_desc">Mayor volumen</option>
+                        <option value="ejercicio_asc">Ejercicio (A-Z)</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 text-outline pointer-events-none text-[18px]">sort</span>
+                </div>
             </div>
         </div>
 
-        <!-- Filtros secundarios rápidos -->
+        <!-- Custom Date Range Inputs -->
         <div
-            class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-4 flex-wrap text-xs"
+            v-if="modelValue.periodo === 'custom'"
+            class="grid grid-cols-1 sm:grid-cols-2 gap-space-md pt-1"
         >
-            <label
-                class="inline-flex items-center gap-2 cursor-pointer select-none text-gray-700 dark:text-gray-300"
-            >
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Desde</label>
                 <input
-                    type="checkbox"
-                    :checked="modelValue.soloCompletados"
-                    @change="actualizar('soloCompletados', $event.target.checked)"
-                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    type="date"
+                    :value="modelValue.fechaDesde"
+                    @input="updateField('fechaDesde', $event.target.value)"
+                    class="w-full h-11 px-3 rounded-xl bg-surface-container-lowest text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-secondary border-0"
                 />
-                <span>Solo series completadas</span>
-            </label>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Hasta</label>
+                <input
+                    type="date"
+                    :value="modelValue.fechaHasta"
+                    @input="updateField('fechaHasta', $event.target.value)"
+                    class="w-full h-11 px-3 rounded-xl bg-surface-container-lowest text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-secondary border-0"
+                />
+            </div>
+        </div>
 
-            <div v-if="diasDisponibles.length > 1" class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-gray-500 dark:text-gray-400">Día:</span>
+        <!-- Bottom Row: Day Quick Pills & Completed Checkbox -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pt-space-xs">
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline mr-1">Día:</span>
                 <button
                     type="button"
-                    @click="actualizar('dia', '')"
+                    @click="updateField('dia', '')"
                     :class="[
-                        'px-2 py-0.5 rounded-lg transition-colors font-medium',
-                        !modelValue.dia
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200',
+                        'px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all cursor-pointer',
+                        !modelValue.dia || modelValue.dia === 'all'
+                            ? 'bg-secondary-container text-on-secondary-container shadow-sm'
+                            : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
                     ]"
                 >
                     Todos
                 </button>
                 <button
-                    v-for="d in diasDisponibles"
-                    :key="d"
+                    v-for="dia in diasDisponibles"
+                    :key="dia"
                     type="button"
-                    @click="actualizar('dia', d)"
+                    @click="updateField('dia', dia)"
                     :class="[
-                        'px-2 py-0.5 rounded-lg transition-colors font-medium',
-                        modelValue.dia === d
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200',
+                        'px-3 py-1.5 rounded-lg font-label-sm text-label-sm transition-all cursor-pointer',
+                        modelValue.dia === dia
+                            ? 'bg-secondary-container text-on-secondary-container shadow-sm'
+                            : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
                     ]"
                 >
-                    {{ d }}
+                    {{ dia }}
                 </button>
             </div>
+
+            <label class="inline-flex items-center gap-space-sm cursor-pointer select-none group">
+                <input
+                    type="checkbox"
+                    :checked="Boolean(modelValue.soloCompletados ?? modelValue.soloCompletadas)"
+                    @change="updateCompleted($event.target.checked)"
+                    class="w-4 h-4 rounded bg-surface-container-lowest text-secondary focus:ring-secondary focus:ring-offset-0 accent-secondary cursor-pointer"
+                />
+                <span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                    Solo series completadas
+                </span>
+            </label>
         </div>
-    </div>
+    </section>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+
+const mobileAdvancedOpen = ref(false);
 
 const props = defineProps({
     modelValue: {
@@ -171,6 +219,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    hayFiltrosActivos: {
+        type: Boolean,
+        default: false,
+    },
     totalFiltrados: {
         type: Number,
         default: 0,
@@ -181,27 +233,47 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:modelValue', 'limpiar']);
+const emit = defineEmits(['update:modelValue', 'clear', 'limpiar']);
 
-const hayFiltrosActivos = computed(() => {
-    return (
-        !!props.modelValue.search ||
-        !!props.modelValue.rutina ||
-        !!props.modelValue.dia ||
-        props.modelValue.periodo !== 'all' ||
-        props.modelValue.soloCompletados ||
-        props.modelValue.orden !== 'fecha_desc'
+const isFilterActive = computed(() => {
+    if (props.hayFiltrosActivos) return true;
+    const m = props.modelValue || {};
+    return Boolean(
+        (m.search && m.search.trim() !== '') ||
+            (m.rutina && m.rutina !== 'all' && m.rutina !== '') ||
+            (m.dia && m.dia !== 'all' && m.dia !== '') ||
+            (m.periodo && m.periodo !== 'all') ||
+            m.soloCompletados ||
+            m.soloCompletadas ||
+            (m.orden && m.orden !== 'fecha_desc')
     );
 });
 
-const actualizar = (campo, valor) => {
+const onClear = () => {
+    emit('clear');
+    emit('limpiar');
+};
+
+const updateField = (key, value) => {
     emit('update:modelValue', {
         ...props.modelValue,
-        [campo]: valor,
+        [key]: value,
     });
 };
 
-const limpiarFiltros = () => {
-    emit('limpiar');
+const updateSort = (value) => {
+    emit('update:modelValue', {
+        ...props.modelValue,
+        orden: value,
+        sortBy: value,
+    });
+};
+
+const updateCompleted = (checked) => {
+    emit('update:modelValue', {
+        ...props.modelValue,
+        soloCompletados: checked,
+        soloCompletadas: checked,
+    });
 };
 </script>

@@ -75,56 +75,51 @@ onMounted(loadDays);
     <button
         type="button"
         @click="openModal"
-        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
+        class="h-9 px-space-md rounded-lg bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all cursor-pointer"
     >
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-        </svg>
-        Reprogramar día
+        <span class="material-symbols-outlined text-[16px]">edit_calendar</span>
+        <span>Reprogramar día</span>
     </button>
 
     <Teleport to="body">
         <Transition name="modal">
             <div
                 v-if="open"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4"
                 @click.self="closeModal"
             >
-                <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+                <div class="w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-[#131924] p-6 pb-8 sm:pb-6 shadow-2xl border-t sm:border border-[#232D42] text-on-surface">
+                    <div class="sm:hidden flex justify-center -mt-2 mb-3">
+                        <div class="w-10 h-1.5 rounded-full bg-[#232D42]"></div>
+                    </div>
                     <header class="mb-4">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                        <h3 class="font-headline-md text-headline-md text-on-surface">
                             Reprogramar día
                         </h3>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <p class="mt-1 text-body-sm text-on-surface-variant">
                             ¿Querés registrar que hoy hiciste un día distinto al que tocaba?
                         </p>
                     </header>
 
-                    <div v-if="loading" class="py-8 text-center text-sm text-gray-400">
+                    <div v-if="loading" class="py-8 text-center text-body-sm text-outline">
                         Cargando días…
                     </div>
 
                     <div v-else class="space-y-4">
                         <div>
-                            <label
-                                class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300"
-                                >Día que hiciste</label
-                            >
+                            <label class="mb-1.5 block font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                                Día que hiciste
+                            </label>
                             <div class="grid grid-cols-3 gap-2">
                                 <button
                                     v-for="d in days"
                                     :key="d"
                                     type="button"
                                     :class="[
-                                        'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+                                        'rounded-xl px-3 py-2 text-label-md font-label-md transition-colors cursor-pointer',
                                         selectedDay === d
-                                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
-                                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200',
+                                            ? 'bg-secondary-container text-on-secondary-container shadow-sm'
+                                            : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high',
                                     ]"
                                     @click="selectedDay = d"
                                 >
@@ -134,13 +129,12 @@ onMounted(loadDays);
                         </div>
 
                         <div>
-                            <label
-                                class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300"
-                                >Motivo</label
-                            >
+                            <label class="mb-1.5 block font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                                Motivo
+                            </label>
                             <select
                                 v-model="reason"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                                class="w-full h-11 rounded-xl bg-surface-container-lowest px-3 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary border-0"
                             >
                                 <option value="missed_day">Me perdí un día anterior</option>
                                 <option value="manual">Prefiero cambiar el orden</option>
@@ -150,16 +144,15 @@ onMounted(loadDays);
                         </div>
 
                         <div>
-                            <label
-                                class="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300"
-                                >Nota (opcional)</label
-                            >
+                            <label class="mb-1.5 block font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                                Nota (opcional)
+                            </label>
                             <input
                                 v-model="note"
                                 type="text"
                                 maxlength="255"
                                 placeholder="Algo que quieras recordar…"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                                class="w-full h-11 rounded-xl bg-surface-container-lowest px-3 text-body-md text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-secondary border-0"
                             />
                         </div>
                     </div>
@@ -168,7 +161,7 @@ onMounted(loadDays);
                         <button
                             type="button"
                             @click="closeModal"
-                            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            class="rounded-xl px-4 py-2 text-label-md font-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
                         >
                             Cancelar
                         </button>
@@ -176,7 +169,7 @@ onMounted(loadDays);
                             type="button"
                             @click="save"
                             :disabled="saving || !selectedDay"
-                            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="rounded-xl bg-secondary-container px-4 py-2 text-label-md font-label-md text-on-secondary-container transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                         >
                             {{ saving ? 'Guardando…' : 'Reprogramar' }}
                         </button>

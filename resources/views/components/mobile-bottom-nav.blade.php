@@ -4,50 +4,47 @@
     $isAlumno = $user->hasRole('alumno');
     $isStaff = $user->hasRole(['trainer', 'administrador']);
 
-    // Los 4 items principales del bottom nav (siempre visibles)
+    // Los 4 items principales del bottom nav (siempre visibles junto a Menú)
     $primary = [
         [
             'route' => 'dashboard',
             'match' => 'dashboard',
             'label' => 'Inicio',
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />',
+            'material_icon' => 'dashboard',
             'ph_icon' => 'ph ph-house',
             'ph_fill' => 'ph-fill ph-house',
         ],
         [
             'route' => 'rutinas',
-            'match' => 'rutinas',
+            'match' => 'rutinas*',
             'label' => 'Rutinas',
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-3-8h3" />',
+            'material_icon' => 'assignment',
             'ph_icon' => 'ph ph-clipboard-text',
             'ph_fill' => 'ph-fill ph-clipboard-text',
         ],
         [
-            'route' => 'ejercicios',
-            'match' => 'ejercicios',
-            'label' => 'Ejercicios',
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />',
-            'ph_icon' => 'ph ph-barbell',
-            'ph_fill' => 'ph-fill ph-barbell',
+            'route' => 'historial',
+            'match' => 'historial*',
+            'label' => 'Historial',
+            'material_icon' => 'history',
+            'ph_icon' => 'ph ph-clock-counter-clockwise',
+            'ph_fill' => 'ph-fill ph-clock-counter-clockwise',
         ],
         [
             'route' => 'progreso',
-            'match' => 'progreso',
+            'match' => 'progreso*',
             'label' => 'Progreso',
-            'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />',
+            'material_icon' => 'monitoring',
             'ph_icon' => 'ph ph-chart-line-up',
             'ph_fill' => 'ph-fill ph-chart-line-up',
         ],
     ];
-
-    // Determinar el "match" para resaltar el tab activo
-    $currentRoute = request()->route()?->getName();
 @endphp
 
 <div
     x-data="{ menuOpen: false }"
     @keydown.escape.window="menuOpen = false"
-    class="md:hidden fixed bottom-0 left-0 right-0 z-40"
+    class="md:hidden fixed bottom-0 left-0 right-0 z-40 font-sans"
 >
     {{-- Backdrop del sheet "Menú" --}}
     <div
@@ -59,11 +56,11 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         @click="menuOpen = false"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm"
         style="display: none;"
     ></div>
 
-    {{-- Sheet deslizable --}}
+    {{-- Sheet deslizable (GymApp Telemetry Pro) --}}
     <div
         x-show="menuOpen"
         x-transition:enter="transition ease-out duration-300 transform"
@@ -72,175 +69,174 @@
         x-transition:leave="transition ease-in duration-200 transform"
         x-transition:leave-start="translate-y-0"
         x-transition:leave-end="translate-y-full"
-        class="fixed bottom-0 left-0 right-0 bg-white dark:bg-[var(--color-obsidian-surface)] rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-[var(--color-obsidian-border-strong)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.7)] max-h-[85vh] overflow-y-auto"
+        class="fixed bottom-0 left-0 right-0 bg-[#131924] rounded-t-3xl shadow-2xl border-t border-[#232D42] max-h-[85vh] overflow-y-auto text-slate-200"
         style="display: none;"
     >
         {{-- Handle visual --}}
         <div class="flex justify-center pt-3 pb-1">
-            <div class="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            <div class="w-10 h-1.5 bg-[#232D42] rounded-full"></div>
         </div>
 
-        <div class="px-4 pt-2 pb-20">
-            {{-- Header del usuario (Kinetic Obsidian gradient) --}}
-            <div class="flex items-center gap-3 p-3 mb-4 bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] rounded-2xl relative overflow-hidden">
-                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_50%)]"></div>
-                <div class="relative w-11 h-11 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+        <div class="px-4 pt-2 pb-24">
+            {{-- Header del usuario (Telemetry Pro gradient) --}}
+            <div class="flex items-center gap-3 p-3.5 mb-4 bg-gradient-to-r from-indigo-600/25 via-violet-600/20 to-[#18202F] border border-indigo-500/30 rounded-2xl relative overflow-hidden">
+                <div class="relative w-11 h-11 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
                     <span class="text-white font-bold text-lg">{{ substr($user->name, 0, 1) }}</span>
                 </div>
                 <div class="relative flex-1 min-w-0">
                     <p class="text-sm font-bold text-white truncate">{{ $user->name }}</p>
-                    <p class="text-xs text-white/80 capitalize">{{ $user->normalizedRole() }}</p>
+                    <p class="text-xs text-indigo-300 font-mono uppercase tracking-wider">{{ $user->normalizedRole() }}</p>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-[10px] font-mono text-emerald-300 uppercase">Online</span>
                 </div>
             </div>
 
             {{-- Items de navegación primaria --}}
-            <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Principal</p>
+            <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Navegación</p>
             <nav class="space-y-1 mb-4">
                 @foreach ($primary as $item)
                     <a
                         href="{{ route($item['route']) }}"
                         @click="menuOpen = false"
-                        class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs($item['match']) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
+                        class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs($item['match']) ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}"
                     >
-                        @if (!empty($item['ph_icon']))
-                            <i class="{{ $item['ph_icon'] }} text-lg"></i>
-                        @elseif (!empty($item['icon']))
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
-                        @endif
-                        {{ $item['label'] }}
+                        <span class="material-symbols-outlined text-[20px] {{ request()->routeIs($item['match']) ? 'text-indigo-400' : 'text-slate-400' }}">{{ $item['material_icon'] }}</span>
+                        <span>{{ $item['label'] }}</span>
                         @if (request()->routeIs($item['match']))
-                            <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                            <span class="ml-auto w-2 h-2 bg-indigo-400 rounded-full"></span>
                         @endif
                     </a>
                 @endforeach
 
                 <a
-                    href="{{ route('historial') }}"
+                    href="{{ route('ejercicios') }}"
                     @click="menuOpen = false"
-                    class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('historial') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}"
+                    class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('ejercicios*') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}"
                 >
-                    <i class="ph ph-clock-counter-clockwise text-lg"></i>
-                    Historial
-                    @if (request()->routeIs('historial'))
-                        <span class="ml-auto w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                    <span class="material-symbols-outlined text-[20px] {{ request()->routeIs('ejercicios*') ? 'text-indigo-400' : 'text-slate-400' }}">fitness_center</span>
+                    <span>Biblioteca de Ejercicios</span>
+                    @if (request()->routeIs('ejercicios*'))
+                        <span class="ml-auto w-2 h-2 bg-indigo-400 rounded-full"></span>
                     @endif
                 </a>
             </nav>
 
             {{-- Trainer --}}
             @if ($isStaff)
-                <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Panel Trainer</p>
+                <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-indigo-400">Panel Trainer</p>
                 <nav class="space-y-1 mb-4">
-                    <a href="{{ route('trainer.dashboard') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.dashboard') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>📊</span> Dashboard Trainer
+                    <a href="{{ route('trainer.dashboard') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.dashboard') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-indigo-400">space_dashboard</span>
+                        <span>Dashboard Trainer</span>
                     </a>
-                    <a href="{{ route('trainer.alumnos') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.alumnos') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>👥</span> Alumnos
+                    <a href="{{ route('trainer.alumnos') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.alumnos') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-indigo-400">groups</span>
+                        <span>Alumnos</span>
                     </a>
-                    <a href="{{ route('trainer.ejercicios') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.ejercicios') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>🏋️</span> Ejercicios Privados
+                    <a href="{{ route('trainer.ejercicios') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.ejercicios') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-indigo-400">exercise</span>
+                        <span>Ejercicios Privados</span>
                     </a>
-                    <a href="{{ route('trainer.duplicar') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.duplicar') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>📋</span> Duplicar Rutinas
+                    <a href="{{ route('trainer.duplicar') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('trainer.duplicar') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-indigo-400">content_copy</span>
+                        <span>Duplicar Rutinas</span>
                     </a>
                 </nav>
             @endif
 
             {{-- Admin --}}
             @if ($user->hasRole('administrador'))
-                <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-wider text-red-500">Panel Admin</p>
+                <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-rose-400">Panel Admin</p>
                 <nav class="space-y-1 mb-4">
-                    <a href="{{ route('admin.estadisticas') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.estadisticas') ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>📊</span> Estadísticas
+                    <a href="{{ route('admin.estadisticas') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.estadisticas') ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-rose-400">analytics</span>
+                        <span>Estadísticas</span>
                     </a>
-                    <a href="{{ route('admin.membresias') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.membresicas') || request()->routeIs('admin.membresias') ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>💳</span> Membresías
+                    <a href="{{ route('admin.membresias') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.membresias*') ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-rose-400">card_membership</span>
+                        <span>Membresías</span>
                     </a>
-                    <a href="{{ route('admin.audit-logs') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.audit-logs') ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>📋</span> Audit Logs
+                    <a href="{{ route('admin.audit-logs') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.audit-logs') ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-rose-400">receipt_long</span>
+                        <span>Audit Logs</span>
                     </a>
-                    <a href="{{ route('admin.import-export') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.import-export') ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
-                        <span>📂</span> Importar / Exportar
+                    <a href="{{ route('admin.import-export') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('admin.import-export') ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-200 hover:bg-[#18202F]' }}">
+                        <span class="material-symbols-outlined text-[18px] text-rose-400">sync_alt</span>
+                        <span>Importar / Exportar</span>
                     </a>
                 </nav>
             @endif
 
             {{-- Cuenta --}}
-            <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Cuenta</p>
+            <p class="px-2 mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Cuenta</p>
             <nav class="space-y-1">
-                <a href="{{ $user->hasRole('administrador') ? route('configuracion') : route('profile.edit') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Configuración
+                <a href="{{ $user->hasRole('administrador') ? route('configuracion') : route('profile.edit') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors text-slate-200 hover:bg-[#18202F]">
+                    <span class="material-symbols-outlined text-[18px] text-slate-400">settings</span>
+                    <span>Configuración</span>
                 </a>
-                <a href="{{ route('profile.edit') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Perfil
+                <a href="{{ route('profile.edit') }}" @click="menuOpen = false" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors text-slate-200 hover:bg-[#18202F]">
+                    <span class="material-symbols-outlined text-[18px] text-slate-400">person</span>
+                    <span>Perfil</span>
                 </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Cerrar Sesión
+                    <button type="submit" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors text-rose-400 hover:bg-rose-500/10 cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                        <span>Cerrar Sesión</span>
                     </button>
                 </form>
             </nav>
         </div>
     </div>
 
-    {{-- Toggle dark mode flotante sobre el bottom nav (solo mobile) --}}
-    <div class="md:hidden fixed bottom-20 left-3 z-40">
-        <x-dark-mode-toggle />
-    </div>
-
-    {{-- Barra inferior persistente (Kinetic Obsidian glassmorphism) --}}
-    <nav class="glass-panel border-t border-white/[0.08] pb-safe" data-purpose="bottom-persistent-navigation">
-        <div class="max-w-md mx-auto px-4 py-2">
+    {{-- Barra inferior persistente (GymApp Telemetry Pro) --}}
+    <nav class="bg-[#0B0F17]/95 backdrop-blur-xl border-t border-[#232D42] pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.6)]" data-purpose="bottom-persistent-navigation">
+        <div class="max-w-md mx-auto px-3 py-1.5">
             <div class="grid grid-cols-5 gap-1 items-center justify-items-center">
                 @foreach ($primary as $item)
                     @php $isActive = request()->routeIs($item['match']); @endphp
                     @if ($isActive)
                         <a
                             href="{{ route($item['route']) }}"
-                            class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-white relative group"
+                            class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-white relative group w-full"
                         >
-                            <!-- Active Highlight Glow Indicator -->
-                            <div class="absolute -top-2 w-8 h-1 rounded-full bg-neon-indigo shadow-glow-indigo"></div>
-                            <div class="w-9 h-8 rounded-lg bg-neon-indigo/20 border border-neon-indigo/40 flex items-center justify-center text-neon-indigo mb-0.5 shadow-glow-indigo">
-                                <i class="{{ $item['ph_fill'] }} text-xl"></i>
+                            <div class="absolute -top-1.5 w-8 h-1 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+                            <div class="w-9 h-7 rounded-lg bg-indigo-600/25 border border-indigo-500/40 flex items-center justify-center text-indigo-300 mb-0.5">
+                                <span class="material-symbols-outlined text-[19px]">{{ $item['material_icon'] }}</span>
                             </div>
                             <span class="text-[10px] font-bold tracking-tight text-white">{{ $item['label'] }}</span>
                         </a>
                     @else
                         <a
                             href="{{ route($item['route']) }}"
-                            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group"
+                            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group w-full"
                         >
-                            <i class="{{ $item['ph_icon'] }} text-xl group-hover:scale-110 transition-transform"></i>
-                            <span class="text-[10px] font-medium tracking-tight mt-0.5">{{ $item['label'] }}</span>
+                            <div class="w-9 h-7 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">{{ $item['material_icon'] }}</span>
+                            </div>
+                            <span class="text-[10px] font-medium tracking-tight">{{ $item['label'] }}</span>
                         </a>
                     @endif
                 @endforeach
 
                 {{-- Botón "Menú" (abre el sheet) --}}
                 <button
+                    type="button"
                     @click="menuOpen = !menuOpen"
-                    class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group relative"
-                    :class="menuOpen ? 'text-neon-indigo' : ''"
+                    class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group relative w-full cursor-pointer"
+                    :class="menuOpen ? 'text-indigo-400' : ''"
                 >
                     @if ($user->hasRole('administrador'))
-                        <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
+                        <span class="absolute top-1 right-3 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-[#0B0F17]"></span>
                     @elseif ($isStaff)
-                        <span class="absolute top-1 right-2 w-2 h-2 bg-neon-violet rounded-full ring-2 ring-white dark:ring-[var(--color-obsidian-base)]"></span>
+                        <span class="absolute top-1 right-3 w-2 h-2 bg-violet-500 rounded-full ring-2 ring-[#0B0F17]"></span>
                     @endif
-                    <i class="ph ph-list text-xl group-hover:scale-110 transition-transform"></i>
-                    <span class="text-[10px] font-medium tracking-tight mt-0.5">Menú</span>
+                    <div class="w-9 h-7 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">menu</span>
+                    </div>
+                    <span class="text-[10px] font-medium tracking-tight">Menú</span>
                 </button>
             </div>
         </div>

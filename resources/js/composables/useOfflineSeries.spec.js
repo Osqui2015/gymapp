@@ -39,6 +39,9 @@ describe('useOfflineSeries', () => {
         mockDb.countPending.mockResolvedValue(0);
         mockDb.addPending.mockImplementation(async (r) => r);
         mockDb.removePending.mockResolvedValue();
+        // clearAllMocks no limpia las implementaciones: hay que resetear
+        // isAvailable (un test lo deja en false y contaminaba los siguientes).
+        mockDb.isAvailable.mockReturnValue(true);
         mockPost.mockReset();
         mockPost.mockResolvedValue({ data: { message: 'Guardado', count: 1 } });
         vi.useFakeTimers();
@@ -230,5 +233,91 @@ describe('useOfflineSeries', () => {
         const result = await recordSet(basePayload());
 
         expect(result.status).toBe('lost');
+    });
+
+    // === Errores permanentes (4xx) ===
+
+    const errorConStatus = (status, message = 'Error') => {
+        const err = new Error(message);
+        err.response = { status, data: { message } };
+        return err;
+    };
+
+    it('422 (validación): NO encola, devuelve rejected', async () => {
+        mockPost.mockRejectedValueOnce(errorConStatus(422, 'El peso es requerido'));
+
+        const { recordSet, pendingCount } = useOfflineSeries();
+        const result = await recordSet(basePayload());
+
+        expect(result.status).toBe('rejected');
+        expect(result.statusCode).toBe(422);
+        expect(result.error).toBe('El peso es requerido');
+        // No se encola: reintentar un 422 nunca va a funcionar.
+        expect(mockDb.addPending).not.toHaveBeenCalled();
+        expect(pendingCount.value).toBe(0);
+    });
+
+    it('403 (auth): NO encola, devuelve rejected', async () => {
+        mockPost.mockRejectedValueOnce(errorConStatus(403, 'No autorizado'));
+
+        const { recordSet } = useOfflineSeries();
+        const result = await recordSet(basePayload());
+
+        expect(result.status).toBe('rejected');
+        expect(mockDb.addPending).not.toHaveBeenCalled();
+    });
+
+    it('429 (rate limit): es transitorio, se encola', async () => {
+        mockPost.mockRejectedValueOnce(errorConStatus(429, 'Demasiadas peticiones'));
+
+        const { recordSet, pendingCount } = useOfflineSeries();
+        const result = await recordSet(basePayload());
+
+        expect(result.status).toBe('queued');
+        expect(mockDb.addPending).toHaveBeenCalledTimes(1);
+        expect(pendingCount.value).toBe(1);
+    });
+
+    it('syncNow descarta las pendientes con error permanente y sigue con las demás', async () => {
+        mockDb.getAllPending.mockResolvedValue([
+            { client_id: 'mala-1', payload: basePayload(), attempts: 0 },
+            { client_id: 'buena-2', payload: basePayload(), attempts: 0 },
+        ]);
+        mockPost
+            .mockRejectedValueOnce(errorConStatus(422, 'Payload inválido'))
+            .mockResolvedValueOnce({ data: { message: 'Guardado' } });
+
+        const { syncNow, pendingCount } = useOfflineSeries();
+        await nextTick();
+        await nextTick();
+
+        await syncNow();
+
+        // La mala se descarta (no bloquea la cola) y la buena se sincroniza.
+        expect(mockDb.removePending).toHaveBeenCalledWith('mala-1');
+        expect(mockDb.removePending).toHaveBeenCalledWith('buena-2');
+        expect(mockPost).toHaveBeenCalledTimes(2);
+        expect(pendingCount.value).toBe(0);
+    });
+
+    it('syncNow con fallo transitorio corta la cola (se reintenta después)', async () => {
+        mockDb.getAllPending.mockResolvedValue([
+            { client_id: 'a-1', payload: basePayload(), attempts: 0 },
+            { client_id: 'b-2', payload: basePayload(), attempts: 0 },
+        ]);
+        mockPost.mockRejectedValueOnce(new Error('Network Error'));
+
+        const { syncNow } = useOfflineSeries();
+        await nextTick();
+        await nextTick();
+
+        await syncNow();
+
+        expect(mockPost).toHaveBeenCalledTimes(1);
+        expect(mockDb.removePending).not.toHaveBeenCalled();
+        expect(mockDb.updatePending).toHaveBeenCalledWith(
+            'a-1',
+            expect.objectContaining({ attempts: 1 })
+        );
     });
 });
