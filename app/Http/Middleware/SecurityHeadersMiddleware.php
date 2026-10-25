@@ -42,15 +42,15 @@ class SecurityHeadersMiddleware
 
     private function buildCsp(): string
     {
-        // CSP deliberadamente permisivo con 'self' e inline (necesario para Vue
-        // runtime + Tailwind + service worker de la PWA). 'unsafe-eval' solo en
-        // dev (Vite lo necesita). En prod el manifest se construye sin eval.
+        // CSP deliberadamente permisivo con 'self', inline y eval (necesario para
+        // Alpine.js que evalúa expresiones x-data/x-show/@click mediante new AsyncFunction,
+        // además de Vue runtime + Tailwind + service worker de la PWA).
         $isDev = config('app.debug');
 
         $scriptSrc = ["'self'"];
-        $scriptSrc[] = "'unsafe-inline'";   // Vue runtime template compilation
+        $scriptSrc[] = "'unsafe-inline'";   // Vue runtime template compilation / inline scripts
+        $scriptSrc[] = "'unsafe-eval'";     // Alpine.js runtime expression evaluation (new AsyncFunction) + Vite HMR
         if ($isDev) {
-            $scriptSrc[] = "'unsafe-eval'"; // Vite HMR
             // Vite dev server corre en localhost:5173. Usamos wildcards
             // (localhost:* y 127.0.0.1:*) que son válidos en CSP spec
             // y cubren cualquier puerto. NO usamos http://[::1]:5173
