@@ -466,7 +466,7 @@
 
                     <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (visible en pantallas grandes o complementario) -->
                     <div
-                        v-if="store.currentEjercicio.notas"
+                        v-if="store.currentEjercicio.notas || store.currentEjercicio.prescripcion"
                         class="hidden md:block p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-violet-950/40 via-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border border-violet-500/30 text-left space-y-2 shadow-inner"
                         data-testid="ejercicio-prescripcion-box"
                     >
@@ -477,37 +477,11 @@
                             </span>
                         </div>
 
-                        <!-- Desglose por bloques estructurados (ej: 2x6 con RIR 1) -->
-                        <div
-                            v-if="parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length"
-                            class="grid grid-cols-1 sm:grid-cols-2 gap-1.5"
-                        >
-                            <div
-                                v-for="(block, i) in parseEsfuerzoBlocksActive(store.currentEjercicio.notas)"
-                                :key="i"
-                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border text-xs"
-                                :class="esfuerzoBlockClass(block)"
-                            >
-                                <span class="font-bold text-white flex items-center gap-1.5">
-                                    <span class="text-violet-400 font-black">⚡</span>
-                                    {{ block.series }} {{ block.series === 1 ? 'serie' : 'series' }} × {{ block.reps }} reps
-                                </span>
-                                <span class="font-black">
-                                    con {{ esfuerzoBlockLabel(block) }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Nota textual adicional (Rest-pause, técnicas, etc.) o completa si no coincide con el regex -->
-                        <div
-                            v-if="!parseEsfuerzoBlocksActive(store.currentEjercicio.notas).length || extraNotasText(store.currentEjercicio.notas)"
-                            class="text-[11px] text-gray-300 flex items-start gap-1.5 pt-0.5"
-                        >
-                            <span class="text-amber-400 font-bold shrink-0">ℹ</span>
-                            <span class="font-medium">
-                                {{ extraNotasText(store.currentEjercicio.notas) || store.currentEjercicio.notas }}
-                            </span>
-                        </div>
+                        <!-- Prescripción estructurada: bloques, rest-pause, progresión y consejo -->
+                        <PrescripcionCard
+                            :ejercicio="store.currentEjercicio"
+                            :serie-actual="activeSerieNumero"
+                        />
                     </div>
 
                     <!-- Bloque "Superserie" en la columna izquierda -->
@@ -917,6 +891,12 @@ import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useToast } from '@/composables/useToast';
 import { useWakeLock } from '@/composables/useWakeLock';
 import SetConfigCard from './SetConfigCard.vue';
+import PrescripcionCard from './PrescripcionCard.vue';
+import {
+    prescripcionDe,
+    targetParaSerie,
+    resumenPlan,
+} from '@/utils/rutinaPrescripcion';
 
 const props = defineProps({
     open: {
@@ -1404,50 +1384,10 @@ const handleFinalizar = () => {
     emit('finish');
 };
 
-// Parsea bloques de esfuerzo desde notas (mismo formato que RutinaAcordeon.vue).
-//   "2x6 RIR 1" | "2*6 RIP 1" | "2x6 RPE 8" | "2x8 FALLO" | "2x8 AL FALLO TÉCNICO"
-//   → { series, reps, tipo:'rir'|'rpe'|'fallo', valor|null }
-const parseEsfuerzoBlocksActive = (notas) => {
-    if (!notas) return [];
-    const blocks = [];
-    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
-    for (const m of String(notas).matchAll(re)) {
-        if (m[3] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
-        } else if (m[4] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rpe', valor: Number(m[4]) });
-        } else {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'fallo', valor: null });
-        }
-    }
-    return blocks;
-};
-
-// Obtiene texto descriptivo adicional de notas que no sea la parte de series/RIR/RPE
-const extraNotasText = (notas) => {
-    if (!notas) return '';
-    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
-    const cleaned = String(notas)
-        .replace(re, '')
-        .replace(/^\s*\+\s*/g, '')
-        .replace(/\s*\+\s*$/g, '')
-        .trim();
-    return cleaned;
-};
-
-// Retrocompat: alias al parser nuevo.
-const parseRirBlocksActive = (notas) => parseEsfuerzoBlocksActive(notas);
-
-const esfuerzoBlockLabel = (b) => {
-    if (b.tipo === 'fallo') return 'FALLO';
-    return `${b.tipo.toUpperCase()} ${b.valor}`;
-};
-
-const esfuerzoBlockClass = (b) => {
-    if (b.tipo === 'fallo') return 'bg-rose-500/25 text-rose-200 border border-rose-500/40';
-    if (b.tipo === 'rir' && b.valor === 0) return 'bg-rose-500/25 text-rose-300 border border-rose-500/40';
-    return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
-};
+// Prescripción del ejercicio activo: prefiero el JSON estructurado que
+// devuelve la API (`prescripcion`) y caigo al parseo de `notas` para las
+// rutinas viejas. Ver utils/rutinaPrescripcion.js.
+const prescripcionActiva = computed(() => prescripcionDe(store.currentEjercicio));
 
 const activeSetsEfectivos = computed(() => {
     return (store.currentEjercicio?.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
@@ -1457,28 +1397,15 @@ const activeSerieNumero = computed(() => {
     return activeSetsEfectivos.value + 1;
 });
 
-const rirBlocksHero = computed(() => {
-    return parseEsfuerzoBlocksActive(store.currentEjercicio?.notas);
-});
+const rirBlocksHero = computed(() => prescripcionActiva.value.bloques);
 
 const currentTargetEsfuerzoHero = computed(() => {
-    if (!rirBlocksHero.value || rirBlocksHero.value.length === 0) return null;
-    const setNum = activeSerieNumero.value;
-    let acumulado = 0;
-    for (const b of rirBlocksHero.value) {
-        acumulado += b.series;
-        if (setNum <= acumulado) {
-            return { tipo: b.tipo, valor: b.valor, reps: b.reps, bloque: b };
-        }
-    }
-    return null;
+    return targetParaSerie(rirBlocksHero.value, activeSerieNumero.value);
 });
 
 const planSummaryHero = computed(() => {
     if (!rirBlocksHero.value || rirBlocksHero.value.length === 0) return null;
-    return rirBlocksHero.value
-        .map((b) => `${b.series}×${b.reps} ${b.tipo === 'fallo' ? 'FALLO' : 'RIR ' + b.valor}`)
-        .join(' + ');
+    return resumenPlan(rirBlocksHero.value);
 });
 
 onMounted(() => {

@@ -195,7 +195,7 @@ class UserRutinaController extends Controller
      * Query params:
      *   - dia (opcional): si no se manda, usa el `dia_actual` del user_rutina.
      *
-     * Response: { dia, nivel, modalidad, ejercicios: [{ nombre, notas, series, reps_min, reps_max, descanso_min, superserie_grupo, orden }] }
+     * Response: { dia, nivel, modalidad, ejercicios: [{ nombre, notas, prescripcion, series, reps_min, reps_max, descanso_min, superserie_grupo, orden }] }
      */
     public function ejerciciosActuales(Request $request)
     {
@@ -221,11 +221,13 @@ class UserRutinaController extends Controller
             $baseQuery->whereNull('created_by');
         }
 
+        $columnas = ['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas', 'prescripcion'];
+
         $rows = (clone $baseQuery)
             ->where('dia', $dia)
             ->orderBy('orden')
             ->orderBy('id')
-            ->get(['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas']);
+            ->get($columnas);
 
         if ($rows->isEmpty()) {
             $rows = (clone $baseQuery)
@@ -235,7 +237,7 @@ class UserRutinaController extends Controller
                 })
                 ->orderBy('orden')
                 ->orderBy('id')
-                ->get(['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas']);
+                ->get($columnas);
         }
 
         return response()->json([
@@ -251,6 +253,7 @@ class UserRutinaController extends Controller
                 'superserie_grupo' => $r->superserie_grupo,
                 'orden' => $r->orden,
                 'notas' => $r->notas,
+                'prescripcion' => $r->prescripcion,
             ])->all(),
         ]);
     }

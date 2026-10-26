@@ -7,6 +7,7 @@ use App\Models\RutinaFavorita;
 use App\Models\User;
 use App\Models\UserRutina;
 use App\Services\AchievementService;
+use App\Services\RutinaPrescripcionService;
 use App\Services\RutinasSugeridasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -109,6 +110,38 @@ class RutinaController extends Controller
         }
     }
 
+    /**
+     * Reglas de validación de la prescripción estructurada.
+     *
+     * Misma forma que genera el seeder Rutina3DiasV2Seeder:
+     *   - bloques: [{series, reps, tipo, valor}] con tipo = rir | rpe | fallo
+     *     (valor es null cuando tipo = fallo).
+     *   - rest_pause: {minisets: [{reps, descanso_seg, tipo, valor}]} o null.
+     *   - progresion / consejo / etiqueta: texto libre.
+     *
+     * @return array<string, string>
+     */
+    protected function reglasPrescripcion(): array
+    {
+        return [
+            'prescripcion' => 'nullable|array',
+            'prescripcion.bloques' => 'nullable|array',
+            'prescripcion.bloques.*.series' => 'nullable|integer|min:1',
+            'prescripcion.bloques.*.reps' => 'nullable|integer|min:0',
+            'prescripcion.bloques.*.tipo' => 'nullable|string|in:rir,rpe,fallo',
+            'prescripcion.bloques.*.valor' => 'nullable|integer',
+            'prescripcion.rest_pause' => 'nullable|array',
+            'prescripcion.rest_pause.minisets' => 'nullable|array',
+            'prescripcion.rest_pause.minisets.*.reps' => 'nullable|integer|min:0',
+            'prescripcion.rest_pause.minisets.*.descanso_seg' => 'nullable|integer|min:0',
+            'prescripcion.rest_pause.minisets.*.tipo' => 'nullable|string|in:rir,rpe,fallo',
+            'prescripcion.rest_pause.minisets.*.valor' => 'nullable|integer',
+            'prescripcion.progresion' => 'nullable|string|max:500',
+            'prescripcion.consejo' => 'nullable|string|max:500',
+            'prescripcion.etiqueta' => 'nullable|string|max:64',
+        ];
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -124,13 +157,74 @@ class RutinaController extends Controller
             'superserie_grupo' => 'nullable|integer',
             // Notas libres para prescripción (RIR/RPE/FALLO blocks + técnicas).
             'notas' => 'nullable|string|max:1000',
+            // Prescripción estructurada (bloques, rest-pause, progresión).
+            ...$this->reglasPrescripcion(),
         ]);
+
+        // La prescripción se guarda tal cual la mandó el cliente (la forma ya
+        // quedó validada arriba): el validador anidado recorta las claves
+        // vacías y no queremos perder parte del payload.
+        $prescripcion = $request->input('prescripcion');
+        $data['prescripcion'] = is_array($prescripcion)
+            ? $prescripcion
+            : RutinaPrescripcionService::fromNotas($data['notas'] ?? null);
 
         $data['created_by'] = $request->user()->id;
 
         $rutina = Rutina::create($data);
 
         return response()->json($rutina, 201);
+    }
+
+    /**
+     * Actualiza un ejercicio (fila de rutinas) del usuario.
+     *
+     * PUT /api/rutinas/{rutina}
+     *
+     * Payload parcial: sólo se aplican los campos enviados. `prescripcion`
+     * es opcional; si viene reemplaza completa la prescripción estructurada
+     * (mandarla en null la borra).
+     */
+    public function update(Request $request, Rutina $rutina)
+    {
+        $user = $request->user();
+
+        // Sólo el creador de la rutina (o un admin) puede editarla.
+        if ($rutina->created_by !== null
+            && $rutina->created_by !== $user->id
+            && ! $user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            return response()->json(['error' => 'No autorizado a modificar esta rutina'], 403);
+        }
+
+        $data = $request->validate([
+            'nivel' => 'sometimes|required|string',
+            'modalidad' => 'sometimes|required|string',
+            'dia' => 'sometimes|required|string',
+            'ejercicio_nombre' => 'sometimes|required|string',
+            'series' => 'sometimes|required|integer',
+            'reps_min' => 'sometimes|required|string',
+            'reps_max' => 'sometimes|required|string',
+            'descanso_min' => 'sometimes|required|numeric',
+            'orden' => 'sometimes|required|integer',
+            'superserie_grupo' => 'sometimes|nullable|integer',
+            'notas' => 'sometimes|nullable|string|max:1000',
+            ...$this->reglasPrescripcion(),
+        ]);
+
+        if ($request->has('prescripcion')) {
+            $prescripcion = $request->input('prescripcion');
+            $data['prescripcion'] = is_array($prescripcion) ? $prescripcion : null;
+        } elseif (array_key_exists('notas', $data)) {
+            // Si cambian las notas y NO viene una prescripción explícita, la
+            // regeneramos para que no queden desfasadas (el front prioriza
+            // `prescripcion` sobre `notas`).
+            $data['prescripcion'] = RutinaPrescripcionService::fromNotas($data['notas']);
+        }
+
+        $rutina->fill($data);
+        $rutina->save();
+
+        return response()->json($rutina);
     }
 
     public function compartir(Request $request)
@@ -194,6 +288,7 @@ class RutinaController extends Controller
                     'reps_max' => $r->reps_max,
                     'descanso_min' => $r->descanso_min,
                     'superserie_grupo' => $r->superserie_grupo,
+                    'prescripcion' => $r->prescripcion,
                 ];
             })->values();
         });
@@ -274,6 +369,10 @@ class RutinaController extends Controller
                 'ejercicio_nombre' => $rutina->ejercicio_nombre,
                 'orden' => $rutina->orden,
                 'superserie_grupo' => $rutina->superserie_grupo,
+                'notas' => $rutina->notas,
+                // Si el origen no tiene prescripción estructurada, la derivamos
+                // de sus notas para que la copia muestre el mismo plan.
+                'prescripcion' => $rutina->prescripcion ?: RutinaPrescripcionService::fromNotas($rutina->notas),
                 'publica' => false, // imported copy is private
             ]);
         }
@@ -475,6 +574,8 @@ class RutinaController extends Controller
                 'descanso_min' => $ej->descanso_min,
                 'orden' => $ej->orden,
                 'superserie_grupo' => $ej->superserie_grupo,
+                'notas' => $ej->notas,
+                'prescripcion' => $ej->prescripcion ?: RutinaPrescripcionService::fromNotas($ej->notas),
                 'created_by' => $user->id,
             ]);
             $nuevos[] = $nuevo;

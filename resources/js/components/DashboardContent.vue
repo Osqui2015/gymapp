@@ -9,6 +9,8 @@ import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useTrainingSessionStore } from '@/stores/trainingSession';
 import SyncBadge from './training/SyncBadge.vue';
+import PlanSeriesChips from './training/PlanSeriesChips.vue';
+import { tienePlan } from '@/utils/rutinaPrescripcion';
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
@@ -368,6 +370,9 @@ const ejerciciosDelDia = computed(() => {
             repsLabel,
             ultimoPesoLabel,
             musculoLabel: idx === 0 ? inferirMusculo(nombre) : '',
+            // Plan de series estructurado (bloques / rest-pause / progresión).
+            notas: first?.notas || null,
+            prescripcion: first?.prescripcion || null,
         };
     });
 });
@@ -673,6 +678,7 @@ const abrirModoEntrenamiento = async () => {
                     descanso_min: f.descanso_min,
                     superserie_grupo: f.superserie_grupo,
                     notas: f.notas || null,
+                    prescripcion: f.prescripcion || null,
                 });
             }
             exercisesMap.get(f.ejercicio_nombre).series_objetivo += 1;
@@ -867,6 +873,7 @@ const construirFilasSerie = (rutinasDelDia) => {
                     esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                     esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                     notas: rutina.notas || null,
+                    prescripcion: rutina.prescripcion || null,
                     previous_record: anterior
                         ? {
                               peso: anterior.peso ?? null,
@@ -907,6 +914,7 @@ const construirFilasSerie = (rutinasDelDia) => {
                             esfuerzo_tipo: registro?.esfuerzo_tipo ?? null,
                             esfuerzo_valor: registro?.esfuerzo_valor ?? null,
                             notas: rutina.notas || null,
+                            prescripcion: rutina.prescripcion || null,
                             previous_record: anterior
                                 ? {
                                       peso: anterior.peso ?? null,
@@ -1858,6 +1866,23 @@ const iniciarTemporizador = (fila) => {
                                                         }}</span>
                                                     </template>
                                                 </div>
+
+                                                <!-- Plan de series: bloques, rest-pause y progresión -->
+                                                <PlanSeriesChips
+                                                    :ejercicio="ej"
+                                                    tema="auto"
+                                                    mostrar-consejo
+                                                />
+
+                                                <!-- Notas crudas cuando el ejercicio no tiene plan
+                                                     (ej. "3x8 (estocadas, sin RIR objetivo)") -->
+                                                <p
+                                                    v-if="!tienePlan(ej) && ej.notas"
+                                                    class="text-[10px] text-gray-500 dark:text-gray-400 italic truncate"
+                                                    :title="ej.notas"
+                                                >
+                                                    💡 {{ ej.notas }}
+                                                </p>
                                             </div>
                                         </div>
                                         <div

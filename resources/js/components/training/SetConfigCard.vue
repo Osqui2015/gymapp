@@ -129,37 +129,46 @@
 
         <!-- Prescripción o plan del ejercicio (solo si hay notas personalizadas o target de esfuerzo) -->
         <div
-            v-if="ejercicio.notas || targetEsfuerzo"
-            class="flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left"
+            v-if="ejercicio.notas || ejercicio.prescripcion || targetEsfuerzo"
+            class="px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left space-y-2"
             data-testid="set-plan-banner"
         >
-            <div class="flex items-center gap-2 min-w-0">
-                <div class="w-6 h-6 rounded-lg bg-violet-600/40 text-violet-200 flex items-center justify-center shrink-0">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <div class="flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-6 h-6 rounded-lg bg-violet-600/40 text-violet-200 flex items-center justify-center shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div class="flex flex-col min-w-0 leading-tight">
+                        <span class="text-[9px] font-black uppercase tracking-wider text-violet-300">
+                            {{ tienePlanEstructurado ? 'PLAN DE SERIES' : 'OBJETIVO PROGRAMADO' }}
+                        </span>
+                        <span class="text-xs sm:text-sm font-bold text-white truncate" :title="tituloPlan">
+                            {{ tituloPlan }}
+                        </span>
+                    </div>
                 </div>
-                <div class="flex flex-col min-w-0 leading-tight">
-                    <span class="text-[9px] font-black uppercase tracking-wider text-violet-300">
-                        {{ ejercicio.notas ? 'PLAN Y NOTAS' : 'OBJETIVO PROGRAMADO' }}
-                    </span>
-                    <span class="text-xs sm:text-sm font-bold text-white truncate" :title="ejercicio.notas || `${ejercicio.series_objetivo} series de ${repsObjetivoTexto}`">
-                        {{ ejercicio.notas || `${ejercicio.series_objetivo} series programadas de ${repsObjetivoTexto}` }}
-                    </span>
-                </div>
+                <span
+                    v-if="targetEsfuerzo"
+                    class="px-2 py-0.5 rounded-full border border-teal-500/50 bg-teal-500/15 text-teal-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
+                >
+                    Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque?.reps }} reps · {{ targetLabel }}
+                </span>
+                <span
+                    v-else
+                    class="px-2 py-0.5 rounded-full border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
+                >
+                    {{ ejercicio.series_objetivo }} series × {{ repsObjetivoTexto }}
+                </span>
             </div>
-            <span
-                v-if="targetEsfuerzo"
-                class="px-2 py-0.5 rounded-full border border-teal-500/50 bg-teal-500/15 text-teal-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
-            >
-                Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque?.reps }} reps · {{ targetLabel }}
-            </span>
-            <span
-                v-else
-                class="px-2 py-0.5 rounded-full border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
-            >
-                {{ ejercicio.series_objetivo }} series × {{ repsObjetivoTexto }}
-            </span>
+
+            <!-- Prescripción estructurada: bloques, rest-pause, progresión y consejo -->
+            <PrescripcionCard
+                :ejercicio="ejercicio"
+                :prescripcion="prescripcionEjercicio"
+                :serie-actual="serieNumero"
+            />
         </div>
 
         <!-- Historial última vez (Mínimo / Máximo) del ejercicio: solo se muestra en superseries para no duplicar el hero card -->
@@ -528,6 +537,8 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import PrescripcionCard from './PrescripcionCard.vue';
+import { prescripcionDe, targetParaSerie, resumenPlan } from '../../utils/rutinaPrescripcion';
 
 const props = defineProps({
     ejercicio: {
@@ -639,41 +650,34 @@ const selectEsfuerzoTipo = (tipo) => {
     // un nuevo número (no auto-seleccionamos para no pisar la decisión manual).
 };
 
-// Parsea bloques de esfuerzo desde las notas del ejercicio. Soporta:
-//   "2x6 RIR 1"     → { series:2, reps:6, tipo:'rir',   valor:1 }
-//   "2*6 RIP 1"     → { series:2, reps:6, tipo:'rir',   valor:1 }
-//   "2x6 RPE 8"     → { series:2, reps:6, tipo:'rpe',   valor:8 }
-//   "2x8 FALLO"     → { series:2, reps:8, tipo:'fallo', valor:null }
-//   "2x8 AL FALLO"  → idem
-//   "1x20 AL FALLO TÉCNICO" → idem
-const rirBlocks = computed(() => {
-    const notas = props.ejercicio?.notas;
-    if (!notas) return [];
-    const blocks = [];
-    const re = /(\d+)\s*[xX\*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
-    for (const m of String(notas).matchAll(re)) {
-        if (m[3] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
-        } else if (m[4] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rpe', valor: Number(m[4]) });
-        } else {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'fallo', valor: null });
-        }
+// Prescripción del ejercicio: prefiere el JSON estructurado (`prescripcion`
+// que devuelve la API) y cae al parseo de `notas` para las rutinas viejas.
+// Ver utils/rutinaPrescripcion.js.
+const prescripcionEjercicio = computed(() => prescripcionDe(props.ejercicio));
+
+// Bloques de esfuerzo: { series, reps, tipo:'rir'|'rpe'|'fallo', valor }
+const rirBlocks = computed(() => prescripcionEjercicio.value.bloques);
+
+// ¿El ejercicio tiene un plan estructurado (bloques / rest-pause) o sólo
+// series planas con un target de esfuerzo?
+const tienePlanEstructurado = computed(
+    () =>
+        prescripcionEjercicio.value.bloques.length > 0 ||
+        !!prescripcionEjercicio.value.restPause
+);
+
+// Título del banner: el resumen del plan ("2×6 RIR 1 → 2×4 RIR 0") o, si no
+// hay plan, el objetivo plano de series × reps.
+const tituloPlan = computed(() => {
+    if (prescripcionEjercicio.value.bloques.length) {
+        return resumenPlan(prescripcionEjercicio.value.bloques);
     }
-    return blocks;
+    return `${props.ejercicio.series_objetivo} series programadas de ${repsObjetivoTexto.value}`;
 });
 
 // Devuelve el target de esfuerzo y repeticiones para cualquier número de serie dado (1-indexed)
 const getTargetForSetIndex = (idx) => {
-    if (rirBlocks.value.length === 0) return null;
-    let acumulado = 0;
-    for (const b of rirBlocks.value) {
-        acumulado += b.series;
-        if (idx <= acumulado) {
-            return { tipo: b.tipo, valor: b.valor, reps: b.reps, bloque: b };
-        }
-    }
-    return null;
+    return targetParaSerie(rirBlocks.value, idx);
 };
 
 // Devuelve el target de esfuerzo (RIR/RPE/FALLO) para la serie actual según los bloques.

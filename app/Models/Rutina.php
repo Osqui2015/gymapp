@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\RutinaPrescripcionService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Rutina extends Model
 {
     use HasFactory;
+
+    /**
+     * Invariante: si un ejercicio tiene `notas` con bloques de esfuerzo y no
+     * viene una `prescripcion` explícita, se deriva de las notas.
+     *
+     * Así la columna `prescripcion` nunca queda desfasada respecto de `notas`,
+     * sin importar si la fila se creó desde un seeder, un import, la API o
+     * un `Rutina::create()` suelto.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $rutina) {
+            if (empty($rutina->prescripcion) && ! empty($rutina->notas)) {
+                $rutina->prescripcion = RutinaPrescripcionService::fromNotas($rutina->notas);
+            }
+        });
+    }
 
     protected $fillable = [
         'nivel',
@@ -25,6 +43,7 @@ class Rutina extends Model
         'orden',
         'superserie_grupo',
         'notas',             // Notas libres: RIR target, tecnicas (rest-pause, drop-set, etc.)
+        'prescripcion',      // Prescripcion estructurada (bloques, rest-pause, progresion)
         'publica',           // true = visible en el catalogo comunitario
     ];
 
@@ -34,6 +53,7 @@ class Rutina extends Model
         'series' => 'integer',
         'descanso_min' => 'decimal:2',
         'superserie_grupo' => 'integer',
+        'prescripcion' => 'array',
     ];
 
     /**

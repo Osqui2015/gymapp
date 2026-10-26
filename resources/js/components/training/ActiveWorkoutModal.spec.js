@@ -536,7 +536,9 @@ describe('ActiveWorkoutModal', () => {
             // 2. En SetConfigCard debe mostrar el banner de plan
             const planBanner = wrapper.find('[data-testid="set-plan-banner"]');
             expect(planBanner.exists()).toBe(true);
-            expect(planBanner.text()).toContain('2x6 RIR 1 + 2x4 RIR 0');
+            // El banner usa el resumen ESTRUCTURADO del plan (no el texto crudo
+            // de `notas`): "2×6 RIR 1 → 2×4 RIR 0".
+            expect(planBanner.text()).toContain('2×6 RIR 1 → 2×4 RIR 0');
             expect(planBanner.text()).toContain('Serie #1: 6 reps');
 
             // 3. El banner de esfuerzo target debe indicar el objetivo para la Serie #1

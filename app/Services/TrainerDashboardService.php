@@ -292,6 +292,10 @@ class TrainerDashboardService
                 'descanso_min' => $ejercicio->descanso_min,
                 'ejercicio_nombre' => $ejercicio->ejercicio_nombre,
                 'orden' => $ejercicio->orden,
+                'notas' => $ejercicio->notas,
+                // Si el original no tiene prescripción estructurada, la
+                // derivamos de sus notas para no perder el plan.
+                'prescripcion' => $ejercicio->prescripcion ?: RutinaPrescripcionService::fromNotas($ejercicio->notas),
             ]);
         });
 

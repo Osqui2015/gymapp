@@ -101,9 +101,16 @@
                                 </button>
                             </div>
 
-                            <!-- Nota técnica si existe (RIR, Rest-pause, etc.) -->
+                            <!-- Plan de series estructurado (RIR / RPE / FALLO + rest-pause) -->
+                            <PlanSeriesChips
+                                :ejercicio="ejercicio"
+                                tema="auto"
+                                mostrar-consejo
+                            />
+
+                            <!-- Notas crudas cuando el ejercicio no tiene plan de series -->
                             <div
-                                v-if="ejercicio.notas"
+                                v-if="!tienePlan(ejercicio) && ejercicio.notas"
                                 class="flex items-center gap-1.5 mt-1 text-xs text-indigo-700 dark:text-indigo-300"
                             >
                                 <span>💡</span>
@@ -597,6 +604,8 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import PlanSeriesChips from '@/components/training/PlanSeriesChips.vue';
+import { tienePlan } from '@/utils/rutinaPrescripcion';
 
 const props = defineProps({
     filasSerie: { type: Array, required: true },
@@ -622,6 +631,7 @@ const ejerciciosAgrupados = computed(() => {
                 reps_min: fila.reps_min,
                 reps_max: fila.reps_max,
                 notas: fila.notas || '',
+                prescripcion: fila.prescripcion || null,
                 series: [],
             };
             map.set(key, grupo);
@@ -629,6 +639,7 @@ const ejerciciosAgrupados = computed(() => {
         }
         const grupo = map.get(key);
         if (!grupo.notas && fila.notas) grupo.notas = fila.notas;
+        if (!grupo.prescripcion && fila.prescripcion) grupo.prescripcion = fila.prescripcion;
         if (!grupo.superserie_grupo && fila.superserie_grupo)
             grupo.superserie_grupo = fila.superserie_grupo;
         grupo.series.push(fila);

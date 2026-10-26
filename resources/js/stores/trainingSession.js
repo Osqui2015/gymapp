@@ -18,6 +18,8 @@
  *         reps_max: '10',
  *         descanso_min: 2,
  *         superserie_grupo: null,
+ *         notas: 'Bloque progresivo: 2x6 RIR 1 + 2x4 RIR 0',
+ *         prescripcion: { bloques: [...], rest_pause: null },
  *         series_completadas: 0,
  *         completed: false,
  *         sets: [ { peso: 80, reps: 10, tipo_serie: 'efectiva', esfuerzo_tipo: 'rir', esfuerzo_valor: 2, nota: '' } ]
@@ -68,10 +70,12 @@ const migrateSessionShape = (parsed) => {
     if (!Array.isArray(parsed.ejercicios)) parsed.ejercicios = [];
     if (!Array.isArray(parsed.completedSets)) parsed.completedSets = [];
     // Migración: asegurar que cada ejercicio tenga `notas` (puede ser null
-    // para sesiones iniciadas antes de que este campo se copiara al store).
+    // para sesiones iniciadas antes de que este campo se copiara al store)
+    // y `prescripcion` (JSON estructurado de la rutina).
     parsed.ejercicios = parsed.ejercicios.map((e) => ({
         ...e,
         notas: e.notas ?? null,
+        prescripcion: e.prescripcion ?? null,
     }));
     return parsed;
 };
@@ -247,6 +251,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             descanso_min: Number(e.descanso_min ?? 1.5),
             superserie_grupo: e.superserie_grupo || null,
             notas: e.notas || null,
+            prescripcion: e.prescripcion || null,
             series_completadas: 0,
             completed: false,
             sets: [],
@@ -628,11 +633,11 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
     };
 
     /**
-     * Refresca las `notas` (y metadata liviana como series/reps) de los
-     * ejercicios de la sesión activa desde el backend. Pensado para cuando
-     * el trainer edita una rutina mientras el alumno está entrenando:
-     * el snapshot stale del localStorage se actualiza sin perder los sets
-     * ya registrados en esta sesión.
+     * Refresca las `notas` y la `prescripcion` estructurada (y metadata
+     * liviana como series/reps) de los ejercicios de la sesión activa desde
+     * el backend. Pensado para cuando el trainer edita una rutina mientras el
+     * alumno está entrenando: el snapshot stale del localStorage se actualiza
+     * sin perder los sets ya registrados en esta sesión.
      *
      * No-op si no hay sesión activa o si el backend no responde. Nunca
      * pisa los `sets` ya cargados ni los cursores (currentEjercicioIndex,
@@ -664,6 +669,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                     descanso_min: Number(e.descanso_min ?? 1.5),
                     superserie_grupo: e.superserie_grupo || null,
                     notas: e.notas || null,
+                    prescripcion: e.prescripcion || null,
                     series_completadas: 0,
                     completed: false,
                     sets: [],
@@ -681,12 +687,18 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                 const matchIdx = pool.findIndex((r) => r.nombre === ej.nombre);
                 if (matchIdx >= 0) {
                     const fresh = pool[matchIdx];
-                    if ((fresh.notas ?? null) !== (ej.notas ?? null) || !ej.notas) {
+                    if (
+                        (fresh.notas ?? null) !== (ej.notas ?? null) ||
+                        JSON.stringify(fresh.prescripcion ?? null) !==
+                            JSON.stringify(ej.prescripcion ?? null) ||
+                        !ej.notas
+                    ) {
                         refreshed++;
                     }
                     session.value.ejercicios[idx] = {
                         ...ej,
                         notas: fresh.notas ?? ej.notas ?? null,
+                        prescripcion: fresh.prescripcion ?? ej.prescripcion ?? null,
                         // refrescamos también la metadata liviana por si el trainer la cambió
                         series_objetivo: fresh.series || ej.series_objetivo,
                         reps_min: fresh.reps_min || ej.reps_min,

@@ -67,9 +67,17 @@ describe('DashboardSeriesList.vue (Acordeón por ejercicio)', () => {
         expect(wrapper.text()).toContain('2 ejercicios');
     });
 
-    it('muestra las notas técnicas en la cabecera del ejercicio si existen', () => {
+    it('muestra el plan de series estructurado en la cabecera del ejercicio', () => {
         const wrapper = mount(DashboardSeriesList, { props: defaultProps });
-        expect(wrapper.text()).toContain('Bloque progresivo 2x6 RIR 1 + 2x4 RIR 0');
+
+        // "Bloque progresivo 2x6 RIR 1 + 2x4 RIR 0" se renderiza como chips
+        // estructurados (no como texto crudo).
+        expect(wrapper.text()).toContain('2×6');
+        expect(wrapper.text()).toContain('RIR 1');
+        expect(wrapper.text()).toContain('2×4');
+        expect(wrapper.text()).toContain('RIR 0');
+
+        // Las notas sin bloques (prosa) se siguen mostrando.
         expect(wrapper.text()).toContain('Rest-pause al fallo');
     });
 

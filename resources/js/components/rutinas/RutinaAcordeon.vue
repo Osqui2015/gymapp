@@ -215,18 +215,18 @@
                                 >
                                     Superserie {{ ejercicio.superserie_grupo }}
                                 </span>
-                                <!-- Bloques de esfuerzo parseados desde notas (RIR / RPE / FALLO) -->
-                                <div v-if="parseEsfuerzoBlocks(ejercicio.notas).length" class="mt-1 flex flex-wrap gap-1">
-                                    <span
-                                        v-for="(block, i) in parseEsfuerzoBlocks(ejercicio.notas)"
-                                        :key="i"
-                                        class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black"
-                                        :class="blockClass(block)"
-                                    >
-                                        {{ block.series }}×{{ block.reps }}
-                                        <span class="opacity-75">{{ blockLabel(block) }}</span>
-                                    </span>
-                                </div>
+                                <!-- Plan de series estructurado (RIR / RPE / FALLO + rest-pause) -->
+                                <PlanSeriesChips :ejercicio="ejercicio" tema="dark" />
+
+                                <!-- Notas crudas cuando el ejercicio no tiene plan
+                                     (ej. "1x40 (Pull-up australiana, completar todas las reps)") -->
+                                <p
+                                    v-if="!tienePlan(ejercicio) && ejercicio.notas"
+                                    class="mt-1 text-[9px] text-gray-400 italic truncate"
+                                    :title="ejercicio.notas"
+                                >
+                                    💡 {{ ejercicio.notas }}
+                                </p>
                             </div>
                             <div class="col-span-2 flex justify-center">
                                 <span
@@ -327,6 +327,8 @@
 
 <script setup>
 import { computed } from 'vue';
+import PlanSeriesChips from '@/components/training/PlanSeriesChips.vue';
+import { prescripcionDe, tienePlan } from '@/utils/rutinaPrescripcion';
 
 const props = defineProps({
     modalidad: { type: Object, required: true },
@@ -435,42 +437,21 @@ const formatDescanso = (descanso) => {
     return `${num.toFixed(2)} min`;
 };
 
-// Parsea bloques de esfuerzo desde notas. Soporta:
-//   "2x6 RIR 1"      → { series:2, reps:6, tipo:'rir',   valor:1 }
-//   "2x6 RPE 8"      → { series:2, reps:6, tipo:'rpe',   valor:8 }
-//   "2x8 FALLO"      → { series:2, reps:8, tipo:'fallo', valor:null }
-//   "2x8 AL FALLO TÉCNICO" → idem
-// Mantiene retrocompat con el viejo parseRirBlocks (que sólo entendía RIR).
-const parseEsfuerzoBlocks = (notas) => {
-    if (!notas) return [];
-    const blocks = [];
-    const re = /(\d+)x(\d+)\s+(?:RIR\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
-    for (const m of String(notas).matchAll(re)) {
-        if (m[3] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rir', valor: Number(m[3]) });
-        } else if (m[4] !== undefined) {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'rpe', valor: Number(m[4]) });
-        } else {
-            blocks.push({ series: Number(m[1]), reps: Number(m[2]), tipo: 'fallo', valor: null });
-        }
-    }
-    return blocks;
-};
+// Prescripción estructurada de cada ejercicio (JSON `prescripcion` si existe,
+// si no el parseo de `notas`). Se calcula una sola vez por render para no
+// reparsear en cada binding del template.
+const prescripciones = computed(() => {
+    const map = new Map();
+    (props.modalidad?.dias || []).forEach((dia) => {
+        (dia.ejercicios || []).forEach((ej) => {
+            map.set(ej.id, prescripcionDe(ej));
+        });
+    });
+    return map;
+});
 
-// Mantener compatibilidad con callers viejos que preguntaban por RIR.
-const parseRirBlocks = (notas) => parseEsfuerzoBlocks(notas);
-
-const blockLabel = (b) => {
-    if (b.tipo === 'fallo') return 'FALLO';
-    return `${b.tipo.toUpperCase()} ${b.valor}`;
-};
-
-const blockClass = (b) => {
-    if (b.tipo === 'fallo') return 'bg-rose-500/25 text-rose-200 border border-rose-500/40';
-    if (b.tipo === 'rir' && b.valor === 0) return 'bg-rose-500/25 text-rose-300 border border-rose-500/40';
-    if (b.tipo === 'rir') return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
-    return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
-};
+const prescripcionDeEjercicio = (ejercicio) =>
+    prescripciones.value.get(ejercicio?.id) || prescripcionDe(ejercicio);
 
 const getSuperserieClass = (ejercicio) => {
     const grupo = ejercicio.superserie_grupo;
