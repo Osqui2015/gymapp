@@ -42,6 +42,23 @@ npm run build
 - MySQL database: `gym_app` on Laragon
 - Session/queue/cache use database driver
 
+## Deploy a producción (NO romper datos)
+Producción: `gym.tecnorexs.com` → `domains/gym.tecnorexs.com/public_html/`.
+
+- `public/build/` está versionado en git: los assets compilados se commitean.
+  En producción NO hay que correr `npm ci` ni `npm run build` (genera hashes
+  distintos y deja el repo sucio).
+- NUNCA `migrate:fresh`, `migrate:refresh` ni `db:seed` sin `--class`.
+  `DatabaseSeeder` crea usuarios, historiales y ejercicios clave: correrlo
+  duplica filas. Para seeders puntuales usar siempre `--class=X --force`
+  (en producción `db:seed` pide confirmación "APPLICATION IN PRODUCTION").
+- Los seeders de rutinas deben ser idempotentes y BORRAR sólo sus propias
+  filas (por `created_by` + `nivel` + `modalidad`), nunca las de otros.
+- Invariante de `rutinas`: la suma de `series` de `prescripcion.bloques`
+  tiene que coincidir EXACTAMENTE con la columna `series`, y `notas` tiene
+  que derivar lo mismo que `prescripcion`
+  (`App\Services\RutinaPrescripcionService` ↔ `resources/js/utils/rutinaPrescripcion.js`).
+
 ## Routes
 - `/login`, `/register` - guest routes
 - `/dashboard` - auth + verified middleware
