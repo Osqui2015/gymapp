@@ -49,6 +49,33 @@ class RutinaPrescripcionServiceTest extends TestCase
         $this->assertNull($fallo['bloques'][0]['valor']);
     }
 
+    /**
+     * Hay notas que escriben el bloque al fallo SIN repeticiones:
+     * "2x8 RIR 1 + 2X al fallo técnico (RIR 0)". Las reps del bloque se
+     * heredan del bloque anterior (8), y así la suma de series coincide con
+     * la columna `series` (4).
+     */
+    public function test_parsea_el_bloque_al_fallo_sin_reps(): void
+    {
+        $p = RutinaPrescripcionService::fromNotas('Bloque: 2x8 RIR 1 + 2X al fallo tecnico (RIR 0).');
+
+        $this->assertCount(2, $p['bloques']);
+        $this->assertSame(['series' => 2, 'reps' => 8, 'tipo' => 'rir', 'valor' => 1], $p['bloques'][0]);
+        $this->assertSame(['series' => 2, 'reps' => 8, 'tipo' => 'fallo', 'valor' => null], $p['bloques'][1]);
+        $this->assertTrue(RutinaPrescripcionService::esConsistente($p, 4));
+
+        // El "RIR 0" que quedó del paréntesis no es un consejo.
+        $this->assertNull($p['consejo']);
+    }
+
+    public function test_el_bloque_al_fallo_sin_reps_usa_8_reps_por_defecto(): void
+    {
+        $p = RutinaPrescripcionService::fromNotas('3X AL FALLO');
+
+        $this->assertCount(1, $p['bloques']);
+        $this->assertSame(['series' => 3, 'reps' => 8, 'tipo' => 'fallo', 'valor' => null], $p['bloques'][0]);
+    }
+
     public function test_devuelve_null_si_no_hay_bloques(): void
     {
         $this->assertNull(RutinaPrescripcionService::fromNotas(null));
@@ -170,6 +197,7 @@ class RutinaPrescripcionServiceTest extends TestCase
             'descanso + reps' => ['3x10 RIR 0 + rest-pause intra-set (10" descanso + 5 reps por serie)', 3, 1],
             'talones sin rir' => ['4x15 (gemelos parado, sin RIR objetivo prescrito)', 4, null],
             'superserie' => ['2x12 RIR 2 + 2x10 RIR 1 (Superserie con aperturas en polea alta)', 4, 2],
+            'fallo sin reps' => ['2x8 RIR 1 + 2X al fallo tecnico (RIR 0)', 4, 2],
         ];
     }
 

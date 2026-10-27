@@ -36,9 +36,15 @@ namespace App\Services;
  */
 class RutinaPrescripcionService
 {
-    /** Bloques de esfuerzo: "2x6 RIR 1", "2*6 RIP 1", "2x6 RPE 8", "2x8 FALLO". */
+    /**
+     * Bloques de esfuerzo: "2x6 RIR 1", "2*6 RIP 1", "2x6 RPE 8", "2x8 FALLO".
+     *
+     * Las REPS son opcionales: hay notas que dicen "2X al fallo técnico" sin
+     * repeticiones ("Bloque: 2x8 RIR 1 + 2X al fallo técnico (RIR 0)."). En ese
+     * caso las reps del bloque son las del bloque anterior (o 8 por defecto).
+     */
     protected const RE_BLOQUE =
-        '/(\d+)\s*[xX*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/i';
+        '/(\d+)\s*[xX*]\s*(?:(\d+)\s*)?(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/i';
 
     /** Minutos de descanso intra-set: 'descanso 5" y fallo', '5" fallo'. */
     protected const RE_SEGUNDOS_FALLO = '/(\d+)\s*(?:"|″|\'\')?\s*(?:y\s*)?fallo/i';
@@ -92,25 +98,33 @@ class RutinaPrescripcionService
 
         $bloques = [];
         if (preg_match_all(self::RE_BLOQUE, $notas, $m, PREG_SET_ORDER)) {
+            // Reps del bloque anterior: se reutilizan cuando la nota escribe
+            // el bloque sin repeticiones ("2X al fallo técnico").
+            $repsPrevias = null;
             foreach ($m as $match) {
+                $reps = ($match[2] ?? '') !== ''
+                    ? (int) $match[2]
+                    : ($repsPrevias ?? 8);
+                $repsPrevias = $reps;
+
                 if (($match[3] ?? '') !== '') {
                     $bloques[] = [
                         'series' => (int) $match[1],
-                        'reps' => (int) $match[2],
+                        'reps' => $reps,
                         'tipo' => 'rir',
                         'valor' => (int) $match[3],
                     ];
                 } elseif (($match[4] ?? '') !== '') {
                     $bloques[] = [
                         'series' => (int) $match[1],
-                        'reps' => (int) $match[2],
+                        'reps' => $reps,
                         'tipo' => 'rpe',
                         'valor' => (int) $match[4],
                     ];
                 } else {
                     $bloques[] = [
                         'series' => (int) $match[1],
-                        'reps' => (int) $match[2],
+                        'reps' => $reps,
                         'tipo' => 'fallo',
                         'valor' => null,
                     ];
@@ -233,7 +247,7 @@ class RutinaPrescripcionService
         if ($limpio === '' || mb_strlen($limpio) < 4) {
             return null;
         }
-        if (preg_match('/^(rir\s*fijo|n\/?a|sin\s+rir|final)$/iu', $limpio)) {
+        if (preg_match('/^(rir\s*fijo|n\/?a|sin\s+rir|final|rir\s*\d*|rpe\s*\d*)\.?$/iu', $limpio)) {
             return null;
         }
 

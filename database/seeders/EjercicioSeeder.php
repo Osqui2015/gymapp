@@ -7,6 +7,18 @@ use Illuminate\Database\Seeder;
 
 class EjercicioSeeder extends Seeder
 {
+    /**
+     * Seed idempotente del catálogo base.
+     *
+     * `ejercicios` NO tiene unique sobre `nombre` (el catálogo VisualGym ya
+     * trae nombres repetidos: "Press de banca", "Sentadilla Goblet", etc.), así
+     * que un `create()` a secas duplicaba ~200 filas en cada corrida. Con
+     * `firstOrCreate` por nombre + equipamiento el seeder se puede correr las
+     * veces que haga falta sin duplicar nada.
+     *
+     * OJO: el catálogo VisualGym (1616 filas) lo carga otro seeder; este
+     * sólo agrega los ejercicios base que faltan.
+     */
     public function run(): void
     {
         $ejercicios = [
@@ -313,7 +325,10 @@ class EjercicioSeeder extends Seeder
         ];
 
         foreach ($ejercicios as $ejercicio) {
-            Ejercicio::create($ejercicio);
+            Ejercicio::firstOrCreate(
+                ['nombre' => $ejercicio['nombre'], 'equipamiento' => $ejercicio['equipamiento']],
+                ['grupo_muscular' => $ejercicio['grupo_muscular']],
+            );
         }
     }
 }

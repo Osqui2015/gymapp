@@ -33,7 +33,14 @@
  * `tipo` es siempre 'rir' | 'rpe' | 'fallo'. Para 'fallo', `valor` es null.
  */
 
-const RE_BLOQUE = /(\d+)\s*[xX*]\s*(\d+)\s*(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
+/**
+ * Bloques de esfuerzo.
+ *
+ * Las REPS son opcionales: hay notas que dicen "2X al fallo técnico" sin
+ * repeticiones ("Bloque: 2x8 RIR 1 + 2X al fallo técnico (RIR 0)."). En ese
+ * caso las reps del bloque son las del bloque anterior (o 8 por defecto).
+ */
+const RE_BLOQUE = /(\d+)\s*[xX*]\s*(?:(\d+)\s*)?(?:R[I1][RP]\s*(\d+)|RPE\s*(\d+)|(?:AL\s+)?FALLO(?:\s+T[ÉE]CNICO)?)/gi;
 
 /** Minutos de descanso intra-set ("descanso 5\" y fallo", "5\" fallo"). */
 const RE_SEGUNDOS_FALLO = /(\d+)\s*(?:"|″|'')?\s*(?:y\s*)?fallo/gi;
@@ -71,18 +78,25 @@ const normalizarBloque = (b) => {
  *   "2x6 RPE 8"     → { series: 2, reps: 6, tipo: 'rpe',   valor: 8 }
  *   "2x8 FALLO"     → { series: 2, reps: 8, tipo: 'fallo', valor: null }
  *   "1x20 AL FALLO TÉCNICO" → { series: 1, reps: 20, tipo: 'fallo', valor: null }
+ *   "2X AL FALLO TÉCNICO"   → { series: 2, reps: <del bloque anterior>, tipo: 'fallo', valor: null }
  */
 export const parseBloques = (notas) => {
     if (!notas) return [];
 
     const bloques = [];
+    // Reps del bloque anterior: se reutilizan cuando la nota escribe el
+    // bloque sin repeticiones ("2X al fallo técnico").
+    let repsPrevias = null;
     for (const m of String(notas).matchAll(RE_BLOQUE)) {
+        const reps = m[2] !== undefined ? Number(m[2]) : repsPrevias !== null ? repsPrevias : 8;
+        repsPrevias = reps;
+
         if (m[3] !== undefined) {
-            bloques.push(normalizarBloque({ series: m[1], reps: m[2], tipo: 'rir', valor: m[3] }));
+            bloques.push(normalizarBloque({ series: m[1], reps, tipo: 'rir', valor: m[3] }));
         } else if (m[4] !== undefined) {
-            bloques.push(normalizarBloque({ series: m[1], reps: m[2], tipo: 'rpe', valor: m[4] }));
+            bloques.push(normalizarBloque({ series: m[1], reps, tipo: 'rpe', valor: m[4] }));
         } else {
-            bloques.push(normalizarBloque({ series: m[1], reps: m[2], tipo: 'fallo', valor: null }));
+            bloques.push(normalizarBloque({ series: m[1], reps, tipo: 'fallo', valor: null }));
         }
     }
 
@@ -191,7 +205,7 @@ export const parseConsejo = (notas) => {
 
     // Si sólo queda ruido de formato ("RIR fijo", "+", etc.), no hay consejo.
     if (!limpio || limpio.length < 4) return null;
-    if (/^(rir\s*fijo|n\/?a|sin\s+rir|final)$/i.test(limpio)) return null;
+    if (/^(rir\s*fijo|n\/?a|sin\s+rir|final|rir\s*\d*|rpe\s*\d*)\.?$/i.test(limpio)) return null;
 
     return limpio;
 };

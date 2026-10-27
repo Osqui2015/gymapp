@@ -51,6 +51,19 @@ describe('parseBloques', () => {
         ]);
     });
 
+    it('parsea el bloque al fallo SIN reps ("2X al fallo técnico") heredando las reps', () => {
+        expect(parseBloques('Bloque: 2x8 RIR 1 + 2X al fallo tecnico (RIR 0).')).toEqual([
+            { series: 2, reps: 8, tipo: 'rir', valor: 1 },
+            { series: 2, reps: 8, tipo: 'fallo', valor: null },
+        ]);
+    });
+
+    it('usa 8 reps por defecto si el bloque al fallo no tiene bloque previo', () => {
+        expect(parseBloques('3X AL FALLO')).toEqual([
+            { series: 3, reps: 8, tipo: 'fallo', valor: null },
+        ]);
+    });
+
     it('devuelve vacío si no hay bloques', () => {
         expect(parseBloques(null)).toEqual([]);
         expect(parseBloques('1x40 (Pull-up australiana, completar todas las reps)')).toEqual([]);
@@ -129,6 +142,10 @@ describe('parseConsejo', () => {
     it('devuelve null cuando sólo hay plan (sin consejo)', () => {
         expect(parseConsejo('Bloque progresivo: 2x6 RIR 1 + 2x4 RIR 0.')).toBeNull();
         expect(parseConsejo('3x10 RIR 1.')).toBeNull();
+    });
+
+    it('descarta el "RIR 0" que sobra de un bloque al fallo', () => {
+        expect(parseConsejo('Bloque: 2x8 RIR 1 + 2X al fallo tecnico (RIR 0).')).toBeNull();
     });
 });
 
