@@ -235,8 +235,16 @@ class RutinaController extends Controller
             'modalidad' => 'required|string',
         ]);
 
-        // Generar token público único para esta rutina (si no existe)
-        $shareToken = bin2hex(random_bytes(8)); // 16 caracteres hex
+        // Token público del PLAN: todas las filas del plan (una por ejercicio)
+        // comparten el MISMO token, porque la vista pública reagrupa por token
+        // para reconstruir los días. Por eso `share_token` no tiene índice
+        // unique (ver migración 2026_10_27_000000).
+        //
+        // El token sí tiene que ser único entre PLANES: si ya está en uso por
+        // otra rutina se genera otro.
+        do {
+            $shareToken = bin2hex(random_bytes(8)); // 16 caracteres hex
+        } while (Rutina::where('share_token', $shareToken)->exists());
 
         $affected = Rutina::where('created_by', $user->id)
             ->where('nivel', $data['nivel'])
