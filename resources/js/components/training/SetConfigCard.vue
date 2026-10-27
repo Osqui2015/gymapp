@@ -123,7 +123,8 @@
                 </span>
             </div>
             <span class="text-[10px] sm:text-xs font-bold text-emerald-300 shrink-0">
-                {{ ejercicio.series_objetivo }}s × {{ repsObjetivoTexto }}
+                <template v-if="esBloque">Bloque sin series</template>
+                <template v-else>{{ ejercicio.series_objetivo }}s × {{ repsObjetivoTexto }}</template>
             </span>
         </div>
 
@@ -159,7 +160,8 @@
                     v-else
                     class="px-2 py-0.5 rounded-full border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 text-[10px] sm:text-[11px] font-black shrink-0 whitespace-nowrap"
                 >
-                    {{ ejercicio.series_objetivo }} series × {{ repsObjetivoTexto }}
+                    <template v-if="esBloque">Bloque de calentamiento</template>
+                    <template v-else>{{ ejercicio.series_objetivo }} series × {{ repsObjetivoTexto }}</template>
                 </span>
             </div>
 
@@ -295,7 +297,8 @@
                     <span>REPETICIONES</span>
                 </label>
                 <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] sm:text-xs text-emerald-300 font-black tabular-nums">
-                    <template v-if="targetEsfuerzo?.bloque?.reps">
+                    <template v-if="esBloque"> Objetivo: a tu ritmo </template>
+                    <template v-else-if="targetEsfuerzo?.bloque?.reps">
                         Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque.reps }} reps{{ targetEsfuerzo.tipo === 'fallo' ? ' (AL FALLO)' : ' (RIR ' + targetEsfuerzo.valor + ')' }}
                     </template>
                     <template v-else>
@@ -520,6 +523,7 @@
                 <span v-if="form.tipo_serie === 'calentamiento'">
                     COMPLETAR CALENTAMIENTO #{{ calentamientoNumero }}
                 </span>
+                <span v-else-if="esBloque"> COMPLETAR BLOQUE </span>
                 <span v-else>
                     COMPLETAR SERIE #{{ serieNumero }} DE {{ ejercicio.series_objetivo || serieNumero }}
                 </span>
@@ -608,7 +612,18 @@ const calentamientoNumero = computed(() => {
     return setsCalentamiento.value.length + 1;
 });
 
+/**
+ * Bloque sin series efectivas (ej. el bloque de movilidad / calentamiento
+ * del día). No tiene objetivo de series: se cierra registrando el
+ * calentamiento y el store avanza al siguiente ejercicio.
+ */
+const esBloque = computed(() => {
+    return Number(props.ejercicio?.series_objetivo || 0) === 0;
+});
+
 const ejercicioCompleto = computed(() => {
+    if (props.ejercicio?.completed) return true;
+    if (esBloque.value) return false;
     return setsEfectivos.value.length >= Number(props.ejercicio.series_objetivo || 0);
 });
 
@@ -669,6 +684,9 @@ const tienePlanEstructurado = computed(
 // Título del banner: el resumen del plan ("2×6 RIR 1 → 2×4 RIR 0") o, si no
 // hay plan, el objetivo plano de series × reps.
 const tituloPlan = computed(() => {
+    if (esBloque.value) {
+        return 'Bloque de calentamiento (sin series programadas)';
+    }
     if (prescripcionEjercicio.value.bloques.length) {
         return resumenPlan(prescripcionEjercicio.value.bloques);
     }

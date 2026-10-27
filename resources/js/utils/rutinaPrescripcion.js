@@ -404,7 +404,7 @@ export const estimarTiempoSesion = (ejercicios = []) => {
  * Mapeo por nombre de ejercicio → grupos.
  */
 const GRUPOS = [
-    { re: /sentadilla|goblet|press de pierna|prensa de piernas/i, grupo: 'Pierna' },
+    { re: /sentadilla|goblet|press de pierna|prensa de piernas|extensi[oó]n de cu[aá]driceps/i, grupo: 'Pierna' },
     { re: /peso muerto|hip thrust|buenos d[ií]as|rumano/i, grupo: 'Posterior' },
     { re: /press de banca|press inclinado|press militar|press de hombros/i, grupo: 'Pecho' },
     { re: /jal[oó]n|remo|dominada|pull/i, grupo: 'Espalda' },

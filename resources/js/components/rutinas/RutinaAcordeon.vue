@@ -222,7 +222,7 @@
                                      (ej. "1x40 (Pull-up australiana, completar todas las reps)") -->
                                 <p
                                     v-if="!tienePlan(ejercicio) && ejercicio.notas"
-                                    class="mt-1 text-[9px] text-gray-400 italic truncate"
+                                    class="mt-1 text-[9px] text-gray-400 italic line-clamp-2"
                                     :title="ejercicio.notas"
                                 >
                                     💡 {{ ejercicio.notas }}
@@ -230,13 +230,27 @@
                             </div>
                             <div class="col-span-2 flex justify-center">
                                 <span
-                                    class="h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xs font-bold"
+                                    class="h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold"
+                                    :class="
+                                        Number(ejercicio.series) === 0
+                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    "
+                                    :title="
+                                        Number(ejercicio.series) === 0
+                                            ? 'Bloque de calentamiento (sin series)'
+                                            : `${ejercicio.series} series`
+                                    "
                                 >
-                                    {{ ejercicio.series }}
+                                    {{ Number(ejercicio.series) === 0 ? '⏱' : ejercicio.series }}
                                 </span>
                             </div>
                             <div class="col-span-2 text-center text-xs text-slate-200 font-medium">
-                                {{ formatReps(ejercicio.reps_min, ejercicio.reps_max) }}
+                                {{
+                                    Number(ejercicio.series) === 0
+                                        ? 'a tu ritmo'
+                                        : formatReps(ejercicio.reps_min, ejercicio.reps_max)
+                                }}
                             </div>
                             <div class="col-span-3 text-right text-xs font-semibold text-amber-400">
                                 {{ formatDescanso(ejercicio.descanso_min) }}

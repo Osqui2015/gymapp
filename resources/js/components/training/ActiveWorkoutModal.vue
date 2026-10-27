@@ -194,7 +194,12 @@
                                     <span
                                         class="px-2.5 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider"
                                     >
-                                        SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
+                                        <template v-if="currentEsBloque">
+                                            BLOQUE DE CALENTAMIENTO
+                                        </template>
+                                        <template v-else>
+                                            SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
+                                        </template>
                                         <template v-if="currentTargetEsfuerzoHero">
                                             · 🎯 {{ currentTargetEsfuerzoHero.reps }}r @ {{ currentTargetEsfuerzoHero.tipo === 'fallo' ? 'FALLO' : 'RIR ' + currentTargetEsfuerzoHero.valor }}
                                         </template>
@@ -1395,6 +1400,11 @@ const activeSetsEfectivos = computed(() => {
 
 const activeSerieNumero = computed(() => {
     return activeSetsEfectivos.value + 1;
+});
+
+// Bloque sin series efectivas (ej. movilidad / calentamiento del día).
+const currentEsBloque = computed(() => {
+    return Number(store.currentEjercicio?.series_objetivo || 0) === 0;
 });
 
 const rirBlocksHero = computed(() => prescripcionActiva.value.bloques);

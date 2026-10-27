@@ -307,6 +307,23 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
     };
 
     /**
+     * Mueve el cursor de la sesión al siguiente ejercicio. Si el ejercicio
+     * actual era el último, deja el cursor de serie apuntando a la serie
+     * siguiente (para que la UI muestre "ejercicio completo").
+     */
+    const avanzarAlSiguienteEjercicio = (ej) => {
+        if (session.value.currentEjercicioIndex < session.value.ejercicios.length - 1) {
+            session.value.currentEjercicioIndex += 1;
+            session.value.currentSerieNumero = 1;
+            session.value.currentCalentamientoNumero = 1;
+        } else {
+            // Último ejercicio completado
+            session.value.currentSerieNumero = (ej?.series_completadas || 0) + 1;
+            session.value.currentCalentamientoNumero = 1;
+        }
+    };
+
+    /**
      * Variante que permite registrar una serie sobre un ejercicio específico
      * por índice. Usado por ActiveWorkoutModal cuando hay superseries y cada
      * panel debe poder registrar series sin afectar el cursor del store.
@@ -387,21 +404,19 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             if (isWarmup) {
                 session.value.currentCalentamientoNumero =
                     (session.value.currentCalentamientoNumero || 1) + 1;
+                // Bloque sin series efectivas (ej. el bloque de movilidad /
+                // calentamiento del día): no hay serie de trabajo que
+                // completar, así que registrar el warm-up lo cierra y
+                // pasamos al siguiente ejercicio en lugar de dejar trabado
+                // al usuario en un ejercicio que nunca llega a "completo".
+                if (Number(ej.series_objetivo || 0) === 0) {
+                    ej.completed = true;
+                    avanzarAlSiguienteEjercicio(ej);
+                }
             } else if (ej.series_completadas + 1 >= ej.series_objetivo) {
                 ej.series_completadas += 1;
                 ej.completed = true;
-                if (
-                    session.value.currentEjercicioIndex <
-                    session.value.ejercicios.length - 1
-                ) {
-                    session.value.currentEjercicioIndex += 1;
-                    session.value.currentSerieNumero = 1;
-                    session.value.currentCalentamientoNumero = 1;
-                } else {
-                    // Último ejercicio completado
-                    session.value.currentSerieNumero = ej.series_completadas + 1;
-                    session.value.currentCalentamientoNumero = 1;
-                }
+                avanzarAlSiguienteEjercicio(ej);
             } else {
                 ej.series_completadas += 1;
                 session.value.currentSerieNumero += 1;
@@ -663,7 +678,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
             if (!session.value.ejercicios || session.value.ejercicios.length === 0) {
                 session.value.ejercicios = list.map((e) => ({
                     nombre: e.nombre,
-                    series_objetivo: Number(e.series || 0),
+                    series_objetivo: Number(e.series ?? 0),
                     reps_min: e.reps_min || '8',
                     reps_max: e.reps_max || '10',
                     descanso_min: Number(e.descanso_min ?? 1.5),
@@ -691,6 +706,7 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                         (fresh.notas ?? null) !== (ej.notas ?? null) ||
                         JSON.stringify(fresh.prescripcion ?? null) !==
                             JSON.stringify(ej.prescripcion ?? null) ||
+                        Number(fresh.series ?? 0) !== Number(ej.series_objetivo ?? 0) ||
                         !ej.notas
                     ) {
                         refreshed++;
@@ -699,8 +715,12 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
                         ...ej,
                         notas: fresh.notas ?? ej.notas ?? null,
                         prescripcion: fresh.prescripcion ?? ej.prescripcion ?? null,
-                        // refrescamos también la metadata liviana por si el trainer la cambió
-                        series_objetivo: fresh.series || ej.series_objetivo,
+                        // refrescamos también la metadata liviana por si el trainer la cambió.
+                        // OJO: con `??` y no `||` porque un bloque sin series
+                        // (series = 0, ej. movilidad) es un valor válido: con
+                        // `||` el 0 se descartaría y el bloque quedaría con
+                        // el objetivo viejo (1), volviendo a bloquear la sesión.
+                        series_objetivo: fresh.series ?? ej.series_objetivo,
                         reps_min: fresh.reps_min || ej.reps_min,
                         reps_max: fresh.reps_max || ej.reps_max,
                         descanso_min: fresh.descanso_min ?? ej.descanso_min,

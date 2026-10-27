@@ -222,6 +222,60 @@ describe('ActiveWorkoutModal', () => {
         expect(store.session.currentCalentamientoNumero).toBe(1);
     });
 
+    it('un bloque sin series (movilidad) se cierra con el warm-up y avanza al siguiente ejercicio', async () => {
+        // Sesion con un bloque informativo (series_objetivo = 0) al inicio,
+        // como el bloque de movilidad del dia 1 de la V3.
+        store.discard();
+        store.start({
+            rutina_nombre: 'Torso',
+            dia: 'Día 1',
+            ejercicios: [
+                {
+                    nombre: 'Movilidad articular y activación',
+                    series_objetivo: 0,
+                    reps_min: '1',
+                    reps_max: '1',
+                    descanso_min: 0,
+                    notas: 'Bloque de movilidad de 5 a 10 minutos, no es una serie de trabajo.',
+                },
+                {
+                    nombre: 'Press Banca',
+                    series_objetivo: 3,
+                    reps_min: '8',
+                    reps_max: '10',
+                    descanso_min: 2,
+                },
+            ],
+        });
+
+        const wrapper = mount(ActiveWorkoutModal, {
+            props: { open: true },
+        });
+
+        // El bloque no muestra "Serie #X de Y" sino que se identifica como bloque.
+        expect(wrapper.text()).toContain('BLOQUE DE CALENTAMIENTO');
+
+        // Registrar el calentamiento cierra el bloque y pasa al siguiente
+        // ejercicio (no queda trabado en un ejercicio que nunca "termina").
+        const btnCalentamiento = wrapper
+            .findAll('button')
+            .find((b) => b.text().trim() === 'Calentamiento');
+        expect(btnCalentamiento).toBeDefined();
+        await btnCalentamiento.trigger('click');
+
+        const btnCompletarWarmup = wrapper
+            .findAll('button')
+            .find((b) => b.text().includes('COMPLETAR CALENTAMIENTO'));
+        expect(btnCompletarWarmup).toBeDefined();
+        await btnCompletarWarmup.trigger('click');
+
+        expect(store.session.currentEjercicioIndex).toBe(1);
+        expect(store.currentEjercicio.nombre).toBe('Press Banca');
+        // El bloque no aporto series efectivas al total de la sesion.
+        expect(store.totalSeriesCompletadas).toBe(0);
+        expect(store.totalSeriesObjetivo).toBe(3);
+    });
+
     it('muestra el boton FINALIZAR SESION cuando todos los ejercicios estan completos', async () => {
         // Forzamos una sesion minima para poder terminarla rapido.
         store.discard();

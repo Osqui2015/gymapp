@@ -43,7 +43,7 @@
 
         <p
             v-if="mostrarProgresion && prescripcion.progresion"
-            class="text-[9px] text-teal-700 dark:text-teal-300/90 truncate"
+            class="text-[10px] leading-snug text-teal-700 dark:text-teal-300/90 line-clamp-2"
             :title="prescripcion.progresion"
         >
             ↗ {{ prescripcion.progresion }}
@@ -51,7 +51,7 @@
 
         <p
             v-if="mostrarConsejo && prescripcion.consejo"
-            class="text-[10px] text-gray-600 dark:text-gray-300 italic truncate"
+            class="text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 italic"
             :title="prescripcion.consejo"
         >
             💡 {{ prescripcion.consejo }}

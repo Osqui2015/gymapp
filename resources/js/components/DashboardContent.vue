@@ -72,6 +72,7 @@ const showError = (m) => toast.error(m);
 const showWarning = (m) => toast.warning(m);
 
 const filasSerie = ref([]);
+const bloquesDelDia = ref([]);
 const historialRutina = ref([]);
 const diaActual = shallowRef('Día 1');
 const cicloInicio = shallowRef(null);
@@ -784,7 +785,31 @@ const fetchHistorialRutina = async () => {
     }
 };
 
+/**
+ * Series de un ejercicio de la rutina.
+ *  - `series = 0` → bloque informativo (ej. movilidad / calentamiento del
+ *    día): no genera series, no cuenta para el total del día y no bloquea
+ *    el avance de la sesión.
+ *  - `series = null` → rutina vieja sin el dato: caemos en 1 (como antes).
+ */
+const seriesDeRutina = (rutina) => {
+    const s = rutina?.series;
+    if (s === null || s === undefined || s === '') return 1;
+    return Number(s) || 0;
+};
+
 const construirFilasSerie = (rutinasDelDia) => {
+    // Bloques del día (series = 0): no son series, no generan filas ni
+    // cuentan para el total, pero los mostramos arriba de la lista para que
+    // no se pierdan (ej. la movilidad articular del Día 1).
+    bloquesDelDia.value = (rutinasDelDia || [])
+        .filter((r) => Number(r.series) === 0)
+        .map((r) => ({
+            id: r.id,
+            nombre: r.ejercicio_nombre,
+            notas: r.notas || '',
+        }));
+
     const historialCicloActual = cicloInicio.value
         ? historialRutina.value.filter((r) => (r.fecha || '').slice(0, 10) >= cicloInicio.value)
         : historialRutina.value;
@@ -848,7 +873,7 @@ const construirFilasSerie = (rutinasDelDia) => {
     blocks.forEach((block) => {
         if (!block.isSuperset) {
             const rutina = block.exercise;
-            const totalSeries = Number(rutina.series) || 1;
+            const totalSeries = seriesDeRutina(rutina);
             for (let index = 0; index < totalSeries; index++) {
                 const serieNumero = index + 1;
                 const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
@@ -886,11 +911,11 @@ const construirFilasSerie = (rutinasDelDia) => {
             }
         } else {
             const exercises = block.exercises;
-            const maxSeries = Math.max(...exercises.map((r) => Number(r.series) || 1));
+            const maxSeries = Math.max(...exercises.map((r) => seriesDeRutina(r)));
             for (let index = 0; index < maxSeries; index++) {
                 const serieNumero = index + 1;
                 exercises.forEach((rutina) => {
-                    const totalSeries = Number(rutina.series) || 1;
+                    const totalSeries = seriesDeRutina(rutina);
                     if (serieNumero <= totalSeries) {
                         const registro = registros.get(`${rutina.ejercicio_nombre}-${serieNumero}`);
                         const anterior = registrosAnteriores.get(
@@ -1811,6 +1836,31 @@ const iniciarTemporizador = (fila) => {
                                 </button>
                             </div>
 
+                            <!-- Bloques del día (movilidad / calentamiento): no son
+                                 series, por eso no aparecen como ejercicio, pero
+                                 hay que hacerlos antes de la barra. -->
+                            <div
+                                v-if="bloquesDelDia.length"
+                                class="flex flex-col gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-space-md py-space-sm"
+                                data-testid="bloques-del-dia"
+                            >
+                                <div
+                                    v-for="bloque in bloquesDelDia"
+                                    :key="bloque.id"
+                                    class="flex items-start gap-2"
+                                >
+                                    <span class="material-symbols-outlined text-[16px] text-amber-400 mt-px">timer</span>
+                                    <div class="min-w-0">
+                                        <span class="text-label-sm text-label-sm font-bold text-amber-300 uppercase tracking-wide">
+                                            {{ bloque.nombre }}
+                                        </span>
+                                        <p class="text-[11px] leading-relaxed text-on-surface-variant mt-0.5">
+                                            {{ bloque.notas }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div v-if="isInitialLoading" class="space-y-3">
                                 <SkeletonLoader variant="card" />
                                 <SkeletonLoader variant="card" />
@@ -1878,7 +1928,7 @@ const iniciarTemporizador = (fila) => {
                                                      (ej. "3x8 (estocadas, sin RIR objetivo)") -->
                                                 <p
                                                     v-if="!tienePlan(ej) && ej.notas"
-                                                    class="text-[10px] text-gray-500 dark:text-gray-400 italic truncate"
+                                                    class="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400 italic"
                                                     :title="ej.notas"
                                                 >
                                                     💡 {{ ej.notas }}

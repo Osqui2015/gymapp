@@ -111,12 +111,10 @@
                             <!-- Notas crudas cuando el ejercicio no tiene plan de series -->
                             <div
                                 v-if="!tienePlan(ejercicio) && ejercicio.notas"
-                                class="flex items-center gap-1.5 mt-1 text-xs text-indigo-700 dark:text-indigo-300"
+                                class="flex items-start gap-1.5 mt-1 text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-300"
                             >
-                                <span>💡</span>
-                                <span class="italic font-medium truncate">{{
-                                    ejercicio.notas
-                                }}</span>
+                                <span class="shrink-0">💡</span>
+                                <span class="italic font-medium">{{ ejercicio.notas }}</span>
                             </div>
                         </div>
                     </div>

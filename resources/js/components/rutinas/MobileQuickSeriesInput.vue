@@ -284,7 +284,7 @@ const localEjercicios = ref([]);
 
 const clonar = () => {
     localEjercicios.value = props.ejercicios.map((ej) => {
-        const planSeries = Number(ej.series) || 3;
+        const planSeries = Number(ej.series ?? 3);
         const series = [];
         for (let i = 1; i <= planSeries; i++) {
             series.push({
