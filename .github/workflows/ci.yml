@@ -61,7 +61,7 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
-        run: php artisan test --coverage-text-min=0
+        run: php artisan test
 
       - name: Run Laravel Pint (linter)
         run: vendor/bin/pint --test
