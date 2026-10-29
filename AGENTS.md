@@ -59,6 +59,24 @@ Producción: `gym.tecnorexs.com` → `domains/gym.tecnorexs.com/public_html/`.
   que derivar lo mismo que `prescripcion`
   (`App\Services\RutinaPrescripcionService` ↔ `resources/js/utils/rutinaPrescripcion.js`).
 
+## Invariante de idempotencia del historial (NO romper)
+- Una fila de `historials` es única por
+  `(user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha)`.
+  Lo garantiza el índice UNIQUE `uq_historials_idempotencia` (migración
+  `2026_10_29_000000_fix_historials_idempotencia_y_fecha`).
+- La `fecha` es PARTE de la clave a propósito: registrar el mismo set en otra
+  fecha tiene que crear una fila nueva, no pisar la sesión anterior. Sin
+  `fecha` en la clave, reentrenar el mismo set sobreescribía el historial y
+  todos los KPIs (volumen, 1RM, rachas, heatmap) subcontaban.
+- `HistorialController::guardar()` resuelve la fila con `whereDate('fecha', ...)`
+  (no `where('fecha', ...)`): la columna es DATE pero el cast `date` del modelo
+  la escribe como `Y-m-d H:i:s`, y en SQLite (tests) la comparación exacta no
+  matchearía.
+- En MySQL el índice se crea con prefijos de 64 caracteres: la clave completa
+  con VARCHAR(255) utf8mb4 excede el límite de 3072 bytes de InnoDB.
+- La tabla `historials_reparacion_fecha` guarda el `fecha` original de las
+  filas que la migración reparó: sirve para auditar y para revertir.
+
 ## Routes
 - `/login`, `/register` - guest routes
 - `/dashboard` - auth + verified middleware

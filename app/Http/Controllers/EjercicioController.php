@@ -228,21 +228,29 @@ class EjercicioController extends Controller
         // Mapear día de la semana al string corto que usa la tabla
         $dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         $hoy = $dias[now()->dayOfWeekIso - 1]; // 1=lunes, 7=domingo
+        $fecha = now()->toDateString();
 
-        $historial = Historial::create([
+        // Idempotente: registrar dos veces el mismo ejercicio el mismo día
+        // actualiza la fila en vez de duplicarla. Con el índice UNIQUE de
+        // idempotencia (historials) un segundo insert sería un error 500.
+        $historial = Historial::guardarIdempotente([
             'user_id' => $userId,
-            'ejercicio_id' => $ejercicio->id,
-            'ejercicio_nombre' => $ejercicio->nombre,
             'rutina_nombre' => 'Quick log',
             'dia' => $hoy,
+            'ejercicio_nombre' => $ejercicio->nombre,
             'series_numero' => 1,
+            'fecha' => $fecha,
+            'ejercicio_id' => $ejercicio->id,
             'series_completadas' => 1,
             'reps_min' => '0',
             'reps_max' => '0',
             'reps_realizadas' => 0,
+            // `descanso_min` es NOT NULL en la tabla: sin esto el insert
+            // fallaba con "NOT NULL constraint failed" y el quick-log
+            // devolvía 500.
+            'descanso_min' => 0,
             'peso' => 0,
             'completado' => true,
-            'fecha' => now()->toDateString(),
         ]);
 
         CacheHistorial::invalidate($userId);

@@ -19,6 +19,7 @@ import {
     registerServiceWorker,
     subscribeToPush,
     unsubscribeFromPush,
+    suscriptcionUsaKey,
 } from '../services/webPushService';
 
 const pushSupported = ref(false);
@@ -36,7 +37,24 @@ async function refresh() {
         pushSupported.value = !!(reg && reg.pushManager);
         if (reg?.pushManager) {
             const sub = await reg.pushManager.getSubscription();
-            pushEnabled.value = !!sub;
+
+            if (!sub) {
+                pushEnabled.value = false;
+            } else {
+                // Si el servidor rotó la clave VAPID, la suscripción del
+                // navegador quedó inservible (el push service la rechaza con
+                // 404/410). Se rehace sola para que el usuario no se quede
+                // sin avisos creyendo que los tiene activos.
+                const { data } = await axios.get('/api/push/vapid-public-key');
+                const key = data?.vapid_public_key;
+
+                if (key && !suscriptcionUsaKey(sub, key)) {
+                    const result = await subscribeToPush(key);
+                    pushEnabled.value = !!result.ok;
+                } else {
+                    pushEnabled.value = true;
+                }
+            }
         }
         if (typeof Notification !== 'undefined') {
             permission.value = Notification.permission;

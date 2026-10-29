@@ -37,25 +37,20 @@ class GenerateVapidKeys extends Command
         // PHP's openssl extension requires a config file. On many systems
         // (including Laragon on Windows) the default path
         // (C:\Program Files\Common Files\SSL\openssl.cnf) is missing.
-        // As a fallback, look for a bundled copy under Git/usr/ssl/ which
-        // ships with Laragon's Git for Windows.
-        if (! getenv('OPENSSL_CONF')) {
-            $candidates = [
-                'C:\\Program Files\\Git\\usr\\ssl\\openssl.cnf',
-                'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\openssl.cnf',
-                '/etc/ssl/openssl.cnf',
-                '/usr/local/etc/openssl@1.1/openssl.cnf',
-            ];
-            foreach ($candidates as $candidate) {
-                if (file_exists($candidate)) {
-                    putenv("OPENSSL_CONF={$candidate}");
-                    break;
-                }
-            }
-        }
-
+        //
+        // OJO: poner OPENSSL_CONF con putenv() NO sirve. OpenSSL resuelve su
+        // config al inicializarse la librería, o sea antes de que corra este
+        // script, así que la variable tiene que estar seteada ANTES de que
+        // arranque PHP. Por eso, si la generación falla, se re-lanza el
+        // comando en un proceso PHP hijo con la variable ya seteada.
         $res = openssl_pkey_new($config);
         if (! $res) {
+            $exitCode = $this->retryWithOpenSslConf();
+
+            if ($exitCode !== null) {
+                return $exitCode;
+            }
+
             $this->error('No se pudo generar el par de claves EC P-256. ¿OpenSSL disponible?');
             $this->error('Si el error es de config, seteá la env var OPENSSL_CONF apuntando a un openssl.cnf válido.');
             while ($msg = openssl_error_string()) {
@@ -93,6 +88,82 @@ class GenerateVapidKeys extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Re-lanza el comando en un proceso PHP hijo con OPENSSL_CONF seteada.
+     *
+     * Es la única forma de que OpenSSL vea el config file: la librería lo
+     * resuelve al inicializarse, antes de que corra cualquier PHP del
+     * proceso, así que un putenv() en runtime llega tarde.
+     *
+     * @return int|null Código de salida del hijo, o null si no se pudo reintentar.
+     */
+    protected function retryWithOpenSslConf(): ?int
+    {
+        // Si OPENSSL_CONF ya venía seteada (del entorno) y falló, no hay nada
+        // que reintentar: el usuario tiene que corregir la variable.
+        if (getenv('OPENSSL_CONF')) {
+            return null;
+        }
+
+        $conf = $this->findOpenSslConf();
+
+        if ($conf === null) {
+            return null;
+        }
+
+        $this->line("Reintentando con OPENSSL_CONF={$conf}");
+
+        $env = getenv();
+        $env['OPENSSL_CONF'] = $conf;
+
+        $command = [PHP_BINARY, base_path('artisan'), 'webpush:vapid'];
+
+        if ($this->option('show')) {
+            $command[] = '--show';
+        }
+
+        $descriptors = [
+            0 => ['file', 'php://stdin', 'r'],
+            1 => ['file', 'php://stdout', 'w'],
+            2 => ['file', 'php://stderr', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes, base_path(), $env);
+
+        if (! is_resource($process)) {
+            return null;
+        }
+
+        return proc_close($process);
+    }
+
+    /**
+     * Busca un openssl.cnf válido. Prioriza el que trae el propio PHP
+     * (extras/ssl/openssl.cnf), que es el que corresponde a la build que
+     * está ejecutando.
+     */
+    protected function findOpenSslConf(): ?string
+    {
+        $phpDir = dirname(PHP_BINARY);
+
+        $candidates = [
+            $phpDir.DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'ssl'.DIRECTORY_SEPARATOR.'openssl.cnf',
+            'C:\\Program Files\\Common Files\\SSL\\openssl.cnf',
+            'C:\\Program Files\\Git\\usr\\ssl\\openssl.cnf',
+            'C:\\Program Files\\Git\\mingw64\\etc\\ssl\\openssl.cnf',
+            '/etc/ssl/openssl.cnf',
+            '/usr/local/etc/openssl@1.1/openssl.cnf',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '' && @is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     protected function extractVapidPublicKey(string $pem): string

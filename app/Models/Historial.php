@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\QueryException;
 
 class Historial extends Model
 {
@@ -60,6 +61,74 @@ class Historial extends Model
         'ejercicio_id' => 'integer',
         'esfuerzo_valor' => 'integer',
     ];
+
+    /**
+     * Guarda una serie de forma idempotente.
+     *
+     * La clave única de una serie es:
+     *   (user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha)
+     *
+     * La `fecha` es parte de la clave A PROPÓSITO: registrar el mismo set en
+     * otra fecha tiene que crear una fila nueva, no pisar la sesión anterior.
+     * El índice UNIQUE `uq_historials_idempotencia` lo garantiza en la base.
+     *
+     * Se usa whereDate() y no where('fecha', ...): la columna es DATE, pero el
+     * cast 'date' del modelo la escribe como 'Y-m-d H:i:s'. En MySQL la columna
+     * DATE normaliza ese valor, pero en SQLite (los tests) queda la cadena
+     * completa y la comparación exacta no matchearía.
+     *
+     * @param  array<string, mixed>  $data  Datos de la serie (incluye la clave).
+     */
+    public static function guardarIdempotente(array $data): self
+    {
+        $query = static::where('user_id', $data['user_id'])
+            ->where('rutina_nombre', $data['rutina_nombre'])
+            ->where('dia', $data['dia'])
+            ->where('ejercicio_nombre', $data['ejercicio_nombre'])
+            ->where('series_numero', $data['series_numero'])
+            ->whereDate('fecha', $data['fecha']);
+
+        $existente = $query->first();
+
+        if ($existente) {
+            $existente->fill($data)->save();
+
+            return $existente;
+        }
+
+        try {
+            return static::create($data);
+        } catch (QueryException $e) {
+            if (! self::esViolacionDeClaveUnica($e)) {
+                throw $e;
+            }
+
+            // Carrera: otro request insertó la misma fila entre el SELECT y el
+            // INSERT. Ahora la fila existe -> la actualizamos.
+            $existente = $query->first();
+
+            if (! $existente) {
+                throw $e;
+            }
+
+            $existente->fill($data)->save();
+
+            return $existente;
+        }
+    }
+
+    /**
+     * ¿La excepción es una violación de clave única (índice UNIQUE)?
+     * 23000 = integrity constraint violation en MySQL y SQLite.
+     */
+    protected static function esViolacionDeClaveUnica(QueryException $e): bool
+    {
+        if ($e->getCode() === '23000') {
+            return true;
+        }
+
+        return (int) ($e->errorInfo[0] ?? 0) === 23000;
+    }
 
     public function sesion(): BelongsTo
     {

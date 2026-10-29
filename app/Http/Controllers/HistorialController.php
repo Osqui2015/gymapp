@@ -122,7 +122,12 @@ class HistorialController extends Controller
             $data['tipo_serie'] = $data['tipo_serie'] ?? 'efectiva';
             // Si el cliente mando fecha, respetarla (caso offline).
             // Si no, usar hoy (caso online, retrocompat).
-            $data['fecha'] = $rec['fecha'] ?? $hoy;
+            // Normalizada a YYYY-MM-DD porque la columna es DATE: la clave de
+            // idempotencia tiene que comparar contra el mismo valor que se
+            // guarda, si no el WHERE no matchea nunca.
+            $data['fecha'] = isset($rec['fecha']) && $rec['fecha'] !== null
+                ? Carbon::parse($rec['fecha'])->toDateString()
+                : $hoy;
             // client_id no se persiste: la clave compuesta ya garantiza idempotencia.
             unset($data['client_id']);
             $validatedRecords[] = $data;
@@ -132,16 +137,7 @@ class HistorialController extends Controller
         // parcialmente persistidas (atomicidad all-or-nothing).
         \DB::transaction(function () use ($validatedRecords) {
             foreach ($validatedRecords as $data) {
-                Historial::updateOrCreate(
-                    [
-                        'user_id' => $data['user_id'],
-                        'rutina_nombre' => $data['rutina_nombre'],
-                        'dia' => $data['dia'],
-                        'ejercicio_nombre' => $data['ejercicio_nombre'],
-                        'series_numero' => $data['series_numero'],
-                    ],
-                    $data
-                );
+                $this->guardarSerieIdempotente($data);
             }
         });
 
@@ -159,15 +155,53 @@ class HistorialController extends Controller
         ]);
     }
 
+    /**
+     * Guarda una serie de forma idempotente.
+     *
+     * La clave incluye `fecha`: registrar el MISMO set en OTRA fecha crea una
+     * fila nueva en vez de pisar la sesión anterior. Sin `fecha` en la clave,
+     * reentrenar el mismo set sobreescribía el historial y todos los KPIs
+     * (volumen, 1RM, rachas, heatmap) subcontaban.
+     *
+     * El índice UNIQUE `uq_historials_idempotencia` (migración
+     * 2026_10_29_000000_fix_historials_idempotencia_y_fecha) garantiza la
+     * invariante en la base; este método maneja la carrera entre el SELECT y
+     * el INSERT cuando dos requests llegan al mismo tiempo.
+     *
+     * @param  array<string, mixed>  $data  Datos validados de la serie.
+     */
+    private function guardarSerieIdempotente(array $data): void
+    {
+        Historial::guardarIdempotente($data);
+    }
+
     public function marcarCompletado(Request $request)
     {
         $user = $request->user();
+        $hoy = Carbon::now()->toDateString();
+
+        $data = $request->validate([
+            'rutina_nombre' => ['required', 'string', 'max:255'],
+            'dia' => ['required', 'string', 'max:255'],
+            'ejercicio_nombre' => ['required', 'string', 'max:255'],
+            'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
+            'fecha' => ['nullable', 'date', 'before_or_equal:'.$hoy],
+        ]);
+
+        // Sin fecha explícita se marca la de HOY. Antes tomaba la fila MÁS
+        // VIEJA de cualquier fecha (sin order, el primero que encontrara),
+        // así que con colisiones marcaba un registro de semanas atrás.
+        $fecha = isset($data['fecha']) && $data['fecha'] !== null
+            ? Carbon::parse($data['fecha'])->toDateString()
+            : $hoy;
 
         $historial = Historial::where('user_id', $user->id)
-            ->where('rutina_nombre', $request->rutina_nombre)
-            ->where('dia', $request->dia)
-            ->where('ejercicio_nombre', $request->ejercicio_nombre)
-            ->where('series_numero', $request->series_numero)
+            ->where('rutina_nombre', $data['rutina_nombre'])
+            ->where('dia', $data['dia'])
+            ->where('ejercicio_nombre', $data['ejercicio_nombre'])
+            ->where('series_numero', $data['series_numero'])
+            ->whereDate('fecha', $fecha)
+            ->orderByDesc('id')
             ->first();
 
         if ($historial) {
@@ -179,6 +213,7 @@ class HistorialController extends Controller
 
         return response()->json([
             'message' => 'Completado',
+            'completada' => (bool) $historial,
             'new_medals' => $newMedals,
         ]);
     }

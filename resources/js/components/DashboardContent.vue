@@ -26,6 +26,20 @@ const offline = useOfflineSeries();
 const wake = useWakeLock();
 const session = useTrainingSessionStore();
 
+// Series que el server rechazó de forma permanente: no se reintentan solas,
+// el usuario decide.
+const reintentarSeriesFallidas = async () => {
+    for (const fallida of [...offline.failedSeries.value]) {
+        await offline.retryFailed(fallida.client_id);
+    }
+};
+
+const descartarSeriesFallidas = async () => {
+    for (const fallida of [...offline.failedSeries.value]) {
+        await offline.dismissFailed(fallida.client_id);
+    }
+};
+
 onMounted(() => {
     if (session.isActive && wake.supported) {
         wake.requestWakeLock();
@@ -1014,6 +1028,10 @@ const guardarFila = async (fila, silencioso = false) => {
             showError?.(
                 'Sin conexion: guardado en este dispositivo, se sincroniza al volver online.'
             );
+        } else if (result.status === 'rejected' && !silencioso) {
+            // El server la rechazó de forma permanente: la serie NO se guarda.
+            // Queda marcada como fallida y se avisa (antes se perdía en silencio).
+            showError?.(`No se pudo guardar la serie: ${result.error}`);
         } else if (result.status === 'lost' && !silencioso) {
             showError?.(
                 'No se pudo guardar: estas sin conexion y tu navegador no soporta guardado offline.'
@@ -1290,7 +1308,14 @@ const iniciarTemporizador = (fila) => {
     <div
         class="min-h-screen w-full bg-background font-body-md text-on-surface antialiased selection:bg-secondary-container selection:text-on-secondary-container overflow-x-hidden"
     >
-        <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
+        <SyncBadge
+            :pending="offline.pendingCount.value"
+            :syncing="offline.isSyncing.value"
+            :failed="offline.failedCount.value"
+            :error-message="offline.lastError.value"
+            @retry="reintentarSeriesFallidas"
+            @dismiss="descartarSeriesFallidas"
+        />
 
         <!-- Indicador pull-to-refresh (mobile) -->
         <div
