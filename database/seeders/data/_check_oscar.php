@@ -1,32 +1,36 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use App\Http\Controllers\RutinaController;
 use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Http\Request;
 
 $oscar = User::find(14);
-echo "Oscar id=14: nick={$oscar->nick} role={$oscar->role} name={$oscar->name}" . PHP_EOL;
-echo "isAdmin: " . ($oscar->hasRole(User::ROLE_ADMINISTRADOR) ? 'yes' : 'no') . PHP_EOL;
+echo "Oscar id=14: nick={$oscar->nick} role={$oscar->role} name={$oscar->name}".PHP_EOL;
+echo 'isAdmin: '.($oscar->hasRole(User::ROLE_ADMINISTRADOR) ? 'yes' : 'no').PHP_EOL;
 
 // Rutinas del sistema (oficiales, cb=null)
 $oficiales = DB::table('rutinas')->whereNull('created_by')->count();
 $oscarCreadas = DB::table('rutinas')->where('created_by', 14)->count();
-echo "Rutinas oficiales: $oficiales" . PHP_EOL;
-echo "Rutinas creadas por Oscar: $oscarCreadas" . PHP_EOL;
+echo "Rutinas oficiales: $oficiales".PHP_EOL;
+echo "Rutinas creadas por Oscar: $oscarCreadas".PHP_EOL;
 
 // Verificar que la query del index devuelve algo para Oscar
-$req = \Illuminate\Http\Request::create('/api/rutinas', 'GET');
+$req = Request::create('/api/rutinas', 'GET');
 $req->setUserResolver(fn () => $oscar);
-$ctrl = new \App\Http\Controllers\RutinaController();
+$ctrl = new RutinaController;
 $resp = $ctrl->index($req);
 $data = json_decode($resp->getContent(), true);
-echo "Total rutinas devueltas para Oscar: " . count($data) . PHP_EOL;
+echo 'Total rutinas devueltas para Oscar: '.count($data).PHP_EOL;
 $niveles = [];
 foreach ($data as $r) {
     $niveles[$r['nivel']] = ($niveles[$r['nivel']] ?? 0) + 1;
 }
 foreach ($niveles as $n => $c) {
-    echo "  $n: $c" . PHP_EOL;
+    echo "  $n: $c".PHP_EOL;
 }

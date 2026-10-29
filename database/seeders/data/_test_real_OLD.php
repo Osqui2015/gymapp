@@ -1,10 +1,12 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\Ejercicio;
+use App\Http\Controllers\EjercicioController;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 
 // Llamar el endpoint real usando el container
@@ -22,7 +24,7 @@ $tests = [
     'Estática',
 ];
 
-$controller = app(\App\Http\Controllers\EjercicioController::class);
+$controller = app(EjercicioController::class);
 
 foreach ($tests as $name) {
     $req = Request::create('/api/ejercicios/media', 'GET', ['name' => $name]);
@@ -33,7 +35,7 @@ foreach ($tests as $name) {
         $match = $data['match_type'] ?? '?';
         $matched = $data['nombre'] ?? '?';
         echo sprintf("%-40s → [%s] %s (match=%s)\n", $name, $src, $matched, $match);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         echo sprintf("%-40s → ERROR: %s\n", $name, $e->getMessage());
     }
 }

@@ -1,20 +1,23 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
-function normalizeNoAccents($s) {
+function normalizeNoAccents($s)
+{
     $s = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $s);
     $s = preg_replace('/[^a-z0-9\s\/()]/', ' ', $s);
     $s = preg_replace('/\s+/', ' ', $s);
+
     return trim($s);
 }
 
 // Cargar NAME_ALIASES
-$src = file_get_contents(__DIR__ . '/../../../app/Http/Controllers/EjercicioController.php');
+$src = file_get_contents(__DIR__.'/../../../app/Http/Controllers/EjercicioController.php');
 preg_match('/private const NAME_ALIASES = \[(.*?)\];/s', $src, $m);
 $body = preg_replace('/\/\/.*$/m', '', $m[1]);
 preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'\s*=>\s*'((?:[^'\\\\]|\\\\.)*)'/", $body, $matches, PREG_SET_ORDER);

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResuelveAlumnoObjetivo;
 use App\Models\Historial;
 use App\Models\User;
-use App\Http\Controllers\Concerns\ResuelveAlumnoObjetivo;
 use App\Services\AchievementService;
 use App\Services\CacheHistorial;
 use App\Services\HistorialService;
@@ -482,8 +482,8 @@ class HistorialController extends Controller
             $diaParam = trim($data['dia']);
             $diaQuery = (clone $queryBase)->where(function ($q) use ($diaParam) {
                 $q->where('dia', $diaParam)
-                  ->orWhere('dia', 'like', $diaParam . '%')
-                  ->orWhere('dia', 'like', '%' . $diaParam . '%');
+                    ->orWhere('dia', 'like', $diaParam.'%')
+                    ->orWhere('dia', 'like', '%'.$diaParam.'%');
             });
             if ($diaQuery->exists()) {
                 $queryBase = $diaQuery;
@@ -495,7 +495,7 @@ class HistorialController extends Controller
         $ultimaFecha = (clone $queryBase)
             ->where(function ($q) {
                 $q->whereNull('tipo_serie')
-                  ->orWhere('tipo_serie', '!=', 'calentamiento');
+                    ->orWhere('tipo_serie', '!=', 'calentamiento');
             })
             ->where('peso', '>', 0)
             ->max('fecha');
@@ -505,7 +505,7 @@ class HistorialController extends Controller
             $ultimaFecha = (clone $queryBase)
                 ->where(function ($q) {
                     $q->whereNull('tipo_serie')
-                      ->orWhere('tipo_serie', '!=', 'calentamiento');
+                        ->orWhere('tipo_serie', '!=', 'calentamiento');
                 })
                 ->max('fecha');
         }
@@ -531,6 +531,7 @@ class HistorialController extends Controller
         // Calculamos el peso top y peso mínimo EXCLUSIVAMENTE entre las series EFECTIVAS (excluyendo calentamiento)
         $efectivas = $series->filter(function ($s) {
             $tipo = strtolower(trim((string) ($s->tipo_serie ?? 'efectiva')));
+
             return $tipo !== 'calentamiento';
         });
 
@@ -550,6 +551,7 @@ class HistorialController extends Controller
             if ($pesoA !== $pesoB) {
                 return $pesoB <=> $pesoA;
             }
+
             return ((int) ($b->reps_realizadas ?? 0)) <=> ((int) ($a->reps_realizadas ?? 0));
         })->values();
 
@@ -560,6 +562,7 @@ class HistorialController extends Controller
             if ($pesoA !== $pesoB) {
                 return $pesoA <=> $pesoB;
             }
+
             return ((int) ($a->reps_realizadas ?? 0)) <=> ((int) ($b->reps_realizadas ?? 0));
         })->values();
 

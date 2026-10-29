@@ -9,7 +9,6 @@
  *
  * Output: PHP array formateado, ordenado alfabéticamente.
  */
-
 $csvPath = 'C:\Users\posca\Downloads\visualgym_legacy_mapping.csv';
 $jsonPath = 'C:\Users\posca\Downloads\visualgym_legacy_mapping.json';
 
@@ -37,22 +36,26 @@ if (file_exists($csvPath)) {
     exit(1);
 }
 
-echo "Total legacy leídos: " . count($rows) . "\n\n";
+echo 'Total legacy leídos: '.count($rows)."\n\n";
 
 // Agrupar por legacy_normalizado → primer visualgym_nombre no vacío
 $mapping = [];
 $noMatch = 0;
 foreach ($rows as $r) {
     $legacyKey = trim($r['legacy_normalizado'] ?? '');
-    if ($legacyKey === '') continue;
+    if ($legacyKey === '') {
+        continue;
+    }
 
     $vgName = trim($r['visualgym_nombre'] ?? '');
     $vgId = trim($r['visualgym_id'] ?? '');
 
-    if (!isset($mapping[$legacyKey])) {
+    if (! isset($mapping[$legacyKey])) {
         // Primer registro: si tiene match, lo guardamos; si no, string vacío
         $mapping[$legacyKey] = ($vgName !== '' && $vgId !== '') ? $vgName : '';
-        if ($mapping[$legacyKey] === '') $noMatch++;
+        if ($mapping[$legacyKey] === '') {
+            $noMatch++;
+        }
     }
     // Si ya estaba seteado y el nuevo tiene match pero el viejo no, mejoramos
     elseif ($mapping[$legacyKey] === '' && $vgName !== '' && $vgId !== '') {
@@ -64,10 +67,10 @@ foreach ($rows as $r) {
 // Ordenar alfabéticamente
 ksort($mapping);
 
-$matched = count(array_filter($mapping, fn($v) => $v !== ''));
-$unmatched = count(array_filter($mapping, fn($v) => $v === ''));
+$matched = count(array_filter($mapping, fn ($v) => $v !== ''));
+$unmatched = count(array_filter($mapping, fn ($v) => $v === ''));
 
-echo "Aliases únicos: " . count($mapping) . "\n";
+echo 'Aliases únicos: '.count($mapping)."\n";
 echo "Con match VisualGym: $matched\n";
 echo "Sin match (legacy fallback): $unmatched\n\n";
 
@@ -78,10 +81,10 @@ foreach ($mapping as $k => $v) {
     // Escapar comillas simples si aparecen
     $kEsc = str_replace("'", "\\'", $k);
     if ($v === '') {
-        echo "        '" . $kEsc . "' => '',\n";
+        echo "        '".$kEsc."' => '',\n";
     } else {
         $vEsc = str_replace("'", "\\'", $v);
-        echo "        '" . $kEsc . "' => '" . $vEsc . "',\n";
+        echo "        '".$kEsc."' => '".$vEsc."',\n";
     }
 }
 echo "    ];\n";

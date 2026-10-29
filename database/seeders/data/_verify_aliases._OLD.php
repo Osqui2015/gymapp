@@ -1,9 +1,12 @@
 <?php
+
 require __DIR__.'/../../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
+use App\Http\Controllers\EjercicioController;
 use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
 echo "=== Test normalize + aliases ===\n";
 $names = [
@@ -16,10 +19,10 @@ $names = [
 ];
 
 foreach ($names as $n) {
-    $norm = \App\Http\Controllers\EjercicioController::normalize($n);
+    $norm = EjercicioController::normalize($n);
     echo "'$n' -> '$norm'\n";
     $alias = null;
-    $ref = new \ReflectionClass(\App\Http\Controllers\EjercicioController::class);
+    $ref = new ReflectionClass(EjercicioController::class);
     $aliases = $ref->getConstant('NAME_ALIASES');
     if (isset($aliases[$norm])) {
         $alias = $aliases[$norm];
@@ -39,23 +42,23 @@ foreach ($targets as $t) {
 echo "\n=== Buscar 'barbell press' ===\n";
 $ej = Ejercicio::where('source', 'visualgym')->where('nombre', 'like', '%barbell press%')->take(10)->get(['nombre']);
 foreach ($ej as $e) {
-    echo "  - " . $e->nombre . "\n";
+    echo '  - '.$e->nombre."\n";
 }
 
 echo "\n=== Buscar 'military' ===\n";
 $ej = Ejercicio::where('source', 'visualgym')->where('nombre', 'like', '%military%')->take(10)->get(['nombre']);
 foreach ($ej as $e) {
-    echo "  - " . $e->nombre . "\n";
+    echo '  - '.$e->nombre."\n";
 }
 
 echo "\n=== Buscar 'bulgarian' ===\n";
 $ej = Ejercicio::where('source', 'visualgym')->where('nombre', 'like', '%bulgarian%')->take(10)->get(['nombre']);
 foreach ($ej as $e) {
-    echo "  - " . $e->nombre . "\n";
+    echo '  - '.$e->nombre."\n";
 }
 
 echo "\n=== Buscar 'hip thrust' ===\n";
 $ej = Ejercicio::where('source', 'visualgym')->where('nombre', 'like', '%hip thrust%')->take(10)->get(['nombre']);
 foreach ($ej as $e) {
-    echo "  - " . $e->nombre . "\n";
+    echo '  - '.$e->nombre."\n";
 }

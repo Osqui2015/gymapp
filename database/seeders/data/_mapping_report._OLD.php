@@ -17,13 +17,14 @@
 
 require __DIR__.'/../../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
 echo "============================================================\n";
 echo "REPORTE DE MAPEO — VisualGym ↔ Legacy\n";
-echo "Generado: ".date('Y-m-d H:i:s')."\n";
+echo 'Generado: '.date('Y-m-d H:i:s')."\n";
 echo "============================================================\n\n";
 
 // ========== SECCIÓN 1: LEGACY ==========
@@ -38,7 +39,7 @@ $legacy = Ejercicio::query()
     ->orderBy('nombre')
     ->get(['id', 'nombre', 'equipamiento', 'grupo_muscular']);
 
-echo "Total legacy: ".count($legacy)."\n\n";
+echo 'Total legacy: '.count($legacy)."\n\n";
 printf("%-6s %-50s %-25s %s\n", 'ID', 'NOMBRE LEGACY', 'EQUIPAMIENTO', 'GRUPO MUSCULAR');
 echo str_repeat('-', 120)."\n";
 foreach ($legacy as $ej) {
@@ -61,7 +62,7 @@ $visualgym = Ejercicio::query()
     ->orderBy('nombre')
     ->get(['id', 'nombre', 'equipamiento', 'body_part', 'target']);
 
-echo "Total VisualGym: ".count($visualgym)."\n\n";
+echo 'Total VisualGym: '.count($visualgym)."\n\n";
 
 // Agrupar por equipamiento para que sea fácil de escanear
 $byEquip = [];

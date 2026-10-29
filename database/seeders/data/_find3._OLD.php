@@ -1,9 +1,11 @@
 <?php
+
 require __DIR__.'/../../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
 $keywords = [
     'stiff-leg deadlift',
@@ -30,5 +32,7 @@ $keywords = [
 foreach ($keywords as $kw) {
     echo "\n=== '$kw' ===\n";
     $ej = Ejercicio::where('source', 'visualgym')->where('nombre', 'like', '%'.$kw.'%')->take(5)->get(['nombre', 'equipamiento']);
-    foreach ($ej as $x) echo "  - " . $x->nombre . " [{$x->equipamiento}]\n";
+    foreach ($ej as $x) {
+        echo '  - '.$x->nombre." [{$x->equipamiento}]\n";
+    }
 }
