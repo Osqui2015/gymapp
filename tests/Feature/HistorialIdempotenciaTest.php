@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Ejercicio;
 use App\Models\Historial;
 use App\Models\Rutina;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -181,7 +183,7 @@ class HistorialIdempotenciaTest extends TestCase
             'fecha' => $hoy,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         Historial::create([
             'user_id' => $user->id,
@@ -200,7 +202,7 @@ class HistorialIdempotenciaTest extends TestCase
     public function test_quick_log_dos_veces_el_mismo_dia_no_duplica_la_fila(): void
     {
         $user = User::factory()->create();
-        $ejercicio = \App\Models\Ejercicio::factory()->create(['nombre' => 'Press militar']);
+        $ejercicio = Ejercicio::factory()->create(['nombre' => 'Press militar']);
 
         $this->actingAs($user)->postJson("/api/ejercicios/{$ejercicio->id}/quick-log")->assertOk();
         $this->actingAs($user)->postJson("/api/ejercicios/{$ejercicio->id}/quick-log")->assertOk();
