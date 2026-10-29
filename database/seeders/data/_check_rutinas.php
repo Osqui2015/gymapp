@@ -1,9 +1,11 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
 echo "=== Rutinas por nivel (created_by=NULL = oficiales) ===\n";
@@ -23,5 +25,5 @@ echo $oscar ? "Oscar: id={$oscar->id} nick={$oscar->nick} role={$oscar->role}\n"
 echo "\n=== Primeras 5 rutinas (cualquier nivel) ===\n";
 $first = DB::table('rutinas')->limit(5)->get(['id', 'nivel', 'modalidad', 'dia', 'ejercicio_nombre', 'created_by']);
 foreach ($first as $r) {
-    echo "{$r->id} | {$r->nivel} | {$r->modalidad} | {$r->dia} | {$r->ejercicio_nombre} | cb=" . ($r->created_by ?? 'NULL') . "\n";
+    echo "{$r->id} | {$r->nivel} | {$r->modalidad} | {$r->dia} | {$r->ejercicio_nombre} | cb=".($r->created_by ?? 'NULL')."\n";
 }

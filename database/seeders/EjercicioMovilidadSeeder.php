@@ -73,6 +73,7 @@ class EjercicioMovilidadSeeder extends Seeder
             $musculo = Musculo::where('slug', $slug)->first();
             if (! $musculo) {
                 $this->command->warn("  Músculo '{$slug}' no encontrado en el catálogo: se omite.");
+
                 continue;
             }
             $pivot[$musculo->id] = [

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -64,25 +65,25 @@ class Ejercicio extends Model
 
     // === Scopes para el catálogo VisualGym ===
 
-    /** @param  \Illuminate\Database\Eloquent\Builder<self>  $query */
+    /** @param  Builder<self>  $query */
     public function scopeFromVisualGym($query)
     {
         return $query->where('source', 'visualgym');
     }
 
-    /** @param  \Illuminate\Database\Eloquent\Builder<self>  $query */
+    /** @param  Builder<self>  $query */
     public function scopeByBodyPart($query, ?string $bodyPart)
     {
         return $bodyPart ? $query->where('body_part', $bodyPart) : $query;
     }
 
-    /** @param  \Illuminate\Database\Eloquent\Builder<self>  $query */
+    /** @param  Builder<self>  $query */
     public function scopeByTarget($query, ?string $target)
     {
         return $target ? $query->where('target', $target) : $query;
     }
 
-    /** @param  \Illuminate\Database\Eloquent\Builder<self>  $query */
+    /** @param  Builder<self>  $query */
     public function scopeByEquipment($query, ?string $equipment)
     {
         return $equipment ? $query->where('equipamiento', $equipment) : $query;
@@ -94,7 +95,7 @@ class Ejercicio extends Model
      * Para datasets grandes considerar FULLTEXT; el LIKE sigue siendo
      * aceptable hasta ~5k registros.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @param  Builder<self>  $query
      */
     public function scopeSearch($query, ?string $term)
     {

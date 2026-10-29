@@ -8,6 +8,8 @@ use App\Models\EjercicioFavorito;
 use App\Models\Historial;
 use App\Models\Musculo;
 use App\Services\CacheHistorial;
+use App\Support\VisualGymI18n;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EjercicioController extends Controller
@@ -322,12 +324,13 @@ class EjercicioController extends Controller
 
         // Traducir campos EN → ES y normalizar is_favorite a bool.
         $page->getCollection()->transform(function ($ej) use ($userId) {
-            $ej->body_part_es = \App\Support\VisualGymI18n::translate('body_part', $ej->body_part);
-            $ej->target_es = \App\Support\VisualGymI18n::translate('target', $ej->target);
-            $ej->equipamiento_es = \App\Support\VisualGymI18n::translate('equipamiento', $ej->equipamiento);
+            $ej->body_part_es = VisualGymI18n::translate('body_part', $ej->body_part);
+            $ej->target_es = VisualGymI18n::translate('target', $ej->target);
+            $ej->equipamiento_es = VisualGymI18n::translate('equipamiento', $ej->equipamiento);
             if ($userId) {
                 $ej->is_favorite = (bool) $ej->is_favorite;
             }
+
             return $ej;
         });
 
@@ -358,9 +361,9 @@ class EjercicioController extends Controller
         $data['image_url'] = $ej->image_url;
         $data['gif_url_full'] = $ej->gif_url;
         // Traducción ES:
-        $data['body_part_es'] = \App\Support\VisualGymI18n::translate('body_part', $ej->body_part);
-        $data['target_es'] = \App\Support\VisualGymI18n::translate('target', $ej->target);
-        $data['equipamiento_es'] = \App\Support\VisualGymI18n::translate('equipamiento', $ej->equipamiento);
+        $data['body_part_es'] = VisualGymI18n::translate('body_part', $ej->body_part);
+        $data['target_es'] = VisualGymI18n::translate('target', $ej->target);
+        $data['equipamiento_es'] = VisualGymI18n::translate('equipamiento', $ej->equipamiento);
         // is_favorite si hay user:
         if ($request->user()) {
             $data['is_favorite'] = $ej->favoritos()
@@ -423,9 +426,10 @@ class EjercicioController extends Controller
             foreach ($values as $v) {
                 $out[] = [
                     'value' => $v,
-                    'label_es' => \App\Support\VisualGymI18n::translate($field, $v),
+                    'label_es' => VisualGymI18n::translate($field, $v),
                 ];
             }
+
             return $out;
         };
 
@@ -759,7 +763,7 @@ class EjercicioController extends Controller
      * Keys: nombre del ejercicio legacy normalizado (lowercase, sin acentos)
      * Values: nombre VisualGym exacto
      */
-private const NAME_ALIASES = [
+    private const NAME_ALIASES = [
 
         'abduccion de cadera en polea' => 'cable standing hip extension',
 
@@ -1266,12 +1270,10 @@ private const NAME_ALIASES = [
 
     ];
 
-
-
     /**
      * Empaqueta la respuesta estándar para este endpoint.
      */
-    private function mediaResponse(Ejercicio $ej): \Illuminate\Http\JsonResponse
+    private function mediaResponse(Ejercicio $ej): JsonResponse
     {
         return response()->json([
             'id' => $ej->id,

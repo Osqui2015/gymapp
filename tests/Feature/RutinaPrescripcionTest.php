@@ -8,6 +8,7 @@ use App\Services\RutinaPrescripcionService;
 use Database\Seeders\Rutina3DiasV2Seeder;
 use Database\Seeders\RutinaPrescripcionBackfillSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -74,7 +75,7 @@ class RutinaPrescripcionTest extends TestCase
         }, $matches);
     }
 
-    private function filasV2(): \Illuminate\Support\Collection
+    private function filasV2(): Collection
     {
         return Rutina::where('nivel', 'Personalizada')
             ->where('modalidad', Rutina3DiasV2Seeder::MODALIDAD)

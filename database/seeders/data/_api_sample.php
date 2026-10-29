@@ -1,14 +1,18 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use App\Http\Controllers\RutinaController;
 use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Http\Request;
 
-$req = \Illuminate\Http\Request::create('/api/rutinas', 'GET');
+$req = Request::create('/api/rutinas', 'GET');
 $req->setUserResolver(fn () => User::find(1));
-$ctrl = new \App\Http\Controllers\RutinaController();
+$ctrl = new RutinaController;
 $resp = $ctrl->index($req);
 $data = json_decode($resp->getContent(), true);
 
@@ -16,15 +20,17 @@ $data = json_decode($resp->getContent(), true);
 echo "=== Primeras 5 rutinas con niveles/keys ===\n";
 $sample = [];
 foreach ($data as $r) {
-    if (!isset($sample[$r['nivel']])) {
+    if (! isset($sample[$r['nivel']])) {
         $sample[$r['nivel']] = $r;
     }
-    if (count($sample) === 3) break;
+    if (count($sample) === 3) {
+        break;
+    }
 }
 foreach ($sample as $nivel => $r) {
     echo "\n$nivel:\n";
     foreach (['id', 'nivel', 'modalidad', 'dia', 'ejercicio_nombre', 'series', 'reps_min', 'orden', 'is_favorita', 'created_by'] as $k) {
-        echo "  $k: " . ($r[$k] ?? 'NULL') . "\n";
+        echo "  $k: ".($r[$k] ?? 'NULL')."\n";
     }
 }
 

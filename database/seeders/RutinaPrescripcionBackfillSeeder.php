@@ -53,6 +53,7 @@ class RutinaPrescripcionBackfillSeeder extends Seeder
                         // sin RIR objetivo prescrito)"): no hay prescripción
                         // que derivar y el front parsea las notas igual.
                         $sinBloques++;
+
                         continue;
                     }
 

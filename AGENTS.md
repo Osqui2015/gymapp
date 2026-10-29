@@ -59,6 +59,32 @@ Producción: `gym.tecnorexs.com` → `domains/gym.tecnorexs.com/public_html/`.
   que derivar lo mismo que `prescripcion`
   (`App\Services\RutinaPrescripcionService` ↔ `resources/js/utils/rutinaPrescripcion.js`).
 
+### Procedimiento real de deploy (Hostinger)
+El server de producción **NO tiene repo git**: no hay `git pull` ni remote
+configurado. El deploy es manual, subiendo un paquete con las rutas exactas
+del repo (`.tar.gz` o `.zip`) por el File Manager / FTP.
+
+1. Backup de la DB **antes** de migrar: `mysqldump` (o export de phpMyAdmin).
+   Backup de código: `tar -czf ~/backups/app_pre_<fecha>.tar.gz app database/migrations public .env`.
+2. En el server (`~/domains/gym.tecnorexs.com/public_html`):
+   ```bash
+   mv public/build public/build.bak.$(date +%Y%m%d_%H%M)   # el build viejo ES el rollback
+   tar -xzf deploy.tar.gz -C .
+   ```
+3. `php artisan config:clear` **ANTES** de `migrate`: si quedó una
+   `config:cache` con una `DB_PASSWORD` vieja, Laravel ignora el `.env` y
+   `migrate` muere con `Access denied for user ... (using password: YES)`.
+4. `php artisan migrate --force` → `php artisan webpush:vapid --no-interaction`
+   → `php artisan optimize:clear` → `php artisan config:cache && php artisan route:cache && php artisan view:cache`.
+5. Verificar: 0 colisiones sobre `(user_id, rutina_nombre, dia, ejercicio_nombre,
+   series_numero, fecha)`, catálogo `created_by IS NULL` = 238 rutinas,
+   `favicon.ico` ~15 KB (antes era 0).
+6. Si cambian los assets, **bumpear `VERSION` en `public/sw.js`**: el service
+   worker cachea `/favicon.ico` y `/icons/*` con CacheFirst (URLs estables, sin
+   hash) y sin bumpear la versión los usuarios siguen viendo los iconos viejos.
+7. Después: purgar cache de Cloudflare y pedir recarga fuerte a los usuarios
+   con la PWA instalada.
+
 ## Invariante de idempotencia del historial (NO romper)
 - Una fila de `historials` es única por
   `(user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha)`.

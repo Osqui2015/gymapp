@@ -1,9 +1,11 @@
 <?php
+
 require __DIR__.'/../../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
 $targets = [
     'barbell bench press',
@@ -86,5 +88,7 @@ if (empty($missing)) {
     echo "✓ Todos los aliases apuntan a VisualGym existentes\n";
 } else {
     echo "✗ Faltan en VisualGym:\n";
-    foreach ($missing as $m) echo "  - '$m'\n";
+    foreach ($missing as $m) {
+        echo "  - '$m'\n";
+    }
 }

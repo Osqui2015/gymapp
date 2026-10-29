@@ -1,9 +1,11 @@
 <?php
+
 require __DIR__.'/../../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Ejercicio;
+use Illuminate\Contracts\Console\Kernel;
 
 $keywords = [
     'bulgarian',
@@ -26,6 +28,6 @@ foreach ($keywords as $kw) {
         ->take(8)
         ->get(['nombre', 'equipamiento']);
     foreach ($ej as $e) {
-        echo "  - " . $e->nombre . " [{$e->equipamiento}]\n";
+        echo '  - '.$e->nombre." [{$e->equipamiento}]\n";
     }
 }

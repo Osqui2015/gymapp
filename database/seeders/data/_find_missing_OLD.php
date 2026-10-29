@@ -1,6 +1,7 @@
 <?php
+
 // Buscar matches para los legacy sin VisualGym exacto
-$json = json_decode(file_get_contents(__DIR__ . '/exercises.json'), true);
+$json = json_decode(file_get_contents(__DIR__.'/exercises.json'), true);
 
 $queries = [
     'dragon flag',
@@ -17,11 +18,11 @@ foreach ($queries as $q) {
     foreach ($json as $ex) {
         $name = strtolower($ex['name'] ?? '');
         if (strpos($name, $q) !== false) {
-            $matches[] = $ex['id'] . ' | ' . $ex['name'] . ' | target=' . ($ex['target'] ?? '?') . ' | body=' . ($ex['bodyPart'] ?? '?') . ' | eq=' . ($ex['equipment'] ?? '?');
+            $matches[] = $ex['id'].' | '.$ex['name'].' | target='.($ex['target'] ?? '?').' | body='.($ex['bodyPart'] ?? '?').' | eq='.($ex['equipment'] ?? '?');
         }
     }
     foreach (array_slice($matches, 0, 15) as $m) {
-        echo $m . "\n";
+        echo $m."\n";
     }
-    echo "Total: " . count($matches) . "\n\n";
+    echo 'Total: '.count($matches)."\n\n";
 }

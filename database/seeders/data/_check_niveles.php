@@ -1,24 +1,29 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use App\Http\Controllers\RutinaController;
+use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 echo "=== Niveles distintos en BD ===\n";
 $rows = DB::table('rutinas')->distinct()->pluck('nivel');
 foreach ($rows as $n) {
-    echo "  '$n' (len=" . strlen($n) . ", hex=" . bin2hex($n) . ")\n";
+    echo "  '$n' (len=".strlen($n).', hex='.bin2hex($n).")\n";
 }
 
 echo "\n=== RutinaController::index respuesta simulada (Oscar id=1) ===\n";
-$req = \Illuminate\Http\Request::create('/api/rutinas', 'GET');
-$req->setUserResolver(fn () => \App\Models\User::find(1));
-$ctrl = new \App\Http\Controllers\RutinaController();
+$req = Request::create('/api/rutinas', 'GET');
+$req->setUserResolver(fn () => User::find(1));
+$ctrl = new RutinaController;
 $resp = $ctrl->index($req);
 $data = json_decode($resp->getContent(), true);
-echo "Total rutinas devueltas: " . count($data) . "\n";
+echo 'Total rutinas devueltas: '.count($data)."\n";
 $niveles = [];
 foreach ($data as $r) {
     $niveles[$r['nivel']] = ($niveles[$r['nivel']] ?? 0) + 1;

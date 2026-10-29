@@ -55,6 +55,7 @@ class Rutina3DiasV4SeederTest extends TestCase
                     $rutina->ejercicio_nombre,
                     ['Movilidad articular y activación', 'Plancha abdominal', 'Plancha lateral', 'Elevación de piernas colgado']
                 );
+
                 continue;
             }
 

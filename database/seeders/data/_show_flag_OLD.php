@@ -1,5 +1,6 @@
 <?php
-$j = json_decode(file_get_contents(__DIR__ . '/exercises.json'), true);
+
+$j = json_decode(file_get_contents(__DIR__.'/exercises.json'), true);
 
 // Mostrar info completa de "flag" y similares
 echo "=== FLAG id=3303 (detalle) ===\n";
@@ -21,6 +22,6 @@ echo "\n=== Buscar: 'sit-up' y 'decline' ===\n";
 foreach ($j as $ex) {
     $name = strtolower($ex['name']);
     if (strpos($name, 'decline') !== false && $ex['category'] === 'waist') {
-        echo $ex['id'] . " | " . $ex['name'] . " | eq=" . $ex['equipment'] . " | target=" . $ex['target'] . "\n";
+        echo $ex['id'].' | '.$ex['name'].' | eq='.$ex['equipment'].' | target='.$ex['target']."\n";
     }
 }

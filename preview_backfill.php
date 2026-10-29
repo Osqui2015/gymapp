@@ -1,12 +1,14 @@
 <?php
+
 require __DIR__.'/vendor/autoload.php';
 $app = require __DIR__.'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
-echo "=== Candidatos al backfill ===" . PHP_EOL;
-echo "(ciclo_inicio NULL + dia_actual LIKE 'Día 1%')" . PHP_EOL . PHP_EOL;
+echo '=== Candidatos al backfill ==='.PHP_EOL;
+echo "(ciclo_inicio NULL + dia_actual LIKE 'Día 1%')".PHP_EOL.PHP_EOL;
 
 $candidatos = DB::table('user_rutinas as ur')
     ->leftJoin('rutinas as r', 'ur.rutina_id', '=', 'r.id')
@@ -40,4 +42,4 @@ foreach ($candidatos as $c) {
     );
 }
 
-echo PHP_EOL . "Total candidatos: " . $candidatos->count() . PHP_EOL;
+echo PHP_EOL.'Total candidatos: '.$candidatos->count().PHP_EOL;

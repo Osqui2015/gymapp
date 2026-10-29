@@ -83,6 +83,7 @@ class VisualGymSeeder extends Seeder
 
             if (! $externalId) {
                 $skipped++;
+
                 continue;
             }
 
@@ -132,7 +133,7 @@ class VisualGymSeeder extends Seeder
             $updated += $u;
         }
 
-        $this->command->info("VisualGym import completo:");
+        $this->command->info('VisualGym import completo:');
         $this->command->info("  • Creados:   $created");
         $this->command->info("  • Actualizados: $updated");
         $this->command->info("  • Saltados (sin id): $skipped");

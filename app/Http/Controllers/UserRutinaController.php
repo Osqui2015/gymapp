@@ -232,8 +232,8 @@ class UserRutinaController extends Controller
         if ($rows->isEmpty()) {
             $rows = (clone $baseQuery)
                 ->where(function ($q) use ($dia) {
-                    $q->where('dia', 'like', $dia . '%')
-                      ->orWhere('dia', 'like', '%' . $dia . '%');
+                    $q->where('dia', 'like', $dia.'%')
+                        ->orWhere('dia', 'like', '%'.$dia.'%');
                 })
                 ->orderBy('orden')
                 ->orderBy('id')

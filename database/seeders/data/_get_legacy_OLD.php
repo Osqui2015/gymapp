@@ -1,13 +1,15 @@
 <?php
-require __DIR__ . '/../../../vendor/autoload.php';
-$app = require __DIR__ . '/../../../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../../../vendor/autoload.php';
+$app = require __DIR__.'/../../../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
 // Cargar NAME_ALIASES del controller
-$src = file_get_contents(__DIR__ . '/../../../app/Http/Controllers/EjercicioController.php');
+$src = file_get_contents(__DIR__.'/../../../app/Http/Controllers/EjercicioController.php');
 preg_match('/private const NAME_ALIASES = \[(.*?)\];/s', $src, $m);
 $body = $m[1];
 
@@ -22,8 +24,8 @@ foreach ($matches as $mm) {
 
 // Legacy names
 $legacy = DB::table('ejercicios')->whereNull('source')->orderBy('nombre')->get(['id', 'nombre']);
-echo "Total legacy: " . $legacy->count() . PHP_EOL;
-echo "Aliases: " . count($aliases) . PHP_EOL;
+echo 'Total legacy: '.$legacy->count().PHP_EOL;
+echo 'Aliases: '.count($aliases).PHP_EOL;
 
 $sinMatch = [];
 foreach ($legacy as $r) {
@@ -36,13 +38,13 @@ foreach ($legacy as $r) {
             break;
         }
     }
-    if (!$found) {
+    if (! $found) {
         $sinMatch[] = ['id' => $r->id, 'nombre' => $r->nombre, 'norm' => $norm];
     }
 }
 
-echo "Sin match: " . count($sinMatch) . PHP_EOL;
+echo 'Sin match: '.count($sinMatch).PHP_EOL;
 echo PHP_EOL;
 foreach ($sinMatch as $sm) {
-    echo $sm['id'] . "\t" . $sm['nombre'] . "\n";
+    echo $sm['id']."\t".$sm['nombre']."\n";
 }
