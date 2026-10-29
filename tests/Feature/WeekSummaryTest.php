@@ -12,14 +12,14 @@ class WeekSummaryTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeSet($user, $fecha, $ejercicio = 'Press banca', $peso = 60, $reps = 8)
+    private function makeSet($user, $fecha, $ejercicio = 'Press banca', $peso = 60, $reps = 8, $serie = 1)
     {
         return Historial::create([
             'user_id' => $user->id,
             'rutina_nombre' => 'Rutina A',
             'dia' => 'Día 1',
             'ejercicio_nombre' => $ejercicio,
-            'series_numero' => 1,
+            'series_numero' => $serie,
             'reps_min' => '8', 'reps_max' => '12',
             'descanso_min' => 2, 'peso' => $peso, 'reps_realizadas' => $reps,
             'completado' => true,
@@ -47,7 +47,9 @@ class WeekSummaryTest extends TestCase
         $miercoles = $lunes->copy()->addDays(2);
 
         $this->makeSet($user, $lunes->toDateString(), 'Press banca', 60, 8);
-        $this->makeSet($user, $lunes->toDateString(), 'Press banca', 60, 8);
+        // Set distinto: el mismo set en la misma fecha es la misma fila
+        // (índice UNIQUE uq_historials_idempotencia).
+        $this->makeSet($user, $lunes->toDateString(), 'Press banca', 60, 8, 2);
         $this->makeSet($user, $miercoles->toDateString(), 'Sentadilla', 80, 5);
 
         // Run controller-like query directly
@@ -61,7 +63,6 @@ class WeekSummaryTest extends TestCase
             ->groupBy('fecha_raw', 'fecha')
             ->orderBy('fecha_raw')
             ->get();
-        fwrite(STDERR, "\n[DEBUG] direct_sql_count=".$direct->count().' rows='.$direct->toJson()."\n");
 
         $response = $this->actingAs($user)->getJson('/api/historial/week-summary');
         $data = $response->json();

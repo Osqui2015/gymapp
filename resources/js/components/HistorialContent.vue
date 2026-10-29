@@ -18,7 +18,14 @@
             />
 
             <!-- Series pendientes de sincronizar (offline) -->
-            <SyncBadge :pending="offline.pendingCount.value" :syncing="offline.isSyncing.value" />
+            <SyncBadge
+            :pending="offline.pendingCount.value"
+            :syncing="offline.isSyncing.value"
+            :failed="offline.failedCount.value"
+            :error-message="offline.lastError.value"
+            @retry="reintentarSeriesFallidas"
+            @dismiss="descartarSeriesFallidas"
+        />
 
             <!-- Pull-to-refresh indicator (mobile) -->
             <HistorialPullRefresh
@@ -622,6 +629,19 @@ const isMobile = useMediaQuery('(max-width: 767px)');
 
 // Series pendientes de sincronizar (offline-first).
 const offline = useOfflineSeries();
+
+// Series rechazadas de forma permanente: el usuario decide si reintenta o descarta.
+const reintentarSeriesFallidas = async () => {
+    for (const fallida of [...offline.failedSeries.value]) {
+        await offline.retryFailed(fallida.client_id);
+    }
+};
+
+const descartarSeriesFallidas = async () => {
+    for (const fallida of [...offline.failedSeries.value]) {
+        await offline.dismissFailed(fallida.client_id);
+    }
+};
 
 const ejerciciosClave = ref([]);
 const todosEjercicios = ref([]);

@@ -2,7 +2,14 @@
     <div
         class="bg-[#0B0F17] text-slate-100 min-h-screen pb-28 antialiased selection:bg-indigo-500/30 selection:text-white"
     >
-        <SyncBadge :pending="offlinePending" :syncing="offlineSyncing" />
+        <SyncBadge
+        :pending="offlinePending"
+        :syncing="offlineSyncing"
+        :failed="offlineFailed"
+        :error-message="offlineLastError"
+        @retry="reintentarSeriesFallidas"
+        @dismiss="descartarSeriesFallidas"
+    />
 
         <!-- Indicador pull-to-refresh (mobile) -->
         <div
@@ -407,8 +414,27 @@ const {
     recordSet: offlineRecordSet,
     pendingCount: offlinePending,
     isSyncing: offlineSyncing,
+    failedCount: offlineFailed,
+    failedSeries: offlineFailedSeries,
+    lastError: offlineLastError,
+    retryFailed: offlineRetryFailed,
+    dismissFailed: offlineDismissFailed,
 } = useOfflineSeries();
 const offline = { recordSet: offlineRecordSet };
+
+// Series rechazadas de forma permanente: el usuario decide si reintenta o descarta.
+const reintentarSeriesFallidas = async () => {
+    for (const fallida of [...offlineFailedSeries.value]) {
+        await offlineRetryFailed(fallida.client_id);
+    }
+};
+
+const descartarSeriesFallidas = async () => {
+    for (const fallida of [...offlineFailedSeries.value]) {
+        await offlineDismissFailed(fallida.client_id);
+    }
+};
+
 const showNotification = (message, type = 'success') => toast.add(message, type);
 
 const rutinaStore = useRutinaStore();
@@ -834,6 +860,7 @@ const saveQuickInput = async ({ records }) => {
     try {
         const fecha = new Date().toISOString().split('T')[0];
         let allSynced = true;
+        let rechazadas = 0;
         for (const r of records) {
             const result = await offline.recordSet({
                 fecha,
@@ -851,8 +878,18 @@ const saveQuickInput = async ({ records }) => {
                 nota_user: r.nota_user,
             });
             if (result.status === 'queued' || result.status === 'lost') allSynced = false;
+            // Rechazo permanente: la serie no se guarda. Queda marcada como
+            // fallida y se avisa, en vez de perderse en silencio.
+            if (result.status === 'rejected') {
+                allSynced = false;
+                rechazadas += 1;
+            }
         }
-        if (allSynced) {
+        if (rechazadas > 0) {
+            toast.error(
+                `${rechazadas} ${rechazadas === 1 ? 'serie no se pudo guardar' : 'series no se pudieron guardar'}. Revisá el aviso de sincronización.`
+            );
+        } else if (allSynced) {
             toast.success(`${records.length} series registradas ✓`);
             try {
                 confetti.mini();

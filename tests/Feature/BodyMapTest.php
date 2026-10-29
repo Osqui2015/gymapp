@@ -46,15 +46,20 @@ class BodyMapTest extends TestCase
         return $ejercicio;
     }
 
-    private function crearSet(User $user, Ejercicio $ejercicio, bool $completado = true, ?string $fecha = null): Historial
-    {
+    private function crearSet(
+        User $user,
+        Ejercicio $ejercicio,
+        bool $completado = true,
+        ?string $fecha = null,
+        int $seriesNumero = 1
+    ): Historial {
         return Historial::create([
             'user_id' => $user->id,
             'rutina_nombre' => 'Push',
             'dia' => 'Día 1',
             'ejercicio_nombre' => $ejercicio->nombre,
             'ejercicio_id' => $ejercicio->id,
-            'series_numero' => 1,
+            'series_numero' => $seriesNumero,
             'reps_min' => '8', 'reps_max' => '12',
             'reps_realizadas' => 10,
             'descanso_min' => 2, 'peso' => 60,
@@ -81,7 +86,9 @@ class BodyMapTest extends TestCase
         $user = User::factory()->create(['role' => User::ROLE_COMUN]);
         $ejercicio = $this->crearEjercicioConMusculo($this->crearMusculo());
         $this->crearSet($user, $ejercicio);
-        $this->crearSet($user, $ejercicio);
+        // Sets distintos: el mismo set en la misma fecha es la misma fila
+        // (índice UNIQUE uq_historials_idempotencia).
+        $this->crearSet($user, $ejercicio, seriesNumero: 2);
 
         $response = $this->actingAs($user)->getJson('/api/body-map/data?window=90');
 
@@ -187,7 +194,7 @@ class BodyMapTest extends TestCase
         $user = User::factory()->create(['role' => User::ROLE_COMUN]);
         $ejercicio = $this->crearEjercicioConMusculo($this->crearMusculo());
         $this->crearSet($user, $ejercicio, completado: false);
-        $this->crearSet($user, $ejercicio, completado: true);
+        $this->crearSet($user, $ejercicio, completado: true, seriesNumero: 2);
 
         $response = $this->actingAs($user)->getJson('/api/body-map/data?window=90');
 

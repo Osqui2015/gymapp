@@ -396,32 +396,72 @@ class RutinaController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'nivel' => 'required|string',
-            'modalidad' => 'required|string',
+            'nivel' => ['required', 'string', 'max:255'],
+            'modalidad' => ['required', 'string', 'max:255'],
+            // Alcance del borrado.
+            //   'propias'  -> rutinas creadas por quien pide el borrado (default, seguro)
+            //   'catalogo' -> catálogo oficial (created_by IS NULL). Solo para admin.
+            //
+            // Antes el filtro `created_by` se aplicaba ÚNICAMENTE a los no
+            // admin: un admin borraba por (nivel, modalidad) sin filtro y se
+            // carried el catálogo del sistema entero, desasignándolo de todos
+            // los alumnos. Ahora el alcance hay que pedirlo explícitamente.
+            'scope' => ['nullable', 'string', 'in:propias,catalogo'],
         ]);
 
-        \DB::transaction(function () use ($data, $user) {
+        $esAdmin = $user && $user->hasRole(User::ROLE_ADMINISTRADOR);
+        $scope = $data['scope'] ?? 'propias';
+
+        // Un admin que pide 'catalogo' sin autorización explícita no puede:
+        // 'catalogo' solo aplica si el usuario es admin.
+        if ($scope === 'catalogo' && ! $esAdmin) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No autorizado para eliminar rutinas del catálogo.',
+            ], 403);
+        }
+
+        $resultado = \DB::transaction(function () use ($data, $user, $esAdmin, $scope) {
             $query = Rutina::query()
                 ->where('nivel', $data['nivel'])
                 ->where('modalidad', $data['modalidad']);
 
-            if ($user && ! $user->hasRole(User::ROLE_ADMINISTRADOR)) {
+            if ($esAdmin && $scope === 'catalogo') {
+                $query->whereNull('created_by');
+            } else {
+                // Usuario normal, o admin con scope 'propias'.
                 $query->where('created_by', $user->id);
             }
 
             $routineIds = $query->pluck('id');
 
+            $asignacionesEliminadas = 0;
             if ($routineIds->isNotEmpty()) {
-                UserRutina::whereIn('rutina_id', $routineIds)->delete();
+                $asignacionesEliminadas = UserRutina::whereIn('rutina_id', $routineIds)->delete();
             }
 
-            $query->delete();
+            $eliminadas = $query->delete();
+
+            return [
+                'eliminadas' => $eliminadas,
+                'asignaciones_eliminadas' => $asignacionesEliminadas,
+            ];
         });
 
-        return response()->json([
+        if ($esAdmin && $scope === 'catalogo') {
+            \Log::warning('[rutinas] Borrado de catálogo', [
+                'admin_id' => $user->id,
+                'nivel' => $data['nivel'],
+                'modalidad' => $data['modalidad'],
+                'eliminadas' => $resultado['eliminadas'],
+                'asignaciones_eliminadas' => $resultado['asignaciones_eliminadas'],
+            ]);
+        }
+
+        return response()->json(array_merge([
             'success' => true,
             'message' => 'Rutina eliminada correctamente.',
-        ]);
+        ], $resultado));
     }
 
     /**

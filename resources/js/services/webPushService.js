@@ -91,6 +91,30 @@ export async function registerServiceWorker() {
     }
 }
 
+/**
+ * ¿La suscripción del navegador se creó con ESTA applicationServerKey?
+ *
+ * Importante tras rotar las claves VAPID: la suscripción vieja sigue
+ * existiendo en el navegador pero el push service la rechaza con 404/410,
+ * así que hay que compararla y rehacerla.
+ *
+ * @param {PushSubscription} sub
+ * @param {string} vapidPublicKey Base64url de la clave pública del servidor.
+ * @returns {boolean} true si coincide (o si no se puede comparar).
+ */
+export function suscriptcionUsaKey(sub, vapidPublicKey) {
+    if (!sub || !vapidPublicKey) return true;
+    try {
+        const actual = sub.options?.applicationServerKey;
+        if (!actual) return true; // no exponen la key: no se toca nada
+        const nueva = urlBase64ToUint8Array(vapidPublicKey);
+        if (actual.length !== nueva.length) return false;
+        return Array.from(actual).every((byte, i) => byte === nueva[i]);
+    } catch {
+        return true;
+    }
+}
+
 export async function subscribeToPush(vapidPublicKey) {
     if (!registration) await registerServiceWorker();
     if (!registration || !('pushManager' in registration)) {
@@ -98,6 +122,20 @@ export async function subscribeToPush(vapidPublicKey) {
     }
 
     let sub = await registration.pushManager.getSubscription();
+
+    // Si la suscripción se creó con otra applicationServerKey (rotación de
+    // claves VAPID) hay que deshacerla: con la key vieja el push service
+    // rechaza todos los envíos (404/410) y el usuario se queda sin avisos
+    // aunque la UI diga que tiene notificaciones activas.
+    if (sub && !suscriptcionUsaKey(sub, vapidPublicKey)) {
+        try {
+            await sub.unsubscribe();
+        } catch {
+            /* ignore: seguimos con una suscripción nueva */
+        }
+        sub = null;
+    }
+
     if (!sub) {
         if (!vapidPublicKey) return { ok: false, reason: 'no-vapid-key' };
         try {
