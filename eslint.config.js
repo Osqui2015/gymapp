@@ -13,6 +13,8 @@ export default [
             'dist/**',
             'scripts/**',
             'yo/**',
+            // Paquetes de deploy locales (build compilado para subir al server).
+            'deploy/**',
         ],
     },
     js.configs.recommended,
