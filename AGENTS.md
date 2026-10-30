@@ -85,6 +85,26 @@ del repo (`.tar.gz` o `.zip`) por el File Manager / FTP.
 7. Después: purgar cache de Cloudflare y pedir recarga fuerte a los usuarios
    con la PWA instalada.
 
+### El scheduler necesita un cron en el server
+`bootstrap/app.php` define 4 tareas diarias. Si el cron no está configurado en
+el server **no corre ninguna** (ni el backup diario de la base):
+
+| Tarea | Cuándo | Qué hace |
+|---|---|---|
+| `membresias:actualizar-estados` | 00:05 | marca membresías vencidas (período de gracia) |
+| `db:backup --retention-days=7` | 02:00 | backup comprimido de la DB + rotación |
+| `reminders:send` | 09:00 | recordatorios de membresía por vencer + inactividad |
+| `plateaus:detect` | 10:00 | detecta mesetas de progreso y notifica |
+
+En Hostinger (cPanel → Cron Jobs), una entrada **por minuto**:
+
+```bash
+* * * * * cd /home/<usuario>/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+Verificar con `php artisan schedule:list` (debe listar las 4 tareas con su
+"Next Due").
+
 ## Invariante de idempotencia del historial (NO romper)
 - Una fila de `historials` es única por
   `(user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha)`.
