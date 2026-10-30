@@ -28,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Se aplica en ambos stacks para que ningún endpoint devuelva headers
         // inseguros por accidente.
         $middleware->append(SecurityHeadersMiddleware::class);
+
+        // Rate limiting para las 148 rutas de routes/api.php.
+        // Laravel 12 solo agrega `throttle:api` al grupo `api` si existe un
+        // limiter con ese nombre (AppServiceProvider::registerRateLimiters).
+        // Sin esto la API no tenía NINGÚN límite de peticiones.
+        $middleware->api(append: ['throttle:api']);
     })
     ->withSchedule(function (Schedule $schedule): void {
         // Recordatorios automáticos: 1 vez por día a las 9am hora local.

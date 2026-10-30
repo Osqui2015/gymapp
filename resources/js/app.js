@@ -17,6 +17,7 @@ import GlobalSearch from './components/GlobalSearch.vue';
 import RutinaPublica from './components/RutinaPublica.vue';
 import { setupGlobalToastListeners } from './composables/useToast';
 import { setupKeyboardShortcuts } from './composables/useKeyboardShortcuts';
+import { useToastStore } from './stores/toast';
 
 // Pinia se crea una sola vez y se共享 entre las dos apps Vue.
 const pinia = createPinia();
@@ -26,6 +27,30 @@ const pinia = createPinia();
 // renderiza su propio componente, así que solo se descarga el necesario.
 const app = createApp({});
 app.use(pinia);
+
+// === Manejo global de errores de Vue ===
+// Sin esto, una excepcion en un componente solo queda en la consola: el
+// usuario ve la pantalla a medio renderizar y no sabe que paso. Logueamos
+// el error completo y avisamos con un toast.
+//
+// Anti-spam: si el MISMO mensaje se repite dentro de 5s no se vuelve a
+// mostrar el toast (un componente que falla en loop no llena la pantalla).
+let lastErrorToast = { message: '', at: 0 };
+const registerErrorHandler = (vueApp) => {
+    vueApp.config.errorHandler = (err, instance, info) => {
+        console.error('[GymApp] error en componente:', err, info);
+        const message = err?.message || 'Ocurrió un error inesperado';
+        const now = Date.now();
+        if (message === lastErrorToast.message && now - lastErrorToast.at < 5000) return;
+        lastErrorToast = { message, at: now };
+        try {
+            useToastStore().error(message, { title: 'Error', duration: 8000 });
+        } catch (e) {
+            console.warn('[GymApp] no se pudo mostrar el toast de error:', e);
+        }
+    };
+};
+registerErrorHandler(app);
 
 // Componentes globales (siempre en el bundle inicial, son pequeños y/o globales)
 app.component('dark-mode-toggle', DarkModeToggle);
@@ -95,6 +120,7 @@ if (mountEl) {
         if (Component) {
             const soloApp = createApp(Component);
             soloApp.use(pinia);
+            registerErrorHandler(soloApp);
             soloApp.mount(target);
         } else {
             console.warn('[GymApp] target', targetName, 'not registered in app components');
@@ -107,6 +133,7 @@ if (mountEl) {
             const Component = app._context.components[dataName];
             const soloApp = createApp(Component);
             soloApp.use(pinia);
+            registerErrorHandler(soloApp);
             soloApp.mount(mountEl);
         }
         // Si no hay componente Vue, dejamos el HTML de Blade intacto.
@@ -120,6 +147,7 @@ const toastRoot = document.getElementById('toast-root');
 if (toastRoot) {
     const toastApp = createApp(ToastContainer);
     toastApp.use(pinia);
+    registerErrorHandler(toastApp);
     toastApp.mount(toastRoot);
 }
 
@@ -130,6 +158,7 @@ const updateRoot = document.getElementById('update-prompt-root');
 if (updateRoot) {
     const updateApp = createApp(UpdateAvailablePrompt);
     updateApp.use(pinia);
+    registerErrorHandler(updateApp);
     updateApp.mount(updateRoot);
 }
 
@@ -139,6 +168,7 @@ const restTimerRoot = document.getElementById('rest-timer-root');
 if (restTimerRoot) {
     const restTimerApp = createApp(DashboardRestTimer);
     restTimerApp.use(pinia);
+    registerErrorHandler(restTimerApp);
     restTimerApp.mount(restTimerRoot);
 }
 
@@ -147,6 +177,8 @@ import OfflineStatusBar from './components/training/OfflineStatusBar.vue';
 const offlineRoot = document.getElementById('offline-status-root');
 if (offlineRoot) {
     const offlineApp = createApp(OfflineStatusBar);
+    offlineApp.use(pinia);
+    registerErrorHandler(offlineApp);
     offlineApp.mount(offlineRoot);
 }
 
