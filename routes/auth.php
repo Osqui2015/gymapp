@@ -15,16 +15,21 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:register');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:login');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    // OJO: acá NO va throttle:password. PasswordResetLinkController ya tiene
+    // su propio limite (3 intentos por email+IP cada 10 min, que se limpia al
+    // enviar el link con exito y no revela si el email existe).
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 

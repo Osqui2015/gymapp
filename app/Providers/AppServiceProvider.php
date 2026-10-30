@@ -23,8 +23,11 @@ use App\Policies\MembresiaPolicy;
 use App\Policies\MetaPolicy;
 use App\Policies\ProgresoPolicy;
 use App\Policies\UserPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -56,6 +59,62 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerGates();
         $this->registerPolicies();
+        $this->registerRateLimiters();
+    }
+
+    /**
+     * Limiters de tasa (rate limiting).
+     *
+     * La app NO tenia ningun limite. Las 148 rutas de routes/api.php tienen
+     * el grupo de middleware `api`, pero Laravel 12 solo agrega
+     * `throttle:api` a ese grupo si existe un limiter llamado `api`
+     * (ver bootstrap/app.php). Sin el, no habia nada que frenara:
+     * - fuerza bruta de nick+password contra el login
+     * - saturacion de los endpoints caros (catalogo VisualGym, export, stats)
+     *
+     * Limites:
+     * - `api`      300/min por usuario autenticado, 120/min por IP anonima.
+     * - `login`    10/min por nick+IP.
+     * - `register` 5/min por IP.
+     *
+     * El "olvide mi contrasena" NO va aca: PasswordResetLinkController ya
+     * tiene su propio limite (3 por email+IP cada 10 min) que ademas limpia
+     * el contador al enviar el link con exito. Un middleware lo preemptaria.
+     */
+    protected function registerRateLimiters(): void
+    {
+        $tooMany = fn (string $message) => fn () => response()->json([
+            'message' => $message,
+            'retry_after' => 60,
+        ], 429);
+
+        RateLimiter::for('api', function (Request $request) use ($tooMany) {
+            $user = $request->user();
+
+            if ($user) {
+                return Limit::perMinute(300)
+                    ->by('u'.$user->id)
+                    ->response($tooMany('Demasiadas peticiones. Probá en un momento.'));
+            }
+
+            return Limit::perMinute(120)
+                ->by('ip'.$request->ip())
+                ->response($tooMany('Demasiadas peticiones. Probá en un momento.'));
+        });
+
+        RateLimiter::for('login', function (Request $request) use ($tooMany) {
+            $nick = strtolower(trim((string) $request->input('nick')));
+
+            return Limit::perMinute(10)
+                ->by($nick.'|'.$request->ip())
+                ->response($tooMany('Demasiados intentos de login. Esperá un minuto.'));
+        });
+
+        RateLimiter::for('register', function (Request $request) use ($tooMany) {
+            return Limit::perMinute(5)
+                ->by($request->ip())
+                ->response($tooMany('Demasiados registros desde esta IP. Esperá un minuto.'));
+        });
     }
 
     /**
