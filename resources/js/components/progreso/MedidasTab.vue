@@ -98,7 +98,7 @@
                     </div>
                 </div>
 
-                <form @submit.prevent="$emit('save', form)" class="space-y-4">
+                <form @submit.prevent="$emit('save', formLocal)" class="space-y-4">
                     <!-- SUBSECTION 1: Datos Personales -->
                     <div
                         class="bg-obsidian-card border border-obsidian-border rounded-2xl p-4 shadow-card-border space-y-3.5"
@@ -121,7 +121,7 @@
                                 </label>
                                 <input
                                     id="peso"
-                                    v-model.number="form.peso"
+                                    v-model.number="formLocal.peso"
                                     type="number"
                                     step="0.01"
                                     placeholder="Ej: 75.5"
@@ -138,7 +138,7 @@
                                 </label>
                                 <input
                                     id="grasa"
-                                    v-model.number="form.grasa_corporal"
+                                    v-model.number="formLocal.grasa_corporal"
                                     type="number"
                                     step="0.1"
                                     min="3"
@@ -160,7 +160,7 @@
                                 </label>
                                 <input
                                     id="altura"
-                                    v-model.number="form.altura"
+                                    v-model.number="formLocal.altura"
                                     type="number"
                                     step="0.01"
                                     placeholder="Ej: 178"
@@ -177,7 +177,7 @@
                                 </label>
                                 <input
                                     id="edad"
-                                    v-model.number="form.edad"
+                                    v-model.number="formLocal.edad"
                                     type="number"
                                     placeholder="Ej: 25"
                                     :required="progresos.length === 0"
@@ -197,7 +197,7 @@
                             <div class="relative">
                                 <select
                                     id="sexo"
-                                    v-model="form.sexo"
+                                    v-model="formLocal.sexo"
                                     :required="progresos.length === 0"
                                     class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white font-medium transition-all appearance-none cursor-pointer pr-10 outline-none"
                                 >
@@ -286,12 +286,12 @@
                             <MedidaInput
                                 v-for="m in medidasInputs"
                                 :key="m.campo"
-                                :value="form[m.campo]"
+                                :value="formLocal[m.campo]"
                                 :label="m.label"
                                 :hint="m.hint"
                                 :badgeClass="m.badgeClass"
                                 :placeholder="m.placeholder"
-                                @change="(v) => (form[m.campo] = v)"
+                                @change="(v) => (formLocal[m.campo] = v)"
                             />
                         </div>
 
@@ -705,6 +705,7 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue';
 import MedidaInput from './MedidaInput.vue';
 
 const props = defineProps({
@@ -719,6 +720,26 @@ const props = defineProps({
 });
 
 defineEmits(['save', 'ver-detalle', 'update:metricaGrafica']);
+
+// El formulario se edita sobre una COPIA local del prop `form`.
+//
+// Antes se mutaba el prop directamente (v-model="form.peso"), lo que esta
+// prohibido en Vue: mutar un prop hace que el padre no se entere del cambio
+// y rompe el flujo de datos de un solo sentido (vue/no-mutating-props).
+//
+// Ahora el padre manda `form` como valor inicial, el hijo edita su copia y
+// al guardar emite 'save' con la copia completa.
+const formLocal = ref({ ...props.form });
+
+// Si el padre reemplaza el formulario (por ejemplo, al cambiar de registro)
+// se resincroniza la copia local.
+watch(
+    () => props.form,
+    (nuevo) => {
+        formLocal.value = { ...nuevo };
+    },
+    { deep: true },
+);
 
 const medidasInputs = [
     {

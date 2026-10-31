@@ -42,7 +42,17 @@ self.addEventListener('install', (event) => {
             }),
         ),
     );
-    self.skipWaiting();
+    // NO self.skipWaiting() acá a propósito.
+    //
+    // El SW nuevo queda en estado "waiting" hasta que el usuario acepte
+    // actualizar (UpdateAvailablePrompt.vue -> SKIP_WAITING). Si hacíamos
+    // skipWaiting() en el install, el worker nuevo tomaba el control de
+    // TODAS las pestañas abiertas en el acto, y un usuario a mitad de un set
+    // podía perder el estado. Además el banner "Nueva versión disponible"
+    // nunca se veía, porque el worker no llegaba nunca a estado "waiting".
+    //
+    // Para subir una versión que rompa el SW (por ejemplo, cambiar el
+    // esquema de caches), avisá al usuario desde la UI antes.
 });
 
 self.addEventListener('activate', (event) => {
@@ -54,7 +64,26 @@ self.addEventListener('activate', (event) => {
                     .filter((k) => ![STATIC_CACHE, RUNTIME_CACHE, API_CACHE].includes(k))
                     .map((k) => caches.delete(k)),
             );
-            await self.clients.claim();
+            // NO self.clients.claim() acá.
+            //
+            // claim() hace que el worker activo tome el control de las
+            // páginas que no tenía, sin recargarlas: el usuario vería la
+            // versión nueva mezclada con los assets viejos de la anterior.
+            // El control pasa a ser del worker nuevo recién después de que
+            // el usuario acepta actualizar y la página se recarga
+            // (el listener de 'controllerchange' en webPushService.js).
+            //
+            // Excepción: la primera instalación (no había ningún controller)
+            // sí puede reclamar las páginas, porque no hay estado viejo que
+            // preservar.
+            if (!self.registration.active || !self.registration.active.state) {
+                return;
+            }
+            const controlled = await self.clients.matchAll({ type: 'window' });
+            const hayControlado = controlled.some((c) => c.url && c.url.startsWith(self.location.origin));
+            if (!hayControlado) {
+                await self.clients.claim();
+            }
         })(),
     );
 });

@@ -88,7 +88,7 @@ const sparkline = computed(() => {
         return { x, y, ...it };
     });
 
-    let path = '';
+    let path;
     if (points.length === 1) {
         path = `M ${padX},${points[0].y} L ${w - padX},${points[0].y}`;
     } else {

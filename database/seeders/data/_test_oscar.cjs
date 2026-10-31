@@ -52,7 +52,7 @@ function req(opts, body) {
         const niveles = {};
         data.forEach(r => { niveles[r.nivel] = (niveles[r.nivel] || 0) + 1; });
         console.log('Por nivel:', JSON.stringify(niveles));
-    } catch (e) {
+    } catch {
         console.log('not JSON:', r4.body.substring(0, 200));
     }
 })();

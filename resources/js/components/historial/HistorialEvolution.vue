@@ -848,7 +848,7 @@ const buildChartGeometry = (ejercicio) => {
         };
     });
 
-    let path = '';
+    let path;
     if (points.length === 1) {
         path = `M ${padX},${points[0].y} L ${500 - padX},${points[0].y}`;
     } else {

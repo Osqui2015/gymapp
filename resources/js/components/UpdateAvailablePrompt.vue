@@ -73,14 +73,51 @@ const applyUpdate = async () => {
         return;
     }
     const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg || !reg.waiting) {
-        // No hay SW esperando, recargar igual.
+    if (!reg) {
+        // No hay SW registrado: recargar igual.
         window.location.reload();
         return;
     }
-    // Forzar al SW en waiting a activarse.
-    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    // El controllerchange listener recarga automaticamente.
+
+    // El worker nuevo puede estar en `waiting` (listo para activarse) o
+    // todavía en `installing`/`installed` (descargándose). Si lo activamos
+    // mientras instala, el postMessage se pierde y la recarga nunca ocurre.
+    const target = reg.waiting || reg.installing;
+
+    if (!target) {
+        // Ya no hay nada pendiente (el usuario accordion-ó en otra pestaña).
+        window.location.reload();
+        return;
+    }
+
+    if (target.state === 'installing') {
+        // Esperar a que termine de instalar antes de pedir el skip.
+        await new Promise((resolve) => {
+            const onChange = () => {
+                if (target.state === 'installed' || target.state === 'activated') {
+                    target.removeEventListener('statechange', onChange);
+                    resolve();
+                }
+            };
+            target.addEventListener('statechange', onChange);
+            // Red de seguridad: si ya estaba instalado entre medio.
+            if (target.state === 'installed' || target.state === 'activated') {
+                target.removeEventListener('statechange', onChange);
+                resolve();
+            }
+        });
+    }
+
+    // Forzar al SW a activarse. El listener de 'controllerchange'
+    // (webPushService.js) recarga la página con la versión nueva.
+    (reg.waiting || reg.installing)?.postMessage({ type: 'SKIP_WAITING' });
+
+    // Red de seguridad: si el mensaje no llegó (SW viejo sin handler), recargar.
+    setTimeout(() => {
+        if (navigator.serviceWorker.controller) {
+            window.location.reload();
+        }
+    }, 1500);
 };
 
 const dismiss = () => {

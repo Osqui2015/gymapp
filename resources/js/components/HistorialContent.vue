@@ -762,10 +762,7 @@ const sesionesRecientes = computed(() => {
             const fechaDate = new Date(g.fecha);
             const hoy = new Date();
             const diffDays = Math.round((hoy - fechaDate) / (1000 * 60 * 60 * 24));
-            let fechaLabel = fechaDate.toLocaleDateString('es-AR', {
-                day: 'numeric',
-                month: 'short',
-            });
+            let fechaLabel;
             let fechaHighlight = '';
             if (diffDays === 0) {
                 fechaLabel = 'Hoy';
@@ -1159,7 +1156,7 @@ watch(filtroPeriodoMobile, (newVal) => {
 // que ofrecer (antes se inventaban "Día 1 (Torso)", "Día 2 (Pierna)"...).
 const diasParaFiltroMobile = computed(() => {
     const base = [{ id: 'todas', label: 'Todas' }];
-    if (diasDisponibles && diasDisponibles.value && diasDisponibles.value.length) {
+    if (diasDisponibles.value.length) {
         diasDisponibles.value.forEach((d, i) => {
             base.push({ id: `d${i}`, label: d.label || d });
         });

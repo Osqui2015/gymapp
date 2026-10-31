@@ -593,29 +593,29 @@
                     </div>
 
                     <form
-                        @submit.prevent="$emit('guardar-edicion', formularioEdit)"
+                        @submit.prevent="$emit('guardar-edicion', formularioEditLocal)"
                         class="p-6 space-y-4"
                     >
                         <CampoForm
-                            v-model="formularioEdit.name"
+                            v-model="formularioEditLocal.name"
                             label="Nombre Completo *"
                             type="text"
                             required
                         />
                         <CampoForm
-                            v-model="formularioEdit.email"
+                            v-model="formularioEditLocal.email"
                             label="Email *"
                             type="email"
                             required
                         />
                         <CampoForm
-                            v-model="formularioEdit.telefono"
+                            v-model="formularioEditLocal.telefono"
                             label="Teléfono"
                             type="text"
                             placeholder="11-1234-5678"
                         />
                         <CampoForm
-                            v-model="formularioEdit.password"
+                            v-model="formularioEditLocal.password"
                             label="Contraseña (dejar en blanco para no cambiar)"
                             type="password"
                             placeholder="Mínimo 6 caracteres"
@@ -628,7 +628,7 @@
                                 >Rol *</label
                             >
                             <select
-                                v-model="formularioEdit.role"
+                                v-model="formularioEditLocal.role"
                                 required
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
                             >
@@ -645,7 +645,7 @@
                                 >Trainer Asignado</label
                             >
                             <select
-                                v-model="formularioEdit.trainer_id"
+                                v-model="formularioEditLocal.trainer_id"
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option :value="null">Sin trainer</option>
@@ -741,6 +741,27 @@ const emit = defineEmits([
 const localSearch = ref(props.searchFilter);
 const modalRef = ref(null);
 useFocusTrap(modalRef, { when: toRef(props, 'mostrarModal') });
+
+// El formulario de edicion se edita sobre una COPIA local del prop
+// `formularioEdit`.
+//
+// Antes se mutaba el prop directamente (v-model="formularioEdit.name"), lo que
+// esta prohibido en Vue: mutar un prop hace que el padre no se entere del
+// cambio y rompe el flujo de datos de un solo sentido (vue/no-mutating-props).
+//
+// Ahora el padre manda `formularioEdit` como valor inicial, el hijo edita su
+// copia y al guardar emite 'guardar-edicion' con la copia completa.
+const formularioEditLocal = ref({ ...props.formularioEdit });
+
+// Cuando el padre carga un usuario distinto para editar (abrirModalEditar),
+// se resincroniza la copia local.
+watch(
+    () => props.formularioEdit,
+    (nuevo) => {
+        formularioEditLocal.value = { ...nuevo };
+    },
+    { deep: true },
+);
 const nuevoUsuario = ref({
     nick: '',
     name: '',
