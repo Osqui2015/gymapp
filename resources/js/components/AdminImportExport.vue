@@ -427,7 +427,9 @@ const uploadWithProgress = (url, file, onProgress) => {
                 let msg = 'Error en la importación';
                 try {
                     msg = JSON.parse(xhr.responseText).message || msg;
-                } catch {}
+                } catch {
+                    // La respuesta no era JSON: se mantiene el mensaje generico.
+                }
                 reject(new Error(msg));
             }
         });
@@ -486,10 +488,17 @@ const importarEjercicios = async () => {
 
 onMounted(async () => {
     try {
+        // /api/admin/users ya devuelve `total` (el conteo real de usuarios).
+        // Antes se usaba users.data.length, que es solo el largo de la pagina
+        // actual (10), asi que el contador "X registros" daba cualquier cosa.
         const users = await axios.get('/api/admin/users');
+        totalUsuarios.value = users.data?.total ?? users.data?.users?.length ?? 0;
+
+        // /api/ejercicios es un paginator de Laravel: `total` es el catalogo
+        // completo. Antes se descargaban las 1.617 filas (25 MB) solo para
+        // contarlas.
         const ejercicios = await axios.get('/api/ejercicios');
-        totalUsuarios.value = users.data.length || 0;
-        totalEjercicios.value = Array.isArray(ejercicios.data) ? ejercicios.data.length : 0;
+        totalEjercicios.value = ejercicios.data?.total ?? ejercicios.data?.length ?? 0;
     } catch (e) {
         console.error(e);
     }
