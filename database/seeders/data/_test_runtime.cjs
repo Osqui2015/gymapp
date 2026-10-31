@@ -94,7 +94,7 @@ function req(opts, body) {
         nivelesOrden.forEach(n => {
             console.log(`  ${n}: in result =`, !!result[n], ', modalidades count:', Object.keys(result[n]?.modalidades || {}).length);
         });
-    } catch (e) {
+    } catch {
         console.log('not JSON:', r4.body.substring(0,300));
     }
 })();

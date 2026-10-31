@@ -38,4 +38,17 @@ export default [
             'no-undef': 'error',
         },
     },
+    {
+        // Scripts de Node (CommonJS): necesitan los globals de Node
+        // (require, module, process, Buffer, console...).
+        // Antes no se declaraban y ESLint reportaba 26 falsos "no-undef".
+        files: ['**/*.cjs'],
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'commonjs',
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
 ];
