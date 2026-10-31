@@ -45,6 +45,29 @@ import axios from 'axios';
 
 let registration = null;
 
+// El listener de 'controllerchange' se registra UNA sola vez a nivel de módulo.
+// registerServiceWorker() se llama desde varios lados (useWebPush,
+// NotificationBell) y antes cada llamada agregaba su propio listener con un
+// flag 'refreshing' local: un solo cambio de controller disparaba varias
+// recargas y la primeraCancellationaba a las otras.
+let controllerChangeHandlerInstalled = false;
+let refreshing = false;
+
+const installControllerChangeHandler = () => {
+    if (controllerChangeHandlerInstalled) return;
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    controllerChangeHandlerInstalled = true;
+
+    // Cuando el nuevo SW toma el control, recargar la pagina para que use el
+    // nuevo. Solo pasa cuando el usuario acepta actualizar (el SW ya no hace
+    // skipWaiting() solo al instalarse).
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+    });
+};
+
 const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -77,12 +100,7 @@ export async function registerServiceWorker() {
 
         // Cuando el nuevo SW toma el control, recargar la pagina para que use el nuevo.
         // Esto pasa despues de un skipWaiting automatico o un reload del user.
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
-            refreshing = true;
-            window.location.reload();
-        });
+        installControllerChangeHandler();
 
         return registration;
     } catch (e) {
