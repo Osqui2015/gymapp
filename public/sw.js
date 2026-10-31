@@ -14,7 +14,7 @@
  *   - POST/PUT/DELETE: siempre van a la red, sin cache
  */
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
 const API_CACHE = `gymapp-api-${VERSION}`;
