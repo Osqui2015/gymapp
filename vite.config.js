@@ -99,7 +99,6 @@ export default defineConfig({
                 // terminen en un chunk compartido eager con todos los entries.
                 manualChunks(id) {
                     if (!id.includes('node_modules')) return;
-                    if (id.includes('alpinejs')) return 'vendor-alpine';
                     if (id.includes('axios')) return 'vendor-axios';
                     if (id.includes('pinia') || id.includes('@vue/') || /\/vue\//.test(id)) return 'vendor-vue';
                     if (id.includes('chart.js')) return 'vendor-chart';
