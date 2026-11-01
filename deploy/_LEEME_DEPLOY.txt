@@ -1,0 +1,107 @@
+GymApp — Deploy P0 (2026-10-29)
+======================================================================
+Commit de origen: 8a407af (main) — rama fix/p0-historial-idempotencia
+
+QUE CONTIENE
+  app/Models/Historial.php
+  app/Http/Controllers/HistorialController.php
+  app/Http/Controllers/RutinaController.php
+  app/Http/Controllers/EjercicioController.php
+  app/Console/Commands/GenerateVapidKeys.php
+  database/migrations/2026_10_29_000000_fix_historials_idempotencia_y_fecha.php
+  public/favicon.ico
+  public/icons/              (5 archivos)
+  public/build/               (77 archivos: manifest.json + assets/)
+  public/sw.js                (VERSION v5)
+
+  90 archivos / 4,54 MB
+
+
+PASOS EN EL SERVER  (~/domains/gym.tecnorexs.com/public_html)
+----------------------------------------------------------------------
+0) BACKUP DEL CODIGO (antes de tocar nada)
+   cd ~/domains/gym.tecnorexs.com/public_html
+   tar -czf ~/backups/app_pre_p0_$(date +%Y%m%d_%H%M).tar.gz \
+        app database/migrations public .env
+   ls -lh ~/backups/app_pre_p0_*.tar.gz
+
+1) MOVER EL BUILD VIEJO ASIDE  (te sirve de rollback del frontend)
+   mv public/build public/build.bak.$(date +%Y%m%d_%H%M)
+
+2) DESCOMPRIMIR ACA
+   tar -xzf deploy_p0_20261029.tar.gz -C .
+
+3) MIGRACION  (crea el indice UNIQUE, repara fechas, fusiona duplicados)
+   php artisan migrate --force
+   php artisan migrate:status
+   # esperado: 2026_10_29_000000_fix_historials_idempotencia_y_fecha ... DONE
+
+4) CLAVES VAPID  (rota la clave que estaba quemada en el git)
+   php artisan webpush:vapid --no-interaction
+   php artisan webpush:vapid --show
+
+5) CACHES  (optimize:clear PRIMERO: si hay config:cache sigue la key vieja)
+   php artisan optimize:clear
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   chmod -R 775 storage bootstrap/cache
+
+6) VERIFICAR
+   ls -la public/build/manifest.json
+   ls public/icons/
+   grep -c "v5" public/sw.js
+   grep "idempotencia de historials" storage/logs/laravel.log | tail -1
+
+   curl -s -o /dev/null -w 'login:   %{http_code}\n' https://gym.tecnorexs.com/login
+   curl -s -o /dev/null -w 'favicon: %{http_code} %{size_download}b\n'  https://gym.tecnorexs.com/favicon.ico
+   curl -s -o /dev/null -w 'icon512: %{http_code} %{size_download}b\n'  https://gym.tecnorexs.com/icons/icon-512x512.png
+
+   En la DB (por mysql o phpMyAdmin):
+     SELECT COUNT(*) FROM historials;                    -- era 250, tiene que bajar o igual
+     SELECT COUNT(*) FROM historials_reparacion_fecha;    -- filas reparadas
+     SELECT COUNT(*) FROM (SELECT user_id,rutina_nombre,dia,ejercicio_nombre,
+           series_numero,fecha,COUNT(*) c FROM historials
+           GROUP BY user_id,rutina_nombre,dia,ejercicio_nombre,series_numero,fecha
+           HAVING c>1) x;                                  -- tiene que dar 0
+     SELECT nivel,COUNT(*) FROM rutinas WHERE created_by IS NULL GROUP BY nivel;
+     -- esperado: Avanzado 72 / Intermedio 94 / Principiante 72 = 238
+
+7) PROBAR A MANO
+   - Login con tu usuario (nick oscar)
+   - 2-3 series con internet -> badge de sync VERDE
+   - Cortar internet + 1 serie -> badge "pendientes" -> vuelve internet -> sincroniza solo
+   - Offline, cerrar la app, abrir con internet -> badge ROJO con "Reintentar" / "Descartar",
+     la serie NO se pierde
+   - /historial: tienen que verse las series de HOY y las de la sesion anterior
+   - /rutinas: el catalogo sigue completo (238)
+   - Probar quick log desde un ejercicio (antes daba 500)
+
+
+ROLLBACK
+----------------------------------------------------------------------
+   # frontend viejo
+   rm -rf public/build && mv public/build.bak.XXXXXX public/build
+   # codigo viejo
+   tar -xzf ~/backups/app_pre_p0_XXXXXX.tar.gz
+   # migracion
+   php artisan migrate:rollback --step=1
+   php artisan optimize:clear
+   # datos (el rollback de migracion NO recupera las filas fusionadas)
+   mysql -u USUARIO -p NOMBRE_DB < ~/backups/gymapp_pre_p0_XXXXXX.sql
+
+
+NO HACER EN EL SERVER
+----------------------------------------------------------------------
+   - NO npm ci / NO npm run build (public/build/ ya viene compilado)
+   - NO db:seed / NO db:seed --class (sin --class duplica usuarios e historiales)
+   - NO migrate:fresh / NO migrate:refresh (borra la base)
+   - NO php artisan storage:link (exec() esta deshabilitado en Hostinger;
+     el symlink se crea a mano: ln -s ../storage/app/public public/storage)
+
+TRAS EL DEPLOY
+----------------------------------------------------------------------
+   - Los usuarios que ya tienen la app instalada en el celu necesitan
+     Ctrl+Shift+R / recargar fuerte, o cerrar y abrir la PWA: el service
+     worker subio a VERSION v5 para tirar la cache vieja de favicon/iconos.
+   - Si hay Cloudflare: Dashboard > Caching > Purge Everything.

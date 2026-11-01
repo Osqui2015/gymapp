@@ -1,0 +1,64 @@
+GymApp — Tanda 1: rate limiting + errorHandler global (2026-10-29)
+======================================================================
+Commit: fc08b1c (main)
+
+QUE CONTIENE
+  app/Providers/AppServiceProvider.php   (limiters nuevos)
+  bootstrap/app.php                       (throttle:api en el grupo api)
+  routes/auth.php                        (throttle en login y register)
+  resources/js/app.js                    (errorHandler global de Vue)
+  public/build/                          (77 archivos, manifest + assets)
+
+NO HAY MIGRACION. NO SE TOCA EL .env. NO SE ROTA LA VAPID.
+NO hace falta config:clear ni optimize:clear.
+
+PASOS EN EL SERVER (~/domains/gym.tecnorexs.com/public_html)
+----------------------------------------------------------------------
+1) Backup del codigo:
+   tar -czf ~/backups/app_pre_t1_$(date +%Y%m%d_%H%M).tar.gz app bootstrap routes resources/js public/build
+
+2) El build viejo aside (rollback del frontend):
+   mv public/build public/build.bak.$(date +%Y%m%d_%H%M)
+
+3) Descomprimir:
+   tar -xzf tanda1_20261029.tar.gz -C .
+
+4) Limpiar caches de Laravel (los limiters se registran en el provider):
+   php artisan optimize:clear
+
+5) Verificar:
+   php artisan route:list --path=login
+   # las rutas POST /login y POST /register deben listar throttle:login / throttle:register
+   php artisan list | grep -E 'db:backup|reminders:send|plateaus:detect'
+   ls -la public/build/manifest.json
+
+6) PRUEBA DE HUMO DEL RATE LIMIT (importante, cambiaste el comportamiento):
+   # 11 intentos de login fallidos con un nick inexistente -> el 11ro debe dar 429
+   for i in $(seq 1 11); do
+     curl -s -o /dev/null -w "%{http_code} " -X POST https://gym.tecnorexs.com/login \
+       -d "nick=prueba-rate-limit&password=malaclave"
+   done
+   echo
+   # esperado: 302 302 ... 429 (el ultimo)
+
+   Ojo: esto cuenta contra el limite de 10/min de ESE nick. No lo hagas con
+   tu nick real, oespera un minuto antes de volver a entrar.
+
+7) Probar a mano:
+   - Login con tu usuario (deja pasar 1 minuto si hiciste la prueba de humo)
+   - Dashboard: si un error de JS ocurre, ahora sale un toast rojo y queda
+     en la consola el error completo
+   - El sitio tiene que seguir andando normal
+
+ROLLBACK
+  rm -rf public/build && mv public/build.bak.XXXXXX public/build
+  tar -xzf ~/backups/app_pre_t1_XXXXXX.tar.gz
+  php artisan optimize:clear
+
+NOTAS
+  - No hace falta bumpear la VERSION de public/sw.js: los assets tienen hash
+    y el service worker NO cachea /build/assets/ ni /build/manifest.json.
+    Podes pedir recarga fuerte si un usuario ve la version vieja.
+  - Si despues queres que las notificaciones push funcionen con la clave
+    nueva, NO hace falta rotar VAPID en esta tanda (ya se rotó en el
+    deploy del P0).

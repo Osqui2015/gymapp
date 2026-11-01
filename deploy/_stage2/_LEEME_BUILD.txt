@@ -1,0 +1,34 @@
+GymApp — Sync SOLO del build (sin migraciones, sin backend)
+======================================================================
+Commit: 1fd4b36 (main)
+
+QUE CONTIENE
+  public/build/            (76 archivos: manifest.json + assets/)
+
+POR QUE
+  El build que subiste a produccion se compilo con vue 3.5.35 / vue-i18n 9 /
+  vite 7.3.6. El repo ya esta en vue 3.5.44 / vue-i18n 11.4.16 / vite 7.3.7
+  (0 vulnerabilidades en npm audit). Este paquete sincroniza el frontend.
+
+  NO hace falta migracion, ni config:clear, ni rotar VAPID: no cambio nada
+  del backend ni del .env.
+  NO hace falta bumpear el service worker: el SW excluye /build/assets/ y
+  no cachea /build/manifest.json, y los assets tienen hash -> el navegador
+  los descarga solo.
+
+PASOS EN EL SERVER (~/domains/gym.tecnorexs.com/public_html)
+----------------------------------------------------------------------
+1) mv public/build public/build.bak2.$(date +%Y%m%d_%H%M)
+2) tar -xzf build_sync_20261029.tar.gz -C .
+3) Verificar:
+     ls -la public/build/manifest.json
+     curl -s -o /dev/null -w 'app.js: %{http_code} %{size_download}b\n' \
+       https://gym.tecnorexs.com/build/assets/app-6BACrDWT.js
+
+  (el hash del app.js puede diferir si volveste a compilar; mirá el nombre
+   en public/build/manifest.json y verificá ese)
+
+4) NO corras npm ci / npm run build en el server.
+
+ROLLBACK
+  rm -rf public/build && mv public/build.bak2.XXXXXX public/build

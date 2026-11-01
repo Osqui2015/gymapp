@@ -1,0 +1,152 @@
+================================================================================
+ HOTFIX NAVBAR + 500 FINALIZAR-RUTINA
+ Deploy: 2026-11-02
+ Commit: bcc13ee (main)
+================================================================================
+
+QUE ARREGLA
+-----------
+1) NAVBAR / MENUS QUE NO APARECIAN (Panel, Rutinas, Ejercicios, Historial,
+   Progreso, perfil)
+
+   Causa raiz: la navbar (layouts.navigation) y la bottom nav mobile viven
+   FUERA de #app. La app Vue de pagina se monta sobre el primer custom element
+   DENTRO de #app, asi que esos componentes nunca se instanciaban. No habia
+   error en consola: simplemente no se montaban.
+
+   Segundo bug: Vue NO lee los atributos del DOM como props cuando el
+   componente se registra globalmente y se monta sobre markup de Blade.
+     - `:links="{{ json_encode(...) }}"`  -> llegaba como string (props vacias)
+     - `v-bind:links='[...]'`            -> Vue lo descartaba (no era
+                                           expresion JS valida)
+   Solucion adoptada: los props van TODOS en un unico atributo `data-props`
+   (JSON) y app.js los entrega como 2do argumento de
+   createApp(Component, props).
+
+2) 500 en POST /api/historial/finalizar-rutina
+
+   Causa raiz: HistorialService::finalizarRutinaDia usaba
+   Historial::firstOrNew([...]) SIN la columna `fecha`, que es parte de la
+   clave UNIQUE (user_id, rutina_nombre, dia, ejercicio_nombre,
+   series_numero, fecha) de la migracion P0 de idempotencia. Al no coincidir
+   la fila existente, insertaba duplicado y reventaba el indice unico.
+
+   Nota importante: la causa EXACTA del 500 en produccion NO quedo
+   confirmada (los tests en SQLite no reproducen el error con el codigo
+   viejo). El fix se aplica igual porque es estrictamente mas correcto y
+   consistente con el resto del flujo de guardado. Si el 500 persiste,
+   mirar el log:
+     tail -100 ~/domains/gym.tecnorexs.com/public_html/storage/logs/laravel.log
+
+================================================================================
+ ARCHIVOS DEL PAQUETE (102 entradas)
+================================================================================
+ app/Http/Controllers/HistorialController.php
+ app/Models/Historial.php
+ app/Services/HistorialService.php
+ resources/js/app.js
+ resources/js/components/AppNavigation.vue
+ resources/js/components/MobileBottomNav.vue
+ resources/views/components/mobile-bottom-nav.blade.php
+ resources/views/layouts/navigation.blade.php
+ public/build/**            (bundle recompilado, app-BAzap41B.js)
+ public/sw.js              (VERSION v7 -> v8)
+ tests/Feature/SinAlpineTest.php
+ tests/Feature/FinalizarRutinaTest.php
+
+ NO hay migraciones nuevas. NO hay cambios de .env. NO hay cambios de schema.
+
+================================================================================
+ PASOS EN EL SERVER (Hostinger / SSH o File Manager)
+================================================================================
+
+STEP 1 - BACKUP (OBLIGATORIO, antes de tocar nada)
+
+  cd ~/domains/gym.tecnorexs.com/public_html
+  mkdir -p ~/backups
+  mysqldump -u u221495434_gymadm -p u221495434_gym \
+    ~/backups/gymapp_pre_navbar_$(date +%Y%m%d_%H%M).sql
+
+  Backup de codigo:
+  tar -czf ~/backups/app_pre_navbar_$(date +%Y%m%d_%H%M).tar.gz \
+    app resources public tests
+
+STEP 2 - SUBIR EL PAQUETE
+
+  Subir hotfix_navbar_20261102.tar.gz por el File Manager a
+  ~/domains/gym.tecnorexs.com/public_html/ (o por FTP/SFTP a /tmp y mover).
+
+STEP 3 - DESCOMPRIMIR EN EL SERVER
+
+  cd ~/domains/gym.tecnorexs.com/public_html
+  tar -xzf hotfix_navbar_20261102.tar.gz -C .
+
+  (El paquete tiene las rutas exactas del repo: app/, resources/, public/,
+   tests/. NO descomprimir en una subcarpeta.)
+
+STEP 4 - LIMPIAR CACHES (ANTES de cualquier migrate, siempre)
+
+  php artisan config:clear
+  php artisan optimize:clear
+
+STEP 5 - MIGRACIONES
+
+  No hay migraciones nuevas. Verificar igual:
+  php artisan migrate:status | tail -5
+
+STEP 6 - RECONSTRUIR CACHES
+
+  php artisan config:cache
+  php artisan route:cache
+  php artisan view:cache
+
+STEP 7 - VERIFICAR
+
+  php artisan schedule:list          # deben listar 5 tareas
+  grep VERSION public/sw.js           # debe decir v8
+  ls -la public/build/assets/app-*.js # debe existir app-BAzap41B.js
+
+STEP 8 - CACHES DE CLOUDFLARE
+
+  Panel de Cloudflare -> Caching -> Purge Everything
+
+STEP 9 - RECARGA FUERTE DE LOS USUARIOS
+
+  - Recarga fuerte: Ctrl+Shift+R (o Cmd+Shift+R en Mac)
+  - Si tienen la PWA instalada: desinstalar y volver a instalar, o
+    esperar a que el service worker v8 se active solo (hace falta una
+    recarga fuerte para que el SW nuevo tome el control).
+  - Verificar que el favicon.ico (~15 KB) y los iconos se ven bien.
+
+STEP 10 - LIMPIEZA
+
+  rm hotfix_navbar_20261102.tar.gz   (opcional)
+
+================================================================================
+ SI EL 500 SIGUE APARECIENDO
+================================================================================
+
+  tail -100 ~/domains/gym.tecnorexs.com/public_html/storage/logs/laravel.log
+
+  Mandar ese log (las ultimas ~100 lineas del error) para diagnosticar la
+  causa real.
+
+  Mientras tanto, workaround: registrar la sesion desde la pantalla de
+  ejecucion (registro manual de la serie), no desde "Finalizar rutina".
+
+================================================================================
+ CRON DEL SCHEDULER (verificar de nuevo)
+================================================================================
+
+  crontab -l
+
+  Debe existir:
+  * * * * * cd /home/u221495434/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+
+  Si no esta, agregar SIN editor:
+  printf '* * * * * cd /home/u221495434/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1\n' | crontab -
+
+  Verificar con:
+  php artisan schedule:list
+
+================================================================================

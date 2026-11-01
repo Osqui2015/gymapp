@@ -1,0 +1,395 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Rutina;
+use App\Models\User;
+use App\Models\UserRutina;
+use App\Models\UserRutinaReschedule;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class UserRutinaController extends Controller
+{
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        // D1: `rutina_id` es ahora la única fuente de verdad para nivel/modalidad.
+        // Las columnas denormalizadas fueron dropeadas (migración 2026_08_17_000000).
+        $data = $request->validate([
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'rutina_id' => ['required', 'integer', 'exists:rutinas,id'],
+            'dia_actual' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $targetUser = $user;
+        if (! empty($data['user_id'])) {
+            $targetUser = User::findOrFail($data['user_id']);
+
+            if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                return response()->json(['error' => 'No autorizado para asignar a otro usuario'], 403);
+            }
+
+            if ($user->hasRole(User::ROLE_TRAINER) && $targetUser->trainer_id !== $user->id) {
+                return response()->json(['error' => 'Solo puedes asignar rutinas a tus alumnos'], 403);
+            }
+        }
+
+        if ($user->hasRole(User::ROLE_ALUMNO) && $targetUser->id === $user->id) {
+            return response()->json(['error' => 'Los alumnos no pueden autoasignarse rutinas'], 403);
+        }
+
+        $userRutina = UserRutina::updateOrCreate(
+            ['user_id' => $targetUser->id],
+            [
+                'rutina_id' => $data['rutina_id'],
+                'dia_actual' => $data['dia_actual'] ?? 'Día 1',
+                'assigned_by' => $targetUser->id === $user->id ? null : $user->id,
+            ]
+        );
+
+        return response()->json($userRutina->load('rutina'));
+    }
+
+    public function show(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $targetUserId = (int) $request->integer('user_id', $user->id);
+
+        if ($targetUserId !== $user->id) {
+            if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            if ($user->hasRole(User::ROLE_TRAINER)) {
+                $target = User::findOrFail($targetUserId);
+                if ($target->trainer_id !== $user->id) {
+                    return response()->json(['error' => 'No autorizado'], 403);
+                }
+            }
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $targetUserId)->first();
+
+        return response()->json($userRutina);
+    }
+
+    public function updateDia(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if ($user->hasRole(User::ROLE_ALUMNO)) {
+            // Los alumnos pueden actualizar su progreso diario.
+        }
+
+        $userRutina = UserRutina::where('user_id', $user->id)->first();
+
+        if (! $userRutina) {
+            return response()->json(['error' => 'Rutina no encontrada'], 404);
+        }
+
+        $data = $request->validate([
+            'dia_actual' => ['required', 'string', 'max:255'],
+        ]);
+
+        $userRutina->dia_actual = $data['dia_actual'];
+        $userRutina->save();
+
+        return response()->json($userRutina);
+    }
+
+    /**
+     * Fase 5 — Reschedule: cambia el `dia_actual` a uno específico.
+     *
+     * Usado cuando el usuario entrenó un día distinto al esperado.
+     * Loguea el cambio en `user_rutina_reschedules` para análisis.
+     *
+     * Body: { to_day: "Día 3", reason?: "missed_day"|"manual"|"trainer", note?: "..." }
+     */
+    public function reschedule(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+
+        if (! $userRutina) {
+            return response()->json(['error' => 'Rutina no encontrada'], 404);
+        }
+
+        $data = $request->validate([
+            'to_day' => ['required', 'string', 'max:64'],
+            'reason' => ['nullable', 'string', 'in:missed_day,manual,trainer,other'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $fromDay = $userRutina->dia_actual ?: 'Día 1';
+        $toDay = $data['to_day'];
+
+        if ($fromDay === $toDay) {
+            return response()->json([
+                'message' => 'Mismo día, nada que cambiar',
+                'user_rutina' => $userRutina,
+                'reschedule' => null,
+            ]);
+        }
+
+        // Validar que el día exista en la rutina del user
+        $rutina = $userRutina->rutina;
+        if ($rutina) {
+            $validDays = Rutina::where('nivel', $rutina->nivel)
+                ->where('modalidad', $rutina->modalidad)
+                ->selectRaw('DISTINCT dia')
+                ->pluck('dia')
+                ->toArray();
+            if (! in_array($toDay, $validDays, true)) {
+                return response()->json([
+                    'error' => 'Día inválido para la rutina actual',
+                    'valid_days' => $validDays,
+                ], 422);
+            }
+        }
+
+        $userRutina->dia_actual = $toDay;
+        $userRutina->save();
+
+        $log = UserRutinaReschedule::create([
+            'user_id' => $user->id,
+            'user_rutina_id' => $userRutina->id,
+            'from_day' => $fromDay,
+            'to_day' => $toDay,
+            'reason' => $data['reason'] ?? 'manual',
+            'note' => $data['note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => "Reprogramado de {$fromDay} a {$toDay}",
+            'user_rutina' => $userRutina->load('rutina'),
+            'reschedule' => $log,
+        ]);
+    }
+
+    /**
+     * Devuelve los ejercicios del día actual de la rutina del user con sus
+     * notas frescas desde el backend. Pensado para que el frontend pueda
+     * refrescar el snapshot stale de `trainingSession.ejercicios[*].notas`
+     * sin tener que finalizar y reiniciar la sesión.
+     *
+     * Query params:
+     *   - dia (opcional): si no se manda, usa el `dia_actual` del user_rutina.
+     *
+     * Response: { dia, nivel, modalidad, ejercicios: [{ nombre, notas, prescripcion, series, reps_min, reps_max, descanso_min, superserie_grupo, orden }] }
+     */
+    public function ejerciciosActuales(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+        if (! $userRutina || ! $userRutina->rutina) {
+            return response()->json(['ejercicios' => []]);
+        }
+
+        $rutina = $userRutina->rutina;
+        $dia = $request->input('dia') ?: ($userRutina->dia_actual ?: 'Día 1');
+
+        $baseQuery = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad);
+
+        if ($rutina->created_by) {
+            $baseQuery->where('created_by', $rutina->created_by);
+        } else {
+            $baseQuery->whereNull('created_by');
+        }
+
+        $columnas = ['ejercicio_nombre', 'series', 'reps_min', 'reps_max', 'descanso_min', 'superserie_grupo', 'orden', 'notas', 'prescripcion'];
+
+        $rows = (clone $baseQuery)
+            ->where('dia', $dia)
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get($columnas);
+
+        if ($rows->isEmpty()) {
+            $rows = (clone $baseQuery)
+                ->where(function ($q) use ($dia) {
+                    $q->where('dia', 'like', $dia.'%')
+                        ->orWhere('dia', 'like', '%'.$dia.'%');
+                })
+                ->orderBy('orden')
+                ->orderBy('id')
+                ->get($columnas);
+        }
+
+        return response()->json([
+            'dia' => $dia,
+            'nivel' => $rutina->nivel,
+            'modalidad' => $rutina->modalidad,
+            'ejercicios' => $rows->map(fn ($r) => [
+                'nombre' => $r->ejercicio_nombre,
+                'series' => (int) $r->series,
+                'reps_min' => $r->reps_min,
+                'reps_max' => $r->reps_max,
+                'descanso_min' => (float) $r->descanso_min,
+                'superserie_grupo' => $r->superserie_grupo,
+                'orden' => $r->orden,
+                'notas' => $r->notas,
+                'prescripcion' => $r->prescripcion,
+            ])->all(),
+        ]);
+    }
+
+    /**
+     * Devuelve los días disponibles de la rutina actual del user.
+     * Útil para popular el selector de reschedule.
+     */
+    public function availableDays(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $userRutina = UserRutina::with('rutina')->where('user_id', $user->id)->first();
+        if (! $userRutina || ! $userRutina->rutina) {
+            return response()->json(['days' => [], 'current' => null]);
+        }
+
+        $rutina = $userRutina->rutina;
+        $baseDaysQuery = Rutina::where('nivel', $rutina->nivel)
+            ->where('modalidad', $rutina->modalidad);
+
+        if ($rutina->created_by) {
+            $baseDaysQuery->where('created_by', $rutina->created_by);
+        } else {
+            $baseDaysQuery->whereNull('created_by');
+        }
+
+        $days = $baseDaysQuery
+            ->selectRaw('DISTINCT dia')
+            ->orderBy('dia')
+            ->pluck('dia')
+            ->toArray();
+
+        return response()->json([
+            'days' => $days,
+            'current' => $userRutina->dia_actual,
+        ]);
+    }
+
+    /**
+     * Obtener alumnos del trainer con sus rutinas asignadas
+     */
+    public function misAlumnos(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $alumnos = User::where('trainer_id', $user->id)
+            ->with(['rutinaSeleccionada.rutina'])
+            ->get();
+
+        return response()->json($alumnos);
+    }
+
+    /**
+     * Obtener todas las rutinas creadas por el trainer para asignar
+     */
+    public function misRutinas(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $rutinas = Rutina::where('created_by', $user->id)
+            ->with('ejercicio')
+            ->orderBy('nivel')
+            ->orderBy('modalidad')
+            ->orderBy('dia')
+            ->get();
+
+        return response()->json($rutinas);
+    }
+
+    /**
+     * Asignar una rutina específica a un alumno
+     */
+    public function asignarRutina(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (! $user->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'alumno_id' => ['required', 'integer', 'exists:users,id'],
+            'rutina_id' => ['required', 'integer', 'exists:rutinas,id'],
+            'dia_actual' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $alumno = User::findOrFail($data['alumno_id']);
+
+        // Verificar que el trainer tiene permisos sobre el alumno
+        if ($user->hasRole(User::ROLE_TRAINER) && $alumno->trainer_id !== $user->id) {
+            return response()->json(['error' => 'Solo puedes asignar rutinas a tus alumnos'], 403);
+        }
+
+        // Verificar que la rutina pertenece al trainer o es una rutina por defecto
+        $rutina = Rutina::findOrFail($data['rutina_id']);
+        if ($rutina->created_by !== null && $rutina->created_by !== $user->id) {
+            return response()->json(['error' => 'No puedes asignar rutinas de otro trainer'], 403);
+        }
+
+        // Asignar la rutina al alumno (D1: nivel/modalidad se leen de la relación).
+        // Nivel 5: encapsular en transacción para garantizar que el cambio de
+        // rutina asignada + las posibles bajas anteriores sean atómicas.
+        $userRutina = \DB::transaction(function () use ($alumno, $rutina, $data, $user) {
+            return UserRutina::updateOrCreate(
+                ['user_id' => $alumno->id],
+                [
+                    'rutina_id' => $rutina->id,
+                    'dia_actual' => $data['dia_actual'] ?? 'Día 1',
+                    'assigned_by' => $user->id,
+                ]
+            );
+        });
+
+        return response()->json([
+            'message' => 'Rutina asignada correctamente',
+            'user_rutina' => $userRutina->load('rutina'),
+        ]);
+    }
+}

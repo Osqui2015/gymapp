@@ -1,0 +1,149 @@
+================================================================================
+ CHECKLIST FINAL — LOCAL + PRODUCCION
+ GymApp · commit bcc13ee (main) · 2026-11-02
+================================================================================
+
+--------------------------------------------------------------------------------
+ ESTADO LOCAL — ✅ TODO VERDE
+--------------------------------------------------------------------------------
+ PHPUnit              537 passed / 2032 assertions (3 skipped)
+Vitest                354 passed (31 archivos)
+ESLint                0 errores (53 warnings preexistentes, no bloqueantes)
+Pint                  PASS 648 archivos
+Manifest build        55 entradas / 74 archivos / 0 faltantes / 0 huerfanos
+Service worker        v8 (v7 -> v8)
+Navegador             navbar OK: Panel, Rutinas, Ejercicios, Historial, Progreso,
+                      toggle tema, settings, dropdown de usuario (Configuración /
+                      Perfil / Cerrar Sesión). Consola: 0 errores, 0 warnings.
+CI                    run #90 — success en bcc13ee
+
+Commits del hotfix:
+  0a1617e  fix(front): navbar y bottom nav con su propio mount point
+  7903a5e  fix(back): idempotencia de finalizar-rutina con la clave unica por fecha
+  4efda80  build: recompilar public/build + sw v7 -> v8
+  bcc13ee  Merge a main
+
+--------------------------------------------------------------------------------
+ CHECKLIST LOCAL (si querés re-verificar desde cero)
+--------------------------------------------------------------------------------
+[ ] 1. git checkout main && git pull
+[ ] 2. & "I:\laragon\bin\php\php-8.2.30-Win32-vs16-x64\php.exe" artisan test
+        -> 537 passed, 2032 assertions
+[ ] 3. npx vitest run
+        -> 354 passed (31 test files)
+[ ] 4. npx eslint resources/js
+        -> 0 errors
+[ ] 5. & "I:\laragon\bin\php\php-8.2.30-Win32-vs16-x64\php.exe" vendor\bin\pint --test
+        -> PASS 648 files
+[ ] 6. npm run build   (solo si tocas resources/js; el build esta versionado)
+[ ] 7. npm run dev  +  abrir http://127.0.0.1:8000/dashboard
+        -> Verificar: Panel / Rutinas / Ejercicios / Historial / Progreso visibles
+        -> Click en el avatar -> Configuración / Perfil / Cerrar Sesión
+        -> F12 -> consola sin errores
+
+--------------------------------------------------------------------------------
+ CHECKLIST PRODUCCIÓN — deploy del hotfix
+--------------------------------------------------------------------------------
+[ ] 1. BACKUP de la base (OBLIGATORIO antes de tocar nada)
+
+      cd ~/domains/gym.tecnorexs.com/public_html
+      mkdir -p ~/backups
+      mysqldump -u u221495434_gymadm -p u221495434_gym \
+        ~/backups/gymapp_pre_navbar_$(date +%Y%m%d_%H%M).sql
+
+      Backupear tambien el codigo:
+      tar -czf ~/backups/app_pre_navbar_$(date +%Y%m%d_%H%M).tar.gz \
+        app resources public tests
+
+[ ] 2. SUBIR hotfix_navbar_20261102.tar.gz
+
+      Al directorio ~/domains/gym.tecnorexs.com/public_html/
+      (File Manager de Hostinger o FTP/SFTP; si usas SFTP, subilo a /tmp y movelo)
+
+[ ] 3. DESCOMPRIMIR (en la raiz del proyecto, NO en una subcarpeta)
+
+      cd ~/domains/gym.tecnorexs.com/public_html
+      tar -xzf hotfix_navbar_20261102.tar.gz -C .
+
+[ ] 4. LIMPIAR CACHES (SIEMPRE antes de cualquier migrate)
+
+      php artisan config:clear
+      php artisan optimize:clear
+
+[ ] 5. MIGRACIONES
+
+      No hay migraciones nuevas en este hotfix. Verificar igual:
+      php artisan migrate:status | tail -5
+
+[ ] 6. RECONSTRUIR CACHES
+
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
+
+[ ] 7. VERIFICAR EN EL SERVER
+
+      php artisan schedule:list            -> 5 tareas con "Next Due"
+      grep VERSION public/sw.js             -> v8
+      ls public/build/assets/app-*.js       -> app-BAzap41B.js
+
+[ ] 8. PURGE DE CLOUDFLARE
+
+      Panel de Cloudflare -> Caching -> Purge Everything
+
+[ ] 9. RECARGA FUERTE DE LOS USUARIOS
+
+      Ctrl+Shift+R (Cmd+Shift+R en Mac).
+      Si tienen la PWA instalada: recargar fuerte o desinstalar/reinstalar.
+      El service worker v8 necesita una recarga fuerte para tomar el control.
+
+[ ] 10. (opcional) Limpiar el paquete del server
+
+      rm hotfix_navbar_20261102.tar.gz
+
+--------------------------------------------------------------------------------
+ PENDIENTE #1 — CAUSA REAL DEL 500 (necesita TU ayuda)
+--------------------------------------------------------------------------------
+El fix de idempotencia esta aplicado y es estrictamente correcto, pero NO se
+pudo REPRODUCIR el 500 en SQLite con el codigo viejo (los 7 tests de
+FinalizarRutinaTest pasan con ambos codigos). Para confirmar la causa exacta
+necesito el log de produccion:
+
+    tail -100 ~/domains/gym.tecnorexs.com/public_html/storage/logs/laravel.log
+
+Mandame esas ultimas ~100 lineas (el bloque del error) y lo termino de cerrar.
+
+Workaround mientras tanto: registrar las series desde la pantalla de
+ejecucion en vez de "Finalizar rutina".
+
+--------------------------------------------------------------------------------
+ PENDIENTE #2 — CRON DEL SCHEDULER (verificar de nuevo)
+--------------------------------------------------------------------------------
+    crontab -l
+
+Debe estar:
+    * * * * * cd /home/u221495434/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+
+Si no esta, agregar SIN editor (crontab -e puede fallar por editor):
+    printf '* * * * * cd /home/u221495434/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1\n' | crontab -
+
+Verificar:
+    php artisan schedule:list
+
+Sin esto NO corren: membresias:actualizar-estados (00:05),
+db:backup (02:00), audit-logs:purga (03:30), reminders:send (09:00),
+plateaus:detect (10:00).
+
+--------------------------------------------------------------------------------
+ NOTAS IMPORTANTES
+--------------------------------------------------------------------------------
+* NO correr npm ci / npm run build en produccion: public/build esta versionado
+  en git y el server no tiene node. El paquete ya trae el build compilado.
+* NO correr migrate:fresh / migrate:refresh / db:seed sin --class.
+* config:clear SIEMPRE antes de migrate: una config:cache vieja con un
+  DB_PASSWORD desactualizada hace fallar con "Access denied ... (using
+  password: YES)".
+* Rollback: los assets viejos estan en el backup del paso 1; ademas el
+  paquete anterior tanda3_20261031.tar.gz sirve como rollback del build.
+
+================================================================================

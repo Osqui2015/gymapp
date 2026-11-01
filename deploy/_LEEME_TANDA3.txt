@@ -1,0 +1,149 @@
+================================================================================
+TANDA 3 - Deploy a produccion (gym.tecnorexs.com)
+================================================================================
+
+Que trae este paquete:
+  - Alpine.js FUERA del bundle inicial (deja de ser una dependencia).
+  - Navbar, bottom nav mobile y modal reescritos en Vue.
+  - Comando `audit-logs:purge` con retencion (365 dias) en el scheduler.
+  - Fix: la hoja "Carga rapida" (movil) no mostraba los inputs de series.
+  - Fix: la fecha del batch offline no se aplicaba en el backend.
+  - public/build completo (assets con hash nuevo) + service worker v7.
+  - 121 tests nuevos (82 PHP + 39 JS). Sin cambios en el schema de la DB.
+
+  NO hay migraciones nuevas -> NO hace falta `php artisan migrate`.
+  NO hay seeders nuevos -> NO hace falta `db:seed`.
+
+
+--------------------------------------------------------------------------------
+1. BACKUP (antes de tocar nada)
+--------------------------------------------------------------------------------
+
+  En el server (SSH o File Manager):
+
+    cd ~/domains/gym.tecnorexs.com/public_html
+    mysqldump -u u221495434_gym -p u221495434_gym > ~/backups/gymapp_pre_t3_$(date +%Y%m%d_%H%M).sql
+    tar -czf ~/backups/app_pre_t3_$(date +%Y%m%d_%H%M).tar.gz app bootstrap public resources
+
+  Backup de codigo: si no tenes SSH, baja el File Manager y copia la carpeta
+  `public_html` como `public_html_backup_t3`.
+
+
+--------------------------------------------------------------------------------
+2. SUBIR EL PAQUETE
+--------------------------------------------------------------------------------
+
+  `tanda3_20261031.tar.gz` (753 KB).
+
+  Opcion A - File Manager de Hostinger:
+    1. Subi el .tar.gz a `~/domains/gym.tecnorexs.com/public_html/`
+    2. Panel "Archivos" -> click derecho -> "Extraer" sobre el .tar.gz
+    3.BORRAR el .tar.gz extraido (no hace falta dejarlo)
+
+  Opcion B - FTP/SSH:
+    1. Subi el .tar.gz a `~/domains/gym.tecnorexs.com/public_html/`
+    2. En SSH:
+       cd ~/domains/gym.tecnorexs.com/public_html
+       tar -xzf tanda3_20261031.tar.gz -C .
+
+  IMPORTANTE: el paquete NO borra los assets viejos con hash (los de la
+  Tanda 2). Se pueden dejar: ocupan ~1 MB y el manifest ya no los apunta.
+  Si queres limpiar:
+       cd public/build/assets
+       ls | grep -v -E "C5nuseD7|BE51YMw_|Beuckizj|DiHVMfQX|C-n-w2rc|BpgQ35iG|Da2Opqjn|B0hxJKq9|D06oWf83|ChUkW9Sh|DgkNK4M|BBmsb35t|CKRbPd5R|Db9AZI4e|BaKFKRL6|6Nbxr2ze|BWS0pao9|BLGa3Pwf|sT9TFwVI|CKZAFCa-|BlBFD3hK|Bpag4nLk|BDTsPNmq|BoBhzs8Y|CiYb4-NU|DkOR-8rd|DQ7gvMQh|Bea8KGrR|Dym6krqx|CDnmQl_V" | xargs rm -f
+  (Opcional. No lo hagas si no te sentis seguro: no aporta nada.)
+
+
+--------------------------------------------------------------------------------
+3. LIMPIAR CACHES DE LARAVEL  (OBLIGATORIO, ANTES de cualquier artisan)
+--------------------------------------------------------------------------------
+
+    cd ~/domains/gym.tecnorexs.com/public_html
+
+    php artisan config:clear
+    php artisan optimize:clear
+
+  Por que es obligatorio: si quedo una `config:cache` vieja con una
+  `DB_PASSWORD` desactualizada, Laravel ignora el `.env` y cualquier
+  comando artisan que toque la DB muere con:
+      Access denied for user ... (using password: YES)
+
+
+--------------------------------------------------------------------------------
+4. VERIFICAR (no hay migraciones que aplicar)
+--------------------------------------------------------------------------------
+
+    php artisan migrate:status | tail -5      # las 62 migraciones deben decir Ran
+    php artisan schedule:list                  # debe listar 5 tareas
+    grep "const VERSION" public/sw.js         # debe decir const VERSION = 'v7'
+    php artisan audit-logs:purge --days=365   # dry-run: no borra nada
+
+  Resultado esperado de `schedule:list`:
+    - membresias:actualizar-estados   00:05
+    - db:backup                       02:00
+    - reminders:send                  09:00
+    - plateaus:detect                 10:00
+    - audit-logs:purga                03:30   <- NUEVO
+
+
+--------------------------------------------------------------------------------
+5. CRON DEL SCHEDULER (PENDIENTE DESDE LA TANDA ANTERIOR)
+--------------------------------------------------------------------------------
+
+  Si ya lo configuraste en la Tanda 2, no hay que tocar nada.
+  Si NO lo configuraste, es OBLIGATORIO: sin cron no corre ninguna tarea
+  (ni el backup diario de la base, ni la purga de audit_logs).
+
+  Hostinger -> cPanel -> Cron Jobs -> una entrada POR MINUTO:
+
+    * * * * * cd /home/u221495434/domains/gym.tecnorexs.com/public_html && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+
+
+--------------------------------------------------------------------------------
+6. CACHES FINALES
+--------------------------------------------------------------------------------
+
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+
+  (view:cache es importante: cambio las vistas de navegacion.)
+
+
+--------------------------------------------------------------------------------
+7. CLOUDFLARE + PWA
+--------------------------------------------------------------------------------
+
+  1. Cloudflare -> Cache -> Purge Everything
+  2. Los usuarios con la PWA instalada necesitan recargar fuerte (Ctrl+Shift+R)
+     o cerrar y reabrir la app: el service worker v7 cachea /icons/* y
+     /favicon.ico con CacheFirst (URLs estables, sin hash).
+  3. El banner "Nueva version disponible" ahora SI deberia aparecer.
+
+
+--------------------------------------------------------------------------------
+8. SI ALGO FALLA: ROLLBACK
+--------------------------------------------------------------------------------
+
+  El build viejo es el rollback:
+
+    cd ~/domains/gym.tecnorexs.com/public_html
+    # (si guardaste public/build.bak.<fecha>, restaurar)
+    php artisan optimize:clear
+
+  Y restaurar el backup de la DB si hizo falta (solo si corriste algo que
+  escribiera en la base; esta tanda no tiene migraciones, asi que la DB
+  deberia estar intacta).
+
+
+================================================================================
+RESUMEN RAPIDO (si todo lo de arriba ya lo hiciste antes)
+================================================================================
+
+  1. mysqldump de la DB                     -> backup
+  2. subir + extraer tanda3_20261031.tar.gz
+  3. php artisan config:clear
+  4. php artisan optimize:clear
+  5. php artisan config:cache && route:cache && view:cache
+  6. verificar: schedule:list (5 tareas) + sw.js v7
+  7. Cloudflare purge + recargar fuerte
