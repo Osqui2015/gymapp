@@ -15,10 +15,10 @@ use Throwable;
  * los checks que de verdad importan.
  *
  * Checks:
- *   - database : conexión MySQL + query trivial +Ping. Es el que más falla.
+ *   - database : conexión MySQL + query trivial + ping. Es el que más falla.
  *   - storage  : permisos de escritura en storage/ y storage/app.
- *   - disk     : espacio libre en disco (configurable con umbral).
- *   - cache    : que el cache store responda (database driver usa la DB).
+ *   - disk     : espacio libre en disco (con umbral mínimo configurable).
+ *   - cache    : que el cache store responda (driver database usa la DB).
  *   - app      : versión de PHP y si estamos en modo debug en producción.
  *
  * Cada check devuelve [ok, mensaje, datos]. Un check que lanza excepción se
@@ -79,7 +79,7 @@ class HealthCheckService
      *
      * @return array{ok: bool, message: string, data: array}
      */
-    private function checkDatabase(): array
+    protected function checkDatabase(): array
     {
         try {
             $start = microtime(true);
@@ -125,7 +125,7 @@ class HealthCheckService
      *
      * @return array{ok: bool, message: string, data: array}
      */
-    private function checkStorage(): array
+    protected function checkStorage(): array
     {
         $paths = [
             storage_path(),
@@ -141,9 +141,9 @@ class HealthCheckService
             $exists = is_dir($path);
             $writable = $exists && is_writable($path);
             // Clave relativa al base path: la ruta ABSOLUTA del servidor no
-            // debe salir del service. El endpoint /up es publico y filtrar
+            // debe salir del service. El endpoint /up es público y filtrar
             // "I:\laragon\www\GymApp\storage" o "/home/u221495434/..." le
-            // dice a un atacante exactamente donde esta el proyecto.
+            // dice a un atacante exactamente donde está el proyecto.
             $results[$this->relativePath($path)] = [
                 'exists' => $exists,
                 'writable' => $writable,
@@ -184,7 +184,7 @@ class HealthCheckService
      *
      * @return array{ok: bool, message: string, data: array}
      */
-    private function checkDisk(): array
+    protected function checkDisk(): array
     {
         try {
             $free = @disk_free_space(base_path());
@@ -231,7 +231,7 @@ class HealthCheckService
      *
      * @return array{ok: bool, message: string, data: array}
      */
-    private function checkCache(): array
+    protected function checkCache(): array
     {
         try {
             $key = 'health_check_probe';
@@ -260,7 +260,7 @@ class HealthCheckService
      *
      * @return array{ok: bool, message: string, data: array}
      */
-    private function checkApp(): array
+    protected function checkApp(): array
     {
         $phpVersion = PHP_VERSION;
         $phpOk = version_compare($phpVersion, '8.2', '>=');
