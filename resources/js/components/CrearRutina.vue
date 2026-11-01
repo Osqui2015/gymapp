@@ -21,15 +21,36 @@
                     </a>
                     <button
                         @click="guardarRutina"
-                        :disabled="!esValida"
-                        class="ripple px-5 md:px-6 py-2.5 md:py-3 rounded-xl font-bold transition-all shadow-md text-sm"
+                        :disabled="!esValida || guardando"
+                        :aria-busy="guardando"
+                        class="ripple px-5 md:px-6 py-2.5 md:py-3 rounded-xl font-bold transition-all shadow-md text-sm inline-flex items-center gap-2"
                         :class="
-                            esValida
+                            esValida && !guardando
                                 ? 'bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] text-white hover:brightness-110 shadow-[0_8px_24px_var(--color-violet-glow)]'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-[var(--color-obsidian-overlay)]'
                         "
                     >
-                        Guardar Rutina
+                        <svg
+                            v-if="guardando"
+                            class="animate-spin w-4 h-4 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                        <span>{{ guardando ? 'Guardando...' : 'Guardar Rutina' }}</span>
                     </button>
                 </div>
             </div>
@@ -693,9 +714,12 @@ const duplicarDia = (diaIndex) => {
     toast.success(`"${origen.nombre}" duplicado como "${nuevoNombre}"`);
 };
 
-const guardarRutina = async () => {
-    if (!esValida.value) return;
+const guardando = ref(false);
 
+const guardarRutina = async () => {
+    if (!esValida.value || guardando.value) return;
+
+    guardando.value = true;
     try {
         const ejerciciosParaGuardar = [];
         diasConfigurados.value.forEach((dia) => {
@@ -720,11 +744,16 @@ const guardarRutina = async () => {
             await axios.post('/api/rutinas', ejercicio);
         }
 
-        alert('Rutina guardada correctamente');
-        window.location.href = '/rutinas';
+        toast.success('Rutina guardada correctamente');
+        setTimeout(() => {
+            window.location.href = '/rutinas';
+        }, 500);
     } catch (error) {
-        console.error('Error:', error);
-        alert('No se pudo guardar la rutina');
+        console.error('Error al guardar rutina:', error);
+        const msg = error.response?.data?.message || 'No se pudo guardar la rutina';
+        toast.error(msg);
+    } finally {
+        guardando.value = false;
     }
 };
 

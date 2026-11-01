@@ -17,17 +17,22 @@
     <div
         v-if="isOpen"
         class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="name + '-title'"
     >
         <div
             class="fixed inset-0 transform transition-all"
             @click="close"
+            aria-hidden="true"
         >
             <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
         <div
             ref="panelRef"
-            class="mb-6 bg-white dark:bg-[var(--color-obsidian-surface)] rounded-2xl overflow-hidden shadow-xl dark:shadow-[0_24px_60px_rgba(0,0,0,0.6)] transform transition-all sm:w-full sm:mx-auto border border-gray-200 dark:border-[var(--color-obsidian-border-strong)]"
+            tabindex="-1"
+            class="mb-6 bg-white dark:bg-[var(--color-obsidian-surface)] rounded-2xl overflow-hidden shadow-xl dark:shadow-[0_24px_60px_rgba(0,0,0,0.6)] transform transition-all sm:w-full sm:mx-auto border border-gray-200 dark:border-[var(--color-obsidian-border-strong)] outline-none"
             :class="maxWidthClass"
         >
             <slot />

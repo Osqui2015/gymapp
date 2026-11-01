@@ -41,19 +41,32 @@
     ],
     "shortcuts": [
         {
-            "name": "Mis rutinas",
+            "name": "Entrenar Hoy",
+            "short_name": "Entrenar",
+            "description": "Ir directo a la sesión de hoy",
+            "url": "/dashboard",
+            "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+        },
+        {
+            "name": "Mis Rutinas",
             "short_name": "Rutinas",
-            "url": "/rutinas"
+            "description": "Ver y organizar rutinas de entrenamiento",
+            "url": "/rutinas",
+            "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
         },
         {
-            "name": "Historial",
+            "name": "Historial de Series",
             "short_name": "Historial",
-            "url": "/historial"
+            "description": "Consultar historial y marcas",
+            "url": "/historial",
+            "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
         },
         {
-            "name": "Progreso",
+            "name": "Progreso y Metas",
             "short_name": "Progreso",
-            "url": "/progreso"
+            "description": "Ver evolución física y gráficos",
+            "url": "/progreso",
+            "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
         }
     ]
 }

@@ -39,4 +39,17 @@ describe('OfflineStatusBar', () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.find('[role="status"]').exists()).toBe(false);
     });
+
+    it('dismisses the bar when close button is clicked', async () => {
+        const wrapper = mount(OfflineStatusBar);
+        window.dispatchEvent(new Event('offline'));
+        await wrapper.vm.$nextTick();
+
+        const btn = wrapper.find('button[aria-label="Cerrar aviso de conexión"]');
+        expect(btn.exists()).toBe(true);
+        await btn.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find('[role="status"]').exists()).toBe(false);
+    });
 });

@@ -15,7 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
+        // NOTA: el health nativo de Laravel (health: '/up') esta DESACTIVADO a
+        // proposito. Ese endpoint solo verifica que el framework arranca y
+        // devuelve HTML con un CDN de Tailwind: si MySQL se cae sigue
+        // respondiendo 200 y el monitor del hosting dice "todo bien" mientras
+        // la app esta muerta.
+        // Las rutas /up y /up/live se registran en routes/web.php con
+        // HealthController, que hace los checks reales (DB, storage, disco,
+        // cache, config) y devuelve JSON.
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo('/login');
