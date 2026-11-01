@@ -100,35 +100,46 @@ class HistorialService
             ->orderBy('orden')
             ->get();
 
+        $fechaHoy = Carbon::now()->toDateString();
+
         foreach ($rutinasDelDia as $rutinaDelDia) {
             $totalSeries = max(1, (int) $rutinaDelDia->series);
 
             for ($serie = 1; $serie <= $totalSeries; $serie++) {
-                $historial = Historial::firstOrNew([
-                    'user_id' => $user->id,
-                    'rutina_nombre' => $rutinaNombre,
-                    'dia' => $diaActual,
-                    'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
-                    'series_numero' => $serie,
-                ]);
+                // La clave UNIQUE de `historials` es
+                // (user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha).
+                //
+                // Antes se usaba `firstOrNew()` SIN la fecha: eso no matcheaba la
+                // fila existente (porque la clave ahora incluye la fecha) y
+                // terminaba intentando insertar una fila duplicada -> violacion
+                // del indice UNIQUE -> HTTP 500 en "Finalizar rutina".
+                //
+                // `Historial::guardarIdempotente()` resuelve por la clave
+                // COMPLETA (con whereDate) y ademas maneja la carrera entre el
+                // SELECT y el INSERT.
+                $existente = Historial::where('user_id', $user->id)
+                    ->where('rutina_nombre', $rutinaNombre)
+                    ->where('dia', $diaActual)
+                    ->where('ejercicio_nombre', $rutinaDelDia->ejercicio_nombre)
+                    ->where('series_numero', $serie)
+                    ->whereDate('fecha', $fechaHoy)
+                    ->first();
 
-                $historial->fill([
+                $historial = Historial::guardarIdempotente([
                     'user_id' => $user->id,
                     'rutina_nombre' => $rutinaNombre,
                     'dia' => $diaActual,
                     'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
                     'series_numero' => $serie,
-                    'series_completadas' => $historial->exists ? $historial->series_completadas : 1,
+                    'series_completadas' => $existente?->series_completadas ?? 1,
                     'reps_min' => $rutinaDelDia->reps_min,
                     'reps_max' => $rutinaDelDia->reps_max,
-                    'reps_realizadas' => $historial->exists ? $historial->reps_realizadas : null,
+                    'reps_realizadas' => $existente?->reps_realizadas,
                     'descanso_min' => $rutinaDelDia->descanso_min,
                     'completado' => true,
-                    'fecha' => Carbon::now()->toDateString(),
+                    'fecha' => $fechaHoy,
                     'superserie_grupo' => $rutinaDelDia->superserie_grupo,
                 ]);
-
-                $historial->save();
             }
         }
 
