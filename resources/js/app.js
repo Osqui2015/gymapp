@@ -52,7 +52,7 @@ app.component('app-navigation', AppNavigation);
 app.component('mobile-bottom-nav', MobileBottomNav);
 app.component('app-modal', AppModal);
 app.component('rutina-publica', RutinaPublica);
-app.component('notification-bell', () => import('./components/NotificationBell.vue'));
+app.component('notification-bell', defineAsyncComponent(() => import('./components/NotificationBell.vue')));
 
 const components = {
     'dashboard-content': () => import('./components/DashboardContent.vue'),
