@@ -315,20 +315,37 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import GlobalSearch from './GlobalSearch.vue';
 import { useClickOutside } from '../composables/useClickOutside';
 
+/**
+ * Props del componente.
+ *
+ * Llegan como el SEGUNDO ARGUMENTO de `createApp(Component, props)` desde
+ * `resources/js/app.js`, NO como atributos del elemento.
+ *
+ * Por que: Vue NO lee los atributos del elemento del DOM como props cuando el
+ * componente se registra globalmente y se monta sobre markup de Blade (eso
+ * solo funciona en templates compilados). Con `links='[...]'` la prop llegaba
+ * como string sin parsear; con `:links="..."` Vue descartaba el atributo por no
+ * ser una expresion valida. En ambos casos el menu de links salia VACIO.
+ *
+ * Blade arma UN objeto JSON y lo pasa por `data-props`; `app.js` lo parsea y
+ * lo entrega como props del root.
+ */
 const props = defineProps({
     links: { type: Array, default: () => [] },
     trainerLinks: { type: Array, default: () => [] },
     adminLinks: { type: Array, default: () => [] },
     userName: { type: String, default: '' },
     userEmail: { type: String, default: '' },
-    settingsHref: { type: String, required: true },
-    profileHref: { type: String, required: true },
-    logoutUrl: { type: String, required: true },
+    settingsHref: { type: String, default: '' },
+    profileHref: { type: String, default: '' },
+    logoutUrl: { type: String, default: '' },
     csrfToken: { type: String, default: '' },
-    dashboardHref: { type: String, required: true },
-    historialHref: { type: String, required: true },
+    dashboardHref: { type: String, default: '' },
+    historialHref: { type: String, default: '' },
     activeRoute: { type: String, default: '' },
 });
+
+// Los links llegan YA parseados (arrays) desde app.js.
 
 const trainerOpen = ref(false);
 const adminOpen = ref(false);

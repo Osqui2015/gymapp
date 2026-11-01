@@ -136,6 +136,63 @@ if (mountEl) {
     }
 }
 
+// === Montaje de componentes Vue "standalone" (fuera de #app) ===
+//
+// La app de pagina se monta sobre el primer custom element dentro de #app.
+// Los componentes globales que viven FUERA de #app (navbar, bottom nav
+// mobile) NO entran en esa busqueda: hay que montarlos aparte.
+//
+// Antes de la Tanda 3 la navbar era HTML Blade puro y siempre se renderizaba.
+// Al pasarla a Vue sin este montaje, la navbar desaparecia en TODAS las
+// paginas (no habia ningun error en consola: simplemente nunca se montaba).
+//
+// NOTA sobre los props: Vue NO lee los atributos del elemento como props
+// cuando el componente se registra globalmente y se monta sobre markup del
+// DOM (solo funciona en templates compilados). Por eso los componentes
+// reciben UN solo atributo `props` con un JSON, y lo parsean adentro.
+// Intentar pasar `links='[...]'` o `:links="[...]"` desde Blade no funciona:
+// el primero llega como string sin parsear y el segundo se descarta.
+function mountStandalone(rootId, name, propsJson = '{}') {
+    const root = document.getElementById(rootId);
+    if (!root) return false;
+
+    const Component = app._context.components[name];
+    if (!Component) {
+        console.warn(`[GymApp] componente '${name}' no registrado`);
+        return false;
+    }
+
+    let props = {};
+    try {
+        props = JSON.parse(propsJson);
+    } catch (e) {
+        console.warn(`[GymApp] props de '${name}' no parseables:`, e);
+    }
+
+    const soloApp = createApp(Component, props);
+    soloApp.use(pinia);
+    registerErrorHandler(soloApp);
+    soloApp.mount(root);
+
+    return true;
+}
+
+// La navbar vive en `layouts.navigation` (fuera de #app).
+const navRoot = document.getElementById('navigation-root');
+if (navRoot) {
+    mountStandalone('navigation-root', 'app-navigation', navRoot.dataset.props || '{}');
+}
+
+// La bottom nav mobile vive en `components.mobile-bottom-nav` (fuera de #app).
+const bottomNavRoot = document.getElementById('mobile-bottom-nav-root');
+if (bottomNavRoot) {
+    mountStandalone(
+        'mobile-bottom-nav-root',
+        'mobile-bottom-nav',
+        bottomNavRoot.dataset.props || '{}'
+    );
+}
+
 // === App de toasts (siempre montada, es el shell global) ===
 // Como la usamos en TODAS las páginas, se incluye en el bundle inicial.
 import ToastContainer from './components/ToastContainer.vue';

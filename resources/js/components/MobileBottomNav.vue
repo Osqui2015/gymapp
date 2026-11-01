@@ -244,17 +244,27 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
+/**
+ * Props del componente.
+ *
+ * Llegan como el SEGUNDO ARGUMENTO de `createApp(Component, props)` desde
+ * `resources/js/app.js`, NO como atributos del elemento: Vue no lee los
+ * atributos del DOM como props cuando el componente se registra globalmente
+ * y se monta sobre markup de Blade.
+ *
+ * Ver la nota completa en `AppNavigation.vue`.
+ */
 const props = defineProps({
     primary: { type: Array, default: () => [] },
     trainerLinks: { type: Array, default: () => [] },
     adminLinks: { type: Array, default: () => [] },
     userName: { type: String, default: '' },
     roleLabel: { type: String, default: '' },
-    settingsHref: { type: String, required: true },
-    profileHref: { type: String, required: true },
-    logoutUrl: { type: String, required: true },
+    settingsHref: { type: String, default: '' },
+    profileHref: { type: String, default: '' },
+    logoutUrl: { type: String, default: '' },
     csrfToken: { type: String, default: '' },
-    ejerciciosHref: { type: String, required: true },
+    ejerciciosHref: { type: String, default: '' },
     ejerciciosActive: { type: Boolean, default: false },
     isStaff: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },

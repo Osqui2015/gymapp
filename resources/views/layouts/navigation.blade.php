@@ -109,17 +109,35 @@
     $activeRoute = request()->routeIs('historial*') ? 'historial' : '';
 @endphp
 
+{{--
+    La navegacion vive FUERA de #app (el mount point de la app Vue de pagina),
+    asi que necesita su propio punto de montaje.
+
+    Los props van TODOS en un unico atributo `data-props` (JSON). No se pueden
+    pasar como atributos sueltos: Vue NO lee los atributos de un elemento del
+    DOM como props cuando el componente se registra globalmente y se monta
+    sobre markup de Blade (eso solo funciona en templates compilados). Con
+    `links='[...]'` la prop llegaba como string sin parsear y con
+    `:links="..."` Vue descartaba el atributo: en ambos casos el menu de
+    links salia VACIO.
+
+    Antes esto era HTML Blade puro + Alpine, y siempre se renderizaba. Ahora es
+    un componente Vue, y sin montarlo explicitamente la navbar desaparece.
+--}}
 <app-navigation
-    :links="{{ json_encode($mainLinks) }}"
-    :trainer-links="{{ json_encode($trainerLinks) }}"
-    :admin-links="{{ json_encode($adminLinks) }}"
-    user-name="{{ $user->name }}"
-    user-email="{{ $user->email }}"
-    settings-href="{{ $user->hasRole('administrador') ? route('configuracion') : route('profile.edit') }}"
-    profile-href="{{ route('profile.edit') }}"
-    logout-url="{{ route('logout') }}"
-    csrf-token="{{ csrf_token() }}"
-    dashboard-href="{{ route('dashboard') }}"
-    historial-href="{{ route('historial') }}"
-    active-route="{{ $activeRoute }}"
+    id="navigation-root"
+    data-props='{{ json_encode([
+        'links' => $mainLinks,
+        'trainerLinks' => $trainerLinks,
+        'adminLinks' => $adminLinks,
+        'userName' => $user->name,
+        'userEmail' => $user->email,
+        'settingsHref' => $user->hasRole('administrador') ? route('configuracion') : route('profile.edit'),
+        'profileHref' => route('profile.edit'),
+        'logoutUrl' => route('logout'),
+        'csrfToken' => csrf_token(),
+        'dashboardHref' => route('dashboard'),
+        'historialHref' => route('historial'),
+        'activeRoute' => $activeRoute,
+    ]) }}'
 ></app-navigation>

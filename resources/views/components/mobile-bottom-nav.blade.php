@@ -65,18 +65,29 @@
     }
 @endphp
 
+{{--
+    La bottom nav vive FUERA de #app (el mount point de la app Vue de pagina),
+    asi que necesita su propio punto de montaje.
+
+    Los props van TODOS en un unico atributo `data-props` (JSON). Ver la nota
+    completa en `layouts/navigation.blade.php`: Vue no lee los atributos del
+    elemento como props cuando el componente se monta sobre markup de Blade.
+--}}
 <mobile-bottom-nav
-    :primary="{{ json_encode($primary) }}"
-    :trainer-links="{{ json_encode($trainerLinks) }}"
-    :admin-links="{{ json_encode($adminLinks) }}"
-    user-name="{{ $user->name }}"
-    role-label="{{ $user->normalizedRole() }}"
-    settings-href="{{ $isAdmin ? route('configuracion') : route('profile.edit') }}"
-    profile-href="{{ route('profile.edit') }}"
-    logout-url="{{ route('logout') }}"
-    csrf-token="{{ csrf_token() }}"
-    ejercicios-href="{{ route('ejercicios') }}"
-    :ejercicios-active="{{ request()->routeIs('ejercicios*') ? 'true' : 'false' }}"
-    :is-staff="{{ $isStaff ? 'true' : 'false' }}"
-    :is-admin="{{ $isAdmin ? 'true' : 'false' }}"
+    id="mobile-bottom-nav-root"
+    data-props='{{ json_encode([
+        'primary' => $primary,
+        'trainerLinks' => $trainerLinks,
+        'adminLinks' => $adminLinks,
+        'userName' => $user->name,
+        'roleLabel' => $user->normalizedRole(),
+        'settingsHref' => $isAdmin ? route('configuracion') : route('profile.edit'),
+        'profileHref' => route('profile.edit'),
+        'logoutUrl' => route('logout'),
+        'csrfToken' => csrf_token(),
+        'ejerciciosHref' => route('ejercicios'),
+        'ejerciciosActive' => request()->routeIs('ejercicios*'),
+        'isStaff' => $isStaff,
+        'isAdmin' => $isAdmin,
+    ]) }}'
 ></mobile-bottom-nav>
