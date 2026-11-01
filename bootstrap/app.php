@@ -65,6 +65,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->call(function () {
             Membresia::actualizarEstados();
         })->dailyAt('00:05')->name('membresias:actualizar-estados');
+
+        // Purga de audit logs: la tabla es append-only y crece sin límite.
+        // Corre a las 03:30 (después del backup de las 02:00, así el backup
+        // diario todavía incluye los logs del día anterior).
+        //
+        // Retención de 365 días. Los logs de SEGURIDAD (login_failed,
+        // role_changed, etc.) NUNCA se purgan: el comando los excluye.
+        $schedule->command('audit-logs:purge --days=365 --prune --force')
+            ->dailyAt('03:30')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->name('audit-logs:purga');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, $request) {
