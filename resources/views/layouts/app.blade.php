@@ -78,7 +78,7 @@
                 </header>
             @endisset
 
-            <main id="app" x-ignore class="overflow-x-hidden">
+            <main id="app" class="overflow-x-hidden">
                 <div id="main-content" tabindex="-1">
                     {{ $slot }}
                 </div>
@@ -102,7 +102,7 @@
         {{-- Mount point para el indicador de estado offline global --}}
         <div id="offline-status-root"></div>
 
-        {{-- Dark mode manager (debe ir DESPUÉS de Alpine.js para exponer window.darkMode) --}}
+        {{-- Dark mode manager (expone window.darkMode, lo consume el componente Vue app-navigation) --}}
         <script>
             (function () {
                 const STORAGE_KEY = 'theme_mode'; // nueva key: 'auto' | 'light' | 'dark'
@@ -138,6 +138,23 @@
                 if (window.matchMedia) {
                     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
                 }
+            })();
+        </script>
+
+        {{-- Auto-ocultar avisos "Saved." (antes lo hacia Alpine con x-init + x-show) --}}
+        <script>
+            (function () {
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('[data-auto-hide-ms]').forEach(function (el) {
+                        var ms = parseInt(el.getAttribute('data-auto-hide-ms'), 10) || 2000;
+                        setTimeout(function () {
+                            el.style.opacity = '0';
+                            setTimeout(function () {
+                                el.remove();
+                            }, 300);
+                        }, ms);
+                    });
+                });
             })();
         </script>
     </body>

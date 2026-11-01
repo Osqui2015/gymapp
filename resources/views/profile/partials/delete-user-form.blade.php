@@ -9,9 +9,11 @@
         </p>
     </header>
 
+    {{-- Antes: `x-data=""` + `x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"`.
+         Ahora: JS inline que dispara el evento DOM nativo `open-modal`, que
+         escucha el componente Vue `app-modal`. --}}
     <x-danger-button
-        x-data=""
-        x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
+        onclick="window.dispatchEvent(new CustomEvent('open-modal', { detail: 'confirm-user-deletion' })); return false;"
     >{{ __('Delete Account') }}</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
@@ -42,7 +44,7 @@
             </div>
 
             <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="$dispatch('close')">
+                <x-secondary-button onclick="window.dispatchEvent(new CustomEvent('close')); return false;">
                     {{ __('Cancel') }}
                 </x-secondary-button>
 

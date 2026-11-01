@@ -1,19 +1,12 @@
 import './bootstrap';
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-// Guard contra doble init: Vite HMR puede re-ejecutar este módulo,
-// y las directivas `x-data` del layout (navigation.blade.php) ya consumen Alpine.
-// Llamar Alpine.start() 2 veces tira warning en consola y puede romper bindings.
-if (!window.__alpineStarted) {
-    window.__alpineStarted = true;
-    Alpine.start();
-}
 
 import { createApp, defineAsyncComponent } from 'vue';
 import { createPinia } from 'pinia';
 import DarkModeToggle from './components/DarkModeToggle.vue';
 import GlobalSearch from './components/GlobalSearch.vue';
+import AppNavigation from './components/AppNavigation.vue';
+import MobileBottomNav from './components/MobileBottomNav.vue';
+import AppModal from './components/AppModal.vue';
 import RutinaPublica from './components/RutinaPublica.vue';
 import { setupGlobalToastListeners } from './composables/useToast';
 import { setupKeyboardShortcuts } from './composables/useKeyboardShortcuts';
@@ -55,6 +48,9 @@ registerErrorHandler(app);
 // Componentes globales (siempre en el bundle inicial, son pequeños y/o globales)
 app.component('dark-mode-toggle', DarkModeToggle);
 app.component('global-search', GlobalSearch);
+app.component('app-navigation', AppNavigation);
+app.component('mobile-bottom-nav', MobileBottomNav);
+app.component('app-modal', AppModal);
 app.component('rutina-publica', RutinaPublica);
 app.component('notification-bell', () => import('./components/NotificationBell.vue'));
 
