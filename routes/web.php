@@ -1,16 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// === Health check ===
-// Publico (sin auth): un monitor externo tiene que poder consultarlo.
-// NO va en el grupo 'web' con sesion para que no dependa de la DB de
-// sesiones ni de cookies validas.
-Route::get('/up', HealthController::class)->name('health.up');
-Route::get('/up/live', [HealthController::class, 'live'])->name('health.live');
+// NOTA: las rutas del health check (/up, /up/live) NO estan en este archivo.
+// Viven en routes/health.php y se registran FUERA del grupo 'web' desde
+// bootstrap/app.php, para que no dependan de la sesion ni de la tabla
+// `sessions` (si la DB se cae, /up tiene que seguir respondiendo).
 
 Route::get('/', function () {
     return auth()->check()

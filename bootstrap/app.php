@@ -9,20 +9,39 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
+        using: function () {
+            // Health check FUERA del grupo 'web' Y fuera del grupo 'api'.
+            //
+            // El grupo 'web' aplica StartSession: eso hace que /up dependa
+            // de la tabla `sessions` y devuelva 500 si la DB se cae, justo
+            // cuando mas hace falta el diagnostico.
+            //
+            // El grupo 'api' aplica throttle:api, que usa el cache store
+            // (driver `database`): con la DB caida el throttle falla, y
+            // ademas un monitor que consulta seguido podria comerse un 429.
+            //
+            // Un monitor externo (UptimeRobot, health check de Hostinger,
+            // un cron) consulta por HTTP: no manda cookies ni CSRF.
+            //
+            // El health nativo de Laravel (health: '/up') esta DESACTIVADO a
+            // proposito: ese endpoint solo verifica que el framework arranca
+            // y devuelve HTML con un CDN de Tailwind. Si MySQL se cae sigue
+            // respondiendo 200 y el monitor del hosting dice "todo bien"
+            // mientras la app esta muerta.
+            //
+            // Las rutas /up y /up/live las define routes/health.php con
+            // HealthController, que hace los checks reales (DB, storage,
+            // disco, cache, config) y devuelve JSON.
+            Route::group([], base_path('routes/health.php'));
+
+            Route::middleware('web')->group(base_path('routes/web.php'));
+            Route::middleware('api')->prefix('api')->group(base_path('routes/api.php'));
+        },
         commands: __DIR__.'/../routes/console.php',
-        // NOTA: el health nativo de Laravel (health: '/up') esta DESACTIVADO a
-        // proposito. Ese endpoint solo verifica que el framework arranca y
-        // devuelve HTML con un CDN de Tailwind: si MySQL se cae sigue
-        // respondiendo 200 y el monitor del hosting dice "todo bien" mientras
-        // la app esta muerta.
-        // Las rutas /up y /up/live se registran en routes/web.php con
-        // HealthController, que hace los checks reales (DB, storage, disco,
-        // cache, config) y devuelve JSON.
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo('/login');
