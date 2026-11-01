@@ -71,8 +71,14 @@
 
                     <!-- body scrollable -->
                     <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
+                        <!--
+                            Se itera `localEjercicios` (la copia local con `_series`),
+                            NO el prop `ejercicios`: las series se generan en `clonar()`
+                            sobre la copia. Iterar el prop dejaba la hoja sin inputs
+                            de peso/reps (las series nunca se renderizaban).
+                        -->
                         <div
-                            v-for="(ej, ei) in ejercicios"
+                            v-for="(ej, ei) in localEjercicios"
                             :key="ej.id ?? ei"
                             class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4"
                         >
@@ -221,7 +227,7 @@
                         </div>
 
                         <div
-                            v-if="!ejercicios.length"
+                            v-if="!localEjercicios.length"
                             class="text-center py-12 text-sm text-gray-500 dark:text-gray-400"
                         >
                             No hay ejercicios para este día.
