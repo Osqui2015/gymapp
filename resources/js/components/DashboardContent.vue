@@ -1002,28 +1002,49 @@ const fetchRutinasDelDia = async () => {
     }
 };
 
+/**
+ * Payload que espera /api/historial/guardar para una fila del dashboard.
+ * Compartido entre el guardado individual y el guardado en lote.
+ */
+const payloadDeFila = (fila) => ({
+    fecha: new Date().toISOString().split('T')[0],
+    rutina_nombre: fila.rutina_nombre,
+    dia: fila.dia,
+    ejercicio_nombre: fila.ejercicio_nombre,
+    series_numero: fila.series_numero,
+    series_completadas: fila.completado ? 1 : 0,
+    reps_min: fila.reps_min,
+    reps_max: fila.reps_max,
+    reps_realizadas:
+        fila.reps_realizadas === '' || fila.reps_realizadas == null
+            ? null
+            : Number(fila.reps_realizadas),
+    descanso_min: fila.descanso_min,
+    peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
+    completado: fila.completado,
+    superserie_grupo: fila.superserie_grupo,
+    esfuerzo_tipo: fila.esfuerzo_tipo || null,
+    esfuerzo_valor: fila.esfuerzo_valor ?? null,
+});
+
+/**
+ * Guarda TODAS las filas en un único request.
+ *
+ * Antes se hacía Promise.all(filas.map(guardarFila)): N POST simultáneos que,
+ * en el hosting compartido, agotaban las conexiones a MySQL y devolvían 500
+ * ("[2002] Operation not permitted") en todos.
+ */
+const guardarFilasEnLote = async (filas) => {
+    const result = await offline.recordSetBatch(filas.map(payloadDeFila));
+    if (result.status === 'rejected') {
+        throw new Error(result.error || 'El servidor rechazó las series');
+    }
+    return result;
+};
+
 const guardarFila = async (fila, silencioso = false) => {
     try {
-        const result = await offline.recordSet({
-            fecha: new Date().toISOString().split('T')[0],
-            rutina_nombre: fila.rutina_nombre,
-            dia: fila.dia,
-            ejercicio_nombre: fila.ejercicio_nombre,
-            series_numero: fila.series_numero,
-            series_completadas: fila.completado ? 1 : 0,
-            reps_min: fila.reps_min,
-            reps_max: fila.reps_max,
-            reps_realizadas:
-                fila.reps_realizadas === '' || fila.reps_realizadas == null
-                    ? null
-                    : Number(fila.reps_realizadas),
-            descanso_min: fila.descanso_min,
-            peso: fila.peso === '' || fila.peso == null ? null : Number(fila.peso),
-            completado: fila.completado,
-            superserie_grupo: fila.superserie_grupo,
-            esfuerzo_tipo: fila.esfuerzo_tipo || null,
-            esfuerzo_valor: fila.esfuerzo_valor ?? null,
-        });
+        const result = await offline.recordSet(payloadDeFila(fila));
         if (result.status === 'queued' && !silencioso) {
             showError?.(
                 'Sin conexion: guardado en este dispositivo, se sincroniza al volver online.'
@@ -1216,7 +1237,13 @@ const guardarSesion = async () => {
         return;
     }
     try {
-        await Promise.all(filasSerie.value.map((f) => guardarFila(f, true)));
+        const result = await guardarFilasEnLote(filasSerie.value);
+        if (result.status === 'queued') {
+            showWarning(
+                'No se pudo conectar con el servidor: la sesión quedó guardada en este dispositivo y se sincroniza sola.'
+            );
+            return;
+        }
         showSuccess('✓ Sesión guardada correctamente');
     } catch (error) {
         console.error('Error:', error);
@@ -1227,7 +1254,7 @@ const guardarSesion = async () => {
 const finalizarRutina = async () => {
     if (!rutinaStore.seleccionada) return;
     try {
-        await Promise.all(filasSerie.value.map((f) => guardarFila(f, true)));
+        await guardarFilasEnLote(filasSerie.value);
         const nivel = rutinaStore.seleccionada.nivel.split(' ')[0];
         const modalidad = rutinaStore.seleccionada.nivel.substring(nivel.length + 1);
         const response = await axios.post('/api/historial/finalizar-rutina', { nivel, modalidad });

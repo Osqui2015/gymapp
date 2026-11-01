@@ -286,6 +286,81 @@ const recordSet = async (payload) => {
 };
 
 /**
+ * Registra VARIAS series en UN solo request (`{ series: [...] }`).
+ *
+ * Motivo: al guardar/finalizar la sesión el dashboard mandaba un POST por
+ * serie en paralelo (Promise.all). En el hosting compartido esa ráfaga de
+ * conexiones simultáneas hace que MySQL rechace las nuevas conexiones
+ * ("SQLSTATE[HY000] [2002] Operation not permitted") y todos los POST dan 500.
+ * El backend ya acepta el formato batch y lo guarda en una transacción.
+ *
+ * Mismo contrato que recordSet(), pero para el lote completo:
+ *   { status: 'synced' | 'queued' | 'rejected' | 'lost', count, error?, statusCode? }
+ * Si falla, CADA serie se encola (o se marca fallida) por separado, así el
+ * sync posterior no depende del lote.
+ *
+ * @param {Array<Object>} payloads
+ */
+const recordSetBatch = async (payloads) => {
+    const lista = Array.isArray(payloads) ? payloads.filter(Boolean) : [];
+    if (lista.length === 0) {
+        return { status: 'synced', count: 0 };
+    }
+
+    const records = lista.map((payload) => ({
+        client_id: generateId(),
+        payload,
+        createdAt: new Date().toISOString(),
+        attempts: 0,
+        lastError: null,
+    }));
+
+    const encolarTodas = async (extra = {}) => {
+        if (!idbAvailable()) return false;
+        for (const record of records) {
+            await addPending({ ...record, ...extra });
+        }
+        pendingCount.value += records.length;
+        return true;
+    };
+
+    if (!leerOnline()) {
+        const ok = await encolarTodas();
+        return ok
+            ? { status: 'queued', count: records.length }
+            : { status: 'lost', count: records.length, reason: 'offline_y_sin_idb' };
+    }
+
+    try {
+        await axios.post('/api/historial/guardar', {
+            series: records.map((r) => ({ ...r.payload, client_id: r.client_id })),
+        });
+        lastSyncedAt.value = new Date().toISOString();
+        return { status: 'synced', count: records.length };
+    } catch (err) {
+        const statusCode = err.response?.status ?? null;
+        const error = err.response?.data?.message || err.message || 'Error desconocido';
+        const permanente =
+            statusCode !== null &&
+            statusCode >= 400 &&
+            statusCode < 500 &&
+            statusCode !== 408 &&
+            statusCode !== 429;
+
+        if (permanente) {
+            lastError.value = error;
+            await encolarTodas({ failed: true, permanentError: error, statusCode });
+            await refreshCount();
+            return { status: 'rejected', count: records.length, statusCode, error };
+        }
+
+        // Red caída o 5xx: transitorio, se reintenta en el próximo sync.
+        await encolarTodas();
+        return { status: 'queued', count: records.length, statusCode, error };
+    }
+};
+
+/**
  * Descarta una serie fallida: la elimina del IndexedDB y de la lista visible.
  * Es la acción explícita del usuario ("la Perdés"), ya que sola no se borra.
  */
@@ -406,6 +481,7 @@ export function useOfflineSeries() {
 
         // API
         recordSet,
+        recordSetBatch,
         syncNow,
         refreshCount,
         dismissFailed,

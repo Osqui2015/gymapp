@@ -428,4 +428,82 @@ describe('useOfflineSeries', () => {
             expect.objectContaining({ attempts: 1 })
         );
     });
+
+    describe('recordSetBatch (un solo request para toda la sesión)', () => {
+        const lote = () => [
+            { ...basePayload(), series_numero: 1 },
+            { ...basePayload(), series_numero: 2 },
+            { ...basePayload(), series_numero: 3 },
+        ];
+
+        it('online + post OK: manda UN solo POST con { series } y no encola', async () => {
+            const { recordSetBatch, pendingCount } = useOfflineSeries();
+            const result = await recordSetBatch(lote());
+
+            expect(result).toMatchObject({ status: 'synced', count: 3 });
+            expect(mockPost).toHaveBeenCalledTimes(1);
+            const [url, body] = mockPost.mock.calls[0];
+            expect(url).toBe('/api/historial/guardar');
+            expect(body.series).toHaveLength(3);
+            expect(body.series.map((s) => s.series_numero)).toEqual([1, 2, 3]);
+            // Cada serie lleva su propio client_id.
+            expect(new Set(body.series.map((s) => s.client_id)).size).toBe(3);
+            expect(mockDb.addPending).not.toHaveBeenCalled();
+            await flush();
+            expect(pendingCount.value).toBe(0);
+        });
+
+        it('lote vacío: no hace ningún request', async () => {
+            const { recordSetBatch } = useOfflineSeries();
+            const result = await recordSetBatch([]);
+
+            expect(result).toMatchObject({ status: 'synced', count: 0 });
+            expect(mockPost).not.toHaveBeenCalled();
+        });
+
+        it('5xx: encola CADA serie por separado y devuelve queued', async () => {
+            mockPost.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+            const { recordSetBatch, pendingCount } = useOfflineSeries();
+
+            const result = await recordSetBatch(lote());
+
+            expect(result).toMatchObject({ status: 'queued', count: 3, statusCode: 500 });
+            expect(mockDb.addPending).toHaveBeenCalledTimes(3);
+            expect(store.every((r) => !r.failed)).toBe(true);
+            expect(pendingCount.value).toBe(3);
+        });
+
+        it('422: marca cada serie como fallida y devuelve rejected', async () => {
+            mockPost.mockRejectedValueOnce({
+                response: { status: 422, data: { message: 'Datos inválidos' } },
+            });
+            const { recordSetBatch, failedCount } = useOfflineSeries();
+
+            const result = await recordSetBatch(lote());
+
+            expect(result).toMatchObject({
+                status: 'rejected',
+                statusCode: 422,
+                error: 'Datos inválidos',
+            });
+            expect(store).toHaveLength(3);
+            expect(store.every((r) => r.failed === true)).toBe(true);
+            expect(failedCount.value).toBe(3);
+        });
+
+        it('offline: encola todas sin hacer request', async () => {
+            Object.defineProperty(navigator, 'onLine', {
+                value: false,
+                writable: true,
+                configurable: true,
+            });
+            const { recordSetBatch } = useOfflineSeries();
+
+            const result = await recordSetBatch(lote());
+
+            expect(result).toMatchObject({ status: 'queued', count: 3 });
+            expect(mockPost).not.toHaveBeenCalled();
+            expect(store).toHaveLength(3);
+        });
+    });
 });
