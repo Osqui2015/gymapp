@@ -35,12 +35,11 @@
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 
             @if (session('status') === 'password-updated')
+                {{-- Antes era Alpine (`x-data="{ show: true }"` + `x-show` + `x-transition`).
+                     Ahora es JS inline: el aviso se oculta solo a los 2s. --}}
                 <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
+                    data-auto-hide-ms="2000"
+                    class="text-sm text-gray-600 transition-opacity duration-300"
                 >{{ __('Saved.') }}</p>
             @endif
         </div>
