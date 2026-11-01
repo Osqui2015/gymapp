@@ -78,12 +78,22 @@ class HistorialController extends Controller
         $series = $request->input('series');
         if (is_array($series) && ! empty($series)) {
             $records = $series;
+            // La fecha del wrapper aplica a TODAS las series del batch si cada
+            // una no trae la suya. Antes se ignoraba silenciosamente y las
+            // series se guardaban con la fecha de hoy, corriendo el historial
+            // offline hacia adelante.
+            $fechaBatch = $request->input('fecha');
         } else {
             $records = [$request->all()];
+            $fechaBatch = null;
         }
 
         $validatedRecords = [];
         foreach ($records as $rec) {
+            // La fecha efectiva de esta serie: la propia si viene, si no la
+            // del batch, si no hoy.
+            $fechaSerie = $rec['fecha'] ?? $fechaBatch;
+
             $data = validator($rec, [
                 'rutina_nombre' => ['required', 'string', 'max:255'],
                 'dia' => ['required', 'string', 'max:255'],
@@ -118,6 +128,15 @@ class HistorialController extends Controller
                 'fecha' => ['nullable', 'date', 'after_or_equal:'.$minFecha, 'before_or_equal:'.$hoy],
             ])->validate();
 
+            // La fecha del batch (wrapper) tambien tiene que pasar por la
+            // ventana valida: si no, un batch con fecha vieja se aceptaria.
+            if ($fechaSerie !== null && ! isset($data['fecha'])) {
+                validator(
+                    ['fecha' => $fechaSerie],
+                    ['fecha' => ['required', 'date', 'after_or_equal:'.$minFecha, 'before_or_equal:'.$hoy]]
+                )->validate();
+            }
+
             $data['user_id'] = $user->id;
             $data['tipo_serie'] = $data['tipo_serie'] ?? 'efectiva';
             // Si el cliente mando fecha, respetarla (caso offline).
@@ -125,8 +144,8 @@ class HistorialController extends Controller
             // Normalizada a YYYY-MM-DD porque la columna es DATE: la clave de
             // idempotencia tiene que comparar contra el mismo valor que se
             // guarda, si no el WHERE no matchea nunca.
-            $data['fecha'] = isset($rec['fecha']) && $rec['fecha'] !== null
-                ? Carbon::parse($rec['fecha'])->toDateString()
+            $data['fecha'] = $fechaSerie !== null
+                ? Carbon::parse($fechaSerie)->toDateString()
                 : $hoy;
             // client_id no se persiste: la clave compuesta ya garantiza idempotencia.
             unset($data['client_id']);
