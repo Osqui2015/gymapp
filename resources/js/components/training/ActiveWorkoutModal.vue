@@ -580,13 +580,13 @@
                     <!-- Lista de Series ya completadas en este ejercicio (Desktop) -->
                     <section
                         v-if="store.currentEjercicio?.sets?.length"
-                        class="obs-card p-3 space-y-2 max-h-48 overflow-y-auto hidden md:block"
+                        class="bg-surface rounded-2xl border border-border p-3 space-y-2 max-h-48 overflow-y-auto hidden md:block"
                     >
                         <div class="flex items-center justify-between">
-                            <h3 class="text-[11px] font-black uppercase tracking-wider text-gray-300">
+                            <h3 class="text-[11px] font-black uppercase tracking-wider text-text-2">
                                 Series registradas ({{ store.currentEjercicio.sets.length }})
                             </h3>
-                            <span class="text-[10px] text-violet-300 font-semibold truncate max-w-[160px]">
+                            <span class="text-[10px] text-brand font-semibold truncate max-w-[160px]">
                                 {{ store.currentEjercicio.nombre }}
                             </span>
                         </div>
@@ -594,15 +594,15 @@
                             <div
                                 v-for="(s, idx) in store.currentEjercicio.sets"
                                 :key="idx"
-                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)] text-xs"
+                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-2 border border-border text-xs"
                             >
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span
                                         class="font-black tabular-nums"
                                         :class="
                                             s.tipo_serie === 'calentamiento'
-                                                ? 'text-indigo-300'
-                                                : 'text-emerald-300'
+                                                ? 'text-brand'
+                                                : 'text-success'
                                         "
                                     >
                                         <template v-if="s.tipo_serie === 'calentamiento'">
@@ -612,23 +612,23 @@
                                             #{{ s.series_numero }}
                                         </template>
                                     </span>
-                                    <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
-                                    <span class="text-gray-500">×</span>
-                                    <span class="font-black text-white tabular-nums">{{ s.reps }} reps</span>
+                                    <span class="font-black text-text tabular-nums">{{ s.peso }} kg</span>
+                                    <span class="text-text-3">×</span>
+                                    <span class="font-black text-text tabular-nums">{{ s.reps }} reps</span>
                                     <span
                                         v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
-                                        class="obs-pill obs-pill-amber text-[9px]"
+                                        class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-warning/15 text-warning border border-warning/30"
                                     >
                                         {{ s.tipo_serie }}
                                     </span>
                                     <span
                                         v-if="s.esfuerzo_valor != null"
-                                        class="obs-pill obs-pill-neutral text-[9px]"
+                                        class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-3 text-text-2"
                                     >
                                         {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
                                     </span>
                                 </div>
-                                <span class="text-[10px] text-gray-500 font-mono tabular-nums">
+                                <span class="text-[10px] text-text-3 font-mono tabular-nums">
                                     {{ formatSetTime(s.completed_at) }}
                                 </span>
                             </div>
@@ -682,27 +682,27 @@
                             v-if="store.currentEjercicio?.sets?.length"
                             class="md:hidden"
                         >
-                            <details class="obs-card p-2 rounded-xl border border-[var(--color-obsidian-border)] group">
-                                <summary class="flex items-center justify-between text-xs font-bold text-gray-300 cursor-pointer list-none select-none px-1">
+                            <details class="bg-surface rounded-2xl border border-border p-2 group">
+                                <summary class="flex items-center justify-between text-xs font-bold text-text cursor-pointer list-none select-none px-1">
                                     <span class="flex items-center gap-1.5">
-                                        <span class="text-emerald-400 font-black">✓</span>
+                                        <span class="text-success font-black">✓</span>
                                         <span>Series registradas de {{ store.currentEjercicio.nombre }} ({{ store.currentEjercicio.sets.length }})</span>
                                     </span>
-                                    <span class="text-[10px] text-violet-400 group-open:rotate-180 transition-transform">▼</span>
+                                    <span class="text-[10px] text-brand group-open:rotate-180 transition-transform">▼</span>
                                 </summary>
-                                <div class="space-y-1 mt-2 pt-2 border-t border-[var(--color-obsidian-border)]">
+                                <div class="space-y-1 mt-2 pt-2 border-t border-border">
                                     <div
                                         v-for="(s, idx) in store.currentEjercicio.sets"
                                         :key="idx"
-                                        class="flex items-center justify-between px-2 py-1 rounded-lg bg-[var(--color-obsidian-surface)] text-[11px]"
+                                        class="flex items-center justify-between px-2 py-1 rounded-lg bg-surface-2 text-[11px]"
                                     >
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span
                                                 class="font-black tabular-nums"
                                                 :class="
                                                     s.tipo_serie === 'calentamiento'
-                                                        ? 'text-indigo-300'
-                                                        : 'text-emerald-300'
+                                                        ? 'text-brand'
+                                                        : 'text-success'
                                                 "
                                             >
                                                 <template v-if="s.tipo_serie === 'calentamiento'">
@@ -712,23 +712,23 @@
                                                     #{{ s.series_numero }}
                                                 </template>
                                             </span>
-                                            <span class="font-black text-white tabular-nums">{{ s.peso }} kg</span>
-                                            <span class="text-gray-500">×</span>
-                                            <span class="font-black text-white tabular-nums">{{ s.reps }} reps</span>
+                                            <span class="font-black text-text tabular-nums">{{ s.peso }} kg</span>
+                                            <span class="text-text-3">×</span>
+                                            <span class="font-black text-text tabular-nums">{{ s.reps }} reps</span>
                                             <span
                                                 v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
-                                                class="obs-pill obs-pill-amber text-[9px]"
+                                                class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-warning/15 text-warning border border-warning/30"
                                             >
                                                 {{ s.tipo_serie }}
                                             </span>
                                             <span
                                                 v-if="s.esfuerzo_valor != null"
-                                                class="obs-pill obs-pill-neutral text-[9px]"
+                                                class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-3 text-text-2"
                                             >
                                                 {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
                                             </span>
                                         </div>
-                                        <span class="text-[10px] text-gray-500 font-mono tabular-nums">
+                                        <span class="text-[10px] text-text-3 font-mono tabular-nums">
                                             {{ formatSetTime(s.completed_at) }}
                                         </span>
                                     </div>
