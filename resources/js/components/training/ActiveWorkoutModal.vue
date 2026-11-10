@@ -1,20 +1,20 @@
 <template>
     <div
         v-if="open"
-        class="fixed inset-0 z-50 flex flex-col bg-[var(--color-obsidian-base)] text-white select-none overflow-hidden"
+        class="fixed inset-0 z-50 flex flex-col bg-bg text-text select-none overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Modo Entrenamiento Activo"
     >
-        <!-- Top Bar: Cronómetro, Rutina y Controles (Kinetic Obsidian) -->
+        <!-- Top Bar: Cronómetro, Rutina y Controles (Tokens Semánticos) -->
         <header
-            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-[var(--color-obsidian-surface)]/95 border-b border-[var(--color-obsidian-border)] flex items-center justify-between gap-2.5 backdrop-blur-xl shrink-0"
+            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-surface/95 border-b border-border flex items-center justify-between gap-2.5 backdrop-blur-xl shrink-0"
         >
             <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                     type="button"
                     @click="$emit('minimize')"
-                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-300 hover:text-white transition-colors cursor-pointer border border-[var(--color-obsidian-border)] flex items-center justify-center shrink-0"
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-2 hover:bg-surface-3 text-text-2 hover:text-text transition-colors cursor-pointer border border-border flex items-center justify-center shrink-0"
                     aria-label="Minimizar sesión"
                     title="Volver / Minimizar (continúa en segundo plano)"
                 >
@@ -29,16 +29,16 @@
 
                 <div class="min-w-0">
                     <p
-                        class="text-[10px] font-black uppercase tracking-[0.16em] text-violet-300 truncate flex items-center gap-1.5"
+                        class="text-[10px] font-black uppercase tracking-[0.16em] text-brand truncate flex items-center gap-1.5"
                     >
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
                         {{ store.session.dia }} · {{ store.session.rutina_nombre }}
                     </p>
                     <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-xl sm:text-2xl font-mono font-black tracking-tight tabular-nums">
+                        <span class="text-xl sm:text-2xl font-mono font-black tracking-tight tabular-nums text-text">
                             {{ formattedTime }}
                         </span>
-                        <span v-if="store.isPaused" class="obs-pill obs-pill-orange">
+                        <span v-if="store.isPaused" class="px-2 py-0.5 rounded-full bg-warning/15 text-warning text-[10px] font-bold border border-warning/30">
                             ⏸ Pausa
                         </span>
                     </div>
@@ -50,13 +50,13 @@
                 <button
                     type="button"
                     @click="togglePause"
-                    class="p-2 sm:p-2.5 rounded-xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] text-gray-200 transition-all cursor-pointer"
+                    class="p-2 sm:p-2.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 text-text-2 transition-all cursor-pointer"
                     :title="store.isPaused ? 'Reanudar cronómetro' : 'Pausar cronómetro'"
                     :aria-label="store.isPaused ? 'Reanudar' : 'Pausar'"
                 >
                     <svg
                         v-if="!store.isPaused"
-                        class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400"
+                        class="w-4 h-4 sm:w-5 sm:h-5 text-warning"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                     >
@@ -64,7 +64,7 @@
                     </svg>
                     <svg
                         v-else
-                        class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400"
+                        class="w-4 h-4 sm:w-5 sm:h-5 text-success"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                     >
@@ -72,44 +72,63 @@
                     </svg>
                 </button>
 
-                <!-- Botón Finalizar -->
-                <button
-                    type="button"
-                    @click="handleFinalizar"
-                    class="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 text-white text-xs font-black shadow-[0_8px_24px_var(--color-violet-glow)] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
-                >
-                    <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24">
-                        <rect x="5" y="5" width="14" height="14" rx="2.5" />
-                    </svg>
-                    <span>Finalizar</span>
-                </button>
+                <!-- Menú ⋮ de Acciones secundarias -->
+                <div class="relative" ref="headerMenuRef">
+                    <button
+                        type="button"
+                        @click="headerMenuOpen = !headerMenuOpen"
+                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 text-text flex items-center justify-center cursor-pointer font-bold text-lg"
+                        aria-label="Más opciones"
+                    >
+                        <span>⋮</span>
+                    </button>
+
+                    <div
+                        v-show="headerMenuOpen"
+                        class="absolute right-0 mt-1.5 w-44 rounded-xl bg-surface border border-border shadow-2xl py-1.5 z-50 text-xs"
+                    >
+                        <button
+                            type="button"
+                            @click="handleFinalizar(); headerMenuOpen = false;"
+                            class="w-full px-3 py-2 text-left text-text hover:bg-surface-2 font-semibold transition-colors"
+                        >Finalizar</button>
+                        <button
+                            type="button"
+                            @click="descartarSesion"
+                            class="w-full px-3 py-2 text-left text-danger hover:bg-danger/10 flex items-center gap-2 font-semibold transition-colors"
+                        >
+                            <span>🗑</span>
+                            <span>Descartar sesión</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
         <!-- Barra de Progreso Global -->
         <div
-            class="w-full bg-[var(--color-obsidian-surface)] border-b border-[var(--color-obsidian-border)] px-3 py-1.5 sm:px-4 sm:py-2 shrink-0 flex items-center justify-between gap-3 text-xs"
+            class="w-full bg-surface-2 border-b border-border px-3 py-1.5 sm:px-4 sm:py-2 shrink-0 flex items-center justify-between gap-3 text-xs"
         >
-            <span class="text-gray-300 font-semibold whitespace-nowrap">
+            <span class="text-text-2 font-semibold whitespace-nowrap">
                 Progreso:
-                <strong class="text-emerald-300 tabular-nums">{{ store.totalSeriesCompletadas }}</strong>
+                <strong class="text-success tabular-nums">{{ store.totalSeriesCompletadas }}</strong>
                 /
-                <span class="text-gray-400">{{ store.totalSeriesObjetivo }}</span>
+                <span class="text-text-3">{{ store.totalSeriesObjetivo }}</span>
                 series
             </span>
-            <div class="flex-1 h-1.5 sm:h-2 bg-[var(--color-obsidian-elevated)] rounded-full overflow-hidden mx-1 border border-[var(--color-obsidian-border)]">
+            <div class="flex-1 h-1.5 sm:h-2 bg-surface-3 rounded-full overflow-hidden mx-1 border border-border">
                 <div
-                    class="h-full bg-gradient-to-r from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-emerald-400 transition-all duration-300"
+                    class="h-full bg-gradient-to-r from-brand to-success transition-all duration-300"
                     :style="{ width: `${store.progresoPorcentaje}%` }"
                 ></div>
             </div>
-            <span class="font-black text-violet-300 tabular-nums whitespace-nowrap">
+            <span class="font-black text-brand tabular-nums whitespace-nowrap">
                 {{ store.progresoPorcentaje }}%
             </span>
         </div>
 
         <!-- Contenedor Principal Adaptable (Mobile + Web Responsive 2 Columnas) -->
-        <main class="flex-1 overflow-y-auto px-2.5 sm:px-4 py-2.5 sm:py-3.5 overscroll-contain">
+        <main class="flex-1 overflow-y-auto px-2.5 sm:px-4 py-2.5 sm:py-3.5 pb-28 md:pb-6 overscroll-contain">
             <div
                 v-if="store.currentEjercicio"
                 class="max-w-6xl xl:max-w-7xl mx-auto w-full flex flex-col md:grid md:grid-cols-12 gap-2.5 sm:gap-3 lg:gap-4 items-start"
@@ -816,42 +835,48 @@
                         </div>
                     </div>
 
-                    <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
-                    <button
-                        v-if="store.isSessionComplete"
-                        type="button"
-                        @click="handleFinalizar"
-                        data-testid="btn-finalizar-sesion"
-                        class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_12px_36px_rgba(16,185,129,0.45)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/15"
+                    <!-- CTA Bottom Container (Sticky en mobile con safe-area) -->
+                    <div
+                        v-if="store.isSessionComplete || (store.canUndo && !store.isSessionComplete)"
+                        class="sticky bottom-0 z-30 -mx-2.5 sm:-mx-4 px-2.5 sm:px-4 py-2.5 bg-gradient-to-t from-bg via-bg/95 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
                     >
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="3"
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
-                        <span>FINALIZAR SESIÓN</span>
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2.5"
-                                d="M9 5l7 7-7 7"
-                            />
-                        </svg>
-                    </button>
-
-                    <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
-                    <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-0.5">
+                        <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
                         <button
+                            v-if="store.isSessionComplete"
                             type="button"
-                            @click="deshacer"
-                            class="text-xs font-bold text-rose-300 hover:text-rose-200 underline underline-offset-4 cursor-pointer"
+                            @click="handleFinalizar"
+                            data-testid="btn-finalizar-sesion"
+                            class="w-full h-14 sm:h-16 rounded-2xl bg-gradient-to-r from-success to-emerald-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_8px_30px_rgba(4,120,87,0.35)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/20"
                         >
-                            ↩ Deshacer última serie completada
+                            <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="3"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                            <span>FINALIZAR SESIÓN</span>
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2.5"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
                         </button>
+
+                        <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
+                        <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-1">
+                            <button
+                                type="button"
+                                @click="deshacer"
+                                class="text-xs font-bold text-danger hover:underline cursor-pointer"
+                            >
+                                ↩ Deshacer última serie completada
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -895,6 +920,7 @@ import { useRestTimerStore } from '@/stores/restTimer';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useToast } from '@/composables/useToast';
 import { useWakeLock } from '@/composables/useWakeLock';
+import { useClickOutside } from '@/composables/useClickOutside';
 import { numeroCalentamientoPersisted, numeroSerieParaDisplay } from '@/utils/seriesNumero';
 import { hoyLocal } from '@/utils/fecha';
 import SetConfigCard from './SetConfigCard.vue';
@@ -919,6 +945,22 @@ const restTimer = useRestTimerStore();
 const offline = useOfflineSeries();
 const wakeLock = useWakeLock();
 const toast = useToast();
+
+// Menú secundario kebab ⋮ en header
+const headerMenuOpen = ref(false);
+const headerMenuRef = ref(null);
+useClickOutside(headerMenuRef, () => {
+    headerMenuOpen.value = false;
+}, headerMenuOpen);
+
+const descartarSesion = () => {
+    headerMenuOpen.value = false;
+    if (confirm('¿Estás seguro de que querés descartar esta sesión? Se perderán las series no guardadas.')) {
+        store.discard();
+        emit('discard');
+        emit('minimize');
+    }
+};
 
 // === Media del ejercicio actual (image_url + gif_url) ===
 // Se carga via /api/ejercicios/media cuando cambia el ejercicio activo.

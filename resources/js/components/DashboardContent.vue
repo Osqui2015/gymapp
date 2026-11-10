@@ -104,7 +104,7 @@ const todosLosDias = ref([]);
 const showActiveWorkoutModal = shallowRef(false);
 const showWorkoutSummaryModal = shallowRef(false);
 const isInitialLoading = shallowRef(true);
-const expandirTodos = shallowRef(true);
+const expandirTodos = shallowRef(false);
 const activeInlineSet = ref(null);
 
 const toggleInlineSet = (set) => {
@@ -1309,15 +1309,6 @@ const iniciarTemporizador = (fila) => {
                             @update-field="updateInlineField"
                         />
 
-                        <!-- Visual Media Interlude (Rich photographic elements) -->
-                        <DashboardVisualInterlude />
-
-                        <!-- Analytics & Telemetry Charts Section -->
-                        <DashboardTelemetryCharts
-                            :historial-rutina="historialRutina"
-                            :ejercicios-del-dia="ejerciciosDelDia"
-                        />
-
                         <!-- Session Actions Bar -->
                         <DashboardSessionActions
                             :dia-index="diaIndex"
@@ -1328,6 +1319,14 @@ const iniciarTemporizador = (fila) => {
                             @next-day="siguienteDia"
                             @finish-routine="finalizarRutina"
                         />
+
+                        <!-- Analytics & Telemetry Charts Section (Ubicado después de las acciones para no entorpecer el entrenamiento) -->
+                        <div class="mt-space-lg">
+                            <DashboardTelemetryCharts
+                                :historial-rutina="historialRutina"
+                                :ejercicios-del-dia="ejerciciosDelDia"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -209,16 +209,27 @@ const updateField = (campo, valor) => {
                     <div
                         class="flex items-center gap-space-sm justify-between lg:justify-end"
                     >
-                        <span
-                            class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm font-semibold"
-                            :class="
-                                ej.estaCompleto
-                                    ? 'text-tertiary'
-                                    : 'text-secondary'
-                            "
+                        <!-- Indicador visual con dots ●●○○ -->
+                        <div
+                            class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high font-mono text-xs"
+                            :title="`${ej.completadas}/${ej.sets.length} series completadas`"
                         >
-                            {{ ej.completadas }}/{{ ej.sets.length }} series
-                        </span>
+                            <span class="flex items-center gap-0.5 tracking-tight text-sm">
+                                <span
+                                    v-for="(s, sIdx) in ej.sets"
+                                    :key="sIdx"
+                                    :class="s.completado ? 'text-tertiary' : 'text-on-surface-variant/40'"
+                                >
+                                    {{ s.completado ? '●' : '○' }}
+                                </span>
+                            </span>
+                            <span
+                                class="text-[11px] font-bold ml-1 tabular-nums font-sans"
+                                :class="ej.estaCompleto ? 'text-tertiary' : 'text-secondary'"
+                            >
+                                {{ ej.completadas }}/{{ ej.sets.length }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 

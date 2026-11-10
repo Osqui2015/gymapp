@@ -570,26 +570,26 @@
 
         <!-- Botonera inferior -->
         <div
-            class="p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-t border-gray-200 dark:border-gray-700"
+            class="p-4 sm:p-5 bg-surface-2 border-t border-border"
         >
-            <div class="flex flex-wrap justify-center gap-4">
+            <div class="flex flex-wrap justify-center gap-3 sm:gap-4">
                 <button
                     v-if="diaIndex > 0"
                     @click="$emit('dia-anterior')"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+                    class="bg-surface-3 hover:bg-border text-text px-5 py-2.5 rounded-xl font-semibold transition-colors shadow-sm text-sm"
                 >
                     ← Día Anterior
                 </button>
                 <button
                     @click="$emit('guardar-sesion')"
-                    class="hidden md:inline-flex bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+                    class="hidden md:inline-flex bg-surface-3 hover:bg-border text-text px-5 py-2.5 rounded-xl font-semibold transition-colors shadow-sm text-sm"
                 >
                     Guardar sesión
                 </button>
                 <button
                     @click="$emit('siguiente-dia')"
                     :class="[
-                        'text-white px-8 py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg',
+                        'text-on-brand px-6 sm:px-8 py-2.5 rounded-xl font-bold transition-all shadow-md text-sm',
                         botonSiguienteClass,
                     ]"
                 >
