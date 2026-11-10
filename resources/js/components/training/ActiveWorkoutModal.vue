@@ -135,9 +135,9 @@
             >
                 <!-- COLUMNA IZQUIERDA (Desktop: col-span-5) -->
                 <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-2.5 sm:gap-3">
-                    <!-- CARD HERO UNIFICADA DEL EJERCICIO (Visual + Ejercicio + Mínimo / Máximo + Sugerencia) -->
+                    <!-- CARD HERO UNIFICADA DEL EJERCICIO (Frente B2 & B3: Focus Mode) -->
                     <section
-                        class="obs-card-elevated p-2.5 sm:p-3.5 rounded-2xl border border-[var(--color-obsidian-border-strong)] bg-[var(--color-obsidian-surface)] shadow-xl relative"
+                        class="rounded-2xl border border-border bg-surface p-3 sm:p-4 shadow-lg relative space-y-2.5"
                         data-testid="exercise-media"
                     >
                         <!-- Metadata invisible para accesibilidad y tests -->
@@ -148,12 +148,105 @@
                             {{ store.currentEjercicio.series_objetivo }} series
                         </span>
 
-                        <div class="flex items-start gap-3 sm:gap-4">
-                            <!-- Demostración Visual con fondo blanco (Lado Izquierdo) -->
+                        <!-- Fila Superior: Eyebrow + Badge Serie + Navegación entre ejercicios -->
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <p class="text-[10px] font-black uppercase tracking-wider text-text-3 truncate">
+                                    {{ (store.currentEjercicio?.grupo_muscular || 'FUERZA').toUpperCase() }} · {{ store.session.dia.toUpperCase() }}
+                                </p>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-brand/15 border border-brand/30 text-brand text-[10px] font-bold uppercase tracking-wider shrink-0"
+                                >
+                                    <template v-if="currentEsBloque">
+                                        BLOQUE DE CALENTAMIENTO
+                                    </template>
+                                    <template v-else>
+                                        SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
+                                    </template>
+                                </span>
+                            </div>
+
+                            <!-- Controles de Navegación de Ejercicio (Anterior / Contador / Siguiente / Ojo) -->
+                            <div class="flex items-center gap-1 bg-surface-2 border border-border rounded-xl p-0.5 shadow-sm shrink-0">
+                                <button
+                                    type="button"
+                                    @click="store.prevEjercicio"
+                                    :disabled="store.session.currentEjercicioIndex === 0"
+                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-3 hover:bg-border text-text-2 hover:text-text disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
+                                    title="Ejercicio anterior"
+                                    aria-label="Ejercicio anterior"
+                                >
+                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+
+                                <span class="px-1.5 text-[11px] sm:text-xs font-black text-text tabular-nums tracking-wide">
+                                    {{ store.unidadProgreso.actual }}/{{ store.unidadProgreso.total }}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    @click="store.nextEjercicio"
+                                    :disabled="store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1"
+                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand/20 hover:bg-brand/30 border border-brand/30 text-brand disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
+                                    title="Siguiente ejercicio"
+                                    aria-label="Siguiente ejercicio"
+                                >
+                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    @click="vistaVisible = !vistaVisible"
+                                    :aria-pressed="!vistaVisible"
+                                    :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
+                                    :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
+                                    data-testid="toggle-exercise-view"
+                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-text-3 hover:text-text hover:bg-surface-3 transition-colors cursor-pointer"
+                                >
+                                    <svg v-if="vistaVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fila del Nombre (Bloque 1: 21px, line-clamp-2, jerarquizado) -->
+                        <div v-if="!superserieOrder">
+                            <h2
+                                class="text-xl sm:text-2xl font-black text-text leading-tight line-clamp-2"
+                                :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre"
+                            >
+                                {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
+                            </h2>
+                        </div>
+                        <div v-else class="min-w-0">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="px-1.5 py-0.5 rounded-md bg-warning/20 text-warning text-[9px] font-black uppercase tracking-wider shrink-0 border border-warning/40">
+                                    ⚡ SUPERSERIE
+                                </span>
+                                <h2
+                                    class="text-base sm:text-lg font-black text-text leading-tight line-clamp-2"
+                                    :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`"
+                                >
+                                    {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
+                                </h2>
+                            </div>
+                        </div>
+
+                        <!-- Fila Media (Thumbnail 64px) + Historial (1 línea compacta ~28px) -->
+                        <div class="flex items-center gap-3">
+                            <!-- Thumbnail (Bloque 4: 64px, placeholder intencional, zoom tap) -->
                             <div
-                                class="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-inner cursor-pointer group self-center"
-                                @click="gifHovered = !gifHovered"
-                                :title="gifHovered ? 'Animación activa (tocá para pausar)' : 'Tocá para animar'"
+                                class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-surface-2 border border-border p-1 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-sm"
+                                @click="openMediaZoomOrToggleGif"
+                                :title="gifHovered ? 'Animación activa (tocá para pausar / zoom)' : 'Tocá para animar / zoom'"
                             >
                                 <img
                                     v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
@@ -165,17 +258,27 @@
                                 />
                                 <div
                                     v-else-if="!vistaVisible"
-                                    class="flex flex-col items-center justify-center text-gray-500 text-[10px] text-center p-2"
+                                    class="flex flex-col items-center justify-center text-text-3 text-[10px] text-center p-1"
                                 >
                                     <span class="text-sm">👁️</span>
-                                    <span>Vista oculta</span>
+                                    <span class="text-[9px]">Oculto</span>
                                 </div>
+                                <!-- Placeholder temático intencional cuando no hay imagen cargada -->
                                 <div
                                     v-else
-                                    class="flex flex-col items-center justify-center text-gray-400 text-xs"
+                                    class="flex flex-col items-center justify-center text-text-3 p-1"
                                 >
-                                    <span class="text-2xl">🏋️</span>
+                                    <span class="text-lg">🏋️</span>
+                                    <span class="text-[8px] font-black text-brand uppercase tracking-tighter truncate max-w-[50px]">
+                                        {{ (mediaEjercicio?.nombre || store.currentEjercicio?.nombre || '').slice(0, 4) }}
+                                    </span>
                                 </div>
+
+                                <!-- Badge zoom ⤢ -->
+                                <span
+                                    v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
+                                    class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/60 text-white text-[8px] font-bold pointer-events-none"
+                                >⤢</span>
 
                                 <!-- Flechas para alternar media en superset -->
                                 <button
@@ -185,9 +288,9 @@
                                     data-testid="media-prev"
                                     :title="`Ver ${store.currentEjercicio.nombre}`"
                                     aria-label="Ver imagen del ejercicio actual"
-                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-violet-600/90 hover:bg-violet-500 text-white shadow transition-all cursor-pointer"
+                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-white shadow transition-all cursor-pointer"
                                 >
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                                     </svg>
                                 </button>
@@ -198,292 +301,150 @@
                                     data-testid="media-next"
                                     :title="`Ver ${superseriePartner.ejercicio.nombre}`"
                                     aria-label="Ver imagen del compañero de superset"
-                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-violet-600/90 hover:bg-violet-500 text-white shadow transition-all cursor-pointer"
+                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-white shadow transition-all cursor-pointer"
                                 >
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
                             </div>
 
-                            <!-- Información y Métricas (Lado Derecho) -->
-                            <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                                <!-- Fila 1: Badge Serie y Selector 1/6 con navegación y toggle ojo -->
-                                <div class="flex items-center justify-between gap-1.5 flex-wrap">
-                                    <span
-                                        class="px-2.5 py-0.5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider"
-                                    >
-                                        <template v-if="currentEsBloque">
-                                            BLOQUE DE CALENTAMIENTO
-                                        </template>
-                                        <template v-else>
-                                            SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
-                                        </template>
-                                        <template v-if="currentTargetEsfuerzoHero">
-                                            · 🎯 {{ currentTargetEsfuerzoHero.reps }}r @ {{ currentTargetEsfuerzoHero.tipo === 'fallo' ? 'FALLO' : 'RIR ' + currentTargetEsfuerzoHero.valor }}
-                                        </template>
-                                    </span>
-
-                                    <!-- Controles de Navegación de Ejercicio (Anterior / Contador / Siguiente) -->
-                                    <div class="flex items-center gap-1 bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border-strong)] rounded-xl p-0.5 shadow-sm">
-                                        <!-- Botón Ejercicio Anterior -->
-                                        <button
-                                            type="button"
-                                            @click="store.prevEjercicio"
-                                            :disabled="store.session.currentEjercicioIndex === 0"
-                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] border border-[var(--color-obsidian-border)] text-gray-300 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
-                                            title="Ejercicio anterior"
-                                            aria-label="Ejercicio anterior"
-                                        >
-                                            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-
-                                        <!-- Contador X / Total -->
-                                        <span class="px-1.5 text-[11px] sm:text-xs font-black text-white tabular-nums tracking-wide">
-                                            {{ store.unidadProgreso.actual }}/{{ store.unidadProgreso.total }}
-                                        </span>
-
-                                        <!-- Botón Siguiente Ejercicio (Destacado y fácil de ver) -->
-                                        <button
-                                            type="button"
-                                            @click="store.nextEjercicio"
-                                            :disabled="store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1"
-                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-violet-600/40 hover:bg-violet-600/70 border border-violet-500/50 text-violet-200 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer shadow-[0_0_10px_rgba(139,92,246,0.25)]"
-                                            title="Siguiente ejercicio"
-                                            aria-label="Siguiente ejercicio"
-                                        >
-                                            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-
-                                        <!-- Botón Ojito para ocultar/mostrar vista del ejercicio -->
-                                        <button
-                                            type="button"
-                                            @click="vistaVisible = !vistaVisible"
-                                            :aria-pressed="!vistaVisible"
-                                            :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
-                                            :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
-                                            data-testid="toggle-exercise-view"
-                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-[var(--color-obsidian-overlay)] transition-colors cursor-pointer"
-                                        >
-                                            <svg v-if="vistaVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Fila 2: Nombre del Ejercicio (o par de superserie) -->
-                                <div v-if="!superserieOrder" class="mt-0.5">
-                                    <div class="flex items-center justify-between gap-1.5 flex-wrap">
-                                        <h2 class="text-sm sm:text-base font-black text-white leading-tight truncate" :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre">
-                                            {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
-                                        </h2>
-                                        <!-- Objetivo compacto de Hoy -->
-                                        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 font-bold text-[11px] sm:text-xs shrink-0">
-                                            <span v-if="planSummaryHero">🎯 {{ planSummaryHero }}</span>
-                                            <span v-else>🎯 {{ store.currentEjercicio.series_objetivo }} series × {{ formatRepsTarget(store.currentEjercicio) }}</span>
-                                            <span v-if="store.currentEjercicio.descanso_min" class="text-emerald-400/40">·</span>
-                                            <span v-if="store.currentEjercicio.descanso_min" class="text-gray-300 font-semibold text-[10px]">⏱️ {{ store.currentEjercicio.descanso_min }}m</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div v-else class="mt-0.5 min-w-0">
-                                    <div class="flex items-center gap-1.5 min-w-0">
-                                        <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/40">
-                                            ⚡ SUPERSERIE
-                                        </span>
-                                        <h2 class="text-xs sm:text-sm font-black text-white leading-tight truncate" :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`">
-                                            {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
-                                        </h2>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px] sm:text-[11px]">
-                                        <span class="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
-                                            1. {{ superserieOrder.first.ejercicio.series_objetivo }}s × {{ formatRepsTarget(superserieOrder.first.ejercicio) }}
-                                        </span>
-                                        <span class="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">
-                                            2. {{ superserieOrder.second.ejercicio.series_objetivo }}s × {{ formatRepsTarget(superserieOrder.second.ejercicio) }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- Fila 3: Bloques MÍNIMO y MÁXIMO (Última vez) -->
-                                <!-- Caso 1: Ejercicio individual -->
-                                <div v-if="!superserieOrder" class="mt-1">
+                            <!-- Bloque 2: Historial (1 línea compacta ~28px en vez de múltiples cajas) -->
+                            <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                <div v-if="!superserieOrder">
                                     <div
-                                        class="grid grid-cols-2 gap-1.5"
+                                        class="h-8 px-2.5 rounded-xl bg-surface-2 border border-border flex items-center justify-between text-xs tabular-nums"
                                         data-testid="last-exercise-card"
                                     >
-                                        <!-- MÍNIMO -->
-                                        <div
-                                            class="px-2 py-1 rounded-xl bg-[var(--color-obsidian-surface)] border border-cyan-500/25 flex items-center justify-between gap-1"
-                                            data-testid="last-exercise-min"
-                                        >
-                                            <div class="flex items-center gap-1 text-[9px] font-black text-teal-400 uppercase shrink-0">
-                                                <svg class="w-2.5 h-2.5 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a3 3 0 00-3 3v1H7a2 2 0 00-2 2v9a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-2V6a3 3 0 00-3-3zm-1 4a1 1 0 012 0v1h-2V7z" />
-                                                </svg>
-                                                <span>MÍN</span>
-                                            </div>
-                                            <div class="text-[11px] sm:text-xs font-black text-white tabular-nums text-right truncate">
-                                                {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg
-                                                <span class="text-[9px] text-gray-400 font-normal">({{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- MÁXIMO (TOP) -->
-                                        <div
-                                            class="px-2 py-1 rounded-xl bg-[var(--color-obsidian-surface)] border border-fuchsia-500/25 flex items-center justify-between gap-1"
-                                            data-testid="last-exercise-max"
-                                        >
-                                            <div class="flex items-center gap-1 text-[9px] font-black text-fuchsia-400 uppercase shrink-0">
-                                                <span>▲ TOP</span>
+                                        <template v-if="tieneHistorial">
+                                            <span class="text-[9px] font-black uppercase text-text-3 tracking-wider mr-2 shrink-0">Historial</span>
+                                            <div class="flex items-center gap-1.5 overflow-hidden text-[11px] sm:text-xs">
+                                                <span data-testid="last-exercise-min" class="flex items-center gap-0.5 text-text-2 shrink-0">
+                                                    <span class="font-bold">{{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg</span>
+                                                    <span class="text-[9px] text-text-3">({{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                                </span>
                                                 <span
-                                                    v-if="lastExerciseData?.ultimo_esfuerzo"
-                                                    class="px-1 py-0.2 rounded bg-violet-900/60 text-violet-300 text-[8px] font-black shrink-0"
-                                                >
-                                                    {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                                    v-if="(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top) !== (lastExerciseData?.peso_min ?? lastExerciseData?.peso_top)"
+                                                    class="text-text-3 text-[10px]"
+                                                >→</span>
+                                                <span data-testid="last-exercise-max" class="flex items-center gap-1 font-black text-text shrink-0">
+                                                    <span>{{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg</span>
+                                                    <span class="text-[9px] text-text-3 font-normal">({{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                                    <span v-if="lastExerciseData?.ultimo_esfuerzo" class="px-1 py-0.2 rounded bg-surface-3 text-text text-[8px] font-black border border-border">
+                                                        {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                                    </span>
                                                 </span>
                                             </div>
-                                            <div class="text-[11px] sm:text-xs font-black text-white tabular-nums text-right truncate">
-                                                {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg
-                                                <span class="text-[9px] text-gray-400 font-normal">({{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                            </div>
-                                        </div>
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-xs text-text-3 italic">Primera vez con este ejercicio</span>
+                                        </template>
                                     </div>
                                 </div>
-
-                                <!-- Caso 2: Superserie (muestra min y max para CADA UNO de los 2 ejercicios) -->
-                                <div
-                                    v-else
-                                    class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2"
-                                    data-testid="superset-dual-history"
-                                >
-                                    <!-- Ejercicio 1 de la superserie -->
+                                <div v-else>
+                                    <!-- Superserie compacta: una fila por ejercicio -->
                                     <div
-                                        class="p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/30 flex flex-col justify-between space-y-1.5"
-                                        data-testid="superset-history-card-1"
+                                        class="space-y-1"
+                                        data-testid="superset-dual-history"
                                     >
-                                        <div class="flex items-center justify-between gap-1 border-b border-violet-500/20 pb-1">
-                                            <span class="text-[10px] sm:text-[11px] font-black text-violet-200 uppercase truncate" :title="superserieOrder.first.ejercicio.nombre">
+                                        <div
+                                            class="h-7 px-2 rounded-lg bg-surface-2 border border-border flex items-center justify-between text-[11px] tabular-nums"
+                                            data-testid="superset-history-card-1"
+                                        >
+                                            <span class="text-[9px] font-black text-brand uppercase truncate max-w-[120px]">
                                                 1. {{ superserieOrder.first.ejercicio.nombre }}
                                             </span>
-                                            <span
-                                                v-if="lastExerciseDataFirst?.ultimo_esfuerzo"
-                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
-                                            >
-                                                {{ lastExerciseDataFirst.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseDataFirst.ultimo_esfuerzo.valor }}
-                                            </span>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-1.5">
-                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-cyan-500/20 text-left">
-                                                <div class="text-[8px] font-black text-teal-400 uppercase">MÍNIMO</div>
-                                                <div class="text-xs font-black text-white tabular-nums">
-                                                    {{ formatPeso(lastExerciseDataFirst?.peso_min ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg
-                                                </div>
-                                                <div class="text-[9px] text-gray-400 tabular-nums">
-                                                    x {{ (lastExerciseDataFirst?.reps_en_peso_min ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps
-                                                </div>
-                                            </div>
-                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-fuchsia-500/20 text-left">
-                                                <div class="text-[8px] font-black text-fuchsia-400 uppercase">MÁXIMO</div>
-                                                <div class="text-xs font-black text-white tabular-nums">
-                                                    {{ formatPeso(lastExerciseDataFirst?.peso_max ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg
-                                                </div>
-                                                <div class="text-[9px] text-gray-400 tabular-nums">
-                                                    x {{ (lastExerciseDataFirst?.reps_en_peso_max ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps
-                                                </div>
+                                            <div class="flex items-center gap-1 text-[10px] text-text-2">
+                                                <span>{{ formatPeso(lastExerciseDataFirst?.peso_min ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg ({{ (lastExerciseDataFirst?.reps_en_peso_min ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                                <span>→</span>
+                                                <span class="font-bold text-text">{{ formatPeso(lastExerciseDataFirst?.peso_max ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg ({{ (lastExerciseDataFirst?.reps_en_peso_max ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps)</span>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <!-- Ejercicio 2 de la superserie -->
-                                    <div
-                                        class="p-2 rounded-xl bg-[var(--color-obsidian-surface)] border border-violet-500/30 flex flex-col justify-between space-y-1.5"
-                                        data-testid="superset-history-card-2"
-                                    >
-                                        <div class="flex items-center justify-between gap-1 border-b border-violet-500/20 pb-1">
-                                            <span class="text-[10px] sm:text-[11px] font-black text-violet-200 uppercase truncate" :title="superserieOrder.second.ejercicio.nombre">
+                                        <div
+                                            class="h-7 px-2 rounded-lg bg-surface-2 border border-border flex items-center justify-between text-[11px] tabular-nums"
+                                            data-testid="superset-history-card-2"
+                                        >
+                                            <span class="text-[9px] font-black text-brand uppercase truncate max-w-[120px]">
                                                 2. {{ superserieOrder.second.ejercicio.nombre }}
                                             </span>
-                                            <span
-                                                v-if="lastExerciseDataSecond?.ultimo_esfuerzo"
-                                                class="px-1.5 py-0.2 rounded-full bg-violet-900/60 border border-violet-500/40 text-violet-300 text-[8px] font-black shrink-0"
-                                            >
-                                                {{ lastExerciseDataSecond.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseDataSecond.ultimo_esfuerzo.valor }}
-                                            </span>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-1.5">
-                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-cyan-500/20 text-left">
-                                                <div class="text-[8px] font-black text-teal-400 uppercase">MÍNIMO</div>
-                                                <div class="text-xs font-black text-white tabular-nums">
-                                                    {{ formatPeso(lastExerciseDataSecond?.peso_min ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg
-                                                </div>
-                                                <div class="text-[9px] text-gray-400 tabular-nums">
-                                                    x {{ (lastExerciseDataSecond?.reps_en_peso_min ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps
-                                                </div>
-                                            </div>
-                                            <div class="p-1 rounded-lg bg-[var(--color-obsidian-elevated)] border border-fuchsia-500/20 text-left">
-                                                <div class="text-[8px] font-black text-fuchsia-400 uppercase">MÁXIMO</div>
-                                                <div class="text-xs font-black text-white tabular-nums">
-                                                    {{ formatPeso(lastExerciseDataSecond?.peso_max ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg
-                                                </div>
-                                                <div class="text-[9px] text-gray-400 tabular-nums">
-                                                    x {{ (lastExerciseDataSecond?.reps_en_peso_max ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps
-                                                </div>
+                                            <div class="flex items-center gap-1 text-[10px] text-text-2">
+                                                <span>{{ formatPeso(lastExerciseDataSecond?.peso_min ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg ({{ (lastExerciseDataSecond?.reps_en_peso_min ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps)</span>
+                                                <span>→</span>
+                                                <span class="font-bold text-text">{{ formatPeso(lastExerciseDataSecond?.peso_max ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg ({{ (lastExerciseDataSecond?.reps_en_peso_max ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps)</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- Fila 4: Sugerencia -->
-                                <div
-                                    v-if="!superserieOrder && recomendacion"
-                                    class="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-emerald-400 leading-tight mt-1.5 font-medium"
+                        <!-- Modal Zoom Fullscreen de Demostración Visual -->
+                        <div
+                            v-if="showMediaZoom"
+                            class="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-md"
+                            @click="showMediaZoom = false"
+                        >
+                            <div class="relative max-w-lg w-full max-h-[85vh] flex flex-col items-center" @click.stop>
+                                <button
+                                    type="button"
+                                    @click="showMediaZoom = false"
+                                    class="absolute top-2 right-2 p-2 rounded-full bg-surface-2 text-text border border-border cursor-pointer shadow-lg z-10"
+                                    aria-label="Cerrar vista ampliada"
                                 >
-                                    <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>
-                                        <strong class="font-bold">Sugerencia:</strong>
-                                        {{ recomendacion.mensaje }}
-                                        <span
-                                            v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData?.peso_max ?? lastExerciseData?.peso_top)"
-                                            class="font-black tabular-nums"
-                                        >
-                                            ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
-                                        </span>
-                                    </span>
-                                </div>
-                                <div
-                                    v-else-if="superserieOrder && (recomendacionFirst || recomendacionSecond)"
-                                    class="flex flex-col gap-1 mt-1.5 text-[10px] sm:text-[11px] text-emerald-400 leading-tight font-medium"
+                                    ✕
+                                </button>
+                                <img
+                                    v-if="ejercicioMedia?.gif_url || ejercicioMedia?.image_url"
+                                    :src="ejercicioMedia.gif_url || ejercicioMedia.image_url"
+                                    :alt="`Demostración ampliada de ${mediaEjercicio?.nombre}`"
+                                    class="max-h-[75vh] w-auto object-contain rounded-2xl select-none shadow-2xl"
+                                />
+                                <p class="text-sm font-bold text-text mt-3 text-center">
+                                    {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Sugerencia -->
+                        <div
+                            v-if="!superserieOrder && recomendacion"
+                            class="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-success leading-tight font-medium"
+                        >
+                            <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span>
+                                <strong class="font-bold">Sugerencia:</strong>
+                                {{ recomendacion.mensaje }}
+                                <span
+                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData?.peso_max ?? lastExerciseData?.peso_top)"
+                                    class="font-black tabular-nums"
                                 >
-                                    <div v-if="recomendacionFirst" class="flex items-start gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                        </svg>
-                                        <span>
-                                            <strong class="font-bold">Sugerencia {{ superserieOrder.first.ejercicio.nombre }}:</strong>
-                                            {{ recomendacionFirst.mensaje }}
-                                        </span>
-                                    </div>
-                                    <div v-if="recomendacionSecond" class="flex items-start gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                        </svg>
-                                        <span>
-                                            <strong class="font-bold">Sugerencia {{ superserieOrder.second.ejercicio.nombre }}:</strong>
-                                            {{ recomendacionSecond.mensaje }}
-                                        </span>
-                                    </div>
-                                </div>
+                                    ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
+                                </span>
+                            </span>
+                        </div>
+                        <div
+                            v-else-if="superserieOrder && (recomendacionFirst || recomendacionSecond)"
+                            class="flex flex-col gap-1 text-[10px] sm:text-[11px] text-success leading-tight font-medium"
+                        >
+                            <div v-if="recomendacionFirst" class="flex items-start gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                <span>
+                                    <strong class="font-bold">Sugerencia {{ superserieOrder.first.ejercicio.nombre }}:</strong>
+                                    {{ recomendacionFirst.mensaje }}
+                                </span>
+                            </div>
+                            <div v-if="recomendacionSecond" class="flex items-start gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                <span>
+                                    <strong class="font-bold">Sugerencia {{ superserieOrder.second.ejercicio.nombre }}:</strong>
+                                    {{ recomendacionSecond.mensaje }}
+                                </span>
                             </div>
                         </div>
                     </section>
@@ -967,6 +928,16 @@ const descartarSesion = () => {
 // Cache simple en `mediaCache` para no re-peir el mismo nombre.
 const ejercicioMedia = ref(null);
 const gifHovered = ref(true);
+const showMediaZoom = ref(false);
+
+const openMediaZoomOrToggleGif = () => {
+    if (ejercicioMedia.value?.gif_url || ejercicioMedia.value?.image_url) {
+        showMediaZoom.value = true;
+    } else {
+        gifHovered.value = !gifHovered.value;
+    }
+};
+
 // Visibilidad del bloque "Vista del ejercicio". Por defecto se muestra; el
 // usuario puede ocultarlo con el ojito si quiere mas espacio en pantalla.
 const vistaVisible = ref(true);
@@ -1054,6 +1025,11 @@ const lastExerciseData = ref(null);
 const lastExerciseDataFirst = ref(null);
 const lastExerciseDataSecond = ref(null);
 let lastExerciseFetchToken = 0;
+
+const tieneHistorial = computed(() => {
+    const d = lastExerciseData.value;
+    return Boolean(d && d.encontrado && (d.peso_min != null || d.peso_max != null || d.peso_top != null));
+});
 
 const cardFirstRef = ref(null);
 const cardSecondRef = ref(null);
