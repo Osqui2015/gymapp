@@ -11,7 +11,7 @@ const fetchData = async () => {
     try {
         const res = await axios.get('/api/dashboard/today');
         data.value = res.data;
-    } catch (err) {
+    } catch {
         // Silenciar — el dashboard igual funciona
         data.value = null;
     } finally {

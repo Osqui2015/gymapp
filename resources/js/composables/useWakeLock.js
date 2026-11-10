@@ -37,7 +37,7 @@ export function useWakeLock() {
             return true;
         } catch (err) {
             // Permission denied o no se pudo. No es un error bloqueante.
-            // eslint-disable-next-line no-console
+             
             console.warn('[useWakeLock] No se pudo adquirir el wake lock:', err.message);
             active.value = false;
             sentinel = null;
@@ -49,7 +49,7 @@ export function useWakeLock() {
         if (sentinel) {
             try {
                 await sentinel.release();
-            } catch (err) {
+            } catch {
                 // Ya estaba liberado; ignorar.
             }
             sentinel = null;

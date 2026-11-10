@@ -22,7 +22,7 @@
 
     <div id="toast-root"></div>
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         window.__rutinaToken = '{{ $token }}';
     </script>
 </body>

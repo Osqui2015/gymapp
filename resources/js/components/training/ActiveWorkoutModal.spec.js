@@ -203,7 +203,10 @@ describe('ActiveWorkoutModal', () => {
         expect(store.session.currentCalentamientoNumero).toBe(2);
         // El set queda registrado con su propio numero.
         expect(store.currentEjercicio.sets[0].tipo_serie).toBe('calentamiento');
-        expect(store.currentEjercicio.sets[0].series_numero).toBe(1);
+        // Los calentamientos se persisten con OFFSET (51+) para no colisionar
+        // con la serie efectiva N: el indice UNIQUE de `historials` no incluye
+        // `tipo_serie`. Ver utils/seriesNumero.js.
+        expect(store.currentEjercicio.sets[0].series_numero).toBe(51);
 
         // 3) Volver a tipo efectiva y completar la primera serie de trabajo.
         const btnEfectiva = wrapper
@@ -220,6 +223,14 @@ describe('ActiveWorkoutModal', () => {
         expect(store.totalSeriesCompletadas).toBe(1);
         expect(store.session.currentSerieNumero).toBe(2);
         expect(store.session.currentCalentamientoNumero).toBe(1);
+
+        // 4) El warmup y la serie efectiva NO pueden compartir `series_numero`:
+        //    la clave UNIQUE de `historials` no incluye `tipo_serie`, asi que
+        //    si coincidieran el warmup se pisaria con la efectiva.
+        expect(store.currentEjercicio.sets[0].series_numero).not.toBe(
+            store.currentEjercicio.sets[1].series_numero
+        );
+        expect(store.currentEjercicio.sets[1].series_numero).toBe(1);
     });
 
     it('un bloque sin series (movilidad) se cierra con el warm-up y avanza al siguiente ejercicio', async () => {

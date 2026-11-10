@@ -12,8 +12,28 @@ import { setupGlobalToastListeners } from './composables/useToast';
 import { setupKeyboardShortcuts } from './composables/useKeyboardShortcuts';
 import { useToastStore } from './stores/toast';
 
-// Pinia se crea una sola vez y se共享 entre las dos apps Vue.
+// Componentes del shell global (siempre montados, viven fuera de #app).
+import ToastContainer from './components/ToastContainer.vue';
+import UpdateAvailablePrompt from './components/UpdateAvailablePrompt.vue';
+import DashboardRestTimer from './components/dashboard/DashboardRestTimer.vue';
+import OfflineStatusBar from './components/training/OfflineStatusBar.vue';
+
+// Pinia se crea una sola vez y se comparte entre todas las apps Vue.
 const pinia = createPinia();
+
+/**
+ * Registro de componentes por nombre de tag.
+ *
+ * ANTES: el código leía `app._context.components[tag]`, que es API INTERNA
+ * de Vue (no documentada): puede cambiar entre minors y romper sin aviso.
+ *
+ * AHORA: mantenemos nuestro propio mapa `registro` con la misma clave por la
+ * que se registra cada componente, y lo consultamos para resolver el tag
+ * del elemento a montar. `app.component(...)` se sigue haciendo (para que
+ * los componentes también puedan usarse desde templates compilados), pero
+ * NUNCA se lee `_context`.
+ */
+const registro = new Map();
 
 // === App principal ===
 // Todos los componentes se cargan lazy (code splitting). Cada Blade view
@@ -54,6 +74,17 @@ app.component('app-modal', AppModal);
 app.component('rutina-publica', RutinaPublica);
 app.component('notification-bell', defineAsyncComponent(() => import('./components/NotificationBell.vue')));
 
+registro.set('dark-mode-toggle', DarkModeToggle);
+registro.set('global-search', GlobalSearch);
+registro.set('app-navigation', AppNavigation);
+registro.set('mobile-bottom-nav', MobileBottomNav);
+registro.set('app-modal', AppModal);
+registro.set('rutina-publica', RutinaPublica);
+registro.set(
+    'notification-bell',
+    defineAsyncComponent(() => import('./components/NotificationBell.vue'))
+);
+
 const components = {
     'dashboard-content': () => import('./components/DashboardContent.vue'),
     'rutinas-accordion': () => import('./components/RutinasAccordion.vue'),
@@ -85,7 +116,9 @@ const components = {
 };
 
 for (const [name, loader] of Object.entries(components)) {
-    app.component(name, defineAsyncComponent(loader));
+    const component = defineAsyncComponent(loader);
+    app.component(name, component);
+    registro.set(name, component);
 }
 
 const mountEl = document.getElementById('app');
@@ -99,7 +132,7 @@ if (mountEl) {
     function findCustomVueEl(el) {
         if (!el) return null;
         const tag = el.tagName ? el.tagName.toLowerCase() : null;
-        if (tag && tag.includes('-') && app._context.components[tag]) {
+        if (tag && tag.includes('-') && registro.has(tag)) {
             return el;
         }
         for (const child of el.children) {
@@ -112,12 +145,9 @@ if (mountEl) {
     const target = findCustomVueEl(mountEl);
     if (target) {
         const targetName = target.tagName.toLowerCase();
-        const Component = app._context.components[targetName];
+        const Component = registro.get(targetName);
         if (Component) {
-            const soloApp = createApp(Component);
-            soloApp.use(pinia);
-            registerErrorHandler(soloApp);
-            soloApp.mount(target);
+            mountApp({ el: target, component: Component });
         } else {
             console.warn('[GymApp] target', targetName, 'not registered in app components');
         }
@@ -125,12 +155,8 @@ if (mountEl) {
         // Fallback: data-component en el propio #app (compatibilidad con
         // páginas standalone como rutina-publica).
         const dataName = mountEl.dataset.component;
-        if (dataName && app._context.components[dataName]) {
-            const Component = app._context.components[dataName];
-            const soloApp = createApp(Component);
-            soloApp.use(pinia);
-            registerErrorHandler(soloApp);
-            soloApp.mount(mountEl);
+        if (dataName && registro.has(dataName)) {
+            mountApp({ el: mountEl, component: registro.get(dataName) });
         }
         // Si no hay componente Vue, dejamos el HTML de Blade intacto.
     }
@@ -156,7 +182,7 @@ function mountStandalone(rootId, name, propsJson = '{}') {
     const root = document.getElementById(rootId);
     if (!root) return false;
 
-    const Component = app._context.components[name];
+    const Component = registro.get(name);
     if (!Component) {
         console.warn(`[GymApp] componente '${name}' no registrado`);
         return false;
@@ -169,12 +195,35 @@ function mountStandalone(rootId, name, propsJson = '{}') {
         console.warn(`[GymApp] props de '${name}' no parseables:`, e);
     }
 
-    const soloApp = createApp(Component, props);
-    soloApp.use(pinia);
-    registerErrorHandler(soloApp);
-    soloApp.mount(root);
+    const soloApp = mountApp({ el: root, component: Component, props });
 
-    return true;
+    return Boolean(soloApp);
+}
+
+/**
+ * Monta un componente Vue en un elemento, con el Pinia compartido y el
+ * handler de errores global.
+ *
+ * ANTES: cada montaje repetía los mismos 4 pasos (`createApp` + `use(pinia)`
+ * + `registerErrorHandler` + `mount`). Con 8 montajes eran 8 copias donde
+ * forgets el `use(pinia)` era fácil — y un componente sin Pinia rompe los
+ * stores en silencio.
+ *
+ * @param {object} options
+ * @param {Element} options.el        Elemento donde montar.
+ * @param {object} options.component   Componente Vue.
+ * @param {object} [options.props]     Props iniciales.
+ * @returns {object|null} La app montada, o null si no se pudo montar.
+ */
+function mountApp({ el, component, props = {} }) {
+    if (!el || !component) return null;
+
+    const vueApp = createApp(component, props);
+    vueApp.use(pinia);
+    registerErrorHandler(vueApp);
+    vueApp.mount(el);
+
+    return vueApp;
 }
 
 // La navbar vive en `layouts.navigation` (fuera de #app).
@@ -195,45 +244,29 @@ if (bottomNavRoot) {
 
 // === App de toasts (siempre montada, es el shell global) ===
 // Como la usamos en TODAS las páginas, se incluye en el bundle inicial.
-import ToastContainer from './components/ToastContainer.vue';
-const toastRoot = document.getElementById('toast-root');
-if (toastRoot) {
-    const toastApp = createApp(ToastContainer);
-    toastApp.use(pinia);
-    registerErrorHandler(toastApp);
-    toastApp.mount(toastRoot);
-}
+mountApp({
+    el: document.getElementById('toast-root'),
+    component: ToastContainer,
+});
 
 // === App de "Update Available" (banner persistente) ===
 // Similar a toasts: vive fuera del flujo de paginas para no interrumpir UX.
-import UpdateAvailablePrompt from './components/UpdateAvailablePrompt.vue';
-const updateRoot = document.getElementById('update-prompt-root');
-if (updateRoot) {
-    const updateApp = createApp(UpdateAvailablePrompt);
-    updateApp.use(pinia);
-    registerErrorHandler(updateApp);
-    updateApp.mount(updateRoot);
-}
+mountApp({
+    el: document.getElementById('update-prompt-root'),
+    component: UpdateAvailablePrompt,
+});
 
 // === App de Temporizador de Descanso Global (Pinia restTimer) ===
-import DashboardRestTimer from './components/dashboard/DashboardRestTimer.vue';
-const restTimerRoot = document.getElementById('rest-timer-root');
-if (restTimerRoot) {
-    const restTimerApp = createApp(DashboardRestTimer);
-    restTimerApp.use(pinia);
-    registerErrorHandler(restTimerApp);
-    restTimerApp.mount(restTimerRoot);
-}
+mountApp({
+    el: document.getElementById('rest-timer-root'),
+    component: DashboardRestTimer,
+});
 
 // === App de Estado Offline Global ===
-import OfflineStatusBar from './components/training/OfflineStatusBar.vue';
-const offlineRoot = document.getElementById('offline-status-root');
-if (offlineRoot) {
-    const offlineApp = createApp(OfflineStatusBar);
-    offlineApp.use(pinia);
-    registerErrorHandler(offlineApp);
-    offlineApp.mount(offlineRoot);
-}
+mountApp({
+    el: document.getElementById('offline-status-root'),
+    component: OfflineStatusBar,
+});
 
 // Listeners globales: errores HTTP -> toasts automáticos (403, 500, 422, etc.)
 setupGlobalToastListeners();

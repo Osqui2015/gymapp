@@ -144,6 +144,10 @@ class RutinaController extends Controller
 
     public function store(Request $request)
     {
+        // La policy controla QUIÉN puede crear rutinas (admin, trainer,
+        // coordinador). Antes este método no autorizaba nada.
+        $this->authorize('create', Rutina::class);
+
         $data = $request->validate([
             'nivel' => 'required|string',
             'modalidad' => 'required|string',
@@ -187,13 +191,30 @@ class RutinaController extends Controller
      */
     public function update(Request $request, Rutina $rutina)
     {
-        $user = $request->user();
+        // Autorización por policy (RutinaPolicy::update):
+        //   - admin: puede todo
+        //   - trainer / coordinador: solo las que creó o las del catálogo
+        //     oficial (created_by IS NULL)
+        //   - resto: no puede
+        //
+        // Antes el check era manual y comparaba `created_by !== null`, así
+        // que el catálogo oficial (created_by IS NULL) lo modificaba
+        // CUALQUIER usuario autenticado.
+        $this->authorize('update', $rutina);
 
-        // Sólo el creador de la rutina (o un admin) puede editarla.
-        if ($rutina->created_by !== null
-            && $rutina->created_by !== $user->id
-            && ! $user->hasRole(User::ROLE_ADMINISTRADOR)) {
-            return response()->json(['error' => 'No autorizado a modificar esta rutina'], 403);
+        // Protección del catálogo oficial (created_by IS NULL): no permitir
+        // alterar nivel ni modalidad para preservar la idempotencia de los seeders.
+        if ($rutina->created_by === null) {
+            if ($request->has('nivel') && $request->input('nivel') !== $rutina->nivel) {
+                return response()->json([
+                    'message' => 'No está permitido modificar el nivel de una rutina del catálogo oficial.',
+                ], 422);
+            }
+            if ($request->has('modalidad') && $request->input('modalidad') !== $rutina->modalidad) {
+                return response()->json([
+                    'message' => 'No está permitido modificar la modalidad de una rutina del catálogo oficial.',
+                ], 422);
+            }
         }
 
         $data = $request->validate([
@@ -419,6 +440,13 @@ class RutinaController extends Controller
                 'success' => false,
                 'error' => 'No autorizado para eliminar rutinas del catálogo.',
             ], 403);
+        }
+
+        // Borrar rutinas propias requiere permiso de borrado en la policy.
+        // El scope 'catalogo' ya quedó restringido a admin más arriba, así
+        // que acá solo se valida el borrado de las rutinas del usuario.
+        if (! $esAdmin) {
+            $this->authorize('delete', new Rutina(['created_by' => $user->id]));
         }
 
         $resultado = \DB::transaction(function () use ($data, $user, $esAdmin, $scope) {

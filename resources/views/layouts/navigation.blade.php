@@ -84,6 +84,12 @@
                 'icon' => '📊',
             ],
             [
+                'label' => 'Reportes',
+                'href' => route('admin.reportes'),
+                'active' => request()->routeIs('admin.reportes'),
+                'icon' => '📈',
+            ],
+            [
                 'label' => 'Membresías',
                 'href' => route('admin.membresias'),
                 'active' => request()->routeIs('admin.membresias'),

@@ -9,15 +9,13 @@
 
         {{-- PWA (Progressive Web App) --}}
         <link rel="manifest" href="/manifest.webmanifest">
-        <meta name="theme-color" content="#4f46e5">
+        <meta name="theme-color" content="#6366F1">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="GymApp">
         <link rel="icon" href="/favicon.ico">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -26,7 +24,7 @@
         <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
         {{-- Script anti-FOUC: aplica el tema antes de que Vue hidrate --}}
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 try {
                     // Soporta ambas keys para retrocompat: 'theme' (vieja) y 'theme_mode' (nueva)
@@ -39,7 +37,7 @@
         </script>
 
         {{-- Config pública de broadcasting (Mejora 8.1) --}}
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             window.__broadcasting = {
                 driver: @json(config('services.broadcasting.driver', 'null')),
                 key: @json(config('services.broadcasting.pusher.key')),
@@ -103,7 +101,7 @@
         <div id="offline-status-root"></div>
 
         {{-- Dark mode manager (expone window.darkMode, lo consume el componente Vue app-navigation) --}}
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 const STORAGE_KEY = 'theme_mode'; // nueva key: 'auto' | 'light' | 'dark'
                 const LEGACY_KEY = 'theme';      // vieja key: 'light' | 'dark'
@@ -142,7 +140,7 @@
         </script>
 
         {{-- Auto-ocultar avisos "Saved." (antes lo hacia Alpine con x-init + x-show) --}}
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 document.addEventListener('DOMContentLoaded', function () {
                     document.querySelectorAll('[data-auto-hide-ms]').forEach(function (el) {

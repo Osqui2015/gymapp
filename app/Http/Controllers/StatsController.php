@@ -27,10 +27,13 @@ class StatsController extends Controller
         $targetUserId = $this->usuarioObjetivo($request);
         $cacheKey = CacheHistorial::key($targetUserId, 'stats:resumen');
 
-        return Cache::remember($cacheKey, 300, function () use ($targetUserId) {
+        // Se cachea el ARRAY de datos, no el JsonResponse: serializar y
+        // deserializar un Response es frágil ante cualquier cambio de
+        // formato (headers, status, macro de respuesta).
+        $datos = Cache::remember($cacheKey, 300, function () use ($targetUserId) {
             $dias = $this->stats->getDiasConActividad($targetUserId);
 
-            return response()->json([
+            return [
                 'current_streak' => $this->stats->calcCurrentStreak($dias),
                 'longest_streak' => $this->stats->calcLongestStreak($dias),
                 'this_week' => $this->stats->calcCountInRange($dias, now()->startOfWeek(), now()->endOfWeek()),
@@ -38,8 +41,10 @@ class StatsController extends Controller
                 'last_30_days' => $this->stats->calcCountInRange($dias, now()->subDays(30), now()),
                 'total_workouts' => count($dias),
                 'total_sets' => $this->stats->countSets($targetUserId),
-            ]);
+            ];
         });
+
+        return response()->json($datos);
     }
 
     public function heatmap(Request $request)
@@ -48,9 +53,9 @@ class StatsController extends Controller
         $weeks = max(1, min(104, (int) $request->input('weeks', 53)));
         $cacheKey = CacheHistorial::key($targetUserId, "stats:heatmap:w{$weeks}");
 
-        return Cache::remember($cacheKey, 600, fn () => response()->json(
-            $this->stats->buildHeatmap($targetUserId, $weeks)
-        ));
+        $datos = Cache::remember($cacheKey, 600, fn () => $this->stats->buildHeatmap($targetUserId, $weeks));
+
+        return response()->json($datos);
     }
 
     /**
@@ -66,9 +71,9 @@ class StatsController extends Controller
         $window = $this->stats->normalizeWindow($request->input('window', '30'));
         $cacheKey = CacheHistorial::key($targetUserId, "stats:esfuerzo:w{$window}");
 
-        return Cache::remember($cacheKey, 300, fn () => response()->json(
-            $this->stats->buildEsfuerzo($targetUserId, $window)
-        ));
+        $datos = Cache::remember($cacheKey, 300, fn () => $this->stats->buildEsfuerzo($targetUserId, $window));
+
+        return response()->json($datos);
     }
 
     /**
@@ -97,9 +102,9 @@ class StatsController extends Controller
 
         $cacheKey = CacheHistorial::key($targetUserId, 'stats:1rm:ej:'.md5($ejercicioNombre).":{$formula}:m{$months}");
 
-        return Cache::remember($cacheKey, 600, fn () => response()->json(
-            $this->stats->buildEstimated1rm($targetUserId, $ejercicioNombre, $formula, $months)
-        ));
+        $datos = Cache::remember($cacheKey, 600, fn () => $this->stats->buildEstimated1rm($targetUserId, $ejercicioNombre, $formula, $months));
+
+        return response()->json($datos);
     }
 
     /**
@@ -111,8 +116,8 @@ class StatsController extends Controller
         $user = $request->user();
         $cacheKey = CacheHistorial::key($user->id, 'dashboard:today');
 
-        return Cache::remember($cacheKey, 60, fn () => response()->json(
-            $this->stats->buildDashboardToday($user)
-        ));
+        $datos = Cache::remember($cacheKey, 60, fn () => $this->stats->buildDashboardToday($user));
+
+        return response()->json($datos);
     }
 }

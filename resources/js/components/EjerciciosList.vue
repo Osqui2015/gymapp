@@ -841,15 +841,8 @@ import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
 // El store expone `name` y `role` como refs separados (no `user`).
-const { name: userName, role: userRole } = storeToRefs(auth);
+const { role: userRole } = storeToRefs(auth);
 const toast = useToast();
-
-const userInitials = computed(() => {
-    if (!userName.value) return 'GA';
-    const parts = userName.value.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return parts[0].slice(0, 2).toUpperCase();
-});
 
 const streak = ref(2);
 
@@ -1168,10 +1161,6 @@ const bodyMapLevels = computed(() => {
     return recencyLevels.value;
 });
 
-const filtrarPorMusculo = (slug, nombre) => {
-    onMuscleClick(slug);
-};
-
 const onMuscleClickBodyMap = (slug) => {
     onMuscleClick(slug);
 };
@@ -1206,7 +1195,7 @@ const fetchStreak = async () => {
         if (response.data?.current_streak !== undefined) {
             streak.value = response.data.current_streak;
         }
-    } catch (e) {
+    } catch {
         // default 2
     }
 };

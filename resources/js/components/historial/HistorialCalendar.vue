@@ -107,6 +107,7 @@
 import { computed } from 'vue';
 import { useFormatters } from '@/composables/useFormatters';
 import { contarSeriesPorFecha } from '@/composables/useHistorialFiltros';
+import { hoyLocal } from '@/utils/fecha';
 
 const { formatDateShort, formatMonthShort } = useFormatters();
 
@@ -119,7 +120,7 @@ const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
-const todayLabel = today.toISOString().split('T')[0];
+const todayLabel = hoyLocal(today);
 
 const startOfCurrentWeek = new Date(today);
 const dayOfWeek = (startOfCurrentWeek.getDay() + 6) % 7;
@@ -136,7 +137,7 @@ const weeksAgo = computed(() => {
         for (let d = 0; d < 7; d++) {
             const date = new Date(startOfCurrentWeek);
             date.setDate(startOfCurrentWeek.getDate() - w * 7 + d);
-            const iso = date.toISOString().split('T')[0];
+            const iso = hoyLocal(date);
             const isFuture = date > today;
             const count = countsByDate.value[iso] || 0;
             const ratio = count / maxCount.value;
@@ -179,7 +180,7 @@ const rachaActual = computed(() => {
     let racha = 0;
     const checkDate = new Date(today);
     while (true) {
-        const iso = checkDate.toISOString().split('T')[0];
+        const iso = hoyLocal(checkDate);
         if (countsByDate.value[iso]) {
             racha++;
             checkDate.setDate(checkDate.getDate() - 1);

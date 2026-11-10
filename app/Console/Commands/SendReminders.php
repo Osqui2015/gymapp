@@ -61,7 +61,7 @@ class SendReminders extends Command
                 ->get();
 
             foreach ($membresias as $m) {
-                if (! $m->user) {
+                if (! ($m->user instanceof User)) {
                     continue;
                 }
                 if ($this->notifiedToday($m->user, 'membership_expiring')) {

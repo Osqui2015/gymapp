@@ -40,15 +40,15 @@ class HistorialService
         $diasCompletados = Historial::where('user_id', $userId)
             ->where('rutina_nombre', $rutinaNombre)
             ->where('completado', true)
-            ->selectRaw('DISTINCT dia')
-            ->get()
+            ->distinct()
             ->pluck('dia')
             ->toArray();
 
         // D1: nivel/modalidad vienen de la relación `rutina`, no de columnas denormalizadas.
         $userRutina = User::find($userId)?->rutinaSeleccionada()->with('rutina')->first();
-        $nivel = $userRutina?->rutina?->nivel ?? Rutina::query()->value('nivel');
-        $modalidad = $userRutina?->rutina?->modalidad ?? Rutina::query()->value('modalidad');
+        $rutina = $userRutina?->rutina;
+        $nivel = $rutina ? $rutina->nivel : Rutina::query()->value('nivel');
+        $modalidad = $rutina ? $rutina->modalidad : Rutina::query()->value('modalidad');
 
         if (! $nivel || ! $modalidad) {
             return ['dia_actual' => 'Día 1'];
@@ -56,9 +56,8 @@ class HistorialService
 
         $todosLosDias = Rutina::where('nivel', $nivel)
             ->where('modalidad', $modalidad)
-            ->selectRaw('DISTINCT dia')
+            ->distinct()
             ->orderBy('dia')
-            ->get()
             ->pluck('dia')
             ->toArray();
 
@@ -131,7 +130,7 @@ class HistorialService
                     'dia' => $diaActual,
                     'ejercicio_nombre' => $rutinaDelDia->ejercicio_nombre,
                     'series_numero' => $serie,
-                    'series_completadas' => $existente?->series_completadas ?? 1,
+                    'series_completadas' => $existente ? $existente->series_completadas : 1,
                     'reps_min' => $rutinaDelDia->reps_min,
                     'reps_max' => $rutinaDelDia->reps_max,
                     'reps_realizadas' => $existente?->reps_realizadas,

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAdminUserRequest;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\TelefonoService;
+use App\Support\RolePermissions;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -11,6 +15,8 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminUserApiController extends Controller
 {
+    public function __construct(private TelefonoService $telefonoService) {}
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
@@ -32,8 +38,16 @@ class AdminUserApiController extends Controller
 
         $users = $query->paginate($perPage, ['id', 'nick', 'name', 'email', 'telefono', 'role', 'suspended', 'trainer_id']);
 
+        // Marca de teléfono no válido (Fase 0.8): la UI la usa para mostrar
+        // el badge "⚠ No válido" en vez de generar un link de WhatsApp roto.
+        $items = collect($users->items())->map(function ($u) {
+            $u->telefono_valido = $this->telefonoService->esValido($u->telefono);
+
+            return $u;
+        })->values();
+
         return response()->json([
-            'users' => $users->items(),
+            'users' => $items,
             'total' => $users->total(),
             'current_page' => $users->currentPage(),
             'last_page' => $users->lastPage(),
@@ -44,6 +58,64 @@ class AdminUserApiController extends Controller
                 ->get(['id', 'name']),
             'current_user_id' => $request->user()->id,
         ]);
+    }
+
+    public function store(StoreAdminUserRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        if ($data['role'] !== User::ROLE_ALUMNO) {
+            $data['trainer_id'] = null;
+        }
+
+        if (! empty($data['trainer_id'])) {
+            $trainer = User::findOrFail($data['trainer_id']);
+            if (! $trainer->hasRole([User::ROLE_TRAINER, User::ROLE_ADMINISTRADOR])) {
+                return response()->json([
+                    'message' => 'El usuario seleccionado no es trainer.',
+                    'errors' => ['trainer_id' => ['El usuario seleccionado no es trainer.']],
+                ], 422);
+            }
+        }
+
+        // Anti-escalada de privilegios: solo administrador puede crear roles privilegiados
+        $rolesPrivilegiados = [
+            User::ROLE_ADMINISTRADOR,
+            User::ROLE_TRAINER,
+            User::ROLE_COORDINADOR,
+        ];
+
+        if (in_array($data['role'], $rolesPrivilegiados, true)
+            && ! $request->user()->hasRole(User::ROLE_ADMINISTRADOR)) {
+            $message = 'Solo un administrador puede crear usuarios con roles privilegiados.';
+
+            return response()->json([
+                'message' => $message,
+                'errors' => ['role' => [$message]],
+            ], 403);
+        }
+
+        $user = User::create([
+            'nick' => $data['nick'],
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'telefono' => $this->telefonoService->normalizar($data['telefono'] ?? null),
+            'password' => Hash::make($data['password']),
+            'role' => $data['role'],
+            'trainer_id' => $data['trainer_id'] ?? null,
+        ]);
+
+        AuditLog::forModel($user, 'created', null, [
+            'nick' => $user->nick,
+            'name' => $user->name,
+            'role' => $user->role,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario creado exitosamente',
+            'user' => $user,
+        ], 201);
     }
 
     public function update(Request $request, int $id)
@@ -58,7 +130,12 @@ class AdminUserApiController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'telefono' => ['nullable', 'string', 'max:255'],
-            'role' => ['required', 'string', 'in:comun,alumno,trainer,administrador'],
+            // La lista de roles sale de RolePermissions (fuente única de
+            // verdad). Antes era un string hardcodeado
+            // ('in:comun,alumno,trainer,administrador') que dejaba fuera a
+            // `coordinador` y `recepcionista`: eran roles IMPOSIBLES de
+            // asignar desde el panel, aunque las policies los contemplaran.
+            'role' => ['required', 'string', Rule::in(RolePermissions::ROLES)],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
             // Endurecido (Oleada 2 - seguridad): antes min:6, ahora Password::defaults()
             'password' => ['nullable', Password::defaults()],
@@ -67,7 +144,7 @@ class AdminUserApiController extends Controller
         $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
-            'telefono' => $data['telefono'] ?? null,
+            'telefono' => $this->normalizarTelefono($data['telefono'] ?? null),
             'role' => $data['role'],
         ];
 
@@ -99,7 +176,24 @@ class AdminUserApiController extends Controller
 
         AuditLog::forModel($user, 'updated', $oldValues, $user->toArray());
 
-        return response()->json(['success' => true, 'user' => $user]);
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+            // El frontend muestra el estado "teléfono no válido" (Fase 0.8).
+            'telefono_valido' => $this->telefonoService->esValido($user->telefono),
+        ]);
+    }
+
+    /**
+     * Normaliza un teléfono a E.164 antes de guardarlo (Fase 0.8).
+     *
+     * Si el número no es normalizable (ambiguo o vacío), se guarda NULL:
+     * es preferible un hueco visible que un teléfono que le pertenece a
+     * otra persona o que rompe el índice único.
+     */
+    private function normalizarTelefono(?string $telefono): ?string
+    {
+        return $this->telefonoService->normalizar($telefono);
     }
 
     public function toggleSuspend(Request $request, int $id)

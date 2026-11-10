@@ -20,8 +20,21 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SecurityHeadersMiddleware
 {
+    /**
+     * Nonce del request actual, para los <script> inline.
+     *
+     * Se genera uno por request y se comparte con las vistas vía
+     * `view()->share('cspNonce', ...)`. La CSP lo exige en `script-src`
+     * para permitir scripts inline SIN `unsafe-inline`.
+     */
+    private ?string $nonce = null;
+
     public function handle(Request $request, Closure $next): Response
     {
+        // El nonce se genera ANTES de pasar al controller: las vistas lo
+        // necesitan para declarar `nonce="..."` en sus <script> inline.
+        $this->generateNonce($request);
+
         /** @var Response $response */
         $response = $next($request);
 
@@ -40,16 +53,47 @@ class SecurityHeadersMiddleware
         return $response;
     }
 
+    /**
+     * Nonce único por request.
+     *
+     * Se genera ANTES de llamar al controller (para que las vistas ya lo
+     * tengan disponible) y se reutiliza al construir la CSP.
+     */
+    public function generateNonce(Request $request): void
+    {
+        $this->nonce = base64_encode(random_bytes(16));
+
+        view()->share('cspNonce', $this->nonce);
+    }
+
+    private function nonce(): string
+    {
+        if ($this->nonce === null) {
+            $this->nonce = base64_encode(random_bytes(16));
+        }
+
+        return $this->nonce;
+    }
+
     private function buildCsp(): string
     {
-        // CSP deliberadamente permisivo con 'self', inline y eval (necesario para
-        // Alpine.js que evalúa expresiones x-data/x-show/@click mediante new AsyncFunction,
-        // además de Vue runtime + Tailwind + service worker de la PWA).
+        // CSP con NONCES:
+        //   - 'unsafe-eval' se eliminó: Alpine.js fue removido del proyecto
+        //     (no está en package.json ni en el bundle) y Vue usa el runtime
+        //     compilado (sin runtime template compiler), así que nadie
+        //     necesita eval.
+        //   - 'unsafe-inline' en script-src se reemplazó por el nonce: los
+        //     <script> inline de los layouts (anti-FOUC, config de
+        //     broadcasting, dark mode) declaran `nonce="..."`.
+        //
+        // 'unsafe-inline' se mantiene en style-src: Tailwind y los estilos
+        // inline de Vue lo necesitan, y el riesgo es mucho menor (no
+        // permite ejecutar JS).
         $isDev = config('app.debug');
 
         $scriptSrc = ["'self'"];
-        $scriptSrc[] = "'unsafe-inline'";   // Vue runtime template compilation / inline scripts
-        $scriptSrc[] = "'unsafe-eval'";     // Alpine.js runtime expression evaluation (new AsyncFunction) + Vite HMR
+        $scriptSrc[] = "'nonce-".$this->nonce()."'";
+
         if ($isDev) {
             // Vite dev server corre en localhost:5173. Usamos wildcards
             // (localhost:* y 127.0.0.1:*) que son válidos en CSP spec

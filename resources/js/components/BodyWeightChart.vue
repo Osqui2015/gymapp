@@ -123,6 +123,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { CHART_COLORS } from '../utils/chartTheme';
 
 const props = defineProps({
     data: { type: Array, default: () => [] },
@@ -231,8 +232,8 @@ function buildChart() {
         {
             label: 'Peso (kg)',
             data: pesos,
-            borderColor: '#4f46e5',
-            backgroundColor: '#4f46e5',
+            borderColor: CHART_COLORS.primary,
+            backgroundColor: CHART_COLORS.primary,
             borderWidth: 2.5,
             pointRadius: 3,
             pointHoverRadius: 5,
@@ -245,7 +246,7 @@ function buildChart() {
         datasets.push({
             label: `Objetivo: ${props.goal} kg`,
             data: goalLine,
-            borderColor: '#a3e635',
+            borderColor: CHART_COLORS.goal,
             backgroundColor: 'transparent',
             borderWidth: 2,
             borderDash: [6, 4],

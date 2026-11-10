@@ -62,7 +62,7 @@ class TdeeService
             'sexo' => $user->sexo,
             'edad' => $user->edad,
             'peso' => $ultimoProgreso?->peso,
-            'altura' => $ultimoProgreso?->altura ?? $user->altura,
+            'altura' => $ultimoProgreso ? ($ultimoProgreso->altura ?? $user->altura) : $user->altura,
             'nivel_actividad' => $user->nivel_actividad,
             'objetivo_nutricional' => $user->objetivo_nutricional ?? 'mantener',
             'ultimo_progreso_id' => $ultimoProgreso?->id,

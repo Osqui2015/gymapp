@@ -169,7 +169,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p
                                             class="font-medium text-gray-900 dark:text-white truncate"
-                                            v-html="highlight(ej.nombre)"
+                                            v-html="highlight(ej.nombre, query)"
                                         ></p>
                                         <p
                                             class="text-xs text-gray-500 dark:text-gray-400 truncate"
@@ -215,7 +215,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p
                                             class="font-medium text-gray-900 dark:text-white truncate"
-                                            v-html="highlight(`${r.nivel} ${r.modalidad}`)"
+                                            v-html="highlight(`${r.nivel} ${r.modalidad}`, query)"
                                         ></p>
                                         <p class="text-xs text-gray-500 dark:text-gray-400">
                                             Rutina completa
@@ -252,12 +252,12 @@
                                     <div class="flex-1 min-w-0">
                                         <p
                                             class="font-medium text-gray-900 dark:text-white truncate"
-                                            v-html="highlight(a.name)"
+                                            v-html="highlight(a.name, query)"
                                         ></p>
                                         <p
                                             class="text-xs text-gray-500 dark:text-gray-400 truncate"
                                         >
-                                            @<span v-html="highlight(a.nick)"></span> · {{ a.role }}
+                                            @<span v-html="highlight(a.nick, query)"></span> · {{ a.role }}
                                         </p>
                                     </div>
                                 </a>
@@ -288,7 +288,7 @@ import { useFuzzySearch } from '../composables/useFuzzySearch';
 const RECENT_KEY = 'global_search_recent';
 const RECENT_MAX = 8;
 
-const { fuzzyMatch, highlight, sortByRelevance } = useFuzzySearch();
+const { highlight, sortByRelevance } = useFuzzySearch();
 
 const query = ref('');
 const open = ref(false);

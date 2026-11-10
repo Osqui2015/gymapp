@@ -61,7 +61,7 @@ class BodyMapController extends Controller
                     'reps_realizadas' => (int) $h->reps_realizadas,
                     'completado' => (bool) $h->completado,
                     'ejercicio_id' => $ejercicio?->id,
-                    'ejercicio_nombre' => $ejercicio?->nombre ?? $h->ejercicio_nombre,
+                    'ejercicio_nombre' => $ejercicio ? $ejercicio->nombre : $h->ejercicio_nombre,
                 ];
             })->values()->all();
 
@@ -250,7 +250,7 @@ class BodyMapController extends Controller
      * tenga más músculos mapeados; desempate por id (el más antiguo).
      *
      * @param  Collection<int, Historial>  $historiales
-     * @return array{por_id: Collection, por_nombre: array<string, Ejercicio>}
+     * @return array{por_id: Collection, por_nombre: array<string, Ejercicio>, todos: Collection}
      */
     private function mapaEjercicios($historiales): array
     {

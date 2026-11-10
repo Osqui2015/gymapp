@@ -34,7 +34,17 @@ class CacheHistorial
      */
     public static function invalidate(int $userId): void
     {
-        Cache::forever(self::versionKey($userId), self::version($userId) + 1);
+        // `Cache::increment()` hace el read-modify-write de forma ATÓMICA
+        // (el driver `database` lo resuelve con un UPDATE ... value = value + 1).
+        // Antes era un `Cache::forever($key, self::version($userId) + 1)`: un
+        // read-modify-write sin lock, así que dos requests concurrentes
+        // podían escribir la misma versión y una invalidación se perdía
+        // (el usuario veía datos viejos justo después de entrenar).
+        if (! Cache::has(self::versionKey($userId))) {
+            Cache::forever(self::versionKey($userId), 1);
+        }
+
+        Cache::increment(self::versionKey($userId));
     }
 
     /**

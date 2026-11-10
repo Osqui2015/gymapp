@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMembresiaRequest;
+use App\Http\Requests\UpdateMembresiaRequest;
 use App\Models\AuditLog;
 use App\Models\Membresia;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MembresiaController extends Controller
 {
@@ -45,19 +49,9 @@ class MembresiaController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreMembresiaRequest $request)
     {
-        $this->authorize('create', Membresia::class);
-
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'tipo_plan' => 'required|in:mensual,trimestral,semestral,anual',
-            'precio' => 'required|numeric|min:0',
-            'fecha_inicio' => 'required|date',
-            'fecha_vencimiento' => 'required|date|after:fecha_inicio',
-            'metodo_pago' => 'nullable|string|max:100',
-            'notas' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         $membresia = Membresia::create($validated);
         $membresia->update(['estado' => 'activo', 'ultimo_pago' => now()]);
@@ -67,21 +61,11 @@ class MembresiaController extends Controller
         return response()->json($membresia->load('user:id,name,nick'), 201);
     }
 
-    public function update(Request $request, Membresia $membresia)
+    public function update(UpdateMembresiaRequest $request, Membresia $membresia)
     {
-        $this->authorize('update', $membresia);
-
         $oldValues = $membresia->toArray();
 
-        $validated = $request->validate([
-            'tipo_plan' => 'sometimes|in:mensual,trimestral,semestral,anual',
-            'precio' => 'sometimes|numeric|min:0',
-            'fecha_inicio' => 'sometimes|date',
-            'fecha_vencimiento' => 'sometimes|date|after:fecha_inicio',
-            'estado' => 'sometimes|in:activo,por_vencer,vencido,cancelado',
-            'metodo_pago' => 'nullable|string|max:100',
-            'notas' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         $membresia->update($validated);
 
@@ -96,16 +80,30 @@ class MembresiaController extends Controller
 
         $oldValues = $membresia->toArray();
 
-        $nuevaFecha = match ($membresia->tipo_plan) {
-            'mensual' => now()->addMonth(),
-            'trimestral' => now()->addMonths(3),
-            'semestral' => now()->addMonths(6),
-            'anual' => now()->addYear(),
-            default => now()->addMonth(),
+        // La renovación arranca desde `max(hoy, fecha_vencimiento)`: si la
+        // membresía todavía no venció, se RESPETA el tiempo pagado y la
+        // nueva membresía arranca en la fecha de vencimiento. Antes se
+        // calculaba `now()->addMonth()` siempre, así que renovar antes de
+        // vencer regalaba los días que quedaban.
+        $dias = match ($membresia->tipo_plan) {
+            'mensual' => 1,
+            'trimestral' => 3,
+            'semestral' => 6,
+            'anual' => 12,
+            default => 1,
         };
 
+        $inicio = Carbon::now();
+
+        $vencimiento = $membresia->fecha_vencimiento;
+        if ($vencimiento !== null && $vencimiento->greaterThan($inicio)) {
+            $inicio = $vencimiento->copy();
+        }
+
+        $nuevaFecha = $inicio->copy()->addMonths($dias);
+
         $membresia->update([
-            'fecha_inicio' => now(),
+            'fecha_inicio' => $inicio,
             'fecha_vencimiento' => $nuevaFecha,
             'estado' => 'activo',
             'ultimo_pago' => now(),
@@ -116,30 +114,65 @@ class MembresiaController extends Controller
         return response()->json($membresia);
     }
 
-    public function usuariosSinMembresia()
+    /**
+     * Usuarios sin membresía, paginados (Fase 0.7).
+     *
+     * Antes devolvía TODOS los usuarios sin membresía con un `get()` sin
+     * límite: con cientos de alumnos la respuesta crecía sin control y el
+     * navegador tenía que renderizar la lista entera.
+     *
+     * El shape de la respuesta mantiene `data` como la lista (para no
+     * romper el frontend) y agrega la metadata de paginación.
+     */
+    public function usuariosSinMembresia(Request $request)
     {
         $this->authorize('viewAny', Membresia::class);
 
         $usuariosConMembresia = Membresia::pluck('user_id');
 
-        $usuarios = User::whereNotIn('id', $usuariosConMembresia)
-            ->where('role', '!=', 'administrador')
-            ->orderBy('name')
-            ->get(['id', 'name', 'nick', 'email']);
+        $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
 
-        return response()->json($usuarios);
+        $usuarios = User::whereNotIn('id', $usuariosConMembresia)
+            ->where('role', '!=', User::ROLE_ADMINISTRADOR)
+            ->orderBy('name')
+            ->paginate($perPage, ['id', 'name', 'nick', 'email', 'role', 'telefono']);
+
+        return response()->json([
+            // `data` para compatibilidad con el frontend actual.
+            'data' => $usuarios->items(),
+            // Metadata de paginación (mismo formato que Laravel).
+            'current_page' => $usuarios->currentPage(),
+            'last_page' => $usuarios->lastPage(),
+            'per_page' => $usuarios->perPage(),
+            'total' => $usuarios->total(),
+            'from' => $usuarios->firstItem(),
+            'to' => $usuarios->lastItem(),
+        ]);
     }
 
-    public function porVencer()
+    /**
+     * Membresías por vencer o vencidas, paginadas (Fase 0.7).
+     */
+    public function porVencer(Request $request)
     {
         $this->authorize('viewAny', Membresia::class);
+
+        $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
 
         $membresias = Membresia::with('user:id,name,nick,email')
             ->whereIn('estado', ['por_vencer', 'vencido'])
             ->where('fecha_vencimiento', '>=', now()->subDays(30)->toDateString())
             ->orderBy('fecha_vencimiento')
-            ->get();
+            ->paginate($perPage);
 
-        return response()->json($membresias);
+        return response()->json([
+            'data' => $membresias->items(),
+            'current_page' => $membresias->currentPage(),
+            'last_page' => $membresias->lastPage(),
+            'per_page' => $membresias->perPage(),
+            'total' => $membresias->total(),
+            'from' => $membresias->firstItem(),
+            'to' => $membresias->lastItem(),
+        ]);
     }
 }

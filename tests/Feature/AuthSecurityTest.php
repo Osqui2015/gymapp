@@ -74,13 +74,14 @@ class AuthSecurityTest extends TestCase
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
 
-        $this->actingAs($admin)->post('/admin/users', [
+        $this->actingAs($admin)->postJson('/api/admin/users', [
             'nick' => 'nuevo_user',
             'name' => 'Nuevo User',
             'email' => 'nuevo@example.com',
             'password' => '123', // 3 chars, sin mayuscula ni simbolo
             'role' => 'alumno',
-        ])->assertSessionHasErrors('password');
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['password']);
 
         // No se creo.
         $this->assertDatabaseMissing('users', ['email' => 'nuevo@example.com']);
@@ -90,14 +91,14 @@ class AuthSecurityTest extends TestCase
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
 
-        $this->actingAs($admin)->post('/admin/users', [
+        $this->actingAs($admin)->postJson('/api/admin/users', [
             'nick' => 'nuevo_user',
             'name' => 'Nuevo User',
             'email' => 'nuevo@example.com',
             'password' => 'Aa1!aaaa',
             'password_confirmation' => 'Aa1!aaaa',
             'role' => 'alumno',
-        ])->assertSessionHasNoErrors();
+        ])->assertStatus(201);
 
         $this->assertDatabaseHas('users', ['email' => 'nuevo@example.com']);
     }
@@ -126,7 +127,8 @@ class AuthSecurityTest extends TestCase
             'password' => Hash::make('password-correcto'),
         ]);
 
-        // 5 intentos fallidos (el limite default de Laravel Breeze).
+        // 5 intentos fallidos (límite unificado: `LoginRequest::MAX_INTENTOS`,
+        // el mismo que usa el limiter `login` de AppServiceProvider).
         for ($i = 0; $i < 5; $i++) {
             $this->post('/login', [
                 'nick' => 'tester',
@@ -134,10 +136,14 @@ class AuthSecurityTest extends TestCase
             ])->assertSessionHasErrors('nick');
         }
 
-        // El 6to intento, incluso con la password correcta, debe ser bloqueado.
+        // El 6to intento, incluso con la password correcta, debe ser
+        // bloqueado. El middleware `throttle:login` de la ruta dispara
+        // antes que el controller, así que responde 429.
         $this->post('/login', [
             'nick' => 'tester',
             'password' => 'password-correcto',
-        ])->assertSessionHasErrors('nick');
+        ])->assertStatus(429);
+
+        $this->assertGuest();
     }
 }

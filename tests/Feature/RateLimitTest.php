@@ -48,19 +48,23 @@ class RateLimitTest extends TestCase
         $this->getJson('/api/ejercicios/grupos-musculares')->assertStatus(429);
     }
 
-    public function test_el_login_bloquea_despues_de_diez_intentos(): void
+    public function test_el_login_bloquea_despues_de_cinco_intentos(): void
     {
         $user = User::factory()->create();
 
-        // 10 intentos fallidos: pasan (el limite es 10/min por nick+IP).
-        for ($i = 0; $i < 10; $i++) {
+        // El limite unificado es de 5/min por nick+IP
+        // (`LoginRequest::MAX_INTENTOS`, el mismo que usa el limiter `login`
+        // de AppServiceProvider). Antes coexistían dos limitadores con
+        // valores distintos (5 en el request, 10 en el middleware) y ganaba
+        // el más estricto.
+        for ($i = 0; $i < 5; $i++) {
             $this->post('/login', [
                 'nick' => $user->nick,
                 'password' => 'wrong-password',
             ])->assertRedirect();
         }
 
-        // El 11vo tiene que rebotar con 429.
+        // El 6to tiene que rebotar con 429.
         $response = $this->post('/login', [
             'nick' => $user->nick,
             'password' => 'wrong-password',
@@ -74,7 +78,7 @@ class RateLimitTest extends TestCase
     {
         $user = User::factory()->create();
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $this->post('/login', [
                 'nick' => $user->nick,
                 'password' => 'wrong-password',

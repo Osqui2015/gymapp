@@ -85,10 +85,13 @@
                             class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                             <option value="">Seleccionar rol</option>
-                            <option value="comun">Común</option>
-                            <option value="alumno">Alumno</option>
-                            <option value="trainer">Trainer</option>
-                            <option value="administrador">Administrador</option>
+                            <option
+                                v-for="op in ROLES_DISPONIBLES"
+                                :key="op.value"
+                                :value="op.value"
+                            >
+                                {{ op.label }}
+                            </option>
                         </select>
                     </div>
 
@@ -220,6 +223,11 @@
                                 <th
                                     class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
                                 >
+                                    Teléfono
+                                </th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                                >
                                     Rol
                                 </th>
                                 <th
@@ -266,6 +274,40 @@
                                     class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300"
                                 >
                                     {{ u.email }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <!--
+                                        Estado del teléfono (Fase 0.8).
+
+                                        Un teléfono que no se puede normalizar
+                                        a E.164 NO puede generar un link de
+                                        WhatsApp. Antes de la Fase 1 eso se
+                                        descubría al hacer clic y abrir un
+                                        404 de WhatsApp: ahora el panel lo
+                                        dice explícitamente para que el
+                                        admin lo recargue.
+                                    -->
+                                    <span
+                                        v-if="!u.telefono"
+                                        class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                                        title="Sin teléfono cargado"
+                                    >
+                                        Sin teléfono
+                                    </span>
+                                    <span
+                                        v-else-if="!telefonoValido(u.telefono)"
+                                        class="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                        :title="`Teléfono no válido: ${u.telefono}. Recargalo para poder cobrar por WhatsApp.`"
+                                    >
+                                        ⚠ No válido
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="text-sm text-gray-600 dark:text-gray-300"
+                                        :title="u.telefono"
+                                    >
+                                        {{ telefonoFormateado(u.telefono) }}
+                                    </span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span
@@ -381,7 +423,7 @@
                             </tr>
                             <tr v-if="users.length === 0">
                                 <td
-                                    colspan="5"
+                                    colspan="6"
                                     class="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     No se encontraron usuarios.
@@ -423,6 +465,19 @@
                         </div>
                         <p class="text-sm text-gray-600 dark:text-gray-300 truncate">
                             {{ u.email }}
+                        </p>
+                        <!-- Teléfono (Fase 0.8): ver columna de escritorio. -->
+                        <p
+                            v-if="u.telefono && telefonoValido(u.telefono)"
+                            class="text-sm text-gray-600 dark:text-gray-300 truncate"
+                        >
+                            {{ telefonoFormateado(u.telefono) }}
+                        </p>
+                        <p
+                            v-else-if="u.telefono"
+                            class="text-sm text-amber-600 dark:text-amber-400 truncate"
+                        >
+                            ⚠ Teléfono no válido: {{ u.telefono }}
                         </p>
                         <div class="flex items-center justify-between">
                             <span
@@ -632,10 +687,13 @@
                                 required
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
                             >
-                                <option value="comun">Común</option>
-                                <option value="alumno">Alumno</option>
-                                <option value="trainer">Trainer</option>
-                                <option value="administrador">Administrador</option>
+                                <option
+                                    v-for="op in ROLES_DISPONIBLES"
+                                    :key="op.value"
+                                    :value="op.value"
+                                >
+                                    {{ op.label }}
+                                </option>
                             </select>
                         </div>
 
@@ -710,6 +768,10 @@ import CampoForm from './CampoForm.vue';
 import Paginador from './Paginador.vue';
 import EmptyState from '../EmptyState.vue';
 import { useFocusTrap } from '../../composables/useFocusTrap';
+import {
+    telefonoValido as esTelefonoValido,
+    formatearTelefono,
+} from '../../utils/telefono';
 
 const props = defineProps({
     users: { type: Array, required: true },
@@ -741,6 +803,24 @@ const emit = defineEmits([
 const localSearch = ref(props.searchFilter);
 const modalRef = ref(null);
 useFocusTrap(modalRef, { when: toRef(props, 'mostrarModal') });
+
+/**
+ * Roles seleccionables desde el panel (Fase 0.2).
+ *
+ * Antes el `<select>` tenía 4 roles hardcodeados y NO incluía a
+ * `coordinador` ni `recepcionista`: esos roles existían en el modelo
+ * pero eran imposibles de asignar desde la UI, aunque las policies ya
+ * los contemplaban. El backend valida contra `RolePermissions::ROLES`,
+ * que es la fuente única de verdad.
+ */
+const ROLES_DISPONIBLES = [
+    { value: 'comun', label: 'Común' },
+    { value: 'alumno', label: 'Alumno' },
+    { value: 'trainer', label: 'Trainer' },
+    { value: 'coordinador', label: 'Coordinador' },
+    { value: 'recepcionista', label: 'Recepcionista' },
+    { value: 'administrador', label: 'Administrador' },
+];
 
 // El formulario de edicion se edita sobre una COPIA local del prop
 // `formularioEdit`.
@@ -788,7 +868,19 @@ const roleClass = (role) => {
             trainer: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
             alumno: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
             comun: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+            // Fase 0.2: roles que antes no existian en el panel.
+            coordinador:
+                'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+            recepcionista:
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
         }[role] || 'bg-gray-100 text-gray-700'
     );
 };
+
+// --- Teléfono (Fase 0.8) ---
+// Los helpers viven en utils/telefono.js (espejo del TelefonoService del
+// backend) para que la UI pueda marcar "teléfono no válido" sin pedirlo
+// al servidor, y para no generar links de WhatsApp rotos.
+const telefonoValido = (telefono) => esTelefonoValido(telefono);
+const telefonoFormateado = (telefono) => formatearTelefono(telefono);
 </script>

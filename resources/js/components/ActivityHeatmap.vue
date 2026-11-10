@@ -56,6 +56,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { hoyLocal } from '@/utils/fecha';
 
 const props = defineProps({
     data: { type: Object, default: () => ({ days: [] }) },
@@ -82,7 +83,7 @@ const weeks = computed(() => {
     while (cursor <= to) {
         const week = [];
         for (let dow = 0; dow < 7; dow++) {
-            const isoDate = cursor.toISOString().slice(0, 10);
+            const isoDate = hoyLocal(cursor);
             const inRange = cursor >= from && cursor <= to;
             const entry = inRange ? byDate[isoDate] : null;
             const sets = entry?.sets ?? 0;

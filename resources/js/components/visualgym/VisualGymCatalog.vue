@@ -177,7 +177,7 @@ function openDetail(externalId) {
 async function onToggleFavorite(ejercicio) {
     try {
         await store.toggleFavorite(ejercicio);
-    } catch (e) {
+    } catch {
         // El toast global de axios ya muestra el error; no duplicamos.
     }
 }

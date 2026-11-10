@@ -11,26 +11,6 @@ import { useClickOutside } from './useClickOutside';
  * que el menu se cierre al hacer click fuera.
  */
 describe('useClickOutside', () => {
-    const Harness = defineComponent({
-        props: {
-            when: { type: Boolean, default: true },
-        },
-        setup(props) {
-            const root = ref(null);
-            const open = ref(true);
-            const outside = ref(null);
-            const handler = vi.fn();
-
-            useClickOutside(root, handler, props.when);
-
-            return () =>
-                h('div', [
-                    h('div', { ref: root, 'data-test': 'root' }, 'dentro'),
-                    h('div', { ref: outside, 'data-test': 'outside' }, 'fuera'),
-                ]);
-        },
-    });
-
     it('dispara el handler cuando el click es fuera del elemento', async () => {
         const handlerSpy = vi.fn();
 

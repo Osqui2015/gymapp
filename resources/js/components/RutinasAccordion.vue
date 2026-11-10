@@ -398,6 +398,7 @@ import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
 import { useSwipe } from '../composables/useSwipe';
+import { hoyLocal } from '@/utils/fecha';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import SyncBadge from './training/SyncBadge.vue';
 import { storeToRefs } from 'pinia';
@@ -439,7 +440,7 @@ const showNotification = (message, type = 'success') => toast.add(message, type)
 
 const rutinaStore = useRutinaStore();
 const auth = useAuthStore();
-const { role: userRole, isAlumno } = storeToRefs(auth);
+const { isAlumno } = storeToRefs(auth);
 
 const catalogoTab = ref('predeterminadas');
 const searchQuery = ref('');
@@ -585,7 +586,7 @@ const fetchUserInfo = async () => {
             const rutinaResponse = await axios.get('/api/user-rutina');
             userRutina.value = rutinaResponse.data || null;
         }
-    } catch (error) {
+    } catch {
         userRutina.value = null;
     }
 };
@@ -858,7 +859,7 @@ const saveQuickInput = async ({ records }) => {
     if (!records || !records.length) return;
     quickInputSaving.value = true;
     try {
-        const fecha = new Date().toISOString().split('T')[0];
+        const fecha = hoyLocal();
         let allSynced = true;
         let rechazadas = 0;
         for (const r of records) {
@@ -913,7 +914,7 @@ const saveQuickInput = async ({ records }) => {
 const loadAll = async () => {
     await Promise.all([fetchRutinas(), fetchComunitarias()]);
 };
-const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadAll);
+const { isRefreshing, pullOffset } = usePullToRefresh(window, loadAll);
 
 // Racha actual
 const rachaActual = ref(0);
@@ -921,7 +922,7 @@ const cargarRacha = async () => {
     try {
         const r = await axios.get('/api/stats/resumen');
         rachaActual.value = r.data?.current_streak ?? 0;
-    } catch (e) {
+    } catch {
         /* silencioso */
     }
 };

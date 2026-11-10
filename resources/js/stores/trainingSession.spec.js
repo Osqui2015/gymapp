@@ -2,6 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useTrainingSessionStore } from './trainingSession';
 
+/**
+ * Key de localStorage con scope de usuario.
+ *
+ * La sesión activa se guarda por usuario (`gymapp:training-session:v1:u<id>`)
+ * para que en un dispositivo compartido las series de un socio no se
+ * restauren al entrar otro. Es el mismo criterio que usa el store.
+ */
+const STORAGE_KEY = (() => {
+    const user = typeof window !== 'undefined' ? window.__user : null;
+    const scope = user && user.id ? String(user.id) : 'anon';
+
+    return `gymapp:training-session:v1:u${scope}`;
+})();
+
 describe('useTrainingSessionStore', () => {
     beforeEach(() => {
         localStorage.clear();
@@ -42,7 +56,7 @@ describe('useTrainingSessionStore', () => {
         // Esperar a que el watcher (deep + sync) escriba.
         await new Promise((r) => setTimeout(r, 0));
 
-        const raw = localStorage.getItem('gymapp:training-session:v1');
+        const raw = localStorage.getItem(STORAGE_KEY);
         expect(raw).toBeTruthy();
         const parsed = JSON.parse(raw);
         expect(parsed.rutina_nombre).toBe('Push');
@@ -80,13 +94,13 @@ describe('useTrainingSessionStore', () => {
             ejercicios: [{ nombre: 'A', series_objetivo: 1 }],
         });
         await new Promise((r) => setTimeout(r, 0));
-        expect(localStorage.getItem('gymapp:training-session:v1')).toBeTruthy();
+        expect(localStorage.getItem(STORAGE_KEY)).toBeTruthy();
 
         store.end();
         await new Promise((r) => setTimeout(r, 0));
 
         expect(store.isActive).toBe(false);
-        expect(localStorage.getItem('gymapp:training-session:v1')).toBeNull();
+        expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 
     it('restaura sesion desde localStorage al re-instanciar', () => {
@@ -112,7 +126,7 @@ describe('useTrainingSessionStore', () => {
 
     it('no restaura sesiones con endedAt (cerradas)', () => {
         localStorage.setItem(
-            'gymapp:training-session:v1',
+            STORAGE_KEY,
             JSON.stringify({
                 id: 'old',
                 startedAt: '2026-01-01T00:00:00.000Z',
@@ -140,7 +154,7 @@ describe('useTrainingSessionStore', () => {
         await new Promise((r) => setTimeout(r, 0));
 
         expect(store.isActive).toBe(false);
-        expect(localStorage.getItem('gymapp:training-session:v1')).toBeNull();
+        expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
 
     it('recordSet guarda atributos avanzados, calcula volumen y permite deshacer con undoLastSet', () => {

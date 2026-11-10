@@ -165,6 +165,22 @@ class HistorialIdempotenciaTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_marcar_completado_devuelve_404_si_no_existe_registro(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/historial/completar', [
+            'rutina_nombre' => 'Full Body A',
+            'dia' => 'Lunes',
+            'ejercicio_nombre' => 'Sentadilla',
+            'series_numero' => 9,
+            'fecha' => Carbon::now()->toDateString(),
+        ])->assertStatus(404)
+            ->assertJson([
+                'completada' => false,
+            ]);
+    }
+
     public function test_el_indice_unico_rechaza_filas_duplicadas(): void
     {
         $user = User::factory()->create();

@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { hoyLocal } from '../utils/fecha';
 
 /**
  * Composable para exportar el progreso del usuario a PDF.
@@ -233,7 +234,7 @@ export function useProgresoPdf() {
             }
 
             // === Descargar ===
-            const filename = `progreso-${userName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+            const filename = `progreso-${userName.toLowerCase().replace(/\s+/g, '-')}-${hoyLocal()}.pdf`;
             doc.save(filename);
         } catch (e) {
             console.error('Error exportando PDF:', e);

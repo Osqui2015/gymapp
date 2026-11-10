@@ -56,10 +56,15 @@ class BackupDatabase extends Command
         // mysqldump escribe a stdout, lo pipeamos a gzip en PHP.
         // Importante: usar --single-transaction (consistencia InnoDB) y
         // --skip-lock-tables (no bloquea lecturas/escrituras en producción).
+        //
+        // La contraseña NO va como `--password=...`: los argumentos del
+        // proceso son visibles para cualquier usuario del servidor con
+        // `ps aux` (en Hostinger el hosting es compartido). Se pasa por la
+        // variable de entorno MYSQL_PWD del proceso, que no aparece en la
+        // lista de procesos.
         $dumpCmd = [
             $dumpBinary,
             '--user='.$config['username'],
-            '--password='.$config['password'],
             '--host='.$config['host'],
             '--port='.(string) ($config['port'] ?? 3306),
             '--single-transaction',
@@ -73,6 +78,13 @@ class BackupDatabase extends Command
         $start = microtime(true);
 
         $process = new Process($dumpCmd);
+
+        // MYSQL_PWD: variable de entorno estándar de los clientes MySQL para
+        // pasar la contraseña sin exponerla en la línea de comandos.
+        $process->setEnv(array_merge($_ENV, [
+            'MYSQL_PWD' => (string) ($config['password'] ?? ''),
+        ]));
+
         $process->setTimeout(600); // 10 min de tope
 
         try {
@@ -132,8 +144,10 @@ class BackupDatabase extends Command
      */
     private function resolveMysqldump(): ?string
     {
-        // 1. Override por env.
-        $explicit = env('MYSQLDUMP_PATH');
+        // 1. Override por config (NO env(): con config:cache el env() devuelve
+        //    null y el backup caía al path de Laragon, que no existe en el
+        //    server -> el backup diario fallaba en silencio).
+        $explicit = config('database.binaries.mysqldump');
         if ($explicit && file_exists($explicit)) {
             return $explicit;
         }

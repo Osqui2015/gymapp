@@ -81,7 +81,7 @@ export function useUndoable(opts) {
                 cancelled = true;
                 try {
                     undo();
-                } catch (_) {
+                } catch {
                     /* noop */
                 }
                 if (typeof onError === 'function') onError(err);

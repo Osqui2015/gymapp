@@ -142,13 +142,17 @@ class AchievementService
         $maxStreak = 1;
         $currentStreak = 1;
         for ($i = 0; $i < $sortedDates->count() - 1; $i++) {
-            $diff = $sortedDates[$i]->diffInDays($sortedDates[$i + 1]);
-            if ($diff == 1) {
+            // Carbon 3 devuelve float: se castea a int para comparar.
+            $diff = (int) $sortedDates[$i]->diffInDays($sortedDates[$i + 1]);
+            if ($diff === 1) {
                 $currentStreak++;
                 if ($currentStreak > $maxStreak) {
                     $maxStreak = $currentStreak;
                 }
-            } elseif ($diff > 1) {
+            } else {
+                // Cualquier salto (incluido 0 por fechas repetidas) rompe la
+                // racha. Antes solo reseteaba con `$diff > 1`, así que una
+                // fila duplicada del mismo día la dejaba intacta.
                 $currentStreak = 1;
             }
         }
@@ -256,17 +260,15 @@ class AchievementService
             $currentStreak = 1;
 
             for ($i = 1; $i < $dates->count(); $i++) {
-                $diff = $dates[$i - 1]->diffInDays($dates[$i]);
-                if ($diff == 1) {
+                // Carbon 3 devuelve float: se castea a int para comparar.
+                $diff = (int) $dates[$i - 1]->diffInDays($dates[$i]);
+                if ($diff === 1) {
                     $currentStreak++;
                     if ($currentStreak > $maxStreak) {
                         $maxStreak = $currentStreak;
                     }
                 } else {
                     $currentStreak = 1;
-                    if ($currentStreak > $maxStreak) {
-                        $maxStreak = $currentStreak;
-                    }
                 }
             }
         }

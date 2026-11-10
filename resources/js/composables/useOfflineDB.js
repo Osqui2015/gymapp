@@ -2,12 +2,12 @@
  * useOfflineDB — Wrapper minimo sobre IndexedDB para guardar series pendientes.
  *
  * Schema:
- *   db: gymapp-offline (v1)
+ *   db: gymapp-offline-<userId> (v1)
  *   store: pending_series
  *     keyPath: client_id
  *     indices: por createdAt (auto-mantenido)
  *
- * Estructura del record:
+ * ESTRUCTURA DEL RECORD:
  *   {
  *     client_id: 'uuid-generado-en-el-cliente',
  *     payload: { ... campos que van a /api/historial/guardar ... },
@@ -16,29 +16,76 @@
  *     lastError: null,       // ultimo mensaje de error si fallo
  *   }
  *
+ * SCOPE POR USUARIO (privacidad)
+ * -------------------------------
+ * Antes el nombre de la DB era fijo (`gymapp-offline`) y el store era un
+ * singleton por DB. En un dispositivo compartido (gimnasio, recepcion) las
+ * series pendientes del socio A se sincronizaban como del socio B al
+ * loguearse B: las series de A se guardaban en el historial de B.
+ *
+ * Ahora la DB se nombra `gymapp-offline-<userId>`: cada usuario tiene su
+ * propia base. Cuando no hay usuario identificado (antes de loguearse) se
+ * usa un scope anónimo que NO se sincroniza.
+ *
  * Si IndexedDB no esta disponible (modo privado, navegador raro, etc),
  * todas las funciones devuelven arrays vacios o rechazan con un error
  * controlado. El caller debe manejar el fallback.
  */
 
-const DB_NAME = 'gymapp-offline';
+const DB_NAME_BASE = 'gymapp-offline';
 const DB_VERSION = 1;
 const STORE = 'pending_series';
 
-let dbPromise = null;
+/** Scope usado cuando no hay usuario identificado. */
+const SCOPE_ANONYMOUS = 'anon';
+
+/**
+ * Obtiene el id del usuario actual desde el store de auth.
+ *
+ * Se lee de `window.__user` (inyectado en layouts/app.blade.php) para no
+ * crear una dependencia circular entre composables y el store de Pinia.
+ *
+ * @returns {string} Scope del usuario.
+ */
+const resolveUserScope = () => {
+    if (typeof window === 'undefined') return SCOPE_ANONYMOUS;
+
+    const user = window.__user;
+    if (!user || !user.id) return SCOPE_ANONYMOUS;
+
+    return String(user.id);
+};
+
+/**
+ * Nombre de la DB para un scope dado.
+ *
+ * @param {string} scope
+ * @returns {string}
+ */
+const dbNameFor = (scope) => `${DB_NAME_BASE}-${scope}`;
+
+/** Instancias abiertas, por scope. */
+const dbPromises = new Map();
 
 export const isAvailable = () => {
     return typeof indexedDB !== 'undefined';
 };
 
-const openDB = () => {
+/**
+ * Abre (o reutiliza) la DB de un scope.
+ *
+ * @param {string} [scope]
+ * @returns {Promise<IDBDatabase>}
+ */
+const openDB = (scope = resolveUserScope()) => {
     if (!isAvailable()) {
         return Promise.reject(new Error('IndexedDB no disponible'));
     }
-    if (dbPromise) return dbPromise;
 
-    dbPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
+    if (dbPromises.has(scope)) return dbPromises.get(scope);
+
+    const promise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(dbNameFor(scope), DB_VERSION);
         req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE)) {
@@ -50,7 +97,9 @@ const openDB = () => {
         req.onerror = (e) => reject(e.target.error);
     });
 
-    return dbPromise;
+    dbPromises.set(scope, promise);
+
+    return promise;
 };
 
 const tx = (db, mode = 'readonly') => {
@@ -123,6 +172,36 @@ export const clearAllPending = async () => {
     await reqToPromise(store.clear());
 };
 
+/**
+ * Cierra y borra la DB del usuario actual.
+ *
+ * Se llama al LOGOUT: en un dispositivo compartido, las series pendientes
+ * del socio que se va no deben quedar disponibles para el siguiente.
+ *
+ * @returns {Promise<boolean>} true si se borró.
+ */
+export const purgeCurrentScope = async () => {
+    const scope = resolveUserScope();
+
+    try {
+        const db = await openDB(scope);
+        db.close();
+    } catch {
+        /* la DB puede no existir: no es un error */
+    }
+
+    dbPromises.delete(scope);
+
+    if (!isAvailable()) return false;
+
+    return new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase(dbNameFor(scope));
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        req.onblocked = () => resolve(false);
+    });
+};
+
 // Las funciones ya estan exportadas individualmente arriba (addPending, etc).
 // Este objeto las agrupa para uso conveniente cuando se importan varias a la vez.
 export const offlineDb = {
@@ -133,4 +212,5 @@ export const offlineDb = {
     removePending,
     updatePending,
     clearAllPending,
+    purgeCurrentScope,
 };

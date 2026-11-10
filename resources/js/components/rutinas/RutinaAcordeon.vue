@@ -342,7 +342,7 @@
 <script setup>
 import { computed } from 'vue';
 import PlanSeriesChips from '@/components/training/PlanSeriesChips.vue';
-import { prescripcionDe, tienePlan } from '@/utils/rutinaPrescripcion';
+import { tienePlan } from '@/utils/rutinaPrescripcion';
 
 const props = defineProps({
     modalidad: { type: Object, required: true },
@@ -450,22 +450,6 @@ const formatDescanso = (descanso) => {
     if (isNaN(num)) return `${descanso} min`;
     return `${num.toFixed(2)} min`;
 };
-
-// Prescripción estructurada de cada ejercicio (JSON `prescripcion` si existe,
-// si no el parseo de `notas`). Se calcula una sola vez por render para no
-// reparsear en cada binding del template.
-const prescripciones = computed(() => {
-    const map = new Map();
-    (props.modalidad?.dias || []).forEach((dia) => {
-        (dia.ejercicios || []).forEach((ej) => {
-            map.set(ej.id, prescripcionDe(ej));
-        });
-    });
-    return map;
-});
-
-const prescripcionDeEjercicio = (ejercicio) =>
-    prescripciones.value.get(ejercicio?.id) || prescripcionDe(ejercicio);
 
 const getSuperserieClass = (ejercicio) => {
     const grupo = ejercicio.superserie_grupo;

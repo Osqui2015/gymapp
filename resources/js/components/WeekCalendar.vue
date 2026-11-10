@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
+import { hoyLocal } from '@/utils/fecha';
 
 const props = defineProps({
     userId: { type: Number, default: null },
@@ -17,7 +18,7 @@ const fetchData = async () => {
     try {
         const weekStart = new Date();
         weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1 + weekOffset.value * 7);
-        const dateStr = weekStart.toISOString().split('T')[0];
+        const dateStr = hoyLocal(weekStart);
         const params = { week_start: dateStr };
         if (props.userId) params.user_id = props.userId;
         const res = await axios.get('/api/historial/week-summary', { params });

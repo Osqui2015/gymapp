@@ -109,6 +109,10 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * Logout: pega /logout, limpia state, redirige a /login.
+     *
+     * Antes de redirigir se purga la base offline del usuario que se va: en
+     * un dispositivo compartido (gimnasio, recepción) las series pendientes
+     * de A no deben quedar disponibles para el socio que entre después.
      */
     async function logout(): Promise<void> {
         try {
@@ -116,6 +120,15 @@ export const useAuthStore = defineStore('auth', () => {
         } catch {
             /* ignore: igual vamos a limpiar y redirigir */
         }
+
+        // Purga best-effort: si falla, no debe impedir el logout.
+        try {
+            const { purgeCurrentScope } = await import('../composables/useOfflineDB');
+            await purgeCurrentScope();
+        } catch {
+            /* ignore */
+        }
+
         $reset();
         window.location.href = '/login';
     }

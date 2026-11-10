@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Ejercicio;
 use App\Models\User;
+use App\Support\RolePermissions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AdminImportExportController extends Controller
@@ -65,10 +67,25 @@ class AdminImportExportController extends Controller
         );
     }
 
+    /**
+     * Importa usuarios desde un CSV.
+     *
+     * Correcciones aplicadas (P0):
+     *  - Límite de tamaño de archivo y de filas (evita DoS por CSV gigante).
+     *  - El email queda VERIFICADO (`email_verified_at`): sin esto, el
+     *    middleware `verified` de `/dashboard` bloqueaba a todos los
+     *    importados y no podían entrar nunca.
+     *  - La contraseña temporal se DEVUELVE en la respuesta para que el admin
+     *    la comparta. Antes se generaba una aleatoria y se perdía: la cuenta
+     *    quedaba inutilizable.
+     *  - El mapa de roles acepta TODOS los roles de `RolePermissions::ROLES`
+     *    (antes solo admin/trainer/alumno/comun: coordinador y recepcionista
+     *    caían silenciosamente en 'comun').
+     */
     public function importUsers(Request $request)
     {
         $validated = $request->validate([
-            'archivo' => 'required|file|mimes:csv,txt',
+            'archivo' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
         $file = $request->file('archivo');
@@ -79,10 +96,21 @@ class AdminImportExportController extends Controller
         $errors = [];
         $created = 0;
 
+        // Contraseñas temporales generadas, para devolverlas al admin.
+        $temporales = [];
+
         DB::beginTransaction();
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 $rowCount++;
+
+                // Tope de filas: evita que un CSV enorme se procese entero
+                // (y bloquee la transacción) por un solo request.
+                if ($rowCount > self::MAX_FILAS_IMPORTACION) {
+                    $errors[] = "Se alcanzó el límite de ".self::MAX_FILAS_IMPORTACION.' filas; el resto se ignoró.';
+
+                    break;
+                }
 
                 // Skip empty rows
                 if (empty(array_filter($row))) {
@@ -98,15 +126,44 @@ class AdminImportExportController extends Controller
                         continue;
                     }
 
+                    // Rol desconocido: se rechaza la fila en vez de crear un
+                    // usuario con un rol arbitrario.
+                    if (isset($data['_rol_invalido'])) {
+                        $errors[] = "Fila {$rowCount}: Rol '{$data['_rol_invalido']}' no válido (".implode(', ', RolePermissions::ROLES).')';
+
+                        continue;
+                    }
+
+                    unset($data['_rol_invalido']);
+
+                    // El rol por defecto es 'comun'.
+                    $data['role'] = $data['role'] ?? User::ROLE_COMUN;
+
                     // Generar nick si no existe
                     if (empty($data['nick'])) {
                         $data['nick'] = strtolower(str_replace(' ', '.', $data['name'])).$rowCount;
                     }
 
-                    // Generar password aleatorio seguro (12 chars) - debe resetearse en primer login
-                    $data['password'] = bcrypt(Str::random(12));
+                    // Contraseña temporal: se genera, se devuelve al admin para
+                    // que la comparta y se le pide al usuario que la cambie.
+                    // Antes era aleatoria y se perdía -> cuenta inutilizable.
+                    $passwordTemporal = Str::random(12);
 
-                    User::create($data);
+                    $usuario = User::create([
+                        ...$data,
+                        'password' => Hash::make($passwordTemporal),
+                        // Marcado como verificado: el middleware `verified` de
+                        // /dashboard rechazaba a los importados y no podían
+                        // entrar nunca.
+                        'email_verified_at' => now(),
+                    ]);
+
+                    $temporales[] = [
+                        'nick' => $usuario->nick,
+                        'email' => $usuario->email,
+                        'password_temporal' => $passwordTemporal,
+                    ];
+
                     $created++;
                 } catch (\Exception $e) {
                     $errors[] = "Fila {$rowCount}: ".$e->getMessage();
@@ -130,13 +187,15 @@ class AdminImportExportController extends Controller
             'created' => $created,
             'processed' => $rowCount,
             'errors' => $errors,
+            // Contraseños temporales para que el admin las comparta.
+            'passwords_temporales' => $temporales,
         ]);
     }
 
     public function importEjercicios(Request $request)
     {
         $validated = $request->validate([
-            'archivo' => 'required|file|mimes:csv,txt',
+            'archivo' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
         $file = $request->file('archivo');
@@ -151,6 +210,13 @@ class AdminImportExportController extends Controller
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 $rowCount++;
+
+                // Tope de filas (protección contra DoS).
+                if ($rowCount > self::MAX_FILAS_IMPORTACION) {
+                    $errors[] = "Se alcanzó el límite de ".self::MAX_FILAS_IMPORTACION.' filas; el resto se ignoró.';
+
+                    break;
+                }
 
                 if (empty(array_filter($row))) {
                     continue;
@@ -192,6 +258,54 @@ class AdminImportExportController extends Controller
         ]);
     }
 
+    /**
+     * Tope de filas por importación (protección contra DoS).
+     */
+    public const MAX_FILAS_IMPORTACION = 5000;
+
+    /**
+     * Normaliza el valor de la columna "Rol" del CSV a un rol válido.
+     *
+     * Antes solo aceptaba admin/trainer/alumno/comun: `coordinador` y
+     * `recepcionista` caían silenciosamente en 'comun'. Ahora se mapean
+     * TODOS los roles de `RolePermissions::ROLES`, y un valor desconocido
+     * devuelve null (el caller lo reporta como error en vez de crear un
+     * usuario con permisos que nadie pidió).
+     *
+     * @return string|null Rol normalizado, o null si no se reconoce.
+     */
+    private function normalizarRol(?string $valor): ?string
+    {
+        $v = strtolower(trim((string) $valor));
+
+        if ($v === '') {
+            return User::ROLE_COMUN;
+        }
+
+        $alias = [
+            'admin' => User::ROLE_ADMINISTRADOR,
+            'administrador' => User::ROLE_ADMINISTRADOR,
+            'entrenador' => User::ROLE_TRAINER,
+            'trainer' => User::ROLE_TRAINER,
+            'student' => User::ROLE_ALUMNO,
+            'alumno' => User::ROLE_ALUMNO,
+            'comun' => User::ROLE_COMUN,
+            'coordinador' => User::ROLE_COORDINADOR,
+            'recepcionista' => User::ROLE_RECEPCIONISTA,
+        ];
+
+        if (isset($alias[$v])) {
+            return $alias[$v];
+        }
+
+        // Rol canónico escrito tal cual (p. ej. 'administrador').
+        if (in_array($v, RolePermissions::ROLES, true)) {
+            return $v;
+        }
+
+        return null;
+    }
+
     private function mapRowToUsers(array $headers, array $row): array
     {
         $data = [];
@@ -216,9 +330,16 @@ class AdminImportExportController extends Controller
                     break;
                 case 'rol':
                 case 'role':
-                    $data['role'] = in_array(strtolower($value), ['admin', 'administrador']) ? 'administrador' :
-                                   (in_array(strtolower($value), ['trainer', 'entrenador']) ? 'trainer' :
-                                   (in_array(strtolower($value), ['alumno', 'student']) ? 'alumno' : 'comun'));
+                    $rol = $this->normalizarRol($value);
+
+                    if ($rol === null) {
+                        // Rol desconocido: se marca para reportarlo, pero NO
+                        // se asigna un rol arbitrario (que podría darle
+                        // permisos de admin sin querer).
+                        $data['_rol_invalido'] = $value;
+                    } else {
+                        $data['role'] = $rol;
+                    }
                     break;
                 case 'teléfono':
                 case 'telefono':

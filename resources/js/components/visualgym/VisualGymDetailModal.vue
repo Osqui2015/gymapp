@@ -273,7 +273,7 @@ async function onToggleFavorite() {
     if (! store.current) return;
     try {
         await store.toggleFavorite(store.current);
-    } catch (e) {
+    } catch {
         // toast global se encarga
     }
 }

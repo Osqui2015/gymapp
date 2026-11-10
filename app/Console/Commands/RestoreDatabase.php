@@ -89,7 +89,6 @@ class RestoreDatabase extends Command
         $cmd = [
             $mysqlBinary,
             '--user='.$config['username'],
-            '--password='.$config['password'],
             '--host='.$config['host'],
             '--port='.(string) ($config['port'] ?? 3306),
             '--default-character-set=utf8mb4',
@@ -98,6 +97,14 @@ class RestoreDatabase extends Command
 
         $this->info('Restaurando...');
         $process = new Process($cmd);
+
+        // La contraseña va por MYSQL_PWD (variable de entorno del proceso), no
+        // como `--password=...`: los argumentos del proceso son visibles con
+        // `ps aux` para cualquier usuario del servidor.
+        $process->setEnv(array_merge($_ENV, [
+            'MYSQL_PWD' => (string) ($config['password'] ?? ''),
+        ]));
+
         $process->setInput($sql);
         $process->setTimeout(900); // 15 min
 
@@ -175,7 +182,9 @@ class RestoreDatabase extends Command
 
     private function resolveMysql(): ?string
     {
-        $explicit = env('MYSQL_PATH');
+        // Override por config (NO env(): con config:cache el env() devuelve
+        // null y caía al path de Laragon, que no existe en el server).
+        $explicit = config('database.binaries.mysql');
         if ($explicit && file_exists($explicit)) {
             return $explicit;
         }

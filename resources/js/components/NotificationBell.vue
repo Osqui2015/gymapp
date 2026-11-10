@@ -185,11 +185,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useNotificationStore } from '../stores/notification';
 import { useToast } from '../composables/useToast';
 import { useFormatters } from '@/composables/useFormatters';
+import { usePolling } from '@/composables/usePolling';
 
 const { formatDate } = useFormatters();
 import {
@@ -198,7 +199,7 @@ import {
     unsubscribeFromPush,
 } from '../services/webPushService';
 
-const props = defineProps({
+defineProps({
     position: { type: String, default: 'header' }, // 'header' | 'floating'
 });
 
@@ -211,9 +212,21 @@ const notifStore = useNotificationStore();
 const { items, unreadCount, isLoading: loading } = storeToRefs(notifStore);
 
 const toast = useToast();
-let pollTimer = null;
 
 const POLL_INTERVAL_MS = 60_000; // 60 segundos
+
+/**
+ * Polling con pausa por visibilidad y backoff exponencial.
+ *
+ * Antes era un `setInterval` plano: seguía consultando cada 60s aunque la
+ * pestaña estuviera oculta (con la app abierta todo el día son ~1.400
+ * requests) y no frenaba ante un servidor caído.
+ */
+const { start: startPolling, stop: stopPolling } = usePolling({
+    intervalMs: POLL_INTERVAL_MS,
+    task: () => notifStore.fetch(),
+    onError: (err) => console.warn('[notification] poll falló:', err),
+});
 
 const toggle = () => {
     open.value = !open.value;
@@ -222,17 +235,6 @@ const toggle = () => {
 const close = (e) => {
     if (!rootEl.value) return;
     if (!rootEl.value.contains(e.target)) open.value = false;
-};
-
-const formatTimeAgo = (iso) => {
-    if (!iso) return '';
-    const d = new Date(iso);
-    const diff = (Date.now() - d.getTime()) / 1000;
-    if (diff < 60) return 'hace instantes';
-    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
-    if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
-    if (diff < 604800) return `hace ${Math.floor(diff / 86400)} d`;
-    return formatDate(d);
 };
 
 const markAllRead = async () => {
@@ -314,13 +316,13 @@ const checkInitialPushState = async () => {
 onMounted(async () => {
     document.addEventListener('click', close);
     await Promise.all([notifStore.fetch(), checkInitialPushState()]);
-    // Polling
-    pollTimer = setInterval(() => notifStore.fetch(), POLL_INTERVAL_MS);
+    // Polling (pausado si la pestaña está oculta).
+    startPolling();
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', close);
-    if (pollTimer) clearInterval(pollTimer);
+    stopPolling();
 });
 </script>
 

@@ -249,6 +249,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useMessagesStore } from '../stores/messages';
 import { useAuthStore } from '../stores/auth';
 import { useFormatters } from '@/composables/useFormatters';
+import { usePolling } from '@/composables/usePolling';
 
 const { formatDateShort } = useFormatters();
 
@@ -266,7 +267,24 @@ const newMessage = ref('');
 const showChat = ref(false);
 const messagesContainer = ref(null);
 
-let pollTimer = null;
+const POLL_INTERVAL_MS = 15_000;
+
+/**
+ * Polling con pausa por visibilidad y backoff exponencial.
+ *
+ * Antes era un `setInterval` plano de 15s que seguía pegandole al servidor
+ * con la pestaña oculta y sin frenar ante un backend caído.
+ */
+const { start: startPolling, stop: stopPolling } = usePolling({
+    intervalMs: POLL_INTERVAL_MS,
+    task: async () => {
+        if (store.activeUserId) {
+            await store.openConversation(store.activeUserId);
+        }
+        await store.fetchConversations();
+    },
+    onError: (err) => console.warn('[chat] poll falló:', err),
+});
 
 const myId = computed(() => auth.id);
 const otherUserName = computed(() => {
@@ -312,7 +330,7 @@ const send = async () => {
         newMessage.value = '';
         await nextTick();
         await scrollToBottom();
-    } catch (e) {
+    } catch {
         // el store ya loguea
     }
 };
@@ -331,16 +349,12 @@ onMounted(async () => {
     if (props.defaultUserId) {
         await openChat(props.defaultUserId);
     }
-    // Polling cada 15s mientras el componente está montado
-    pollTimer = setInterval(() => {
-        if (store.activeUserId) {
-            store.openConversation(store.activeUserId);
-        }
-        store.fetchConversations();
-    }, 15_000);
+    // Polling cada 15s mientras el componente está montado (pausado si la
+    // pestaña está oculta).
+    startPolling();
 });
 
 onBeforeUnmount(() => {
-    if (pollTimer) clearInterval(pollTimer);
+    stopPolling();
 });
 </script>

@@ -167,7 +167,7 @@ class SinAlpineTest extends TestCase
 
     public function test_la_navegacion_se_renderiza_con_el_componente_vue(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -187,7 +187,7 @@ class SinAlpineTest extends TestCase
      */
     public function test_la_navegacion_y_la_bottom_nav_tienen_su_propio_mount_point(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -241,7 +241,7 @@ class SinAlpineTest extends TestCase
 
     public function test_el_mount_point_de_la_navegacion_esta_fuera_del_mount_point_de_la_pagina(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -273,7 +273,7 @@ class SinAlpineTest extends TestCase
 
     public function test_el_menu_de_usuario_tiene_los_datos_del_usuario(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->conMembresia()->create([
             'name' => 'Oscar Guerrero',
             'email' => 'oscar@test.com',
             'role' => 'alumno',
@@ -291,7 +291,7 @@ class SinAlpineTest extends TestCase
 
     public function test_la_bottom_nav_se_renderiza_con_el_componente_vue(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -301,7 +301,7 @@ class SinAlpineTest extends TestCase
 
     public function test_la_navegacion_pasa_los_links_por_prop_como_json(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -331,7 +331,7 @@ class SinAlpineTest extends TestCase
 
     public function test_el_modal_de_borrado_de_cuenta_usa_el_componente_vue(): void
     {
-        $user = User::factory()->create(['role' => 'alumno']);
+        $user = User::factory()->conMembresia()->create(['role' => 'alumno']);
 
         $response = $this->actingAs($user)->get('/profile');
 

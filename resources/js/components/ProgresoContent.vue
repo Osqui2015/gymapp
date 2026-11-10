@@ -524,7 +524,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick, defineAsyncComponent } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
@@ -545,18 +545,6 @@ const showNotification = (message, type = 'success') => toast.add(message, type)
 const { bigCelebration, celebrate, mini } = useConfetti();
 
 const activeTab = ref('medidas');
-
-// TopBar user initials
-const userInitials = computed(() => {
-    const n = (window.__user?.name || window.__user?.nick || '').trim();
-    if (!n) return 'OG';
-    return n
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase();
-});
 
 const progresos = ref([]);
 const puedeRegistrar = ref(true);

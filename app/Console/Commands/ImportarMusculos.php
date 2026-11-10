@@ -128,7 +128,7 @@ class ImportarMusculos extends Command
 
             // adductors
             'aductores' => 'adductors', 'aductor' => 'adductors', 'adductors' => 'adductors',
-            'aductores' => 'adductors', 'groin' => 'adductors', 'inner thighs' => 'adductors',
+            'groin' => 'adductors', 'inner thighs' => 'adductors',
 
             // hip-flexors
             'flexores de cadera' => 'hip-flexors', 'flexor de cadera' => 'hip-flexors',

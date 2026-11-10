@@ -16,7 +16,7 @@
  *   filters.alumno_id = 42; // reactive set
  *   filters.reset();
  */
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onBeforeUnmount } from 'vue';
 
 export function useUrlFilters(namespace = '') {
     const prefix = namespace ? `${namespace}_` : '';

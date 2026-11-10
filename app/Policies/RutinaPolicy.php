@@ -4,15 +4,23 @@ namespace App\Policies;
 
 use App\Models\Rutina;
 use App\Models\User;
+use App\Support\RolePermissions;
 
 /**
  * Autorización granular para Rutinas.
  *
+ * La fuente de verdad de los permisos es `App\Support\RolePermissions`
+ * (la matriz), NO una lista de roles hardcodeada acá. Antes esta policy
+ * comparaba contra `hasRole([...])` con una lista propia que contradecía la
+ * matriz: `comun` y `alumno` TIENEN el permiso `crear_rutinas` en
+ * `RolePermissions::MATRIZ`, pero la policy los rechazaba.
+ *
  * Reglas:
  *   - admin: puede todo
- *   - trainer: puede ver/editar las rutinas que él creó o las default (created_by null)
- *   - alumno: puede ver todas las rutinas, pero no editarlas
- *   - comun: puede ver (rutinas públicas)
+ *   - quien tenga `crear_rutinas`: puede crear rutinas
+ *   - trainer / coordinador: puede editar las rutinas que él creó o las
+ *     default (created_by null)
+ *   - nadie más puede
  */
 class RutinaPolicy
 {
@@ -34,29 +42,38 @@ class RutinaPolicy
 
     /**
      * Crear rutinas nuevas.
-     * Solo admin, trainer, coordinador.
+     *
+     * Usa el permiso `crear_rutinas` de la matriz: lo tienen admin,
+     * trainer, coordinador, alumno y comun.
      */
     public function create(User $user): bool
     {
-        return $user->hasRole([User::ROLE_ADMINISTRADOR, User::ROLE_TRAINER, 'coordinador']);
+        return RolePermissions::tiene($user, 'crear_rutinas');
     }
 
     /**
      * Editar una rutina.
      * - admin puede todo
-     * - trainer solo las que él creó o las default (created_by null)
-     * - nadie más puede
+     * - trainer / coordinador solo las que él creó o las default (created_by null)
+     * - el resto (alumno, comun) solo las que él creó
+     *
+     * Nota: quien creó la rutina puede editarla, aunque la matriz no le dé
+     * `gestionar_catalogo`. Es SU rutina; el catálogo oficial sí está
+     * protegido.
      */
     public function update(User $user, Rutina $rutina): bool
     {
         if ($user->hasRole(User::ROLE_ADMINISTRADOR)) {
             return true;
         }
-        if ($user->hasRole([User::ROLE_TRAINER, 'coordinador'])) {
+
+        if ($user->hasRole([User::ROLE_TRAINER, User::ROLE_COORDINADOR])) {
             return $rutina->created_by === null || $rutina->created_by === $user->id;
         }
 
-        return false;
+        // El creador puede editar su propia rutina, pero NO el catálogo
+        // oficial (created_by IS NULL).
+        return $rutina->created_by !== null && $rutina->created_by === $user->id;
     }
 
     /**
@@ -77,7 +94,7 @@ class RutinaPolicy
         if (! $this->update($user, $rutina)) {
             return false;
         }
-        if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) {
+        if ($user->hasRole([User::ROLE_ADMINISTRADOR, User::ROLE_COORDINADOR])) {
             return true;
         }
         // trainer: validar que el alumno le pertenece

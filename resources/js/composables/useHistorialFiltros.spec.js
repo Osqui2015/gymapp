@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
     filtrarHistorial,
     ordenarHistorial,
@@ -59,23 +59,43 @@ describe('useHistorialFiltros', () => {
     });
 
     it('filtra por los últimos N días', () => {
-        const out = filtrarHistorial(filas, { periodo: '30d' });
-        expect(out.map((f) => f.id)).toEqual([1]);
+        // Reloj fijo: el filtro "30d" es relativo a HOY, así que sin fijar la
+        // fecha el test se rompía solo con el paso del tiempo (era una bomba
+        // de tiempo). Fijamos el 20 de octubre de 2026: la fila del 07/10
+        // entra en la ventana de 30 días (13 días atrás) y la del 15/09 no
+        // (35 días atrás).
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-10-20T12:00:00'));
+
+        try {
+            const out = filtrarHistorial(filas, { periodo: '30d' });
+            expect(out.map((f) => f.id)).toEqual([1]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('"Este año" filtra por el año en curso (no lo ignora)', () => {
-        const anio = new Date().getFullYear();
-        const dentro = {
-            ...filas[0],
-            fecha: `${anio}-03-01T00:00:00.000000Z`,
-        };
-        const fuera = {
-            ...filas[2],
-            fecha: `${anio - 3}-08-01T00:00:00.000000Z`,
-        };
-        const out = filtrarHistorial([dentro, fuera], { periodo: 'year' });
-        expect(out).toHaveLength(1);
-        expect(out[0].id).toBe(dentro.id);
+        // Reloj fijo para que el test no dependa del año en que se corra.
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-10-15T12:00:00'));
+
+        try {
+            const anio = new Date().getFullYear();
+            const dentro = {
+                ...filas[0],
+                fecha: `${anio}-03-01T00:00:00.000000Z`,
+            };
+            const fuera = {
+                ...filas[2],
+                fecha: `${anio - 3}-08-01T00:00:00.000000Z`,
+            };
+            const out = filtrarHistorial([dentro, fuera], { periodo: 'year' });
+            expect(out).toHaveLength(1);
+            expect(out[0].id).toBe(dentro.id);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('"Rango personalizado" filtra por fechaDesde/fechaHasta', () => {

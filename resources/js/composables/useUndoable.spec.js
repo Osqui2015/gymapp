@@ -134,7 +134,7 @@ describe('useUndoable', () => {
 
         // Después de 5000ms (total), debe commitear
         await vi.advanceTimersByTimeAsync(1);
-        const resolved = await result;
+        await result;
         expect(commit).toHaveBeenCalledTimes(1);
     });
 });

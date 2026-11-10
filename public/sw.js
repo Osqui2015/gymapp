@@ -14,7 +14,12 @@
  *   - POST/PUT/DELETE: siempre van a la red, sin cache
  */
 
-const VERSION = 'v11';
+// VERSION: bumpear cuando cambien los assets compilados.
+// Los assets de Vite tienen hash en el nombre, pero `/favicon.ico` y
+// `/icons/*` NO lo tienen (URLs estables) y se cachean con CacheFirst:
+// sin bumpear la versión, los usuarios con la PWA instalada siguen
+// viendo los iconos viejos.
+const VERSION = 'v14';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
 const API_CACHE = `gymapp-api-${VERSION}`;

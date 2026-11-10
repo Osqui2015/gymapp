@@ -14,6 +14,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 import { useToast } from './useToast';
+import { usePolling } from './usePolling';
 
 let echoInstance = null;
 let echoLoading = null;
@@ -52,7 +53,6 @@ export function useRealtimeComments(options = {}) {
 
     const comments = ref([]);
     const loading = ref(false);
-    const pollingTimer = ref(null);
     const channelUnsubscribers = [];
 
     const unreadCount = computed(() => comments.value.filter((c) => !c.read_at).length);
@@ -93,17 +93,16 @@ export function useRealtimeComments(options = {}) {
         }
     };
 
-    const startPolling = () => {
-        if (pollingTimer.value) return;
-        pollingTimer.value = setInterval(load, pollIntervalMs);
-    };
-
-    const stopPolling = () => {
-        if (pollingTimer.value) {
-            clearInterval(pollingTimer.value);
-            pollingTimer.value = null;
-        }
-    };
+    // Polling con pausa por visibilidad y backoff exponencial (solo si no
+    // hay WebSocket disponible).
+    const {
+        start: startPolling,
+        stop: stopPolling,
+    } = usePolling({
+        intervalMs: pollIntervalMs,
+        task: load,
+        onError: (err) => console.warn('[realtime] poll falló:', err),
+    });
 
     const subscribeBroadcast = async () => {
         const Echo = await getEcho();

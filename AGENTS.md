@@ -123,6 +123,80 @@ Verificar con `php artisan schedule:list` (debe listar las 4 tareas con su
 - La tabla `historials_reparacion_fecha` guarda el `fecha` original de las
   filas que la migración reparó: sirve para auditar y para revertir.
 
+## Rangos de `series_numero` (NO romper)
+- El índice UNIQUE **NO incluye `tipo_serie`**, así que el calentamiento y la
+  serie efectiva N NO pueden compartir `series_numero` o se pisan entre sí
+  (el warmup se sobreescribía con la efectiva y el volumen subcuentaba).
+- Se separan por RANGOS dentro de la misma columna:
+  - series efectivas: `1 .. 50`
+  - calentamientos: `51 .. 99` (offset de 50)
+- Espejo backend/frontend: `Historial::OFFSET_CALENTAMIENTO` /
+  `Historial::MAX_SERIES_NUMERO` (PHP) y `resources/js/utils/seriesNumero.js`
+  (`OFFSET_CALENTAMIENTO`, `numeroCalentamientoPersisted()`,
+  `numeroSerieParaDisplay()`).
+- El backend valida `series_numero` con `min:1|max:99`. Si se sube el offset,
+  hay que subir el `max` en `HistorialController`.
+- Para mostrar el número al usuario hay que usar `numeroSerieParaDisplay()`
+  (convierte 51 → "Calentamiento 1"). Mostrar el valor crudo muestra "51".
+
+## Fechas: siempre hora local del gym (NO usar `toISOString()` para fechas)
+- `new Date().toISOString().split('T')[0]` devuelve la fecha en **UTC**. Con el
+  gym en `America/Argentina/Tucuman` (UTC-3), entre las 21:00 y las 00:00
+  devuelve el día SIGUIENTE: la serie se guardaba con fecha de mañana (rompía
+  idempotencia y rachas) y los filtros "últimos 30 días" perdían el hoy.
+- Usar `resources/js/utils/fecha.js`: `hoyLocal()`, `fechaLocalHaceDias()`,
+  `inicioDeAnioLocal()`.
+- En backend, `now()` ya es local (la app corre con la tz del gym): usarlo
+  directamente, nunca `Carbon::now()->utc()`.
+
+## Carbon 3 devuelve float en `diffInDays()` (NO comparar con `===`)
+- `diffInDays()` devuelve `double` (`1.0`). `=== 1` es SIEMPRE false:
+  `StatsService::calcLongestStreak()` devolvía 1 para todos los usuarios.
+- Comparar con `(int) $x->diffInDays($y) === 1`.
+- `Membresia::getDiasRestantes()` también castea a `(int)`: sin el cast
+  devolvía `10.000000000023148` días en vez de 10.
+
+## CSP: nonces, no `unsafe-inline` (NO revertir)
+- `app/Http/Middleware/SecurityHeadersMiddleware.php` genera un nonce por
+  request y lo comparte con las vistas vía `view()->share('cspNonce', ...)`.
+- Los `<script>` inline de los layouts DEBEN declarar
+  `nonce="{{ $cspNonce ?? '' }}"`. Sin eso la CSP los bloquea.
+- `'unsafe-eval'` fue ELIMINADO de `script-src`: Alpine.js ya no está en el
+  proyecto (no está en package.json ni en el bundle) y Vue usa el runtime
+  compilado (sin runtime template compiler), así que nadie necesita eval.
+- `'unsafe-inline'` sigue en `style-src` (Tailwind y estilos inline de Vue).
+- El middleware va con `prepend` (NO `append`) en `bootstrap/app.php`: el
+  nonce tiene que existir ANTES de que el controller renderice la vista.
+  Con `append` el nonce llega tarde y los scripts inline se bloquean.
+- Los `<script src="...">` externos NO necesitan nonce: la CSP los permite
+  por origen (`'self'`, `https://unpkg.com`, etc.).
+
+## Polling: usar `usePolling` (NO `setInterval` a mano)
+- `resources/js/composables/usePolling.js` centraliza el polling con:
+  pausa cuando la pestaña está oculta (`visibilitychange`), backoff
+  exponencial ante errores, y no solapamiento de requests.
+- Consumidores actuales: `NotificationBell.vue` (60s), `ChatPanel.vue` (15s),
+  `useRealtimeComments.js` (30s, solo si no hay WebSocket).
+- Un `setInterval` plano sigue pegándole al servidor con la pestaña oculta
+  y sin frenar cuando el backend se cae.
+
+## Scope por usuario en datos locales (NO compartir entre socios)
+- `IndexedDB` de series offline: `gymapp-offline-<userId>`
+  (`resources/js/composables/useOfflineDB.js`).
+- `localStorage` de sesión activa: `gymapp:training-session:v1:u<userId>`
+  (`resources/js/stores/trainingSession.js`).
+- En un dispositivo compartido (gimnasio, recepción) un scope compartido
+  hacía que las series pendientes de A se guardaran en el historial de B.
+- Al hacer logout se purga la DB offline del usuario que se va.
+
+## Vue: `app._context` es API interna (NO usarla)
+- `resources/js/app.js` mantiene su propio mapa `registro` (Map de tag →
+  componente). Antes leía `app._context.components[tag]`, que no está
+  documentada y puede romper entre minors de Vue.
+- Todos los montajes pasan por `mountApp({ el, component, props })`, que
+  centraliza `createApp` + `use(pinia)` + `registerErrorHandler` + `mount`.
+  Olvidar el `use(pinia)` rompe los stores en silencio.
+
 ## Routes
 - `/login`, `/register` - guest routes
 - `/dashboard` - auth + verified middleware

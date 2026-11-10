@@ -174,7 +174,7 @@ const crearUsuario = async (payload) => {
     successCrear.value = '';
     creando.value = true;
     try {
-        await axios.post('/admin/users', payload);
+        await axios.post('/api/admin/users', payload);
         showToast('Usuario creado exitosamente', 'success');
         nuevoUsuario.value = {
             nick: '',

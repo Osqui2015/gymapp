@@ -181,4 +181,26 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Binarios de MySQL (backup / restore)
+    |--------------------------------------------------------------------------
+    |
+    | Rutas de los binarios CLI de MySQL. Viven acá y NO se leen con env()
+    | directamente en los comandos: cuando se ejecuta `php artisan config:cache`
+    | (que el deploy de producción hace), env() devuelve null y el comando
+    | cae al path hardcodeado de Laragon (Windows), que no existe en el
+    | server -> el backup diario falla silenciosamente.
+    |
+    | Definilo en el .env de producción:
+    |   MYSQLDUMP_PATH=/usr/bin/mysqldump
+    |   MYSQL_PATH=/usr/bin/mysql
+    |
+    */
+
+    'binaries' => [
+        'mysqldump' => env('MYSQLDUMP_PATH'),
+        'mysql' => env('MYSQL_PATH'),
+    ],
+
 ];

@@ -524,13 +524,14 @@ import TdeeConfig from './TdeeConfig.vue';
 import ComidasFrecuentesModal from './nutricion/ComidasFrecuentesModal.vue';
 import BienestarCard from './nutricion/BienestarCard.vue';
 import { useFormatters } from '@/composables/useFormatters';
+import { hoyLocal } from '@/utils/fecha';
 
 const { formatDateWeekday } = useFormatters();
 
 const toast = useToast();
 const showNotification = (message, type = 'success') => toast.add(message, type);
 
-const fechaSeleccionada = ref(new Date().toISOString().split('T')[0]);
+const fechaSeleccionada = ref(hoyLocal());
 const guardando = ref(false);
 const mostrarComidasFrecuentes = ref(false);
 
@@ -581,7 +582,7 @@ const formatFecha = (dateStr) => {
 const cambiarDia = (diff) => {
     const current = new Date(fechaSeleccionada.value + 'T00:00:00');
     current.setDate(current.getDate() + diff);
-    fechaSeleccionada.value = current.toISOString().split('T')[0];
+    fechaSeleccionada.value = hoyLocal(current);
 };
 
 const cargarTdee = async () => {
@@ -651,7 +652,7 @@ const onSumarComidaFrecuente = async (comida) => {
 
 const cambiarAgua = async (accion) => {
     try {
-        const response = await axios.post('/api/nutricion/agua', {
+        await axios.post('/api/nutricion/agua', {
             fecha: fechaSeleccionada.value,
             accion: accion,
         });

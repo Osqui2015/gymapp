@@ -1,3 +1,6 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
 parameters:
     level: 5
     paths:
@@ -40,4 +43,17 @@ parameters:
         # === Gate closures ===
         -
             message: '#Parameter .* of function array_merge expects array, .* given#'
+            path: app
+        # === Collection generic template invariance ===
+        -
+            message: '#Template type TValue on class Illuminate\\Support\\Collection is not covariant#'
+            path: app
+        -
+            message: '#contains unresolvable type#'
+            path: app
+        -
+            message: '#Anonymous function should return Illuminate\\Support\\Collection.*but returns Illuminate\\Support\\Collection#'
+            path: app
+        -
+            message: '#Method App\\Services\\TrainerDashboardService::.*should return array.*but returns array#'
             path: app

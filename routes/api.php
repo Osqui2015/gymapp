@@ -173,8 +173,17 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/trainer/mis-rutinas-complete', [TrainerDashboardController::class, 'obtenerTodasRutinas']);
     });
 
-    Route::middleware('role:administrador')->group(function () {
+    // Gestión de usuarios (admin, coordinador, recepcionista).
+    //
+    // El middleware `role:` sigue siendo la primera barrera; las policies
+    // (UserPolicy) son la segunda y la fina: la policy distingue
+    // qué puede hacer CADA rol dentro del grupo (p. ej. `recepcionista`
+    // puede crear y editar usuarios pero NO borrarlos ni suspenderlos).
+    //
+    // Ver App\Support\RolePermissions — la matriz es la fuente de verdad.
+    Route::middleware('role:administrador,coordinador,recepcionista')->group(function () {
         Route::get('/admin/users', [AdminUserApiController::class, 'index']);
+        Route::post('/admin/users', [AdminUserApiController::class, 'store']);
         Route::put('/admin/users/{id}', [AdminUserApiController::class, 'update']);
         Route::patch('/admin/users/{id}/toggle-suspend', [AdminUserApiController::class, 'toggleSuspend']);
         Route::delete('/admin/users/{id}', [AdminUserApiController::class, 'destroy']);
@@ -182,8 +191,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::post('/admin/trainers/{trainerId}/assign-alumnos', [AdminUserApiController::class, 'assignAlumnosToTrainer']);
     });
 
-    // Rutas de Membresías (Administrador)
-    Route::middleware('role:administrador')->group(function () {
+    // Membresías (admin, coordinador, recepcionista).
+    Route::middleware('role:administrador,coordinador,recepcionista')->group(function () {
         Route::get('/admin/membresias', [MembresiaController::class, 'index']);
         Route::post('/admin/membresias', [MembresiaController::class, 'store']);
         Route::put('/admin/membresias/{membresia}', [MembresiaController::class, 'update']);
@@ -192,15 +201,18 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/admin/membresias-por-vencer', [MembresiaController::class, 'porVencer']);
     });
 
-    // Rutas de Estadísticas (Administrador)
-    Route::middleware('role:administrador')->group(function () {
+    // Estadísticas y reportes (admin, coordinador).
+    //
+    // `recepcionista` NO entra acá: el balance global es un permiso
+    // aparte (`ver_balances`, solo admin) y las estadísticas lo incluyen.
+    Route::middleware('role:administrador,coordinador')->group(function () {
         Route::get('/admin/estadisticas', [AdminStatsController::class, 'estadisticas']);
         Route::post('/admin/estadisticas/invalidate', [AdminStatsController::class, 'invalidateCache']);
         Route::get('/admin/miembros-activos', [AdminStatsController::class, 'miembrosActivos']);
         Route::get('/admin/reportes', [AdminStatsController::class, 'reportes']);
     });
 
-    // Rutas de Audit Logs (Administrador y Coordinador)
+    // Audit Logs (admin y coordinador).
     Route::middleware('role:administrador,coordinador')->group(function () {
         Route::get('/admin/audit-logs', [AuditLogController::class, 'index']);
         Route::get('/admin/audit-logs/{auditLog}', [AuditLogController::class, 'show']);
@@ -250,11 +262,20 @@ Route::get('/rutinas/publica/{token}', [RutinaController::class, 'verPublica']);
 // Stats de comunidad (sin auth, cacheadas)
 Route::get('/comunidad/stats', [SearchController::class, 'comunidadStats']);
 
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['web', 'auth', 'membership'])->group(function () {
     Route::get('/user-info', function () {
         $user = auth()->user();
 
+        // El store de auth (resources/js/stores/auth.ts) lee `id`, `name`,
+        // `nick` y `email` de este payload para armar el estado de sesión.
+        // Antes solo se devolvía `role`/`trainer_id`/`has_trainer`, así que
+        // esos campos quedaban en null y `isAuthenticated` era SIEMPRE
+        // false: cualquier guard que dependiera de él quedaba roto.
         return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'nick' => $user->nick,
+            'email' => $user->email,
             'role' => $user->normalizedRole(),
             'trainer_id' => $user->trainer_id,
             'has_trainer' => ! empty($user->trainer_id),

@@ -20,11 +20,11 @@ class AuditLogPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador']);
+        return $user->tienePermiso('ver_audit_logs');
     }
 
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return $user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador']);
+        return $user->tienePermiso('ver_audit_logs');
     }
 }

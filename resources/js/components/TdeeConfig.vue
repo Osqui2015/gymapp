@@ -120,7 +120,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useToast } from '../composables/useToast';
 
-const props = defineProps({
+defineProps({
     cancelable: { type: Boolean, default: false },
 });
 const emit = defineEmits(['saved', 'cancel']);

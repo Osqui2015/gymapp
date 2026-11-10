@@ -84,7 +84,12 @@ class StatsService
         for ($i = 1; $i < count($dias); $i++) {
             $prev = Carbon::parse($dias[$i - 1]);
             $curr = Carbon::parse($dias[$i]);
-            if ($prev->diffInDays($curr) === 1) {
+
+            // OJO: en Carbon 3 `diffInDays()` devuelve FLOAT (1.0), así que
+            // la comparación estricta `=== 1` NUNCA era verdadera y
+            // `longest_streak` siempre valía 1 (la racha histórica de todos
+            // los usuarios estaba rota). Se castea a int.
+            if ((int) $prev->diffInDays($curr) === 1) {
                 $current++;
                 $longest = max($longest, $current);
             } else {

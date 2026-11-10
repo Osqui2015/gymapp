@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { defineComponent, h, nextTick, ref } from 'vue';
+import { defineComponent, h, nextTick } from 'vue';
 import { useLongPress } from './useLongPress.js';
 
 // Helper: monta un componente mínimo que use useLongPress para poder

@@ -130,7 +130,7 @@ const detectNewMedals = () => {
 
         const currentSlugs = props.logros.filter((l) => l.desbloqueada).map((l) => l.slug);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(currentSlugs));
-    } catch (e) {
+    } catch {
         // Ignorar error de storage
     }
 };

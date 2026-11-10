@@ -62,7 +62,7 @@ export function useFocusTrap(elementRef, opts = {}) {
         if (triggerEl && typeof triggerEl.focus === 'function') {
             try {
                 triggerEl.focus();
-            } catch (_) {
+            } catch {
                 /* noop */
             }
         }

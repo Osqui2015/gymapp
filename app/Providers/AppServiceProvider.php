@@ -2,26 +2,34 @@
 
 namespace App\Providers;
 
+use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AuditLog;
 use App\Models\DiarioNutricion;
 use App\Models\Ejercicio;
 use App\Models\EjercicioClave;
+use App\Models\GymConfig;
+use App\Models\Historial;
 use App\Models\MedallaUsuario;
 use App\Models\Membresia;
+use App\Models\Message;
 use App\Models\Meta;
 use App\Models\Progreso;
 use App\Models\Rutina;
 use App\Models\User;
+use App\Observers\GymConfigObserver;
 use App\Observers\RutinaObserver;
 use App\Observers\UserObserver;
 use App\Policies\AuditLogPolicy;
 use App\Policies\DiarioNutricionPolicy;
 use App\Policies\EjercicioClavePolicy;
 use App\Policies\EjercicioPolicy;
+use App\Policies\HistorialPolicy;
 use App\Policies\MedallaPolicy;
 use App\Policies\MembresiaPolicy;
+use App\Policies\MessagePolicy;
 use App\Policies\MetaPolicy;
 use App\Policies\ProgresoPolicy;
+use App\Policies\RutinaPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +60,9 @@ class AppServiceProvider extends ServiceProvider
         // === Observers para audit log automático ===
         Rutina::observe(RutinaObserver::class);
         User::observe(UserObserver::class);
+
+        // Config del gym: invalida el cache y audita cada cambio (Fase 0.4).
+        GymConfig::observe(GymConfigObserver::class);
 
         Vite::usePreloadTagAttributes(function ($src, string $url): array|false {
             return str_ends_with($url, '.css') ? [] : false;
@@ -103,9 +114,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) use ($tooMany) {
+            // Misma clave y mismo límite que `LoginRequest::throttleKey()` /
+            // `LoginRequest::MAX_INTENTOS`: los dos limitadores cuentan
+            // sobre el mismo contador y no se contradicen.
             $nick = strtolower(trim((string) $request->input('nick')));
 
-            return Limit::perMinute(10)
+            return Limit::perMinute(LoginRequest::MAX_INTENTOS)
                 ->by($nick.'|'.$request->ip())
                 ->response($tooMany('Demasiados intentos de login. Esperá un minuto.'));
         });
@@ -133,8 +147,7 @@ class AppServiceProvider extends ServiceProvider
      *   $this->authorize('manage-users');
      *
      * Para USARLOS en Blade:
-     *
-     *   @can('manage-users') ... @endcan
+     *   `@can('manage-users')` ... `@endcan`
      *
      * Los Gates específicos de cada modelo (RutinaPolicy, HistorialPolicy, ...)
      * se deberían definir en archivos `app/Policies/<Model>Policy.php` y
@@ -142,9 +155,16 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function registerGates(): void
     {
-        // === Gates por rol (coinciden con los `role:` del middleware) ===
+        // === Gates por capacidad (derivados de RolePermissions) ===
+        //
+        // La matriz de permisos vive en `App\Support\RolePermissions`
+        // (Fase 0.1). Estos gates son la forma idiomática de Laravel de
+        // exponerla: `@can('ver_balances')`, `->can('...')`, etc.
+        //
+        // Los gates por ROL que existían antes (admin, staff,
+        // trainer-or-admin) se mantienen porque las policies y el
+        // middleware los referencian por nombre.
 
-        // Solo administradores
         Gate::define('admin', function (User $user) {
             return $user->hasRole(User::ROLE_ADMINISTRADOR);
         });
@@ -152,12 +172,7 @@ class AppServiceProvider extends ServiceProvider
         // Staff = admin, trainer, recepcionista o coordinador
         // (mismo set que `isStaff` en el store de Pinia)
         Gate::define('staff', function (User $user) {
-            return $user->hasRole([
-                User::ROLE_ADMINISTRADOR,
-                User::ROLE_TRAINER,
-                'recepcionista',
-                'coordinador',
-            ]);
+            return $user->hasRole(User::ROLES_STAFF);
         });
 
         // Admin o trainer (los dos roles que pueden asignar rutinas a alumnos)
@@ -168,43 +183,77 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // === Gates de capacidad (más específicos) ===
+        // === Gates de capacidad ===
+        //
+        // Cada uno consulta la matriz de RolePermissions, que es la fuente
+        // única de verdad. Antes estos gates tenían el set de roles
+        // hardcodeado acá, y el set declared en `Role.permissions` (que
+        // nunca se aplicaba) podía contradecirlo sin que nadie lo notara.
 
-        // Puede gestionar usuarios: solo admin
+        // Puede gestionar usuarios: admin, coordinador, recepcionista
         Gate::define('manage-users', function (User $user) {
-            return $user->hasRole(User::ROLE_ADMINISTRADOR);
+            return $user->tienePermiso('gestionar_usuarios');
         });
 
-        // Puede ver audit logs: admin o coordinador
+        // Puede ver audit logs: admin y coordinador
         Gate::define('view-audit-logs', function (User $user) {
-            return $user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador']);
+            return $user->tienePermiso('ver_audit_logs');
         });
 
-        // Puede ver estadísticas globales: solo admin
+        // Puede ver estadísticas globales: admin y coordinador
         Gate::define('view-global-stats', function (User $user) {
-            return $user->hasRole(User::ROLE_ADMINISTRADOR);
+            return $user->tienePermiso('ver_estadisticas');
+        });
+
+        // Puede ver reportes (retención, churn): admin y coordinador
+        Gate::define('view-reportes', function (User $user) {
+            return $user->tienePermiso('ver_reportes');
+        });
+
+        // Puede ver el BALANCE global (MRR, ingresos): solo admin.
+        // Esta separación es deliberada: `recepcionista` cobra membresías
+        // pero no ve el balance global del gym.
+        Gate::define('view-balances', function (User $user) {
+            return $user->tienePermiso('ver_balances');
+        });
+
+        // Puede ver/gestionar membresías: admin, coordinador, recepcionista
+        Gate::define('view-membresias', function (User $user) {
+            return $user->tienePermiso('ver_membresias');
+        });
+
+        // Puede registrar pagos: admin, coordinador, recepcionista
+        Gate::define('register-pagos', function (User $user) {
+            return $user->tienePermiso('registrar_pagos');
         });
 
         // Puede importar/exportar data: solo admin
         Gate::define('manage-import-export', function (User $user) {
-            return $user->hasRole(User::ROLE_ADMINISTRADOR);
+            return $user->tienePermiso('importar_exportar');
         });
 
-        // Puede asignar rutinas a alumnos: admin, trainer (los trainers solo
-        // a sus alumnos — esa parte requiere lógica adicional del modelo, ver
-        // UserRutinaController::asignarRutina).
+        // Puede asignar rutinas a alumnos: admin, trainer
+        // (los trainers solo a sus alumnos — eso requiere lógica adicional
+        // del modelo, ver UserRutinaController::asignarRutina).
         Gate::define('assign-routines', function (User $user) {
-            return $user->hasRole([
-                User::ROLE_ADMINISTRADOR,
-                User::ROLE_TRAINER,
-            ]);
+            return $user->tienePermiso('crear_rutinas') && $user->tienePermiso('gestionar_alumnos');
+        });
+
+        // Puede operar el check-in de recepción
+        Gate::define('check-in', function (User $user) {
+            return $user->tienePermiso('check_in');
+        });
+
+        // Puede editar la configuración del gym
+        Gate::define('manage-configuracion', function (User $user) {
+            return $user->tienePermiso('gestionar_configuracion');
         });
 
         // Puede ver info de un alumno específico: admin, trainer (cualquiera)
         // o el mismo alumno. La validación "el trainer solo ve SUS alumnos"
         // se hace en el controller con una query específica.
         Gate::define('view-alumno', function (User $user, $alumnoId) {
-            if ($user->hasRole([User::ROLE_ADMINISTRADOR, 'coordinador'])) {
+            if ($user->tienePermiso('ver_alumnos')) {
                 return true;
             }
             if ((int) $alumnoId === (int) $user->id) {
@@ -237,5 +286,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Progreso::class, ProgresoPolicy::class);
         Gate::policy(DiarioNutricion::class, DiarioNutricionPolicy::class);
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
+
+        // Estas tres FUNCIONABAN por autodescubrimiento de Laravel, pero
+        // depender del autodescubrimiento es frágil: si alguien renombra
+        // el modelo o la policy, la autorización deja de aplicarse EN
+        // SILENCIO (no da error, simplemente deja de proteger).
+        // Registrarlas explícitamente las hace visibles y falla ruidoso.
+        Gate::policy(Rutina::class, RutinaPolicy::class);
+        Gate::policy(Historial::class, HistorialPolicy::class);
+        Gate::policy(Message::class, MessagePolicy::class);
     }
 }

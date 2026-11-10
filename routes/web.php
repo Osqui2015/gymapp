@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,9 +39,10 @@ Route::get('/ejercicios', function () {
 })->middleware(['auth', 'membership'])->name('ejercicios');
 
 // === Catálogo VisualGym (exercises-dataset, 1.324 ejercicios) ===
+// Pantalla de referencia de diseño interno: sólo accesible por administradores.
 Route::get('/visualgym', function () {
     return view('visualgym');
-})->middleware(['auth', 'membership'])->name('visualgym');
+})->middleware(['auth', 'membership', 'role:administrador'])->name('visualgym');
 
 Route::get('/historial', function () {
     return view('historial');
@@ -74,7 +74,7 @@ Route::get('/trainer/duplicar', function () {
 
 Route::get('/admin/users', function () {
     return redirect()->route('configuracion');
-})->middleware(['auth', 'membership', 'role:administrador'])->name('admin.users');
+})->middleware(['auth', 'membership', 'role:administrador,coordinador,recepcionista'])->name('admin.users');
 
 Route::get('/configuracion', function () {
     return view('configuracion');
@@ -83,11 +83,19 @@ Route::get('/configuracion', function () {
 // Rutas de Admin
 Route::get('/admin/estadisticas', function () {
     return view('admin.estadisticas');
-})->middleware(['auth', 'membership', 'role:administrador'])->name('admin.estadisticas');
+})->middleware(['auth', 'membership', 'role:administrador,coordinador'])->name('admin.estadisticas');
 
 Route::get('/admin/membresias', function () {
     return view('admin.membresias');
-})->middleware(['auth', 'membership', 'role:administrador'])->name('admin.membresias');
+})->middleware(['auth', 'membership', 'role:administrador,coordinador,recepcionista'])->name('admin.membresias');
+
+// Reportes avanzados (retención, churn, frecuencia de entrenamiento).
+// El componente AdminReports.vue, el endpoint GET /api/admin/reportes y sus
+// tests ya existían: faltaba únicamente la vista Blade que lo montaba,
+// por lo que el módulo era inaccesible desde la UI.
+Route::get('/admin/reportes', function () {
+    return view('admin.reportes');
+})->middleware(['auth', 'membership', 'role:administrador,coordinador'])->name('admin.reportes');
 
 Route::get('/admin/audit-logs', function () {
     return view('admin.audit-logs');
@@ -101,21 +109,14 @@ Route::middleware(['auth', 'membership'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::post('/admin/users', [AdminUserController::class, 'store'])
-        ->middleware('role:administrador')
-        ->name('admin.users.store');
-
-    Route::get('/api/user-info', function () {
-        $user = auth()->user();
-
-        return response()->json([
-            'role' => $user->normalizedRole(),
-            'trainer_id' => $user->trainer_id,
-            'has_trainer' => ! empty($user->trainer_id),
-        ]);
-    })->name('user.info');
 });
+
+// NOTA: `/api/user-info` estaba DEFINIDO ACÁ Y en routes/api.php.
+// La de api.php gana el match (misma URI y método) y esta quedaba como
+// código muerto. Se eliminó la de acá para que no haya dos definiciones
+// del mismo endpoint con middleware DISTINTO — que es exactamente el
+// tipo de duplicación que hace que una regla de seguridad se aplique en
+// un lado y no en el otro. Ver routes/api.php:264.
 
 require __DIR__.'/auth.php';
 require __DIR__.'/membresia.php';

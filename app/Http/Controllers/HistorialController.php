@@ -34,6 +34,16 @@ class HistorialController extends Controller
         'nota_user', 'fecha', 'superserie_grupo',
     ];
 
+    /**
+     * Cap duro de filas para /historial sin paginación.
+     *
+     * Con 5 ejercicios × 4 series × 300 días de entrenamiento son ~6000
+     * filas; el tope de 5000 deja de lado el payload patológico sin cortar
+     * el uso real de un alumno activo. El cliente puede pedir menos con
+     * `?limit=`, pero nunca más.
+     */
+    private const LIMITE_HISTORIAL = 5000;
+
     public function index(Request $request)
     {
         $targetUserId = $this->usuarioObjetivo($request);
@@ -61,7 +71,27 @@ class HistorialController extends Controller
             return response()->json($query->paginate($perPage));
         }
 
-        return response()->json($query->get(self::COLUMNAS_HISTORIAL));
+        // Sin paginación: se devuelve el array plano (contrato que espera el
+        // frontend), pero con un CAP DURO. Antes devolvía TODO el historial
+        // del usuario: un alumno con 3 años de entrenamiento son decenas de
+        // miles de filas en un solo JSON (payload enorme, cuelgue del
+        // navegador y presión de memoria).
+        //
+        // El cap es server-side a propósito: el cliente no puede pedir "todo"
+        // saltándoselo.
+        $limite = min((int) $request->input('limit', self::LIMITE_HISTORIAL), self::LIMITE_HISTORIAL);
+        $filas = $query->limit($limite + 1)->get(self::COLUMNAS_HISTORIAL);
+
+        $truncado = $filas->count() > $limite;
+
+        if ($truncado) {
+            $filas = $filas->take($limite);
+        }
+
+        return response()
+            ->json($filas)
+            ->header('X-Historial-Truncated', $truncado ? '1' : '0')
+            ->header('X-Historial-Limit', (string) $limite);
     }
 
     public function guardar(Request $request)
@@ -98,7 +128,7 @@ class HistorialController extends Controller
                 'rutina_nombre' => ['required', 'string', 'max:255'],
                 'dia' => ['required', 'string', 'max:255'],
                 'ejercicio_nombre' => ['required', 'string', 'max:255'],
-                'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
+                'series_numero' => ['required', 'integer', 'min:1', 'max:'.Historial::MAX_SERIES_NUMERO],
                 'series_completadas' => ['nullable', 'integer', 'min:0', 'max:50'],
                 'reps_min' => ['required', 'string', 'max:255'],
                 'reps_max' => ['required', 'string', 'max:255'],
@@ -203,14 +233,14 @@ class HistorialController extends Controller
             'rutina_nombre' => ['required', 'string', 'max:255'],
             'dia' => ['required', 'string', 'max:255'],
             'ejercicio_nombre' => ['required', 'string', 'max:255'],
-            'series_numero' => ['required', 'integer', 'min:1', 'max:50'],
+            'series_numero' => ['required', 'integer', 'min:1', 'max:'.Historial::MAX_SERIES_NUMERO],
             'fecha' => ['nullable', 'date', 'before_or_equal:'.$hoy],
         ]);
 
         // Sin fecha explícita se marca la de HOY. Antes tomaba la fila MÁS
         // VIEJA de cualquier fecha (sin order, el primero que encontrara),
         // así que con colisiones marcaba un registro de semanas atrás.
-        $fecha = isset($data['fecha']) && $data['fecha'] !== null
+        $fecha = ! empty($data['fecha'])
             ? Carbon::parse($data['fecha'])->toDateString()
             : $hoy;
 
@@ -223,16 +253,21 @@ class HistorialController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        if ($historial) {
-            $historial->update(['completado' => true]);
-            CacheHistorial::invalidate($user->id);
+        if (! $historial) {
+            return response()->json([
+                'message' => 'No se encontró la serie en el historial para la fecha indicada.',
+                'completada' => false,
+            ], 404);
         }
+
+        $historial->update(['completado' => true]);
+        CacheHistorial::invalidate($user->id);
 
         $newMedals = AchievementService::checkWorkoutMilestones($user);
 
         return response()->json([
             'message' => 'Completado',
-            'completada' => (bool) $historial,
+            'completada' => true,
             'new_medals' => $newMedals,
         ]);
     }

@@ -20,11 +20,31 @@ class AdminStatsController extends Controller
     // TTL del cache de stats (5 minutos)
     private const CACHE_TTL = 300;
 
+    /**
+     * Claves de cache del panel admin.
+     *
+     * Ambas se invalidan juntas en invalidateCache(). Antes el botón
+     * "invalidar cache" solo limpiaba `admin.stats` y dejaba `admin.reportes`
+     * con hasta 5 minutos de atraso sin avisar.
+     */
+    public const CACHE_KEY_STATS = 'admin.stats';
+
+    public const CACHE_KEY_REPORTES = 'admin.reportes';
+
+    /**
+     * Todas las claves de cache que genera este controller.
+     * Si se agrega una nueva, agregarla acá o el botón va a quedar mudo.
+     */
+    public static function cacheKeys(): array
+    {
+        return [self::CACHE_KEY_STATS, self::CACHE_KEY_REPORTES];
+    }
+
     public function __construct(private AdminStatsService $stats) {}
 
     public function estadisticas()
     {
-        $payload = Cache::remember('admin.stats', self::CACHE_TTL, function () {
+        $payload = Cache::remember(self::CACHE_KEY_STATS, self::CACHE_TTL, function () {
             return [
                 'usuarios_por_mes' => $this->stats->getUsuariosPorMes(),
                 'horas_pico' => $this->stats->getHorasPicoEntrenamiento(),
@@ -43,7 +63,7 @@ class AdminStatsController extends Controller
      */
     public function reportes()
     {
-        $payload = Cache::remember('admin.reportes', self::CACHE_TTL, function () {
+        $payload = Cache::remember(self::CACHE_KEY_REPORTES, self::CACHE_TTL, function () {
             return [
                 'retencion' => $this->stats->getRetencion(),
                 'churn' => $this->stats->getChurnRate(),
@@ -75,12 +95,24 @@ class AdminStatsController extends Controller
     }
 
     /**
-     * Endpoint para invalidar el cache (útil después de importar/crear muchos datos)
+     * Endpoint para invalidar el cache (útil después de importar/crear muchos datos).
+     *
+     * Invalida TODAS las claves de cache de este controller, no solo una.
+     * Antes solo limpiaba `admin.stats` y dejaba `admin.reportes` obsoleto.
      */
     public function invalidateCache()
     {
-        Cache::forget('admin.stats');
+        $invalidated = [];
 
-        return response()->json(['success' => true]);
+        foreach (self::cacheKeys() as $key) {
+            if (Cache::forget($key)) {
+                $invalidated[] = $key;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'invalidated' => $invalidated,
+        ]);
     }
 }

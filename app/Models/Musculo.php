@@ -55,6 +55,8 @@ class Musculo extends Model
         // Después por alias
         $alias = MusculoAlias::where('alias', $texto)->first();
 
-        return $alias?->musculo;
+        $musculo = $alias?->musculo;
+
+        return $musculo instanceof self ? $musculo : null;
     }
 }

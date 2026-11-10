@@ -703,12 +703,19 @@ const fetchMembresias = async (page = 1) => {
 
 const fetchUsuariosSinMembresia = async () => {
     try {
+        // El endpoint ahora pagina (Fase 0.7). Como la lista alimenta un
+        // <select> (no una tabla con paginador), se pide una página
+        // grande para no obligar al admin a buscar por páginas.
         const response = await cachedAxiosGet(
             '/api/admin/usuarios-sin-membresia',
-            {},
+            { per_page: 100 },
             { ttl: 60_000 }
         );
-        usuariosSinMembresia.value = response.data;
+        // La respuesta paginada trae `data`; se acepta el array plano
+        // para no romper si el backend todavía no pagina.
+        usuariosSinMembresia.value = Array.isArray(response.data)
+            ? response.data
+            : response.data.data || [];
     } catch (error) {
         console.error('Error:', error);
     }
@@ -767,7 +774,7 @@ const renovarMembresia = async (m) => {
         invalidateApiCache('/api/admin/membresias');
         showToast('Membresía renovada');
         fetchMembresias();
-    } catch (error) {
+    } catch {
         showToast('Error al renovar', 'error');
     }
 };

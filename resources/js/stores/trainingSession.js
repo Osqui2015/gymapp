@@ -39,8 +39,29 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import axios from 'axios';
+import { numeroCalentamientoPersisted } from '../utils/seriesNumero';
 
-const STORAGE_KEY = 'gymapp:training-session:v1';
+const STORAGE_KEY_BASE = 'gymapp:training-session:v1';
+
+/**
+ * Scope del usuario actual (id del user) para la key de localStorage.
+ *
+ * En un dispositivo compartido (gimnasio, recepción) la sesión activa de A
+ * se restauraba cuando entraba B: las series de A se guardaban en el
+ * historial de B. La key lleva el id del usuario para que cada uno tenga su
+ * propia sesión.
+ */
+const resolveUserScope = () => {
+    if (typeof window === 'undefined') return 'anon';
+
+    const user = window.__user;
+    if (!user || !user.id) return 'anon';
+
+    return String(user.id);
+};
+
+/** Key de localStorage para el usuario actual. */
+const storageKey = () => `${STORAGE_KEY_BASE}:u${resolveUserScope()}`;
 
 const emptySession = () => ({
     id: null,
@@ -89,15 +110,16 @@ const generateId = () => {
 
 const loadFromStorage = () => {
     if (typeof localStorage === 'undefined') return null;
+    const key = storageKey();
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(key);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         // Si termino, no restaurar.
         if (parsed.endedAt) return null;
         // Si no tiene ejercicios válidos (sesión corrupta/vacía), limpiar y no restaurar.
         if (!Array.isArray(parsed.ejercicios) || parsed.ejercicios.length === 0) {
-            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(key);
             return null;
         }
         return migrateSessionShape(parsed);
@@ -108,11 +130,12 @@ const loadFromStorage = () => {
 
 const saveToStorage = (value) => {
     if (typeof localStorage === 'undefined') return;
+    const key = storageKey();
     try {
         if (value && value.id) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+            localStorage.setItem(key, JSON.stringify(value));
         } else {
-            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(key);
         }
     } catch {
         // localStorage no disponible o lleno
@@ -357,10 +380,16 @@ export const useTrainingSessionStore = defineStore('trainingSession', () => {
         //  - Si es partner de superset: cuenta los sets en ej.sets
         //    directamente, así cada ejercicio lleva su propio contador
         //    independiente.
+        //
+        // Los calentamientos se persisten con OFFSET (51+) para no
+        // colisionar con la serie efectiva N: el índice UNIQUE de
+        // `historials` no incluye `tipo_serie`, así que warmup 1 y
+        // efectiva 1 caían en la misma clave y el warmup se pisaba.
+        // Ver utils/seriesNumero.js.
         let currentSerieNum;
         if (isCurrent) {
             currentSerieNum = isWarmup
-                ? (session.value.currentCalentamientoNumero || 1)
+                ? numeroCalentamientoPersisted(session.value.currentCalentamientoNumero || 1)
                 : session.value.currentSerieNumero;
         } else {
             const completedEffective = (ej.sets || []).filter(

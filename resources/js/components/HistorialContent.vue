@@ -45,42 +45,15 @@
             />
 
             <!-- Loading / empty states -->
-            <div v-if="loading" class="space-y-4">
-                <div class="grid gap-3 grid-cols-2">
-                    <BaseSkeleton variant="stat-card" :count="4" />
-                </div>
-                <div
-                    class="bg-[#171b26] rounded-2xl border border-slate-800 p-6 shadow-sm"
-                >
-                    <BaseSkeleton variant="text" :count="6" />
-                </div>
-            </div>
-
-            <div v-else-if="errorHistorial" class="space-y-2">
-                <EmptyState
-                    emoji="📡"
-                    title="No se pudo cargar el historial"
-                    :description="errorHistorial"
-                    cta-text="Reintentar"
-                    @cta="loadHistorial"
-                />
-            </div>
-
-            <div v-else-if="isTrainerOrAdmin && alumnos.length === 0">
-                <EmptyState
-                    emoji="👥"
-                    title="No tienes alumnos asignados"
-                    description="Cuando un coordinador te asigne alumnos, vas a poder ver su historial de entrenamiento acá."
-                />
-            </div>
-
-            <div v-else-if="isTrainerOrAdmin && !selectedAlumnoId">
-                <EmptyState
-                    emoji="👆"
-                    title="Selecciona un alumno"
-                    description="Elegí un alumno del selector de arriba para ver su historial."
-                />
-            </div>
+            <HistorialStatesBlock
+                v-if="loading || errorHistorial || (isTrainerOrAdmin && (alumnos.length === 0 || !selectedAlumnoId))"
+                :loading="loading"
+                :error-historial="errorHistorial"
+                :is-trainer-or-admin="isTrainerOrAdmin"
+                :alumnos="alumnos"
+                :selected-alumno-id="selectedAlumnoId"
+                @retry="loadHistorial"
+            />
 
             <div v-else class="space-y-4 animate-fadeIn">
                 <!-- ===== UNIFIED RESPONSIVE LAYOUT (Mobile + Desktop) ===== -->
@@ -123,84 +96,30 @@
                     />
 
                     <!-- Mobile Session Cards (Quick Session Accordion on Mobile inside Matrix tab) -->
-                    <div
-                        v-if="activeTab === 'matrix' && sesionesParaMostrar.length > 0"
-                        class="md:hidden flex flex-col gap-2.5"
-                    >
-                        <div class="flex items-center justify-between px-0.5">
-                            <h2 class="font-headline-md text-headline-md text-on-surface">Sesiones Recientes</h2>
-                            <span class="text-label-sm text-outline">
-                                {{ sesionesParaMostrar.length }} sesiones
-                            </span>
-                        </div>
-                        <HistorialSesionCard
-                            v-for="(s, i) in sesionesParaMostrar.slice(0, 6)"
-                            :key="i"
-                            :fecha="s.fecha"
-                            :fecha-highlight="s.fechaHighlight"
-                            :fecha-label="s.fechaLabel"
-                            :duracion="s.duracion"
-                            :series="s.series"
-                            :tonelaje="s.tonelaje"
-                            :rir-prom="s.rirProm"
-                            :ejercicios="s.ejercicios"
-                            :expanded="expandedSesionIndex === i"
-                            :show-actions="expandedSesionIndex === i"
-                            @toggle="toggleSesionExpand(i)"
-                            @ver-detalles="verDetalleSesion(s)"
-                            @repetir-sesion="repetirSesion(s)"
-                        />
-                    </div>
+                    <HistorialMobileSessions
+                        :active-tab="activeTab"
+                        :sesiones-para-mostrar="sesionesParaMostrar"
+                        :expanded-sesion-index="expandedSesionIndex"
+                        @toggle="toggleSesionExpand"
+                        @ver-detalles="verDetalleSesion"
+                        @repetir-sesion="repetirSesion"
+                    />
 
                     <!-- Live Session Status Strip -->
-                    <section
-                        v-show="activeTab === 'matrix'"
-                        class="px-space-lg py-space-md rounded-xl bg-surface-container-high flex flex-col sm:flex-row items-center justify-between gap-space-md shadow-sm"
-                    >
-                        <div class="flex items-center gap-space-md">
-                            <div class="w-3 h-3 rounded-full bg-tertiary animate-ping"></div>
-                            <span class="font-label-md text-label-md text-on-surface-variant">
-                                Sesión programada en curso
-                            </span>
-                            <span class="text-body-md text-on-surface">
-                                Día actual:
-                                <strong class="text-secondary font-bold">
-                                    {{ userRutina?.dia_actual || 'Día 1' }}
-                                </strong>
-                            </span>
-                        </div>
-                        <RescheduleButton
-                            v-if="!isTrainerOrAdmin"
-                            :current-day="userRutina?.dia_actual || 'Día 1'"
-                            @rescheduled="onRescheduled"
-                        />
-                    </section>
+                    <HistorialLiveSessionStrip
+                        :active-tab="activeTab"
+                        :user-rutina="userRutina"
+                        :is-trainer-or-admin="isTrainerOrAdmin"
+                        @rescheduled="onRescheduled"
+                    />
 
                     <!-- Analytics & Activity Dashboard Grid (12 Columns) -->
-                    <section
-                        v-show="activeTab === 'matrix'"
-                        class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg"
-                    >
-                        <!-- Left Column: Streak & Activity Heatmap + Weekly Calendar (7 Columns) -->
-                        <div class="lg:col-span-7 flex flex-col gap-space-lg">
-                            <!-- Top Row: Streak Card + Activity Heatmap -->
-                            <div class="grid grid-cols-1 md:grid-cols-12 gap-space-md">
-                                <div class="md:col-span-5">
-                                    <StreakCard :data="statsResumen" />
-                                </div>
-                                <div class="md:col-span-7">
-                                    <ActivityHeatmap :data="statsHeatmap" />
-                                </div>
-                            </div>
-                            <!-- Bottom Row: Weekly Calendar Strip -->
-                            <WeekCalendar :user-id="selectedAlumnoId" />
-                        </div>
-
-                        <!-- Right Column: Esfuerzo (RIR / RPE Telemetry) (5 Columns) -->
-                        <div class="lg:col-span-5">
-                            <EffortCard :user-id="selectedAlumnoId" />
-                        </div>
-                    </section>
+                    <HistorialAnalyticsDashboard
+                        :active-tab="activeTab"
+                        :stats-resumen="statsResumen"
+                        :stats-heatmap="statsHeatmap"
+                        :selected-alumno-id="selectedAlumnoId"
+                    />
 
                     <!-- Vista dedicada cuando el usuario elige el tab Esfuerzo RIR.
                          v-if (no v-show) para que EffortCard y WeekCalendar no
@@ -240,277 +159,26 @@
                 </div>
 
                 <!-- Mapa corporal: muestra balance/fatigue/strength de los músculos -->
-                <div v-show="activeTab === 'body_map'" class="space-y-4">
-                    <div
-                        class="bg-[#131924] rounded-xl border border-[#232D42] shadow-lg overflow-hidden"
-                    >
-                        <div class="p-4 bg-[#18202F]/60 border-b border-[#232D42] flex items-center justify-between flex-wrap gap-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-2.5 h-2.5 rounded bg-indigo-500"></div>
-                                <div>
-                                    <h3 class="text-sm font-bold text-white tracking-wide uppercase">
-                                        Mapa Corporal de Telemetría Muscular
-                                    </h3>
-                                    <p class="text-xs text-slate-400 mt-0.5">
-                                        Visualizá qué músculos entrenás, cuáles están fatigados y cuál es tu mejor 1RM
-                                    </p>
-                                </div>
-                            </div>
-                            <div
-                                class="inline-flex rounded-lg bg-[#101521] border border-[#232D42] p-1 text-xs font-semibold gap-1"
-                            >
-                                <button
-                                    v-for="m in ['balance', 'fatigue', 'strength']"
-                                    :key="m"
-                                    type="button"
-                                    @click="bodyMapMode = m"
-                                    :class="[
-                                        'px-3.5 py-1.5 rounded-md transition-colors cursor-pointer',
-                                        bodyMapMode === m
-                                            ? 'bg-indigo-600 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-white',
-                                    ]"
-                                >
-                                    {{
-                                        m === 'balance'
-                                            ? 'Volumen'
-                                            : m === 'fatigue'
-                                              ? 'Fatiga'
-                                              : 'Fuerza'
-                                    }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="p-6">
-                            <div
-                                v-if="bodyMapLoading"
-                                class="flex items-center justify-center py-16 text-slate-400"
-                            >
-                                <svg class="animate-spin w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24">
-                                    <circle
-                                        class="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        stroke-width="4"
-                                    ></circle>
-                                    <path
-                                        class="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                    ></path>
-                                </svg>
-                            </div>
-
-                            <div
-                                v-else-if="!bodyMapData || bodyMapData.historiales.length === 0"
-                                class="text-center py-12 text-slate-400"
-                            >
-                                <p class="text-sm font-semibold text-white">No hay entrenamientos en los últimos 90 días.</p>
-                                <p class="text-xs mt-1">
-                                    Empezá a registrar sesiones y vas a ver tu mapa acá.
-                                </p>
-                            </div>
-
-                            <BodyMap
-                                v-else
-                                :levels="bodyMapLevels"
-                                :mode="bodyMapMode"
-                                :muscle-labels="muscleLabels"
-                                :initial-gender="bodyMapGender"
-                                @muscle-click="onMuscleClick"
-                            />
-                        </div>
-
-                        <div
-                            v-if="bodyMapData && bodyMapData.historiales.length > 0"
-                            class="px-4 py-3 bg-[#101521] border-t border-[#232D42] flex items-center justify-between text-xs text-slate-400 font-mono"
-                        >
-                            <span>Ventana: últimos 90 días</span>
-                            <span class="text-indigo-400 font-semibold">
-                                {{ bodyMapData.historiales.length }} sets · {{ muscleCount }} músculos mapeados
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <HistorialBodyMapPanel
+                    :active-tab="activeTab"
+                    :body-map-data="bodyMapData"
+                    :body-map-loading="bodyMapLoading"
+                    @muscle-click="onMuscleClick"
+                />
                 </div>
                 <!-- /DESKTOP -->
 
                 <!-- Drilldown: modal con los ejercicios que trabajan el músculo clickeado -->
-                <Teleport to="body">
-                    <Transition name="modal">
-                        <div
-                            v-if="selectedMuscleSlug"
-                            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-                            @click.self="closeMuscleDrilldown"
-                        >
-                            <div
-                                class="bg-[#131924] border border-[#232D42] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto text-slate-200"
-                            >
-                                <div
-                                    class="sticky top-0 bg-[#18202F] border-b border-[#232D42] px-6 py-4 flex items-start justify-between gap-4 z-10"
-                                >
-                                    <div>
-                                        <p
-                                            class="text-[11px] uppercase tracking-wider text-indigo-400 font-bold"
-                                        >
-                                            Ejercicios que trabajan
-                                        </p>
-                                        <h2
-                                            class="text-xl font-extrabold text-white mt-0.5"
-                                        >
-                                            {{
-                                                muscleDrilldown.data?.musculo?.nombre_es ||
-                                                muscleLabels[selectedMuscleSlug] ||
-                                                selectedMuscleSlug
-                                            }}
-                                        </h2>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        @click="closeMuscleDrilldown"
-                                        class="flex-shrink-0 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#232D42] cursor-pointer"
-                                        aria-label="Cerrar"
-                                    >
-                                        <svg
-                                            class="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M6 18L18 6M6 6l12 12"
-                                            />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <div class="p-6 space-y-4">
-                                    <div
-                                        v-if="muscleDrilldown.loading"
-                                        class="flex items-center justify-center py-12"
-                                    >
-                                        <svg
-                                            class="animate-spin w-8 h-8 text-indigo-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                class="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                stroke-width="4"
-                                            ></circle>
-                                            <path
-                                                class="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                            ></path>
-                                        </svg>
-                                    </div>
-
-                                    <div
-                                        v-else-if="muscleDrilldown.error"
-                                        class="text-center py-8 text-rose-400 text-xs"
-                                    >
-                                        {{ muscleDrilldown.error }}
-                                    </div>
-
-                                    <div
-                                        v-else-if="muscleDrilldown.data?.ejercicios?.length === 0"
-                                        class="text-center py-8 text-slate-400 text-xs"
-                                    >
-                                        No hay ejercicios asignados a este músculo.
-                                    </div>
-
-                                    <div v-else>
-                                        <p class="text-xs text-slate-400 font-mono mb-3">
-                                            {{ muscleDrilldown.data.ejercicios.length }} ejercicios
-                                            · ordenados por volumen reciente (30d)
-                                        </p>
-                                        <ul class="space-y-2">
-                                            <li
-                                                v-for="ej in muscleDrilldown.data.ejercicios"
-                                                :key="ej.id"
-                                                class="rounded-xl bg-[#101521] border border-[#232D42] transition-colors"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    class="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-[#18202F] rounded-xl cursor-pointer"
-                                                    @click="toggleEjercicioChart(ej)"
-                                                >
-                                                    <div class="flex-1 min-w-0">
-                                                        <p
-                                                            class="font-bold text-white text-xs truncate"
-                                                        >
-                                                            {{ ej.nombre }}
-                                                        </p>
-                                                        <p
-                                                            class="text-[11px] text-slate-400 mt-0.5"
-                                                        >
-                                                            {{ ej.equipamiento }}
-                                                        </p>
-                                                    </div>
-                                                    <div class="text-right flex-shrink-0 font-mono">
-                                                        <p
-                                                            class="text-xs font-bold text-indigo-400"
-                                                        >
-                                                            {{ ej.sets_30d }}
-                                                            <span
-                                                                class="text-[10px] font-normal text-slate-400"
-                                                                >sets</span
-                                                            >
-                                                        </p>
-                                                        <p
-                                                            v-if="ej.max_peso_30d"
-                                                            class="text-[11px] text-amber-400 mt-0.5"
-                                                        >
-                                                            ★ {{ ej.max_peso_30d.toFixed(1) }} kg
-                                                        </p>
-                                                    </div>
-                                                    <svg
-                                                        class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
-                                                        :class="{
-                                                            'rotate-180':
-                                                                selectedEjercicioId === ej.id,
-                                                        }"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M19 9l-7 7-7-7"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                                <div
-                                                    v-if="selectedEjercicioId === ej.id"
-                                                    class="border-t border-[#232D42] p-3"
-                                                >
-                                                    <OneRmChart
-                                                        :ejercicio-nombre="ej.nombre"
-                                                        :user-id="selectedAlumnoId"
-                                                        :formula="rmFormula"
-                                                    />
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Transition>
-                </Teleport>
+                <HistorialMuscleDrilldown
+                    :selected-muscle-slug="selectedMuscleSlug"
+                    :muscle-drilldown="muscleDrilldown"
+                    :muscle-labels="muscleLabels"
+                    :selected-ejercicio-id="selectedEjercicioId"
+                    :selected-alumno-id="selectedAlumnoId"
+                    :rm-formula="rmFormula"
+                    @close="closeMuscleDrilldown"
+                    @toggle-ejercicio="toggleEjercicioChart"
+                />
 
                 <KeyExercises
                     v-show="activeTab === 'key_exercises'"
@@ -548,11 +216,15 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
 import axios from 'axios';
+import { hoyLocal } from '@/utils/fecha';
 
 import HistorialHeader from './historial/HistorialHeader.vue';
-import HistorialSesionCard from './historial/HistorialSesionCard.vue';
-import ObsidianMobileTopBar from './common/obsidian/ObsidianMobileTopBar.vue';
-import ObsidianPill from './common/obsidian/ObsidianPill.vue';
+import HistorialStatesBlock from './historial/HistorialStatesBlock.vue';
+import HistorialMobileSessions from './historial/HistorialMobileSessions.vue';
+import HistorialLiveSessionStrip from './historial/HistorialLiveSessionStrip.vue';
+import HistorialAnalyticsDashboard from './historial/HistorialAnalyticsDashboard.vue';
+import HistorialBodyMapPanel from './historial/HistorialBodyMapPanel.vue';
+import HistorialMuscleDrilldown from './historial/HistorialMuscleDrilldown.vue';
 import HistorialFilters from './historial/HistorialFilters.vue';
 import HistorialMatrix from './historial/HistorialMatrix.vue';
 import EditHistorialModal from './historial/EditHistorialModal.vue';
@@ -564,23 +236,14 @@ import HistorialComparison from './historial/HistorialComparison.vue';
 import ComparadorEjercicios from './historial/ComparadorEjercicios.vue';
 import HistorialPullRefresh from './historial/HistorialPullRefresh.vue';
 import SyncBadge from './training/SyncBadge.vue';
-import BaseSkeleton from './BaseSkeleton.vue';
-import EmptyState from './EmptyState.vue';
-import Breadcrumbs from './Breadcrumbs.vue';
-import BodyMap from './BodyMap.vue';
 import StreakCard from './StreakCard.vue';
-import ActivityHeatmap from './ActivityHeatmap.vue';
 import EffortCard from './EffortCard.vue';
-import OneRmChart from './OneRmChart.vue';
-import RescheduleButton from './RescheduleButton.vue';
 import WeekCalendar from './WeekCalendar.vue';
 import { useToast } from '../composables/useToast';
 import { useUndoable } from '../composables/useUndoable';
-import { useMuscleLoad } from '../composables/useMuscleLoad';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { usePullToRefresh } from '../composables/usePullToRefresh';
-import { useMediaQuery } from '../composables/useMediaQuery';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useFormatters } from '@/composables/useFormatters';
 import {
@@ -622,10 +285,6 @@ const selectedAlumnoId = ref(null);
 const hasTrainer = ref(false);
 const activeTab = ref('matrix');
 const dateSortAsc = ref(true);
-
-// Renderiza sólo el layout que corresponde (mobile o desktop). Con los dos en
-// el DOM se duplicaban requests, gráficos y renders.
-const isMobile = useMediaQuery('(max-width: 767px)');
 
 // Series pendientes de sincronizar (offline-first).
 const offline = useOfflineSeries();
@@ -705,19 +364,6 @@ const filteredHistorial = computed(() => filtrarHistorial(historial.value, filtr
 const statsResumen = ref({});
 const statsHeatmap = ref({ days: [] });
 const userRutina = ref(null);
-
-// Iniciales del user para el avatar del top bar mobile
-const userInitials = computed(() => {
-    try {
-        // auth store expone user con .name o .nick
-        const u = window.__user || {};
-        if (u.name) return String(u.name).slice(0, 1).toUpperCase();
-        if (u.nick) return String(u.nick).slice(0, 1).toUpperCase();
-    } catch {
-        // ignore
-    }
-    return 'U';
-});
 
 // Sesiones recientes formateadas para el HistorialSesionCard (mockup mobile)
 // Agrupa el historial por fecha+rutina+dia y arma los ejercicios con sus sets.
@@ -827,7 +473,7 @@ const loadUserRutina = async () => {
     try {
         const res = await axios.get('/api/user-rutina');
         userRutina.value = res.data;
-    } catch (err) {
+    } catch {
         userRutina.value = null;
     }
 };
@@ -855,8 +501,6 @@ const loadStats = async () => {
 };
 
 // === Body map (mapa corporal) ===
-const bodyMapMode = ref('balance'); // 'balance' | 'fatigue' | 'strength'
-const bodyMapGender = ref('male');
 const bodyMapLoading = ref(false);
 const bodyMapData = ref({ historiales: [], musculos: [] });
 // Para qué alumno se cargó el body map (evita mostrar el dato de otro).
@@ -869,15 +513,6 @@ const toggleEjercicioChart = (ej) => {
     selectedEjercicioId.value = selectedEjercicioId.value === ej.id ? null : ej.id;
 };
 
-// Cálculo de carga por músculo (reacciona cuando cambian los historiales)
-const bodyMapHistorial = computed(() => bodyMapData.value.historiales);
-// Diccionario ejercicio_id → músculos (el backend ya no lo repite por serie)
-const bodyMapEjercicios = computed(() => bodyMapData.value.ejercicios || {});
-const { levelsFor: bodyMapLevelsFor } = useMuscleLoad(bodyMapHistorial, {
-    ejercicios: bodyMapEjercicios,
-});
-const bodyMapLevels = computed(() => bodyMapLevelsFor(bodyMapMode.value));
-
 // Labels para el tooltip del body map
 const muscleLabels = computed(() => {
     const out = {};
@@ -885,21 +520,6 @@ const muscleLabels = computed(() => {
         out[m.slug] = m.nombre_es;
     }
     return out;
-});
-
-const muscleCount = computed(() => {
-    const used = new Set();
-    const mapa = bodyMapEjercicios.value;
-    for (const h of bodyMapData.value.historiales || []) {
-        const musculos =
-            h.ejercicio?.musculos ||
-            (h.ejercicio_id != null ? mapa[h.ejercicio_id]?.musculos : null) ||
-            [];
-        for (const m of musculos) {
-            used.add(m.musculo_slug);
-        }
-    }
-    return used.size;
 });
 
 const loadBodyMap = async () => {
@@ -1199,74 +819,6 @@ const sesionesParaMostrar = computed(() => {
     return res;
 });
 
-// Tracker Semanal y consistencia anual (Micro Week Tracker)
-const semanaDias = computed(() => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const distanceToMonday = (currentDay + 6) % 7;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - distanceToMonday);
-
-    const letters = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    const days = [];
-    // La API devuelve la fecha como ISO completo: hay que quedarse con el
-    // YYYY-MM-DD para que matchee la clave del día (si no, ningún día
-    // marcaba como entrenado).
-    const fechasEntrenadas = new Set(
-        (historial.value || []).map((h) => String(h.fecha || '').slice(0, 10)).filter(Boolean)
-    );
-
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        const iso = d.toISOString().split('T')[0];
-        const isToday = d.toDateString() === now.toDateString();
-        const trained = fechasEntrenadas.has(iso);
-        days.push({
-            letter: letters[i],
-            dayNum: d.getDate(),
-            trained,
-            isToday,
-        });
-    }
-    return days;
-});
-
-const semanaTexto = computed(() => {
-    const days = semanaDias.value;
-    if (!days.length) return 'Semana actual';
-    const first = days[0].dayNum;
-    const last = days[6].dayNum;
-    const month = new Date().toLocaleDateString('es-AR', { month: 'short' });
-    return `Semana del ${first} al ${last} ${month}`;
-});
-
-const entrenadosCountSemana = computed(() => {
-    return semanaDias.value.filter((d) => d.trained || d.isToday).length || 4;
-});
-
-const totalSetsAnual = computed(() => {
-    return statsResumen.value?.total_sets || (historial.value?.length ? historial.value.length : 91);
-});
-
-const miniHeatmapBlocks = [
-    'bg-[#4edea3]',
-    'bg-[#00885d]',
-    'bg-[#4edea3]',
-    'bg-[#313540]',
-    'bg-[#4edea3]',
-    'bg-[#4edea3]',
-    'bg-[#00885d]',
-    'bg-[#313540]',
-    'bg-[#4edea3]',
-    'bg-[#4edea3]',
-    'bg-[#4edea3]',
-    'bg-[#4edea3]',
-];
-// (La card de Esfuerzo/RIR mobile ahora usa el componente EffortCard, que consume
-//  /api/historial/effort-analysis con datos reales. Se eliminó el mock local y su
-//  carga a /api/stats/esfuerzo, que además usaba claves inexistentes del payload.)
-
 // Acciones del HistorialSesionCard mobile
 const verDetalleSesion = (sesion) => {
     // Por ahora navega al dashboard con query string de la sesión;
@@ -1512,7 +1064,7 @@ const exportarCSV = () => {
 
     const alumnoTag =
         isTrainerOrAdmin.value && selectedAlumnoId.value ? `-alumno-${selectedAlumnoId.value}` : '';
-    const filename = `historial${alumnoTag}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `historial${alumnoTag}-${hoyLocal()}.csv`;
 
     const link = document.createElement('a');
     link.href = url;
@@ -1616,7 +1168,7 @@ const exportarResumenCSV = () => {
 
     const alumnoTag =
         isTrainerOrAdmin.value && selectedAlumnoId.value ? `-alumno-${selectedAlumnoId.value}` : '';
-    const filename = `historial-resumen${alumnoTag}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `historial-resumen${alumnoTag}-${hoyLocal()}.csv`;
 
     const link = document.createElement('a');
     link.href = url;
@@ -1653,7 +1205,7 @@ const exportarPDF = async () => {
             isTrainerOrAdmin.value && selectedAlumnoId.value
                 ? `-alumno-${selectedAlumnoId.value}`
                 : '';
-        const filename = `historial${alumnoTag}-${new Date().toISOString().split('T')[0]}.pdf`;
+        const filename = `historial${alumnoTag}-${hoyLocal()}.pdf`;
 
         // Header
         doc.setFont('helvetica', 'bold');
@@ -1727,7 +1279,7 @@ const exportarPDF = async () => {
                 3: { fontStyle: 'bold' },
                 8: { halign: 'right' },
             },
-            didDrawPage: (data) => {
+            didDrawPage: () => {
                 // Footer con número de página
                 const pageStr = `Página ${doc.internal.getCurrentPageInfo().pageNumber}`;
                 doc.setFontSize(8);
@@ -1753,7 +1305,7 @@ const exportarPDF = async () => {
 const loadHistorialWithFeedback = async () => {
     await loadHistorial();
 };
-const { isPulling, isRefreshing, pullOffset } = usePullToRefresh(window, loadHistorialWithFeedback);
+const { isRefreshing, pullOffset } = usePullToRefresh(window, loadHistorialWithFeedback);
 
 const slugify = (value) =>
     value
@@ -1988,7 +1540,7 @@ const initKeyCharts = async () => {
                         pointBorderWidth: 1.5,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointHoverBackgroundColor: '#4f46e5',
+                        pointHoverBackgroundColor: '#6366f1',
                         pointHoverBorderColor: '#ffffff',
                         pointHoverBorderWidth: 2,
                     },

@@ -148,16 +148,17 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
+import { hoyLocal } from '@/utils/fecha';
 
 const props = defineProps({
     ejercicios: { type: Array, default: () => [] },
     userId: { type: Number, default: null },
 });
 
-const hoy = new Date().toISOString().split('T')[0];
+const hoy = hoyLocal();
 const hace8sem = new Date();
 hace8sem.setDate(hace8sem.getDate() - 7 * 8);
-const desdeDefault = hace8sem.toISOString().split('T')[0];
+const desdeDefault = hoyLocal(hace8sem);
 
 const PERIodos = [
     { label: '4 semanas', semanas: 4 },
@@ -185,7 +186,7 @@ const ejerciciosDisponibles = computed(() => {
 const aplicarPeriodo = (semanas) => {
     const d = new Date();
     d.setDate(d.getDate() - 7 * semanas);
-    form.value.desde = d.toISOString().split('T')[0];
+    form.value.desde = hoyLocal(d);
     form.value.hasta = hoy;
 };
 

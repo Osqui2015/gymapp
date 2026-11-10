@@ -7,17 +7,26 @@ import { usePullToRefresh } from '../composables/usePullToRefresh';
 import { useOnboarding } from '../composables/useOnboarding';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useWakeLock } from '@/composables/useWakeLock';
+import { hoyLocal } from '@/utils/fecha';
 import { useTrainingSessionStore } from '@/stores/trainingSession';
 import SyncBadge from './training/SyncBadge.vue';
-import PlanSeriesChips from './training/PlanSeriesChips.vue';
-import { tienePlan } from '@/utils/rutinaPrescripcion';
 import EmptyStateIllustrated from './EmptyStateIllustrated.vue';
 import OnboardingTour from './OnboardingTour.vue';
 import confetti from 'canvas-confetti';
-import SkeletonLoader from './common/SkeletonLoader.vue';
 import { useRestTimerStore } from '../stores/restTimer';
 import ActiveWorkoutModal from './training/ActiveWorkoutModal.vue';
 import WorkoutSummaryModal from './training/WorkoutSummaryModal.vue';
+import DashboardActiveSessionBanner from './dashboard/DashboardActiveSessionBanner.vue';
+import DashboardQuickActions from './dashboard/DashboardQuickActions.vue';
+import DashboardRoutineHeroCard from './dashboard/DashboardRoutineHeroCard.vue';
+import DashboardDaySelector from './dashboard/DashboardDaySelector.vue';
+import DashboardKeyMetrics from './dashboard/DashboardKeyMetrics.vue';
+import DashboardExerciseList from './dashboard/DashboardExerciseList.vue';
+import DashboardVisualInterlude from './dashboard/DashboardVisualInterlude.vue';
+import DashboardTelemetryCharts from './dashboard/DashboardTelemetryCharts.vue';
+import DashboardSessionActions from './dashboard/DashboardSessionActions.vue';
+import DashboardFooter from './dashboard/DashboardFooter.vue';
+import DashboardDaySummarySheet from './dashboard/DashboardDaySummarySheet.vue';
 
 const rutinaStore = useRutinaStore();
 
@@ -123,6 +132,15 @@ const stepInlinePeso = (set, delta) => {
 const stepInlineReps = (set, delta) => {
     const cur = parseInt(set.reps_realizadas ?? set.previous_record?.reps_realizadas ?? set.reps_min ?? 0, 10) || 0;
     set.reps_realizadas = Math.max(0, cur + delta);
+};
+
+/**
+ * Escritura de un campo del set abierto desde el editor inline.
+ * El set lo posee el padre, así que el subcomponente nos delega la mutación.
+ */
+const updateInlineField = (set, campo, valor) => {
+    if (!set) return;
+    set[campo] = valor;
 };
 
 const copyInlineFromPrev = (set) => {
@@ -484,189 +502,7 @@ const progresoDia = computed(() =>
     seriesTotales.value ? Math.round((seriesCompletadas.value / seriesTotales.value) * 100) : 0
 );
 
-// === Telemetry Chart 1: Peso máximo por día (30d) en ejercicio principal ===
-const chartEjercicioNombre = computed(() => {
-    const first = ejerciciosDelDia.value[0]?.nombre;
-    return first || 'Press de banca';
-});
-
-const chartSeries = computed(() => {
-    const h = historialRutina.value || [];
-    const hoy = new Date();
-    const desde = new Date(hoy.getTime() - 30 * 86400000);
-    const N = 7;
-    const puntos = [];
-    for (let i = 0; i < N; i++) {
-        const f = new Date(desde.getTime() + ((hoy.getTime() - desde.getTime()) * i) / (N - 1));
-        puntos.push({ fecha: f, peso: 0 });
-    }
-
-    h.forEach((r) => {
-        if (!r.completado || !r.peso || Number(r.peso) <= 0) return;
-        const fr = new Date(r.fecha);
-        if (fr < desde || fr > hoy) return;
-        let mejorI = 0;
-        let mejorDelta = Infinity;
-        for (let i = 0; i < N; i++) {
-            const delta = Math.abs(puntos[i].fecha - fr);
-            if (delta < mejorDelta) {
-                mejorDelta = delta;
-                mejorI = i;
-            }
-        }
-        puntos[mejorI].peso = Math.max(puntos[mejorI].peso, Number(r.peso));
-    });
-
-    const labels = puntos.map((p) => {
-        const dd = String(p.fecha.getDate()).padStart(2, '0');
-        const mm = String(p.fecha.getMonth() + 1).padStart(2, '0');
-        return `${dd}/${mm}`;
-    });
-
-    return { points: puntos, labels };
-});
-
-const maxPesoChart = computed(() => {
-    const pts = chartSeries.value.points;
-    if (!pts.length) return 80;
-    const max = Math.max(...pts.map((p) => p.peso || 0));
-    return max > 0 ? max : 80;
-});
-
-const buildSmoothSvgCurve = (coords, baselineY = 170) => {
-    if (!coords.length) return { line: '', area: '' };
-    if (coords.length === 1) {
-        const p = coords[0];
-        const line = `M 20 ${p.y} L 480 ${p.y}`;
-        const area = `${line} L 480 ${baselineY} L 20 ${baselineY} Z`;
-        return { line, area };
-    }
-    let line = `M ${coords[0].x} ${coords[0].y}`;
-    for (let i = 1; i < coords.length; i++) {
-        const prev = coords[i - 1];
-        const cur = coords[i];
-        const dx = (cur.x - prev.x) * 0.45;
-        const cp1x = Math.round(prev.x + dx);
-        const cp2x = Math.round(cur.x - dx);
-        line += ` C ${cp1x} ${prev.y}, ${cp2x} ${cur.y}, ${cur.x} ${cur.y}`;
-    }
-    const last = coords[coords.length - 1];
-    const first = coords[0];
-    const area = `${line} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
-    return { line, area };
-};
-
-const chart1Telemetry = computed(() => {
-    const { points, labels } = chartSeries.value;
-    const max = Math.max(...points.map((p) => p.peso), 0);
-    if (max <= 0) {
-        // Fallback curva de telemetría cuando aún no hay puntos en los últimos 30d
-        const fallbackNodes = [
-            { x: 20, y: 145, peak: false, muted: false },
-            { x: 95, y: 90, peak: false, muted: false },
-            { x: 165, y: 30, peak: true, muted: false },
-            { x: 235, y: 150, peak: false, muted: false },
-            { x: 360, y: 150, peak: false, muted: true },
-            { x: 480, y: 150, peak: false, muted: true },
-        ];
-        const { line, area } = buildSmoothSvgCurve(fallbackNodes, 170);
-        return { nodes: fallbackNodes, line, area, labels };
-    }
-    const min = Math.min(...points.map((p) => p.peso));
-    const rango = Math.max(max - min, 1);
-    let peakAssigned = false;
-    const nodes = points.map((p, i) => {
-        const x = Math.round(20 + (460 * i) / (points.length - 1));
-        const y = Math.round(150 - ((p.peso - min) / rango) * 120);
-        const isPeak = !peakAssigned && p.peso === max && max > 0;
-        if (isPeak) peakAssigned = true;
-        return {
-            x,
-            y,
-            value: p.peso,
-            peak: isPeak,
-            muted: p.peso === 0,
-        };
-    });
-    const { line, area } = buildSmoothSvgCurve(nodes, 170);
-    return { nodes, line, area, labels };
-});
-
-// === Telemetry Chart 2: PR diario a lo largo del tiempo (30d) ===
-const chart2Telemetry = computed(() => {
-    const porDia = new Map();
-    (historialRutina.value || []).forEach((row) => {
-        const fecha = row.fecha || (row.created_at ? row.created_at.split('T')[0] : null);
-        if (!fecha) return;
-        const peso = Number(row.peso) || 0;
-        if (peso <= 0) return;
-        if (!porDia.has(fecha) || peso > porDia.get(fecha)) {
-            porDia.set(fecha, peso);
-        }
-    });
-
-    const sorted = [...porDia.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
-    if (sorted.length < 2) {
-        const fallbackNodes = [
-            { x: 20, y: 140, isPeak: false, isAccent: false },
-            { x: 90, y: 70, isPeak: false, isAccent: false },
-            { x: 190, y: 145, isPeak: false, isAccent: false },
-            { x: 270, y: 140, isPeak: false, isAccent: false },
-            { x: 370, y: 70, isPeak: false, isAccent: true },
-            { x: 430, y: 62, isPeak: false, isAccent: false },
-            { x: 480, y: 30, isPeak: true, isAccent: false },
-        ];
-        const { line, area } = buildSmoothSvgCurve(fallbackNodes, 170);
-        return {
-            nodes: fallbackNodes,
-            line,
-            area,
-            labels: ['03/09', '09/09', '12/09', '23/09', '30/09'],
-        };
-    }
-
-    const pesos = sorted.map(([, p]) => p);
-    const max = Math.max(...pesos);
-    const min = Math.min(...pesos);
-    const rango = Math.max(max - min, 1);
-
-    const nodes = sorted.map(([, peso], i) => {
-        const x = Math.round(20 + (460 * i) / (sorted.length - 1));
-        const y = Math.round(145 - ((peso - min) / rango) * 115);
-        return {
-            x,
-            y,
-            value: peso,
-            isPeak: i === sorted.length - 1 || (peso === max && i > 0),
-            isAccent: i === Math.floor(sorted.length * 0.65),
-        };
-    });
-
-    const labels = sorted.map(([fecha]) => {
-        const iso = typeof fecha === 'string' && fecha.includes('T') ? fecha.split('T')[0] : fecha;
-        const parts = String(iso).split('-');
-        if (parts.length >= 3) {
-            return `${parts[2]}/${parts[1]}`;
-        }
-        return iso;
-    });
-
-    const { line, area } = buildSmoothSvgCurve(nodes, 170);
-    return { nodes, line, area, labels };
-});
-
 // === Sesión activa y acciones ===
-const formattedActiveTime = computed(() => {
-    const s = session.elapsed;
-    const hrs = Math.floor(s / 3600);
-    const mins = Math.floor((s % 3600) / 60);
-    const secs = s % 60;
-    if (hrs > 0) {
-        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-});
-
 const getRutinaNombre = () => rutinaStore.seleccionada?.nivel || '';
 
 const abrirModoEntrenamiento = async () => {
@@ -1007,7 +843,7 @@ const fetchRutinasDelDia = async () => {
  * Compartido entre el guardado individual y el guardado en lote.
  */
 const payloadDeFila = (fila) => ({
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: hoyLocal(),
     rutina_nombre: fila.rutina_nombre,
     dia: fila.dia,
     ejercicio_nombre: fila.ejercicio_nombre,
@@ -1372,65 +1208,10 @@ const iniciarTemporizador = (fila) => {
                         ></div>
 
                         <!-- Active session banner -->
-                        <div
-                            v-if="session.isActive"
-                            class="relative mb-space-lg overflow-hidden rounded-xl border border-tertiary/40 bg-surface-container-low p-space-md text-on-surface shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn"
-                        >
-                            <div class="flex items-center gap-space-md">
-                                <span class="relative flex h-3.5 w-3.5">
-                                    <span
-                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"
-                                    ></span>
-                                    <span
-                                        class="relative inline-flex rounded-full h-3.5 w-3.5 bg-tertiary"
-                                    ></span>
-                                </span>
-                                <div>
-                                    <p
-                                        class="font-label-lg text-label-lg text-on-surface flex items-center gap-2"
-                                    >
-                                        <span
-                                            >Entrenamiento en curso ·
-                                            {{ formattedActiveTime }}</span
-                                        >
-                                        <span
-                                            v-if="session.isPaused"
-                                            class="font-label-sm text-label-sm bg-secondary-container/60 text-secondary px-2 py-0.5 rounded-full"
-                                        >
-                                            Pausado
-                                        </span>
-                                    </p>
-                                    <p class="font-body-sm text-body-sm text-on-surface-variant">
-                                        {{
-                                            session.currentEjercicio?.nombre || 'Sesión iniciada'
-                                        }}
-                                        · {{ session.totalSeriesCompletadas }}/{{
-                                            session.totalSeriesObjetivo
-                                        }}
-                                        series
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-space-sm">
-                                <button
-                                    type="button"
-                                    @click="abrirModoEntrenamiento"
-                                    class="px-space-md py-space-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md font-bold shadow-md active:scale-95 transition-all flex items-center gap-1"
-                                >
-                                    <span class="material-symbols-outlined text-[16px]">bolt</span>
-                                    <span>Continuar</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="descartarSesion"
-                                    title="Descartar entrenamiento en curso"
-                                    aria-label="Descartar entrenamiento en curso"
-                                    class="px-space-sm py-space-sm rounded-lg bg-surface-container-high hover:bg-error-container text-on-surface-variant hover:text-error font-label-md text-label-md transition-all"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
+                        <DashboardActiveSessionBanner
+                            @continue="abrirModoEntrenamiento"
+                            @discard="descartarSesion"
+                        />
 
                         <!-- Header / Welcome Banner -->
                         <div
@@ -1464,1159 +1245,95 @@ const iniciarTemporizador = (fila) => {
                             </div>
 
                             <!-- Quick Actions Header -->
-                            <div class="flex items-center gap-space-md">
-                                <button
-                                    type="button"
-                                    @click="abrirModoEntrenamiento"
-                                    class="group flex items-center gap-2 px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface transition-all duration-200"
-                                >
-                                    <span
-                                        class="material-symbols-outlined text-secondary text-[18px] group-hover:scale-110 transition-transform"
-                                        >bolt</span
-                                    >
-                                    <span class="font-label-md text-label-md">Focus Mode</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="cambiarRutina"
-                                    class="flex items-center gap-1.5 text-secondary hover:text-on-secondary-container font-label-md text-label-md transition-colors px-space-sm py-space-sm"
-                                >
-                                    <span class="material-symbols-outlined text-[18px]"
-                                        >swap_horiz</span
-                                    >
-                                    <span>Cambiar rutina</span>
-                                </button>
-                            </div>
+                            <DashboardQuickActions
+                                @start-workout="abrirModoEntrenamiento"
+                                @change-routine="cambiarRutina"
+                            />
                         </div>
 
                         <!-- Routine Hero Card -->
-                        <section
-                            class="relative rounded-xl bg-surface-container-low p-space-lg md:p-space-xl mb-space-xl overflow-hidden shadow-xl"
-                            data-purpose="active-workout-hero"
-                            data-tour="rutina-header"
-                        >
-                            <div
-                                class="absolute -right-24 -bottom-24 w-80 h-80 bg-primary-container/10 rounded-full blur-[100px] pointer-events-none"
-                            ></div>
-                            <div
-                                class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-space-xl mb-space-xl"
-                            >
-                                <div class="flex flex-col gap-space-sm max-w-2xl">
-                                    <div class="flex items-center gap-space-sm">
-                                        <span
-                                            class="px-space-md py-0.5 rounded-full bg-secondary-container/60 text-secondary font-label-sm text-label-sm tracking-wide uppercase font-semibold"
-                                        >
-                                            {{ nombreRutina }}
-                                        </span>
-                                        <span
-                                            class="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm"
-                                        >
-                                            <span class="material-symbols-outlined text-[14px]"
-                                                >check_circle</span
-                                            >
-                                            Plan Óptimo
-                                        </span>
-                                    </div>
-                                    <h2
-                                        class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight"
-                                    >
-                                        {{ tituloHeroDia }}
-                                    </h2>
-                                    <div
-                                        class="flex flex-wrap items-center gap-space-md text-on-surface-variant font-label-md text-label-md"
-                                    >
-                                        <span class="flex items-center gap-1">
-                                            <span
-                                                class="material-symbols-outlined text-[16px] text-secondary"
-                                                >fitness_center</span
-                                            >
-                                            {{ ejerciciosDelDia.length }} ejercicios
-                                        </span>
-                                        <span>•</span>
-                                        <span class="flex items-center gap-1">
-                                            <span
-                                                class="material-symbols-outlined text-[16px] text-secondary"
-                                                >repeat</span
-                                            >
-                                            {{ seriesTotales }} series
-                                        </span>
-                                        <span>•</span>
-                                        <span class="flex items-center gap-1">
-                                            <span
-                                                class="material-symbols-outlined text-[16px] text-secondary"
-                                                >timer</span
-                                            >
-                                            ~{{ duracionEstimada }} min
-                                        </span>
-                                        <span>•</span>
-                                        <span class="flex items-center gap-1 text-tertiary">
-                                            <span class="material-symbols-outlined text-[16px]"
-                                                >local_fire_department</span
-                                            >
-                                            {{ caloriasEstimadas }} kcal est.
-                                        </span>
-                                    </div>
-                                </div>
-                                <div
-                                    class="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-space-md min-w-[240px]"
-                                >
-                                    <button
-                                        type="button"
-                                        @click="abrirModoEntrenamiento"
-                                        class="w-full sm:w-auto px-space-xl py-space-md rounded-full bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(139,92,246,0.6)] transition-all duration-300"
-                                    >
-                                        <span
-                                            class="material-symbols-outlined text-[20px]"
-                                            :style="{ fontVariationSettings: '\'FILL\' 1' }"
-                                            >play_arrow</span
-                                        >
-                                        <span>{{
-                                            session.isActive
-                                                ? 'Continuar entrenamiento'
-                                                : 'Comenzar entrenamiento'
-                                        }}</span>
-                                    </button>
-                                    <span
-                                        class="font-label-sm text-label-sm text-outline text-center lg:text-right"
-                                    >
-                                        {{ estadoUltimoRegistroHero }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Session Progress Bar -->
-                            <div
-                                class="flex flex-col gap-space-xs pt-space-md bg-surface-container/50 -mx-space-lg md:-mx-space-xl -mb-space-lg md:-mb-space-xl px-space-lg md:px-space-xl pb-space-lg"
-                            >
-                                <div class="flex items-center justify-between text-on-surface">
-                                    <span
-                                        class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2"
-                                    >
-                                        <span
-                                            class="material-symbols-outlined text-tertiary text-[16px]"
-                                            >verified</span
-                                        >
-                                        Progreso de la sesión
-                                    </span>
-                                    <span class="font-label-lg text-label-lg font-bold text-tertiary">
-                                        {{ seriesCompletadas }} / {{ seriesTotales }} series ({{
-                                            progresoDia
-                                        }}%)
-                                    </span>
-                                </div>
-                                <div
-                                    class="w-full h-2.5 rounded-full bg-surface-container-highest overflow-hidden"
-                                >
-                                    <div
-                                        class="h-full rounded-full bg-gradient-to-r from-secondary via-primary-container to-tertiary transition-all duration-700"
-                                        :style="{ width: progresoDia + '%' }"
-                                    ></div>
-                                </div>
-                            </div>
-                        </section>
+                        <DashboardRoutineHeroCard
+                            :nombre-rutina="nombreRutina"
+                            :titulo-hero-dia="tituloHeroDia"
+                            :ejercicios-count="ejerciciosDelDia.length"
+                            :series-totales="seriesTotales"
+                            :duracion-estimada="duracionEstimada"
+                            :calorias-estimadas="caloriasEstimadas"
+                            :estado-ultimo-registro-hero="estadoUltimoRegistroHero"
+                            :series-completadas="seriesCompletadas"
+                            :progreso-dia="progresoDia"
+                            @start-workout="abrirModoEntrenamiento"
+                        />
 
                         <!-- Plan Selection Segmented Pills -->
-                        <div
-                            class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md mb-space-lg"
-                            data-tour="day-selector"
-                        >
-                            <div
-                                class="flex flex-wrap items-center gap-space-xs p-1 rounded-xl bg-surface-container-low"
-                            >
-                                <button
-                                    v-for="dia in todosLosDias"
-                                    :key="dia"
-                                    type="button"
-                                    @click="cambiarDia(dia)"
-                                    :class="[
-                                        'px-space-md py-space-xs rounded-lg font-label-md text-label-md transition-all',
-                                        diaActual === dia
-                                            ? 'bg-secondary-container text-on-secondary-container font-semibold shadow-sm'
-                                            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
-                                    ]"
-                                >
-                                    {{ formatDiaTabLabel(dia) }}
-                                </button>
-                            </div>
-                            <div
-                                class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm"
-                            >
-                                <span class="material-symbols-outlined text-[16px] text-outline"
-                                    >tune</span
-                                >
-                                <span
-                                    >Ciclo de hipertrofia muscular •
-                                    {{ semanaCicloLabel }}</span
-                                >
-                            </div>
-                        </div>
+                        <DashboardDaySelector
+                            :dias="todosLosDias"
+                            :dia-actual="diaActual"
+                            :semana-ciclo-label="semanaCicloLabel"
+                            :format-dia-tab-label="formatDiaTabLabel"
+                            @select-day="cambiarDia"
+                        />
 
                         <!-- Key Metrics Grid -->
-                        <section
-                            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-space-md mb-space-xl"
-                            data-tour="stats"
-                        >
-                            <!-- Sets 30 Días -->
-                            <div
-                                class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
-                                >
-                                    <span
-                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
-                                        >Sets 30 Días</span
-                                    >
-                                    <span
-                                        v-if="stats.trend30d !== 0"
-                                        class="inline-flex items-center px-1.5 py-0.5 rounded-full font-label-sm text-label-sm"
-                                        :class="
-                                            stats.trend30d >= 0
-                                                ? 'bg-tertiary/10 text-tertiary'
-                                                : 'bg-error/10 text-error'
-                                        "
-                                    >
-                                        {{ stats.trend30d > 0 ? '+' : '' }}{{ stats.trend30d }}%
-                                    </span>
-                                </div>
-                                <div>
-                                    <div
-                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
-                                    >
-                                        {{ stats.totalSets30d }}
-                                    </div>
-                                    <div class="font-body-sm text-body-sm text-tertiary">
-                                        Volumen alto sostenido
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Último Entreno -->
-                            <div
-                                class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
-                                >
-                                    <span
-                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
-                                        >Último Entreno</span
-                                    >
-                                    <span
-                                        class="material-symbols-outlined text-[18px]"
-                                        :class="ultimoEntrenoAlerta ? 'text-error' : 'text-tertiary'"
-                                    >
-                                        {{ ultimoEntrenoAlerta ? 'warning' : 'check_circle' }}
-                                    </span>
-                                </div>
-                                <div>
-                                    <div
-                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
-                                    >
-                                        {{ ultimoEntrenoLabel }}
-                                    </div>
-                                    <div
-                                        class="font-body-sm text-body-sm"
-                                        :class="ultimoEntrenoAlerta ? 'text-error' : 'text-tertiary'"
-                                    >
-                                        {{ ultimoEntrenoSub }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Racha Actual -->
-                            <div
-                                class="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-space-xs mb-space-sm"
-                                >
-                                    <span
-                                        class="font-label-sm text-label-sm uppercase tracking-wider text-outline"
-                                        >Racha Actual</span
-                                    >
-                                    <span
-                                        class="material-symbols-outlined text-secondary text-[18px]"
-                                        >local_fire_department</span
-                                    >
-                                </div>
-                                <div class="flex items-baseline justify-between">
-                                    <div>
-                                        <div
-                                            class="font-headline-lg text-headline-lg font-bold text-on-surface"
-                                        >
-                                            {{ stats.streak }}
-                                            <span
-                                                class="font-body-md text-body-md text-outline font-normal"
-                                                >días</span
-                                            >
-                                        </div>
-                                        <div
-                                            class="font-body-sm text-body-sm text-on-surface-variant"
-                                        >
-                                            Récord previo: {{ stats.longestStreak }} días
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="hidden sm:flex items-center gap-1 text-outline font-label-sm text-label-sm"
-                                    >
-                                        <span>Objetivo: 4/sem</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Series del Día -->
-                            <div
-                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <span
-                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
-                                    >Series del Día</span
-                                >
-                                <div>
-                                    <div
-                                        class="font-headline-lg text-headline-lg font-bold text-tertiary"
-                                    >
-                                        {{ seriesCompletadas }}/{{ seriesTotales }}
-                                    </div>
-                                    <div class="font-body-sm text-body-sm text-outline">
-                                        {{ seriesPendientes }} pendientes
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Peso Registrado -->
-                            <div
-                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <span
-                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
-                                    >Peso Registrado</span
-                                >
-                                <div>
-                                    <div
-                                        class="font-headline-lg text-headline-lg font-bold text-on-surface"
-                                    >
-                                        {{ pesoRegistrado }}
-                                        <span class="font-body-sm text-body-sm text-outline"
-                                            >kg</span
-                                        >
-                                    </div>
-                                    <div class="font-body-sm text-body-sm text-outline">
-                                        Volumen de la sesión
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Peso Promedio -->
-                            <div
-                                class="col-span-1 md:col-span-1 lg:col-span-1 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <span
-                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
-                                    >Peso Prom.</span
-                                >
-                                <div>
-                                    <div
-                                        class="font-headline-md text-headline-md font-bold text-on-surface"
-                                    >
-                                        {{ pesoPromedio }}
-                                        <span class="font-body-sm text-body-sm text-outline"
-                                            >kg</span
-                                        >
-                                    </div>
-                                    <div class="font-body-sm text-body-sm text-outline">
-                                        Por serie
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Reps Realizadas -->
-                            <div
-                                class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
-                            >
-                                <span
-                                    class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
-                                    >Reps Realizadas</span
-                                >
-                                <div>
-                                    <div
-                                        class="font-headline-lg text-headline-lg font-bold text-secondary"
-                                    >
-                                        {{ repsRegistradas }}
-                                    </div>
-                                    <div class="font-body-sm text-body-sm text-outline">
-                                        Repeticiones del día
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
+                        <DashboardKeyMetrics
+                            :stats="stats"
+                            :ultimo-entreno-label="ultimoEntrenoLabel"
+                            :ultimo-entreno-sub="ultimoEntrenoSub"
+                            :ultimo-entreno-alerta="ultimoEntrenoAlerta"
+                            :series-completadas="seriesCompletadas"
+                            :series-totales="seriesTotales"
+                            :series-pendientes="seriesPendientes"
+                            :peso-registrado="pesoRegistrado"
+                            :peso-promedio="pesoPromedio"
+                            :reps-registradas="repsRegistradas"
+                        />
 
                         <!-- Workout Exercises Section -->
-                        <section
-                            class="flex flex-col gap-space-md mb-space-xl"
-                            data-purpose="todays-exercise-list"
-                            data-tour="series-list"
-                        >
-                            <!-- Section Header with Controls -->
-                            <div class="flex items-center justify-between pb-space-xs">
-                                <div class="flex items-center gap-space-sm">
-                                    <span class="w-2 h-2 rounded-full bg-tertiary"></span>
-                                    <h3
-                                        class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight"
-                                    >
-                                        EJERCICIOS DE HOY
-                                    </h3>
-                                    <span
-                                        class="px-2 py-0.5 rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm font-semibold"
-                                    >
-                                        {{ ejerciciosCompletadosCount }}/{{
-                                            ejerciciosDelDia.length
-                                        }}
-                                        completados
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    @click="expandirTodos = !expandirTodos"
-                                    class="flex items-center gap-1.5 px-space-md py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors"
-                                >
-                                    <span class="material-symbols-outlined text-[16px]">
-                                        {{ expandirTodos ? 'unfold_less' : 'unfold_more' }}
-                                    </span>
-                                    <span>{{ expandirTodos ? 'Colapsar' : 'Expandir' }}</span>
-                                </button>
-                            </div>
-
-                            <!-- Bloques del día (movilidad / calentamiento): no son
-                                 series, por eso no aparecen como ejercicio, pero
-                                 hay que hacerlos antes de la barra. -->
-                            <div
-                                v-if="bloquesDelDia.length"
-                                class="flex flex-col gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-space-md py-space-sm"
-                                data-testid="bloques-del-dia"
-                            >
-                                <div
-                                    v-for="bloque in bloquesDelDia"
-                                    :key="bloque.id"
-                                    class="flex items-start gap-2"
-                                >
-                                    <span class="material-symbols-outlined text-[16px] text-amber-400 mt-px">timer</span>
-                                    <div class="min-w-0">
-                                        <span class="text-label-sm text-label-sm font-bold text-amber-300 uppercase tracking-wide">
-                                            {{ bloque.nombre }}
-                                        </span>
-                                        <p class="text-[11px] leading-relaxed text-on-surface-variant mt-0.5">
-                                            {{ bloque.notas }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="isInitialLoading" class="space-y-3">
-                                <SkeletonLoader variant="card" />
-                                <SkeletonLoader variant="card" />
-                                <SkeletonLoader variant="card" />
-                            </div>
-
-                            <!-- Exercise Cards Container -->
-                            <div v-else class="flex flex-col gap-space-md transition-all">
-                                <article
-                                    v-for="(ej, idx) in ejerciciosDelDia"
-                                    :key="ej.nombre"
-                                    class="p-space-md md:p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors shadow-sm"
-                                >
-                                    <div
-                                        class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md"
-                                    >
-                                        <div class="flex items-center gap-space-md">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center font-label-md text-label-md text-on-surface font-bold shrink-0"
-                                            >
-                                                {{ idx + 1 }}
-                                            </div>
-                                            <div class="flex flex-col">
-                                                <div class="flex items-center gap-space-sm">
-                                                    <h4
-                                                        class="font-headline-md text-headline-md text-on-surface font-bold"
-                                                    >
-                                                        {{ ej.nombre }}
-                                                    </h4>
-                                                    <span
-                                                        v-if="ej.estaCompleto"
-                                                        class="material-symbols-outlined text-tertiary text-[18px]"
-                                                        >verified</span
-                                                    >
-                                                </div>
-                                                <div
-                                                    class="font-body-sm text-body-sm text-outline flex flex-wrap items-center gap-space-xs"
-                                                >
-                                                    <span v-if="ej.repsLabel">{{
-                                                        ej.repsLabel
-                                                    }}</span>
-                                                    <span
-                                                        v-if="ej.repsLabel && ej.ultimoPesoLabel"
-                                                        >•</span
-                                                    >
-                                                    <span v-if="ej.ultimoPesoLabel">{{
-                                                        ej.ultimoPesoLabel
-                                                    }}</span>
-                                                    <template v-if="ej.musculoLabel">
-                                                        <span>•</span>
-                                                        <span class="text-tertiary">{{
-                                                            ej.musculoLabel
-                                                        }}</span>
-                                                    </template>
-                                                </div>
-
-                                                <!-- Plan de series: bloques, rest-pause y progresión -->
-                                                <PlanSeriesChips
-                                                    :ejercicio="ej"
-                                                    tema="auto"
-                                                    mostrar-consejo
-                                                />
-
-                                                <!-- Notas crudas cuando el ejercicio no tiene plan
-                                                     (ej. "3x8 (estocadas, sin RIR objetivo)") -->
-                                                <p
-                                                    v-if="!tienePlan(ej) && ej.notas"
-                                                    class="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400 italic"
-                                                    :title="ej.notas"
-                                                >
-                                                    💡 {{ ej.notas }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div
-                                            class="flex items-center gap-space-sm justify-between lg:justify-end"
-                                        >
-                                            <span
-                                                class="px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm font-semibold"
-                                                :class="
-                                                    ej.estaCompleto
-                                                        ? 'text-tertiary'
-                                                        : 'text-secondary'
-                                                "
-                                            >
-                                                {{ ej.completadas }}/{{ ej.sets.length }} series
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Sets Chips Grid (Interactive Tap-to-Edit) -->
-                                    <div
-                                        v-show="expandirTodos"
-                                        class="mt-space-md pt-space-md bg-surface-container-lowest/40 -mx-space-md -mb-space-md md:-mx-space-lg md:-mb-space-lg p-space-md md:p-space-md rounded-b-xl space-y-3"
-                                    >
-                                        <div
-                                            :class="[
-                                                'grid gap-space-sm',
-                                                ej.sets.length === 3
-                                                    ? 'grid-cols-2 sm:grid-cols-3'
-                                                    : 'grid-cols-2 sm:grid-cols-4',
-                                            ]"
-                                        >
-                                            <button
-                                                v-for="(set, sIdx) in ej.sets"
-                                                :key="sIdx"
-                                                type="button"
-                                                @click="toggleInlineSet(set)"
-                                                :title="
-                                                    esSetHistorico(set)
-                                                        ? 'Tocá para editar o completar serie (valor previo disponible)'
-                                                        : 'Tocá para editar peso y repeticiones'
-                                                "
-                                                :class="[
-                                                    'flex flex-col px-space-md py-2 rounded-lg text-left transition-all cursor-pointer relative group/set',
-                                                    activeInlineSet === set
-                                                        ? 'ring-2 ring-secondary bg-surface-container-high'
-                                                        : set.completado
-                                                          ? 'bg-tertiary/10 hover:bg-tertiary/15'
-                                                          : esSetHistorico(set)
-                                                            ? 'bg-surface-container-high/50 border border-dashed border-outline-variant/50 hover:border-secondary/60'
-                                                            : 'bg-surface-container hover:bg-surface-container-high',
-                                                ]"
-                                            >
-                                                <div class="flex items-center justify-between w-full">
-                                                    <span
-                                                        class="font-label-sm text-label-sm"
-                                                        :class="
-                                                            set.completado
-                                                                ? 'text-tertiary'
-                                                                : esSetHistorico(set)
-                                                                  ? 'text-secondary'
-                                                                  : 'text-outline'
-                                                        "
-                                                    >
-                                                        SET {{ sIdx + 1 }}
-                                                    </span>
-                                                    <span
-                                                        v-if="set.completado"
-                                                        class="material-symbols-outlined text-[14px] text-tertiary"
-                                                    >
-                                                        check_circle
-                                                    </span>
-                                                    <span
-                                                        v-else
-                                                        class="material-symbols-outlined text-[13px] text-outline/60 group-hover/set:text-secondary transition-colors"
-                                                    >
-                                                        edit
-                                                    </span>
-                                                </div>
-                                                <span
-                                                    class="font-label-md text-label-md text-on-surface font-bold tabular-nums"
-                                                >
-                                                    {{ formatSetLabel(set) }}
-                                                </span>
-                                            </button>
-                                        </div>
-
-                                        <!-- Inline Quick Set Telemetry Editor -->
-                                        <div
-                                            v-if="ej.sets.includes(activeInlineSet)"
-                                            class="p-3 rounded-xl bg-[#131924] border border-[#232D42] flex flex-col gap-3 shadow-lg"
-                                        >
-                                            <div class="flex items-center justify-between gap-2 flex-wrap">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                                                    <span class="text-xs font-bold text-white uppercase tracking-wider">
-                                                        Editar Set #{{ activeInlineSet.series_numero }} · {{ ej.nombre }}
-                                                    </span>
-                                                </div>
-                                                <div class="flex items-center gap-2">
-                                                    <button
-                                                        v-if="valorHistoricoSet(activeInlineSet)"
-                                                        type="button"
-                                                        @click="copyInlineFromPrev(activeInlineSet)"
-                                                        class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[11px] font-mono font-bold text-indigo-300 cursor-pointer"
-                                                    >
-                                                        ↺ Copiar anterior ({{ valorHistoricoSet(activeInlineSet).peso ?? 0 }}kg × {{ valorHistoricoSet(activeInlineSet).reps ?? 0 }}r)
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        @click="activeInlineSet = null"
-                                                        class="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-                                                        aria-label="Cerrar editor rápido"
-                                                    >
-                                                        <span class="material-symbols-outlined text-[16px]">close</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
-                                                <!-- Peso (kg) con botones +/- -->
-                                                <div>
-                                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                                        Peso (kg)
-                                                    </label>
-                                                    <div class="flex items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            @click="stepInlinePeso(activeInlineSet, -2.5)"
-                                                            class="h-10 px-2.5 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
-                                                        >
-                                                            -2.5
-                                                        </button>
-                                                        <input
-                                                            v-model.number="activeInlineSet.peso"
-                                                            type="number"
-                                                            inputmode="decimal"
-                                                            step="0.5"
-                                                            min="0"
-                                                            placeholder="0"
-                                                            class="w-full h-10 rounded-lg bg-[#101521] border border-[#232D42] text-center font-mono text-sm font-bold text-white focus:outline-none focus:border-indigo-500"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            @click="stepInlinePeso(activeInlineSet, 2.5)"
-                                                            class="h-10 px-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-xs font-mono font-bold text-indigo-300 hover:bg-indigo-600/30 active:scale-95 transition-all cursor-pointer"
-                                                        >
-                                                            +2.5
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Reps con botones +/- -->
-                                                <div>
-                                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                                        Repeticiones
-                                                    </label>
-                                                    <div class="flex items-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            @click="stepInlineReps(activeInlineSet, -1)"
-                                                            class="h-10 px-3 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
-                                                        >
-                                                            -1
-                                                        </button>
-                                                        <input
-                                                            v-model.number="activeInlineSet.reps_realizadas"
-                                                            type="number"
-                                                            inputmode="numeric"
-                                                            step="1"
-                                                            min="0"
-                                                            placeholder="8"
-                                                            class="w-full h-10 rounded-lg bg-[#101521] border border-[#232D42] text-center font-mono text-sm font-bold text-white focus:outline-none focus:border-indigo-500"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            @click="stepInlineReps(activeInlineSet, 1)"
-                                                            class="h-10 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition-all cursor-pointer"
-                                                        >
-                                                            +1
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Botón Completar Set -->
-                                                <button
-                                                    type="button"
-                                                    @click="completeInlineSet(activeInlineSet, ej.sets)"
-                                                    class="h-10 px-4 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
-                                                >
-                                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                                                    <span>{{ activeInlineSet.completado ? 'Actualizar serie' : 'Completar serie' }}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </article>
-                            </div>
-                        </section>
+                        <DashboardExerciseList
+                            :ejercicios-del-dia="ejerciciosDelDia"
+                            :ejercicios-completados-count="ejerciciosCompletadosCount"
+                            :bloques-del-dia="bloquesDelDia"
+                            :is-initial-loading="isInitialLoading"
+                            :expandir-todos="expandirTodos"
+                            :active-inline-set="activeInlineSet"
+                            :es-set-historico="esSetHistorico"
+                            :format-set-label="formatSetLabel"
+                            :valor-historico-set="valorHistoricoSet"
+                            @toggle-expand="expandirTodos = !expandirTodos"
+                            @toggle-inline-set="toggleInlineSet"
+                            @close-inline-set="activeInlineSet = null"
+                            @copy-from-previous="copyInlineFromPrev"
+                            @step-weight="stepInlinePeso"
+                            @step-reps="stepInlineReps"
+                            @complete-set="completeInlineSet"
+                            @update-field="updateInlineField"
+                        />
 
                         <!-- Visual Media Interlude (Rich photographic elements) -->
-                        <section class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-xl">
-                            <div class="relative h-44 rounded-xl overflow-hidden group">
-                                <img
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    alt="Sobrecarga Progresiva"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_237cDXPJ5kXFpkwOdgxoIn0ODK9BARrO1MF8UvxwL8MD8b_-c3eyKUBQS9taIQ6Cev_NY2hKw8ioQCSoVTDvku5PSOLJj1nz_m9LdQoF0J6fv8odydpTB844OwrVd5956e5-67mWps8BxjHYgAkqz7M2xIXYxVgOWx5OP0uPo_B6JIQ-5DzGfSFqIcJ_GmFHqGPzeJFMP7EFAfy3wgnUJmYS83AuoE7KcGiekA"
-                                />
-                                <div
-                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
-                                >
-                                    <span
-                                        class="font-label-sm text-label-sm uppercase text-secondary"
-                                        >Sobrecarga Progresiva</span
-                                    >
-                                    <span
-                                        class="font-label-lg text-label-lg text-on-surface font-bold"
-                                        >+12.5% volumen pectoral</span
-                                    >
-                                </div>
-                            </div>
-                            <div class="relative h-44 rounded-xl overflow-hidden group">
-                                <img
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    alt="Intensidad Media (RPE 8.5)"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiu2GeVZel5XiEQKR3umJb6-DQG4eTcj9yFTyNKlZYQQIf0ft4GyA1r5wN9R1dYsXktsfqAMm_fYnfDPpFQq8GgYcAsvEaJCdlcnzrM7S81rjhomiG8Y4QXF7qeb24JCfOOQu_54qWBJupX2rf8LWru2yMFY6er8hXT-cNedZ93gf1ZZ9L2LDisYk1Zwsi8pvvvSdHxIKffbEbmNlwiBN0GHShts8LD7bwVSVQSQ"
-                                />
-                                <div
-                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
-                                >
-                                    <span
-                                        class="font-label-sm text-label-sm uppercase text-tertiary"
-                                        >Intensidad Media (RPE 8.5)</span
-                                    >
-                                    <span
-                                        class="font-label-lg text-label-lg text-on-surface font-bold"
-                                        >Cadencia de empuje controlada</span
-                                    >
-                                </div>
-                            </div>
-                            <div class="relative h-44 rounded-xl overflow-hidden group">
-                                <img
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    alt="Recuperación Sugerida"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8VCHImghNygnLsa-ZE_tPphr3uzTi29mH0QYrt5cwYcxAXlnMbm8-xHOw1wI9EkYV_mYmWNybhrexvw2T2KJj8BSFV48f8v5LwSufQipfcBzfgFfY1bSgqoPt2xS09xxLKfqHOqF-Nn8TGkU9doWQIjh2jp4Ed9IVkKYJQ9llQFXR1EUKa-Y0APNC4ms6d937PGIKpGJTs4gzXqMBiy90iG4qE-9xU37kXYXJdw"
-                                />
-                                <div
-                                    class="absolute inset-0 bg-gradient-to-t from-surface-dim via-surface-dim/40 to-transparent flex flex-col justify-end p-space-md"
-                                >
-                                    <span class="font-label-sm text-label-sm uppercase text-outline"
-                                        >Recuperación Sugerida</span
-                                    >
-                                    <span
-                                        class="font-label-lg text-label-lg text-on-surface font-bold"
-                                        >48h descanso neuromuscular</span
-                                    >
-                                </div>
-                            </div>
-                        </section>
+                        <DashboardVisualInterlude />
 
                         <!-- Analytics & Telemetry Charts Section -->
-                        <section
-                            class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg mb-space-xl"
-                            data-tour="telemetry-charts"
-                        >
-                            <!-- Telemetry Chart 1: Press de Banca 30d -->
-                            <div
-                                class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
-                            >
-                                <div class="flex items-start justify-between gap-space-md mb-space-md">
-                                    <div class="flex flex-col">
-                                        <div
-                                            class="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm uppercase tracking-wider"
-                                        >
-                                            <span class="material-symbols-outlined text-[16px]"
-                                                >show_chart</span
-                                            >
-                                            <span>Peso máximo por día (30d)</span>
-                                        </div>
-                                        <h4
-                                            class="font-headline-md text-headline-md text-on-surface font-bold"
-                                        >
-                                            Progreso en {{ chartEjercicioNombre }}
-                                        </h4>
-                                        <span class="font-body-sm text-body-sm text-outline">
-                                            Evolución de carga máxima en series principales
-                                        </span>
-                                    </div>
-                                    <span
-                                        class="px-space-md py-1 rounded-full bg-secondary-container/50 text-secondary font-label-md text-label-md font-bold shrink-0"
-                                    >
-                                        Max: {{ maxPesoChart }} kg
-                                    </span>
-                                </div>
-
-                                <!-- Inline SVG Telemetry Curve 1 -->
-                                <div class="relative w-full h-56 pt-space-sm">
-                                    <svg
-                                        class="w-full h-full overflow-visible"
-                                        fill="none"
-                                        preserveAspectRatio="none"
-                                        viewBox="0 0 500 180"
-                                    >
-                                        <defs>
-                                            <linearGradient
-                                                id="chartGrad1"
-                                                x1="0"
-                                                x2="0"
-                                                y1="0"
-                                                y2="1"
-                                            >
-                                                <stop
-                                                    offset="0%"
-                                                    stop-color="#8083ff"
-                                                    stop-opacity="0.35"
-                                                ></stop>
-                                                <stop
-                                                    offset="100%"
-                                                    stop-color="#8083ff"
-                                                    stop-opacity="0.0"
-                                                ></stop>
-                                            </linearGradient>
-                                        </defs>
-                                        <!-- Grid Lines -->
-                                        <line
-                                            stroke="#31353e"
-                                            stroke-dasharray="4 4"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="40"
-                                            y2="40"
-                                        ></line>
-                                        <line
-                                            stroke="#31353e"
-                                            stroke-dasharray="4 4"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="90"
-                                            y2="90"
-                                        ></line>
-                                        <line
-                                            stroke="#31353e"
-                                            stroke-dasharray="4 4"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="140"
-                                            y2="140"
-                                        ></line>
-                                        <!-- Curve fill area -->
-                                        <path :d="chart1Telemetry.area" fill="url(#chartGrad1)"></path>
-                                        <!-- Smooth spline path -->
-                                        <path
-                                            :d="chart1Telemetry.line"
-                                            stroke="#c0c1ff"
-                                            stroke-linecap="round"
-                                            stroke-width="3"
-                                        ></path>
-                                        <!-- Key Metric Nodes -->
-                                        <template
-                                            v-for="(node, nIdx) in chart1Telemetry.nodes"
-                                            :key="nIdx"
-                                        >
-                                            <template v-if="node.peak">
-                                                <circle
-                                                    class="animate-pulse"
-                                                    :cx="node.x"
-                                                    :cy="node.y"
-                                                    fill="#8083ff"
-                                                    r="7"
-                                                ></circle>
-                                                <circle
-                                                    :cx="node.x"
-                                                    :cy="node.y"
-                                                    fill="#dfe2ee"
-                                                    r="4"
-                                                ></circle>
-                                            </template>
-                                            <circle
-                                                v-else
-                                                :cx="node.x"
-                                                :cy="node.y"
-                                                fill="#0f131c"
-                                                :r="node.muted ? 3 : 4"
-                                                :stroke="node.muted ? '#908fa0' : '#c0c1ff'"
-                                                stroke-width="2"
-                                            ></circle>
-                                        </template>
-                                    </svg>
-                                </div>
-                                <!-- Date Axis -->
-                                <div
-                                    class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-space-xs"
-                                >
-                                    <span
-                                        v-for="(lbl, lIdx) in chart1Telemetry.labels"
-                                        :key="lIdx"
-                                        >{{ lbl }}</span
-                                    >
-                                </div>
-                            </div>
-
-                            <!-- Telemetry Chart 2: Global PR History 30d -->
-                            <div
-                                class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
-                            >
-                                <div class="flex items-start justify-between gap-space-md mb-space-md">
-                                    <div class="flex flex-col">
-                                        <div
-                                            class="flex items-center gap-space-xs text-primary font-label-sm text-label-sm uppercase tracking-wider"
-                                        >
-                                            <span class="material-symbols-outlined text-[16px]"
-                                                >monitoring</span
-                                            >
-                                            <span>Peso máximo por día (últimos 30 días)</span>
-                                        </div>
-                                        <h4
-                                            class="font-headline-md text-headline-md text-on-surface font-bold"
-                                        >
-                                            Tu PR diario a lo largo del tiempo
-                                        </h4>
-                                        <span class="font-body-sm text-body-sm text-outline">
-                                            Ponderación volumétrica por semana de descarga y pico
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center gap-2 shrink-0">
-                                        <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
-                                        <span
-                                            class="font-label-sm text-label-sm text-on-surface-variant"
-                                            >Peso (kg)</span
-                                        >
-                                    </div>
-                                </div>
-
-                                <!-- Inline SVG Telemetry Curve 2 -->
-                                <div class="relative w-full h-56 pt-space-sm">
-                                    <svg
-                                        class="w-full h-full overflow-visible"
-                                        fill="none"
-                                        preserveAspectRatio="none"
-                                        viewBox="0 0 500 180"
-                                    >
-                                        <defs>
-                                            <linearGradient
-                                                id="chartGrad2"
-                                                x1="0"
-                                                x2="0"
-                                                y1="0"
-                                                y2="1"
-                                            >
-                                                <stop
-                                                    offset="0%"
-                                                    stop-color="#571bc1"
-                                                    stop-opacity="0.4"
-                                                ></stop>
-                                                <stop
-                                                    offset="100%"
-                                                    stop-color="#571bc1"
-                                                    stop-opacity="0.0"
-                                                ></stop>
-                                            </linearGradient>
-                                        </defs>
-                                        <!-- Guide markers horizontal -->
-                                        <line
-                                            stroke="#262a33"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="20"
-                                            y2="20"
-                                        ></line>
-                                        <line
-                                            stroke="#262a33"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="60"
-                                            y2="60"
-                                        ></line>
-                                        <line
-                                            stroke="#262a33"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="100"
-                                            y2="100"
-                                        ></line>
-                                        <line
-                                            stroke="#262a33"
-                                            stroke-width="1"
-                                            x1="0"
-                                            x2="500"
-                                            y1="140"
-                                            y2="140"
-                                        ></line>
-                                        <!-- Curve fill area -->
-                                        <path :d="chart2Telemetry.area" fill="url(#chartGrad2)"></path>
-                                        <!-- Smooth spline path -->
-                                        <path
-                                            :d="chart2Telemetry.line"
-                                            stroke="#d0bcff"
-                                            stroke-linecap="round"
-                                            stroke-width="3"
-                                        ></path>
-                                        <!-- Chart Nodes -->
-                                        <circle
-                                            v-for="(node, nIdx) in chart2Telemetry.nodes"
-                                            :key="nIdx"
-                                            :cx="node.x"
-                                            :cy="node.y"
-                                            :fill="
-                                                node.isPeak
-                                                    ? '#4edea3'
-                                                    : node.isAccent
-                                                      ? '#571bc1'
-                                                      : '#0f131c'
-                                            "
-                                            :r="node.isPeak ? 6 : node.isAccent ? 5 : 4"
-                                            :stroke="node.isPeak ? '#dfe2ee' : '#d0bcff'"
-                                            stroke-width="2"
-                                        ></circle>
-                                    </svg>
-                                </div>
-                                <!-- Date Axis -->
-                                <div
-                                    class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-space-xs"
-                                >
-                                    <span
-                                        v-for="(lbl, lIdx) in chart2Telemetry.labels"
-                                        :key="lIdx"
-                                        >{{ lbl }}</span
-                                    >
-                                </div>
-                            </div>
-                        </section>
+                        <DashboardTelemetryCharts
+                            :historial-rutina="historialRutina"
+                            :ejercicios-del-dia="ejerciciosDelDia"
+                        />
 
                         <!-- Session Actions Bar -->
-                        <section class="flex flex-col gap-space-md pt-space-xs pb-space-xl">
-                            <div class="flex flex-col sm:flex-row items-center gap-space-md">
-                                <!-- Dia Anterior Secondary -->
-                                <button
-                                    v-if="diaIndex > 0"
-                                    type="button"
-                                    @click="diaAnterior"
-                                    class="w-full sm:w-auto px-space-lg py-space-md rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 transition-colors"
-                                >
-                                    <span class="material-symbols-outlined text-[20px]"
-                                        >arrow_back</span
-                                    >
-                                    <span>Día anterior</span>
-                                </button>
-                                <!-- Guardar Sesion Primary -->
-                                <button
-                                    type="button"
-                                    @click="guardarSesion"
-                                    class="w-full sm:flex-1 px-space-xl py-space-md rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,131,255,0.35)] transition-all"
-                                >
-                                    <span class="material-symbols-outlined text-[20px]"
-                                        >bookmark</span
-                                    >
-                                    <span>Guardar sesión</span>
-                                </button>
-                            </div>
-
-                            <!-- Siguiente Día (si no es el último día) -->
-                            <button
-                                v-if="!esUltimoDia"
-                                type="button"
-                                @click="siguienteDia"
-                                class="w-full py-space-md px-space-xl rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 transition-all"
-                            >
-                                <span>Avanzar al siguiente día: {{ diasSiguienteLabel }}</span>
-                                <span class="material-symbols-outlined text-[20px]"
-                                    >arrow_forward</span
-                                >
-                            </button>
-
-                            <!-- Finalizar Rutina Full Accent CTA -->
-                            <button
-                                type="button"
-                                @click="finalizarRutina"
-                                class="w-full py-space-md px-space-xl rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2.5 shadow-[0_0_24px_rgba(78,222,163,0.35)] hover:shadow-[0_0_32px_rgba(78,222,163,0.5)] transition-all"
-                            >
-                                <span
-                                    class="material-symbols-outlined text-[22px]"
-                                    :style="{ fontVariationSettings: '\'FILL\' 1' }"
-                                    >check_circle</span
-                                >
-                                <span>Finalizar rutina</span>
-                            </button>
-                        </section>
+                        <DashboardSessionActions
+                            :dia-index="diaIndex"
+                            :es-ultimo-dia="esUltimoDia"
+                            :dias-siguiente-label="diasSiguienteLabel"
+                            @previous-day="diaAnterior"
+                            @save-session="guardarSesion"
+                            @next-day="siguienteDia"
+                            @finish-routine="finalizarRutina"
+                        />
                     </div>
                 </div>
             </div>
 
             <!-- Footer Pro Telemetry -->
-            <footer class="w-full bg-surface-container-lowest mt-space-xl">
-                <div
-                    class="max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-md"
-                >
-                    <div class="flex items-center gap-space-sm">
-                        <div
-                            class="w-6 h-6 rounded-lg bg-secondary-container flex items-center justify-center"
-                        >
-                            <span class="material-symbols-outlined text-secondary text-[16px]"
-                                >fitness_center</span
-                            >
-                        </div>
-                        <span class="font-label-md text-label-md text-on-surface-variant">
-                            © {{ anioActual }} GymApp Pro Telemetry. Todos los derechos reservados.
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-space-lg">
-                        <a
-                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-                            href="#soporte"
-                            >Soporte</a
-                        >
-                        <a
-                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-                            href="#terminos"
-                            >Términos del Servicio</a
-                        >
-                        <a
-                            class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-                            href="#privacidad"
-                            >Privacidad</a
-                        >
-                    </div>
-                </div>
-            </footer>
+            <DashboardFooter :anio-actual="anioActual" />
         </template>
 
         <EmptyStateIllustrated
@@ -2649,153 +1366,14 @@ const iniciarTemporizador = (fila) => {
         />
 
         <!-- Bottom sheet: resumen al cambiar de día -->
-        <Teleport to="body">
-            <Transition name="sheet-fade">
-                <div
-                    v-if="showDaySummary"
-                    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-                    @click.self="showDaySummary = false"
-                >
-                    <div
-                        class="sheet-content w-full sm:max-w-md bg-surface-container sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-surface-variant overflow-hidden max-h-[90vh] flex flex-col"
-                    >
-                        <div class="sm:hidden pt-2 pb-1 flex justify-center">
-                            <div class="w-10 h-1.5 rounded-full bg-surface-variant"></div>
-                        </div>
-
-                        <div
-                            class="bg-gradient-to-br from-tertiary-container to-tertiary px-6 py-5 text-on-tertiary"
-                        >
-                            <div
-                                class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-90"
-                            >
-                                <span>✓</span>
-                                <span>Día completado</span>
-                            </div>
-                            <h3 class="mt-1 text-2xl font-black">
-                                {{ daySummary.diaLabel }}
-                            </h3>
-                        </div>
-
-                        <div class="px-6 py-5 space-y-4 overflow-y-auto">
-                            <div class="grid grid-cols-3 gap-3 text-center">
-                                <div class="rounded-xl bg-primary-container/15 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-primary"
-                                    >
-                                        Series
-                                    </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-on-surface tabular-nums"
-                                    >
-                                        {{ daySummary.completadas }}/{{ daySummary.total }}
-                                    </p>
-                                </div>
-                                <div class="rounded-xl bg-secondary-container/25 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-secondary"
-                                    >
-                                        Volumen
-                                    </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-on-surface tabular-nums"
-                                    >
-                                        {{ formatVolumen(daySummary.volumen) }}
-                                    </p>
-                                    <p class="text-[10px] text-outline">kg totales</p>
-                                </div>
-                                <div class="rounded-xl bg-tertiary/15 px-3 py-3">
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-tertiary"
-                                    >
-                                        PRs
-                                    </p>
-                                    <p
-                                        class="mt-0.5 text-2xl font-black text-tertiary tabular-nums"
-                                    >
-                                        {{ daySummary.prs }}
-                                    </p>
-                                    <p class="text-[10px] text-tertiary/80">récords</p>
-                                </div>
-                            </div>
-
-                            <div
-                                v-if="daySummary.mejorSet"
-                                class="rounded-xl bg-tertiary/10 border border-tertiary/30 px-4 py-3"
-                            >
-                                <div
-                                    class="flex items-center gap-2 text-xs font-bold text-tertiary uppercase tracking-wider"
-                                >
-                                    <span>🏆</span>
-                                    <span>Mejor set</span>
-                                </div>
-                                <p class="mt-1 text-base font-bold text-on-surface">
-                                    {{ daySummary.mejorSet.ejercicio }}
-                                </p>
-                                <p class="text-sm font-semibold text-tertiary tabular-nums">
-                                    {{ daySummary.mejorSet.peso }} kg ×
-                                    {{ daySummary.mejorSet.reps }} reps
-                                </p>
-                            </div>
-                        </div>
-
-                        <div
-                            class="px-6 py-4 bg-surface-container-lowest/60 border-t border-surface-variant flex gap-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
-                        >
-                            <button
-                                type="button"
-                                @click="showDaySummary = false"
-                                class="flex-1 px-4 py-2.5 rounded-xl border border-surface-variant bg-surface-container-low text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
-                            >
-                                Quedarme acá
-                            </button>
-                            <button
-                                v-if="daySummary.tieneSiguiente"
-                                type="button"
-                                @click="avanzarAlSiguienteDia"
-                                class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
-                            >
-                                Ir al {{ daySummary.siguienteLabel }} →
-                            </button>
-                            <button
-                                v-else
-                                type="button"
-                                @click="finalizarRutinaDesdeResumen"
-                                class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
-                            >
-                                🎉 Finalizar rutina
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
+        <DashboardDaySummarySheet
+            v-if="showDaySummary"
+            :summary="daySummary"
+            :format-volumen="formatVolumen"
+            @close="showDaySummary = false"
+            @next-day="avanzarAlSiguienteDia"
+            @finish-routine="finalizarRutinaDesdeResumen"
+        />
     </div>
 </template>
 
-<style scoped>
-.sheet-fade-enter-active,
-.sheet-fade-leave-active {
-    transition: opacity 0.25s ease;
-}
-.sheet-fade-enter-from,
-.sheet-fade-leave-to {
-    opacity: 0;
-}
-
-.sheet-fade-enter-active .sheet-content,
-.sheet-fade-leave-active .sheet-content {
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.sheet-fade-enter-from .sheet-content,
-.sheet-fade-leave-to .sheet-content {
-    transform: translateY(100%);
-}
-
-@media (min-width: 640px) {
-    .sheet-fade-enter-from .sheet-content,
-    .sheet-fade-leave-to .sheet-content {
-        transform: translateY(0) scale(0.96);
-    }
-}
-</style>

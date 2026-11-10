@@ -9,6 +9,41 @@ use Illuminate\Database\QueryException;
 class Historial extends Model
 {
     /**
+     * RANGOS DE `series_numero` (bug P0 corregido)
+     * --------------------------------------------
+     * El índice UNIQUE `uq_historials_idempotencia` es:
+     *   (user_id, rutina_nombre, dia, ejercicio_nombre, series_numero, fecha)
+     * y NO incluye `tipo_serie`. Como el calentamiento y la serie efectiva
+     * N partían ambos de 1, la colisión era inevitable: el warmup 1 y la
+     * efectiva 1 caían en la MISMA clave, y `guardarIdempotente()` pisaba el
+     * warmup con la efectiva (se perdía el registro y el volumen subcuenta).
+     *
+     * AGENTS.md declara ese índice como invariante, así que la solución NO
+     * es agregar `tipo_serie` al índice (requiere migración), sino separar
+     * los rangos DENTRO de la misma columna:
+     *
+     *   - Series efectivas:  1 .. 50
+     *   - Calentamientos:   51 .. 99  (offset de 50)
+     *
+     * Espejo del módulo `resources/js/utils/seriesNumero.js`.
+     */
+    public const OFFSET_CALENTAMIENTO = 50;
+
+    /** Máximo de series efectivas por ejercicio. */
+    public const MAX_SERIES = 50;
+
+    /** Máximo absoluto de `series_numero` (inclusive, calentamiento final). */
+    public const MAX_SERIES_NUMERO = 99;
+
+    /**
+     * ¿Este `series_numero` corresponde a un calentamiento?
+     */
+    public static function esCalentamiento(?int $seriesNumero): bool
+    {
+        return $seriesNumero !== null && $seriesNumero > self::OFFSET_CALENTAMIENTO;
+    }
+
+    /**
      * **D2/D3 (resuelta 2026-08-17):** `ejercicio_id` FK agregada vía migración
      * `2026_08_17_000001`. Se mantiene `ejercicio_nombre` como columna legacy
      * para retrocompat con código viejo y para los casos donde el backfill

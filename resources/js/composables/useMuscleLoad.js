@@ -18,7 +18,7 @@
 // Por convención openGym, los músculos secundarios cuentan 0.4 (no 1.0).
 // Los sets NO completados (completado=false) no cuentan.
 
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 export const MUSCLE_SLUGS = [
     'trapezius',

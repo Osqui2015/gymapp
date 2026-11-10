@@ -8,6 +8,8 @@
  *   - los órdenes 'volumen_desc' y 'ejercicio_asc' no existían en el sort.
  */
 
+import { fechaLocalHaceDias, inicioDeAnioLocal } from '../utils/fecha';
+
 /**
  * @param {Array} historial  filas del payload de /api/historial
  * @param {Object} filtros   { search, rutina, dia, periodo, fechaDesde, fechaHasta, soloCompletados, orden }
@@ -56,10 +58,7 @@ export function aplicarPeriodo(list, filtros = {}) {
     }
 
     if (periodo === 'year') {
-        const desde = new Date();
-        desde.setMonth(0, 1);
-        desde.setHours(0, 0, 0, 0);
-        const cutoff = desde.toISOString().slice(0, 10);
+        const cutoff = inicioDeAnioLocal();
         return list.filter((h) => (h.fecha || '') >= cutoff);
     }
 
@@ -68,9 +67,7 @@ export function aplicarPeriodo(list, filtros = {}) {
     const days = parseInt(periodo, 10);
     if (isNaN(days) || days <= 0) return list;
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    const cutoff = cutoffDate.toISOString().slice(0, 10);
+    const cutoff = fechaLocalHaceDias(days);
     return list.filter((h) => (h.fecha || '') >= cutoff);
 }
 

@@ -1,0 +1,1 @@
+const a="America/Argentina/Tucuman";function n(e=new Date){return new Intl.DateTimeFormat("en-CA",{timeZone:a,year:"numeric",month:"2-digit",day:"2-digit"}).format(e)}function i(e){const t=new Date;return t.setDate(t.getDate()-Number(e||0)),n(t)}function o(){const e=new Date;return n(new Date(e.getFullYear(),0,1))}export{i as f,n as h,o as i};

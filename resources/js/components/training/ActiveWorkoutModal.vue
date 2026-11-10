@@ -429,7 +429,7 @@
                                     class="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-emerald-400 leading-tight mt-1.5 font-medium"
                                 >
                                     <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
                                     </svg>
                                     <span>
                                         <strong class="font-bold">Sugerencia:</strong>
@@ -448,7 +448,7 @@
                                 >
                                     <div v-if="recomendacionFirst" class="flex items-start gap-1.5">
                                         <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
                                         <span>
                                             <strong class="font-bold">Sugerencia {{ superserieOrder.first.ejercicio.nombre }}:</strong>
@@ -457,7 +457,7 @@
                                     </div>
                                     <div v-if="recomendacionSecond" class="flex items-start gap-1.5">
                                         <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
                                         <span>
                                             <strong class="font-bold">Sugerencia {{ superserieOrder.second.ejercicio.nombre }}:</strong>
@@ -626,7 +626,7 @@
                                         "
                                     >
                                         <template v-if="s.tipo_serie === 'calentamiento'">
-                                            Calentamiento {{ s.series_numero }}
+                                            Calentamiento {{ numeroSerieParaDisplay(s.series_numero) }}
                                         </template>
                                         <template v-else>
                                             #{{ s.series_numero }}
@@ -726,7 +726,7 @@
                                                 "
                                             >
                                                 <template v-if="s.tipo_serie === 'calentamiento'">
-                                                    Calentamiento {{ s.series_numero }}
+                                                    Calentamiento {{ numeroSerieParaDisplay(s.series_numero) }}
                                                 </template>
                                                 <template v-else>
                                                     #{{ s.series_numero }}
@@ -895,6 +895,8 @@ import { useRestTimerStore } from '@/stores/restTimer';
 import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useToast } from '@/composables/useToast';
 import { useWakeLock } from '@/composables/useWakeLock';
+import { numeroCalentamientoPersisted, numeroSerieParaDisplay } from '@/utils/seriesNumero';
+import { hoyLocal } from '@/utils/fecha';
 import SetConfigCard from './SetConfigCard.vue';
 import PrescripcionCard from './PrescripcionCard.vue';
 import {
@@ -969,7 +971,7 @@ async function loadEjercicioMedia(nombre) {
         if (seq !== mediaFetchSeq) return;
         mediaCache.set(nombre, data);
         ejercicioMedia.value = data;
-    } catch (e) {
+    } catch {
         if (seq !== mediaFetchSeq) return;
         // 404 u otro error → no mostrar bloque
         ejercicioMedia.value = null;
@@ -1120,7 +1122,7 @@ watch(
                 lastExerciseDataFirst.value = res1?.data || null;
                 lastExerciseDataSecond.value = res2?.data || null;
                 lastExerciseData.value = res1?.data || null;
-            } catch (err) {
+            } catch {
                 if (token === lastExerciseFetchToken) {
                     lastExerciseDataFirst.value = null;
                     lastExerciseDataSecond.value = null;
@@ -1136,7 +1138,7 @@ watch(
                 lastExerciseData.value = data || null;
                 lastExerciseDataFirst.value = null;
                 lastExerciseDataSecond.value = null;
-            } catch (err) {
+            } catch {
                 if (token === lastExerciseFetchToken) {
                     lastExerciseData.value = null;
                     lastExerciseDataFirst.value = null;
@@ -1315,7 +1317,7 @@ const onSetComplete = async (payload, { skipTimer = false } = {}) => {
     let currentSerieNum;
     if (isCurrent) {
         currentSerieNum = isWarmup
-            ? (store.session.currentCalentamientoNumero || 1)
+            ? numeroCalentamientoPersisted(store.session.currentCalentamientoNumero || 1)
             : store.session.currentSerieNumero;
     } else {
         const completedEffective = (ej.sets || []).filter(
@@ -1342,7 +1344,7 @@ const onSetComplete = async (payload, { skipTimer = false } = {}) => {
     // 3. Persistir en backend / IndexedDB offline
     try {
         const resultado = await offline.recordSet({
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: hoyLocal(),
             rutina_nombre: store.session.rutina_nombre,
             dia: store.session.dia,
             ejercicio_nombre: ej.nombre,
