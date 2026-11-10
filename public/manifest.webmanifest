@@ -4,8 +4,9 @@
     "description": "Tu app de entrenamiento, rutinas, progreso y comunicación con tu trainer.",
     "start_url": "/dashboard",
     "display": "standalone",
-    "background_color": "#0B0F17",
-    "theme_color": "#6366F1",
+    "display_override": ["window-controls-overlay", "standalone"],
+    "background_color": "#F5F6FA",
+    "theme_color": "#4F46E5",
     "orientation": "portrait",
     "lang": "es",
     "icons": [

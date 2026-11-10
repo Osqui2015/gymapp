@@ -9,7 +9,9 @@
 
         {{-- PWA (Progressive Web App) --}}
         <link rel="manifest" href="/manifest.webmanifest">
-        <meta name="theme-color" content="#6366F1">
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F6FA">
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#090D16">
+        <meta name="color-scheme" content="light dark">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,15 +25,17 @@
         {{-- Phosphor Icons for high-end fitness UI (Kinetic Obsidian) --}}
         <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-        {{-- Script anti-FOUC: aplica el tema antes de que Vue hidrate --}}
+        {{-- Script anti-FOUC: aplica el tema antes de que Vue hidrate (mínimo bloqueante) --}}
         <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 try {
-                    // Soporta ambas keys para retrocompat: 'theme' (vieja) y 'theme_mode' (nueva)
-                    var mode = localStorage.getItem('theme_mode') || localStorage.getItem('theme') || 'auto';
-                    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    var dark = mode === 'dark' || (mode === 'auto' && prefersDark);
-                    if (dark) document.documentElement.classList.add('dark');
+                    var m = localStorage.getItem('theme_mode') || localStorage.getItem('theme') || 'auto';
+                    var p = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    var d = m === 'dark' || (m === 'auto' && p);
+                    var doc = document.documentElement;
+                    if (d) doc.classList.add('dark'); else doc.classList.remove('dark');
+                    doc.dataset.theme = d ? 'dark' : 'light';
+                    doc.style.colorScheme = d ? 'dark' : 'light';
                 } catch (e) {}
             })();
         </script>
@@ -52,7 +56,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-[#0B0F17] text-slate-200 selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+    <body class="font-sans antialiased bg-bg text-text selection:bg-brand selection:text-on-brand overflow-x-hidden">
         {{-- Skip to content (a11y: 6.3) --}}
         <a
             href="#main-content"
@@ -61,7 +65,7 @@
             Saltar al contenido principal
         </a>
 
-        <div class="min-h-screen bg-[#0B0F17] pb-20 md:pb-0">
+        <div class="min-h-screen bg-bg pb-20 md:pb-0">
             @include('layouts.navigation')
 
             @isset($header)
@@ -99,45 +103,6 @@
 
         {{-- Mount point para el indicador de estado offline global --}}
         <div id="offline-status-root"></div>
-
-        {{-- Dark mode manager (expone window.darkMode, lo consume el componente Vue app-navigation) --}}
-        <script nonce="{{ $cspNonce ?? '' }}">
-            (function () {
-                const STORAGE_KEY = 'theme_mode'; // nueva key: 'auto' | 'light' | 'dark'
-                const LEGACY_KEY = 'theme';      // vieja key: 'light' | 'dark'
-                const root = document.documentElement;
-                function setStored(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch (e) {} }
-                function prefersDark() { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
-                function effectiveDark() {
-                    var mode = localStorage.getItem(STORAGE_KEY);
-                    if (!mode) {
-                        // retrocompat: si la vieja key está, usarla
-                        var legacy = localStorage.getItem(LEGACY_KEY);
-                        if (legacy === 'dark') return true;
-                        if (legacy === 'light') return false;
-                        return prefersDark();
-                    }
-                    return mode === 'dark' || (mode === 'auto' && prefersDark());
-                }
-                function apply() {
-                    if (effectiveDark()) root.classList.add('dark');
-                    else root.classList.remove('dark');
-                }
-                window.darkMode = {
-                    isDark: () => root.classList.contains('dark'),
-                    toggle() {
-                        const next = !root.classList.contains('dark');
-                        apply();
-                        setStored(next ? 'dark' : 'light');
-                        window.dispatchEvent(new CustomEvent('theme:changed', { detail: { dark: next } }));
-                    },
-                };
-                // Reaccionar a cambios del sistema cuando el user eligió 'auto'
-                if (window.matchMedia) {
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
-                }
-            })();
-        </script>
 
         {{-- Auto-ocultar avisos "Saved." (antes lo hacia Alpine con x-init + x-show) --}}
         <script nonce="{{ $cspNonce ?? '' }}">

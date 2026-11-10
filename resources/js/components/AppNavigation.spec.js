@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import AppNavigation from './AppNavigation.vue';
+import theme from '../utils/theme';
 
 /**
  * AppNavigation — navbar migrada de Alpine a Vue.
@@ -155,15 +156,15 @@ describe('AppNavigation', () => {
         wrapper.unmount();
     });
 
-    it('el boton de tema llama a window.darkMode.toggle()', async () => {
+    it('el boton de tema llama a theme.cycle()', async () => {
+        const cycleSpy = vi.spyOn(theme, 'cycle');
         const wrapper = mountNav();
-        const toggle = vi.fn();
-        window.darkMode = { isDark: () => true, toggle };
 
         const themeBtn = wrapper.find('button[aria-label="Cambiar tema"]');
         await themeBtn.trigger('click');
 
-        expect(toggle).toHaveBeenCalledTimes(1);
+        expect(cycleSpy).toHaveBeenCalledTimes(1);
+        cycleSpy.mockRestore();
         wrapper.unmount();
     });
 });

@@ -314,6 +314,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import GlobalSearch from './GlobalSearch.vue';
 import { useClickOutside } from '../composables/useClickOutside';
+import theme from '../utils/theme';
 
 /**
  * Props del componente.
@@ -350,7 +351,8 @@ const props = defineProps({
 const trainerOpen = ref(false);
 const adminOpen = ref(false);
 const userOpen = ref(false);
-const isDark = ref(true);
+const isDark = ref(theme.isDark());
+let unsubscribeTheme = null;
 
 // Refs de los contenedores de los dropdowns (para el click-outside).
 const trainerBtn = ref(null);
@@ -368,23 +370,19 @@ const adminActive = computed(() => props.adminLinks.some((l) => l.active));
 const initial = computed(() => (props.userName || '?').charAt(0).toUpperCase());
 
 const toggleTheme = () => {
-    // window.darkMode lo expone el script inline del layout (app.blade.php).
-    if (window.darkMode) {
-        window.darkMode.toggle();
-    }
-    isDark.value = !isDark.value;
-};
-
-const onThemeChanged = (e) => {
-    isDark.value = !!e.detail?.dark;
+    theme.cycle();
 };
 
 onMounted(() => {
-    isDark.value = window.darkMode ? window.darkMode.isDark() : true;
-    window.addEventListener('theme:changed', onThemeChanged);
+    isDark.value = theme.isDark();
+    unsubscribeTheme = theme.onChange(({ isDark: nextDark }) => {
+        isDark.value = nextDark;
+    });
 });
 
 onBeforeUnmount(() => {
-    window.removeEventListener('theme:changed', onThemeChanged);
+    if (unsubscribeTheme) {
+        unsubscribeTheme();
+    }
 });
 </script>

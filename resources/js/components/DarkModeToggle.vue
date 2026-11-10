@@ -91,15 +91,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import theme from '../utils/theme';
 
-const STORAGE_KEY = 'theme_mode'; // 'auto' | 'light' | 'dark'
-
-const mode = ref('auto'); // preferencia del user
-const systemPrefersDark = ref(false); // lo que dice el OS
+const mode = ref(theme.get()); // preferencia del user: 'auto' | 'light' | 'dark'
+const effectiveMode = ref(theme.effective()); // estado efectivo aplicado: 'light' | 'dark'
 const open = ref(false);
 const rootEl = ref(null);
 
-let mediaQuery = null;
+let unsubscribeTheme = null;
 
 const options = [
     { value: 'light', label: 'Claro', icon: '☀️' },
@@ -107,39 +106,13 @@ const options = [
     { value: 'auto', label: 'Automático (sistema)', icon: '💻' },
 ];
 
-const effectiveMode = computed(() => {
-    return mode.value === 'auto' ? (systemPrefersDark.value ? 'dark' : 'light') : mode.value;
-});
-
 const modeLabel = computed(() => {
     return options.find((o) => o.value === mode.value)?.label || '';
 });
 
-const applyClass = (dark) => {
-    if (dark) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
-};
-
 const select = (value) => {
-    mode.value = value;
-    try {
-        localStorage.setItem(STORAGE_KEY, value);
-    } catch {
-        /* ignore */
-    }
-    applyClass(effectiveMode.value === 'dark');
+    theme.set(value);
     open.value = false;
-};
-
-const onSystemChange = (e) => {
-    systemPrefersDark.value = e.matches;
-    // Solo aplicar si el user eligió "auto"
-    if (mode.value === 'auto') {
-        applyClass(effectiveMode.value === 'dark');
-    }
 };
 
 const onClickOutside = (e) => {
@@ -148,33 +121,20 @@ const onClickOutside = (e) => {
 };
 
 onMounted(() => {
-    // Leer preferencia guardada
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored && ['auto', 'light', 'dark'].includes(stored)) {
-            mode.value = stored;
-        }
-    } catch {
-        /* ignore */
-    }
+    mode.value = theme.get();
+    effectiveMode.value = theme.effective();
 
-    // Leer preferencia del sistema
-    mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
-    if (mediaQuery) {
-        systemPrefersDark.value = mediaQuery.matches;
-        mediaQuery.addEventListener('change', onSystemChange);
-    }
+    unsubscribeTheme = theme.onChange(({ mode: nextMode, effective: nextEffective }) => {
+        mode.value = nextMode;
+        effectiveMode.value = nextEffective;
+    });
 
-    // Aplicar al cargar
-    applyClass(effectiveMode.value === 'dark');
-
-    // Cerrar dropdown al click fuera
     document.addEventListener('click', onClickOutside);
 });
 
 onBeforeUnmount(() => {
-    if (mediaQuery) {
-        mediaQuery.removeEventListener('change', onSystemChange);
+    if (unsubscribeTheme) {
+        unsubscribeTheme();
     }
     document.removeEventListener('click', onClickOutside);
 });
