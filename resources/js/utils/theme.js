@@ -189,7 +189,6 @@ export function init({ force = false } = {}) {
     }
 
     // Aplicar estado inicial
-    const currentMode = get();
     const eff = effective();
     applyToDOM(eff);
 

@@ -50,7 +50,7 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['start-workout']);
+defineEmits(['start-workout']);
 
 const session = useTrainingSessionStore();
 </script>

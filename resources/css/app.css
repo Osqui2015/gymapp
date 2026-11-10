@@ -18,7 +18,7 @@
     --color-border-strong: #CBD2E0;
     --color-text: #0D1220;
     --color-text-2: #5A6478;
-    --color-text-3: #6B7488;
+    --color-text-3: #667085;
     --color-brand: #4F46E5;
     --color-on-brand: #FFFFFF;
     --color-success: #047857;
@@ -141,7 +141,7 @@
     --color-secondary-fixed-dim: #d0bcff;
     --color-surface-variant: #31353e;
     --color-on-tertiary-fixed-variant: #005236;
-    --color-surface: #0f131c;
+    --color-surface-legacy: #0f131c;
     --color-error: #ffb4ab;
     --color-tertiary-container: #00885d;
     --color-on-surface-variant: #c7c4d7;

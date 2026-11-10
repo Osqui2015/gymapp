@@ -22,7 +22,6 @@ import DashboardRoutineHeroCard from './dashboard/DashboardRoutineHeroCard.vue';
 import DashboardDaySelector from './dashboard/DashboardDaySelector.vue';
 import DashboardKeyMetrics from './dashboard/DashboardKeyMetrics.vue';
 import DashboardExerciseList from './dashboard/DashboardExerciseList.vue';
-import DashboardVisualInterlude from './dashboard/DashboardVisualInterlude.vue';
 import DashboardTelemetryCharts from './dashboard/DashboardTelemetryCharts.vue';
 import DashboardSessionActions from './dashboard/DashboardSessionActions.vue';
 import DashboardFooter from './dashboard/DashboardFooter.vue';

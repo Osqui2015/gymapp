@@ -15,7 +15,7 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['close', 'next-day', 'finish-routine']);
+defineEmits(['close', 'next-day', 'finish-routine']);
 </script>
 
 <template>

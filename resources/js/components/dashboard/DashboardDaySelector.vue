@@ -25,7 +25,7 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['select-day']);
+defineEmits(['select-day']);
 </script>
 
 <template>

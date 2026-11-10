@@ -628,9 +628,6 @@
                                         {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
                                     </span>
                                 </div>
-                                <span class="text-[10px] text-text-3 font-mono tabular-nums">
-                                    {{ formatSetTime(s.completed_at) }}
-                                </span>
                             </div>
                         </div>
                     </section>
@@ -676,65 +673,6 @@
                             :last-data="lastExerciseData"
                             @complete="onSetComplete"
                         />
-
-                        <!-- En mobile: lista desplegable debajo de la botonera para no empujarla fuera de pantalla -->
-                        <div
-                            v-if="store.currentEjercicio?.sets?.length"
-                            class="md:hidden"
-                        >
-                            <details class="bg-surface rounded-2xl border border-border p-2 group">
-                                <summary class="flex items-center justify-between text-xs font-bold text-text cursor-pointer list-none select-none px-1">
-                                    <span class="flex items-center gap-1.5">
-                                        <span class="text-success font-black">✓</span>
-                                        <span>Series registradas de {{ store.currentEjercicio.nombre }} ({{ store.currentEjercicio.sets.length }})</span>
-                                    </span>
-                                    <span class="text-[10px] text-brand group-open:rotate-180 transition-transform">▼</span>
-                                </summary>
-                                <div class="space-y-1 mt-2 pt-2 border-t border-border">
-                                    <div
-                                        v-for="(s, idx) in store.currentEjercicio.sets"
-                                        :key="idx"
-                                        class="flex items-center justify-between px-2 py-1 rounded-lg bg-surface-2 text-[11px]"
-                                    >
-                                        <div class="flex items-center gap-1.5 flex-wrap">
-                                            <span
-                                                class="font-black tabular-nums"
-                                                :class="
-                                                    s.tipo_serie === 'calentamiento'
-                                                        ? 'text-brand'
-                                                        : 'text-success'
-                                                "
-                                            >
-                                                <template v-if="s.tipo_serie === 'calentamiento'">
-                                                    Calentamiento {{ numeroSerieParaDisplay(s.series_numero) }}
-                                                </template>
-                                                <template v-else>
-                                                    #{{ s.series_numero }}
-                                                </template>
-                                            </span>
-                                            <span class="font-black text-text tabular-nums">{{ s.peso }} kg</span>
-                                            <span class="text-text-3">×</span>
-                                            <span class="font-black text-text tabular-nums">{{ s.reps }} reps</span>
-                                            <span
-                                                v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
-                                                class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-warning/15 text-warning border border-warning/30"
-                                            >
-                                                {{ s.tipo_serie }}
-                                            </span>
-                                            <span
-                                                v-if="s.esfuerzo_valor != null"
-                                                class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-3 text-text-2"
-                                            >
-                                                {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
-                                            </span>
-                                        </div>
-                                        <span class="text-[10px] text-text-3 font-mono tabular-nums">
-                                            {{ formatSetTime(s.completed_at) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </details>
-                        </div>
                     </template>
 
                     <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile) + 1 solo botón de completar -->
@@ -886,11 +824,6 @@ import { numeroCalentamientoPersisted, numeroSerieParaDisplay } from '@/utils/se
 import { hoyLocal } from '@/utils/fecha';
 import SetConfigCard from './SetConfigCard.vue';
 import PrescripcionCard from './PrescripcionCard.vue';
-import {
-    prescripcionDe,
-    targetParaSerie,
-    resumenPlan,
-} from '@/utils/rutinaPrescripcion';
 
 const props = defineProps({
     open: {
@@ -955,16 +888,6 @@ const mediaEjercicio = computed(() => {
     const ejs = store.session.ejercicios || [];
     return ejs[mediaEjercicioIndex.value] || ejs[store.session.currentEjercicioIndex] || null;
 });
-
-const formatRepsTarget = (ej) => {
-    if (!ej) return '';
-    const min = ej.reps_min;
-    const max = ej.reps_max;
-    if (min != null && max != null && min !== '' && max !== '') {
-        return String(min) === String(max) ? `${min} reps` : `${min}–${max} reps`;
-    }
-    return `${min || max || 8} reps`;
-};
 
 async function loadEjercicioMedia(nombre) {
     if (!nombre) {
@@ -1045,12 +968,6 @@ const formattedTime = computed(() => {
     }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 });
-
-const formatSetTime = (isoString) => {
-    if (!isoString) return '';
-    const d = new Date(isoString);
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-};
 
 const togglePause = () => {
     if (store.isPaused) {
@@ -1409,11 +1326,6 @@ const handleFinalizar = () => {
     emit('finish');
 };
 
-// Prescripción del ejercicio activo: prefiero el JSON estructurado que
-// devuelve la API (`prescripcion`) y caigo al parseo de `notas` para las
-// rutinas viejas. Ver utils/rutinaPrescripcion.js.
-const prescripcionActiva = computed(() => prescripcionDe(store.currentEjercicio));
-
 const activeSetsEfectivos = computed(() => {
     return (store.currentEjercicio?.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
 });
@@ -1425,17 +1337,6 @@ const activeSerieNumero = computed(() => {
 // Bloque sin series efectivas (ej. movilidad / calentamiento del día).
 const currentEsBloque = computed(() => {
     return Number(store.currentEjercicio?.series_objetivo || 0) === 0;
-});
-
-const rirBlocksHero = computed(() => prescripcionActiva.value.bloques);
-
-const currentTargetEsfuerzoHero = computed(() => {
-    return targetParaSerie(rirBlocksHero.value, activeSerieNumero.value);
-});
-
-const planSummaryHero = computed(() => {
-    if (!rirBlocksHero.value || rirBlocksHero.value.length === 0) return null;
-    return resumenPlan(rirBlocksHero.value);
 });
 
 onMounted(() => {

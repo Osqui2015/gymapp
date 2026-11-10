@@ -78,7 +78,7 @@ const props = defineProps({
     errorMessage: { type: String, default: '' },
 });
 
-const emit = defineEmits(['retry', 'dismiss']);
+defineEmits(['retry', 'dismiss']);
 
 const online = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
 

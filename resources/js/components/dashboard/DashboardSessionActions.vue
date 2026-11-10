@@ -17,7 +17,7 @@ defineProps({
     },
 });
 
-const emit = defineEmits(['previous-day', 'save-session', 'next-day', 'finish-routine']);
+defineEmits(['previous-day', 'save-session', 'next-day', 'finish-routine']);
 </script>
 
 <template>
