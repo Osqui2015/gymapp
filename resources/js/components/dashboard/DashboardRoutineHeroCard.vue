@@ -128,7 +128,7 @@ const session = useTrainingSessionStore();
             >
                 <button
                     type="button"
-                    @click="emit('start-workout')"
+                    @click="$emit('start-workout')"
                     class="w-full sm:w-auto px-space-xl py-space-md rounded-full bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(139,92,246,0.6)] transition-all duration-300"
                 >
                     <span

@@ -598,8 +598,8 @@
                     v-if="totalPages > 1"
                     :currentPage="currentPage"
                     :totalPages="totalPages"
-                    @prev="emit('update:currentPage', currentPage - 1)"
-                    @next="emit('update:currentPage', currentPage + 1)"
+                    @prev="$emit('update:currentPage', currentPage - 1)"
+                    @next="$emit('update:currentPage', currentPage + 1)"
                 />
             </div>
         </div>

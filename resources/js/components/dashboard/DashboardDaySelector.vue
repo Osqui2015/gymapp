@@ -40,7 +40,7 @@ const emit = defineEmits(['select-day']);
                 v-for="dia in dias"
                 :key="dia"
                 type="button"
-                @click="emit('select-day', dia)"
+                @click="$emit('select-day', dia)"
                 :class="[
                     'px-space-md py-space-xs rounded-lg font-label-md text-label-md transition-all',
                     diaActual === dia

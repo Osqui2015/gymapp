@@ -61,7 +61,7 @@ const formattedActiveTime = computed(() => {
         <div class="flex items-center gap-space-sm">
             <button
                 type="button"
-                @click="emit('continue')"
+                @click="$emit('continue')"
                 class="px-space-md py-space-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md font-bold shadow-md active:scale-95 transition-all flex items-center gap-1"
             >
                 <span class="material-symbols-outlined text-[16px]">bolt</span>
@@ -69,7 +69,7 @@ const formattedActiveTime = computed(() => {
             </button>
             <button
                 type="button"
-                @click="emit('discard')"
+                @click="$emit('discard')"
                 title="Descartar entrenamiento en curso"
                 aria-label="Descartar entrenamiento en curso"
                 class="px-space-sm py-space-sm rounded-lg bg-surface-container-high hover:bg-error-container text-on-surface-variant hover:text-error font-label-md text-label-md transition-all"

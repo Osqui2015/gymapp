@@ -24,7 +24,7 @@ const emit = defineEmits(['close', 'next-day', 'finish-routine']);
             <div
                 v-if="summary"
                 class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-                @click.self="emit('close')"
+                @click.self="$emit('close')"
             >
                 <div
                     class="sheet-content w-full sm:max-w-md bg-surface-container sm:rounded-3xl rounded-t-3xl rounded-b-none sm:rounded-b-3xl shadow-2xl border border-surface-variant overflow-hidden max-h-[90vh] flex flex-col"
@@ -114,7 +114,7 @@ const emit = defineEmits(['close', 'next-day', 'finish-routine']);
                     >
                         <button
                             type="button"
-                            @click="emit('close')"
+                            @click="$emit('close')"
                             class="flex-1 px-4 py-2.5 rounded-xl border border-surface-variant bg-surface-container-low text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
                         >
                             Quedarme acá
@@ -122,7 +122,7 @@ const emit = defineEmits(['close', 'next-day', 'finish-routine']);
                         <button
                             v-if="summary.tieneSiguiente"
                             type="button"
-                            @click="emit('next-day')"
+                            @click="$emit('next-day')"
                             class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
                         >
                             Ir al {{ summary.siguienteLabel }} →
@@ -130,7 +130,7 @@ const emit = defineEmits(['close', 'next-day', 'finish-routine']);
                         <button
                             v-else
                             type="button"
-                            @click="emit('finish-routine')"
+                            @click="$emit('finish-routine')"
                             class="flex-1 px-4 py-2.5 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary text-sm font-bold shadow-md transition-all"
                         >
                             🎉 Finalizar rutina

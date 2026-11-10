@@ -52,14 +52,14 @@
                 <button
                     type="button"
                     class="shrink-0 underline underline-offset-2 hover:opacity-80"
-                    @click="emit('retry')"
+                    @click="$emit('retry')"
                 >
                     Reintentar
                 </button>
                 <button
                     type="button"
                     class="shrink-0 underline underline-offset-2 hover:opacity-80"
-                    @click="emit('dismiss')"
+                    @click="$emit('dismiss')"
                 >
                     Descartar
                 </button>

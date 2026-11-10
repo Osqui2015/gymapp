@@ -104,7 +104,7 @@ const updateField = (campo, valor) => {
             </div>
             <button
                 type="button"
-                @click="emit('toggle-expand')"
+                @click="$emit('toggle-expand')"
                 class="flex items-center gap-1.5 px-space-md py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors"
             >
                 <span class="material-symbols-outlined text-[16px]">
@@ -239,7 +239,7 @@ const updateField = (campo, valor) => {
                             v-for="(set, sIdx) in ej.sets"
                             :key="sIdx"
                             type="button"
-                            @click="emit('toggle-inline-set', set)"
+                            @click="$emit('toggle-inline-set', set)"
                             :title="
                                 esSetHistorico(set)
                                     ? 'Tocá para editar o completar serie (valor previo disponible)'
@@ -306,14 +306,14 @@ const updateField = (campo, valor) => {
                                 <button
                                     v-if="valorHistoricoSet(activeInlineSet)"
                                     type="button"
-                                    @click="emit('copy-from-previous', activeInlineSet)"
+                                    @click="$emit('copy-from-previous', activeInlineSet)"
                                     class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-[11px] font-mono font-bold text-indigo-300 cursor-pointer"
                                 >
                                     ↺ Copiar anterior ({{ valorHistoricoSet(activeInlineSet).peso ?? 0 }}kg × {{ valorHistoricoSet(activeInlineSet).reps ?? 0 }}r)
                                 </button>
                                 <button
                                     type="button"
-                                    @click="emit('close-inline-set')"
+                                    @click="$emit('close-inline-set')"
                                     class="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
                                     aria-label="Cerrar editor rápido"
                                 >
@@ -331,7 +331,7 @@ const updateField = (campo, valor) => {
                                 <div class="flex items-center gap-1">
                                     <button
                                         type="button"
-                                        @click="emit('step-weight', activeInlineSet, -2.5)"
+                                        @click="$emit('step-weight', activeInlineSet, -2.5)"
                                         class="h-10 px-2.5 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
                                     >
                                         -2.5
@@ -348,7 +348,7 @@ const updateField = (campo, valor) => {
                                     />
                                     <button
                                         type="button"
-                                        @click="emit('step-weight', activeInlineSet, 2.5)"
+                                        @click="$emit('step-weight', activeInlineSet, 2.5)"
                                         class="h-10 px-2.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-xs font-mono font-bold text-indigo-300 hover:bg-indigo-600/30 active:scale-95 transition-all cursor-pointer"
                                     >
                                         +2.5
@@ -364,7 +364,7 @@ const updateField = (campo, valor) => {
                                 <div class="flex items-center gap-1">
                                     <button
                                         type="button"
-                                        @click="emit('step-reps', activeInlineSet, -1)"
+                                        @click="$emit('step-reps', activeInlineSet, -1)"
                                         class="h-10 px-3 rounded-lg bg-[#101521] border border-[#232D42] text-xs font-mono font-bold text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
                                     >
                                         -1
@@ -381,7 +381,7 @@ const updateField = (campo, valor) => {
                                     />
                                     <button
                                         type="button"
-                                        @click="emit('step-reps', activeInlineSet, 1)"
+                                        @click="$emit('step-reps', activeInlineSet, 1)"
                                         class="h-10 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition-all cursor-pointer"
                                     >
                                         +1
@@ -392,7 +392,7 @@ const updateField = (campo, valor) => {
                             <!-- Botón Completar Set -->
                             <button
                                 type="button"
-                                @click="emit('complete-set', activeInlineSet, ej.sets)"
+                                @click="$emit('complete-set', activeInlineSet, ej.sets)"
                                 class="h-10 px-4 rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
                             >
                                 <span class="material-symbols-outlined text-[18px]">check_circle</span>

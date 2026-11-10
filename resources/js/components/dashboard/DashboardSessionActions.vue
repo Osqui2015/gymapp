@@ -27,7 +27,7 @@ const emit = defineEmits(['previous-day', 'save-session', 'next-day', 'finish-ro
             <button
                 v-if="diaIndex > 0"
                 type="button"
-                @click="emit('previous-day')"
+                @click="$emit('previous-day')"
                 class="w-full sm:w-auto px-space-lg py-space-md rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 transition-colors"
             >
                 <span class="material-symbols-outlined text-[20px]"
@@ -38,7 +38,7 @@ const emit = defineEmits(['previous-day', 'save-session', 'next-day', 'finish-ro
             <!-- Guardar Sesion Primary -->
             <button
                 type="button"
-                @click="emit('save-session')"
+                @click="$emit('save-session')"
                 class="w-full sm:flex-1 px-space-xl py-space-md rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,131,255,0.35)] transition-all"
             >
                 <span class="material-symbols-outlined text-[20px]"
@@ -52,7 +52,7 @@ const emit = defineEmits(['previous-day', 'save-session', 'next-day', 'finish-ro
         <button
             v-if="!esUltimoDia"
             type="button"
-            @click="emit('next-day')"
+            @click="$emit('next-day')"
             class="w-full py-space-md px-space-xl rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 transition-all"
         >
             <span>Avanzar al siguiente día: {{ diasSiguienteLabel }}</span>
@@ -64,7 +64,7 @@ const emit = defineEmits(['previous-day', 'save-session', 'next-day', 'finish-ro
         <!-- Finalizar Rutina Full Accent CTA -->
         <button
             type="button"
-            @click="emit('finish-routine')"
+            @click="$emit('finish-routine')"
             class="w-full py-space-md px-space-xl rounded-xl bg-tertiary hover:bg-tertiary-fixed-dim text-on-tertiary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2.5 shadow-[0_0_24px_rgba(78,222,163,0.35)] hover:shadow-[0_0_32px_rgba(78,222,163,0.5)] transition-all"
         >
             <span
