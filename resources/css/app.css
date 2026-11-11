@@ -39,57 +39,61 @@
        - Border:    #232F4D (bordes sutiles)
 
        Light mode usa cards blancas + acento violeta. Dark mode usa la paleta
-       Obsidian profunda. Todos los shells consumen los mismos tokens. */
-    --color-obsidian-base: #090D16;
-    --color-obsidian-surface: #111726;
-    --color-obsidian-elevated: #161F36;
-    --color-obsidian-overlay: rgba(255, 255, 255, 0.04);
-    --color-obsidian-border: #232F4D;
-    --color-obsidian-border-strong: rgba(255, 255, 255, 0.12);
-    --color-obsidian-text: #F1F5F9;
+       Obsidian profunda. Todos los shells consumen los mismos tokens.
+
+       OJO: estos son los valores LIGHT. Los valores oscuros de la paleta
+       Obsidian viven en el bloque `.dark` más abajo (mismo set de tokens).
+       Si agregás un token acá, agregá también su versión dark. */
+    --color-obsidian-base: #F5F6FA;
+    --color-obsidian-surface: #FFFFFF;
+    --color-obsidian-elevated: #FFFFFF;
+    --color-obsidian-overlay: rgba(13, 18, 32, 0.04);
+    --color-obsidian-border: #E1E5EF;
+    --color-obsidian-border-strong: #CBD2E0;
+    --color-obsidian-text: #0D1220;
 
     --color-violet-primary: #6366F1;
     --color-violet-light: #A78BFA;
     --color-violet-secondary: #8B5CF6;
     --color-violet-deep: #5B21B6;
-    --color-violet-soft: rgba(139, 92, 246, 0.15);
+    --color-violet-soft: rgba(79, 70, 229, 0.10);
     --color-violet-glow: rgba(139, 92, 246, 0.30);
     --color-violet-glow-strong: rgba(99, 102, 241, 0.40);
 
-    --color-emerald-accent: #10B981;
-    --color-emerald-soft: rgba(16, 185, 129, 0.15);
+    --color-emerald-accent: #059669;
+    --color-emerald-soft: rgba(5, 150, 105, 0.12);
 
-    --color-streak-orange: #F59E0B;
-    --color-streak-soft: rgba(245, 158, 11, 0.15);
+    --color-streak-orange: #B45309;
+    --color-streak-soft: rgba(180, 83, 9, 0.12);
 
     --color-text-primary-dark: #FFFFFF;
     --color-text-secondary-dark: #94A3B8;
     --color-text-tertiary-dark: #64748B;
 
-    --color-obsidian-canvas: #0a0e18;
-    --color-obsidian-card: #151926;
-    --color-obsidian-input: #121622;
+    --color-obsidian-canvas: #F5F6FA;
+    --color-obsidian-card: #FFFFFF;
+    --color-obsidian-input: #F7F8FC;
 
-    --color-obsidian-950: #07090e;
-    --color-obsidian-900: #0b0f19;
-    --color-obsidian-850: #111625;
-    --color-obsidian-800: #171d2e;
-    --color-obsidian-700: #232b40;
-    --color-obsidian-600: #343e5c;
+    --color-obsidian-950: #FFFFFF;
+    --color-obsidian-900: #F7F8FC;
+    --color-obsidian-850: #F0F2F8;
+    --color-obsidian-800: #E7EAF3;
+    --color-obsidian-700: #DDE3EE;
+    --color-obsidian-600: #CBD2E0;
 
-    --color-neon-indigo: #6366f1;
-    --color-neon-violet: #8b5cf6;
-    --color-neon-purple: #a855f7;
-    --color-neon-emerald: #10b981;
-    --color-neon-amber: #f59e0b;
-    --color-neon-cyan: #06b6d4;
+    --color-neon-indigo: #4F46E5;
+    --color-neon-violet: #7C3AED;
+    --color-neon-purple: #9333EA;
+    --color-neon-emerald: #059669;
+    --color-neon-amber: #B45309;
+    --color-neon-cyan: #0E7490;
 
-    --color-accent-indigo: #6366f1;
-    --color-accent-violet: #8b5cf6;
-    --color-accent-cyan: #06b6d4;
-    --color-accent-emerald: #10b981;
-    --color-accent-amber: #f59e0b;
-    --color-accent-fuchsia: #d946ef;
+    --color-accent-indigo: #4F46E5;
+    --color-accent-violet: #7C3AED;
+    --color-accent-cyan: #0E7490;
+    --color-accent-emerald: #059669;
+    --color-accent-amber: #B45309;
+    --color-accent-fuchsia: #C026D3;
 
     --shadow-glow: 0 0 25px -5px rgba(99, 102, 241, 0.35);
     --shadow-glow-indigo: 0 0 25px -5px rgba(99, 102, 241, 0.35);
@@ -105,53 +109,56 @@
     --radius-obsidian-lg: 1.5rem;
     --radius-obsidian-xl: 2rem;
 
-    /* === GymApp Pro Telemetry (Stitch M3 Obsidian Tokens) === */
-    --color-on-primary-container: #0d0096;
-    --color-inverse-surface: #dfe2ee;
+    /* === GymApp Pro Telemetry (Stitch M3) ===
+       Valores LIGHT. Los oscuros están espejados en el bloque `.dark`.
+       `bg-background` / `text-on-surface` / `surface-container-*` son la base
+       de todos los shells del dashboard, por eso tienen que seguir al tema. */
+    --color-on-primary-container: #312E81;
+    --color-inverse-surface: #0D1220;
     --color-on-tertiary-fixed: #002113;
-    --color-surface-tint: #c0c1ff;
-    --color-on-secondary-container: #c4abff;
-    --color-surface-bright: #353942;
+    --color-surface-tint: #4F46E5;
+    --color-on-secondary-container: #4C1D95;
+    --color-surface-bright: #FFFFFF;
     --color-tertiary-fixed: #6ffbbe;
-    --color-error-container: #93000a;
+    --color-error-container: #FEE2E2;
     --color-on-secondary-fixed: #23005c;
-    --color-secondary-container: #571bc1;
-    --color-on-error-container: #ffdad6;
-    --color-on-primary: #1000a9;
-    --color-inverse-primary: #494bd6;
-    --color-on-tertiary-container: #000703;
-    --color-surface-container-low: #181c24;
-    --color-outline-variant: #464554;
-    --color-surface-dim: #0f131c;
+    --color-secondary-container: #EDE9FE;
+    --color-on-error-container: #7F1D1D;
+    --color-on-primary: #FFFFFF;
+    --color-inverse-primary: #4F46E5;
+    --color-on-tertiary-container: #064E3B;
+    --color-surface-container-low: #FFFFFF;
+    --color-outline-variant: #E1E5EF;
+    --color-surface-dim: #E7EAF3;
     --color-secondary-fixed: #e9ddff;
-    --color-on-error: #690005;
-    --color-tertiary-fixed-dim: #4edea3;
+    --color-on-error: #FFFFFF;
+    --color-tertiary-fixed-dim: #059669;
     --color-on-primary-fixed: #07006c;
-    --color-surface-container-lowest: #0a0e16;
-    --color-primary-container: #8083ff;
-    --color-outline: #908fa0;
+    --color-surface-container-lowest: #FFFFFF;
+    --color-primary-container: #E0E7FF;
+    --color-outline: #667085;
     --color-primary-fixed: #e1e0ff;
     --color-primary-fixed-dim: #c0c1ff;
-    --color-on-surface: #dfe2ee;
-    --color-on-tertiary: #003824;
-    --color-primary: #c0c1ff;
+    --color-on-surface: #0D1220;
+    --color-on-tertiary: #FFFFFF;
+    --color-primary: #4F46E5;
     --color-on-secondary-fixed-variant: #5516be;
-    --color-surface-container: #1c2028;
-    --color-tertiary: #4edea3;
+    --color-surface-container: #F0F2F8;
+    --color-tertiary: #047857;
     --color-secondary-fixed-dim: #d0bcff;
-    --color-surface-variant: #31353e;
+    --color-surface-variant: #E7EAF3;
     --color-on-tertiary-fixed-variant: #005236;
-    --color-surface-legacy: #0f131c;
-    --color-error: #ffb4ab;
-    --color-tertiary-container: #00885d;
-    --color-on-surface-variant: #c7c4d7;
-    --color-secondary: #d0bcff;
-    --color-inverse-on-surface: #2c3039;
-    --color-surface-container-high: #262a33;
-    --color-surface-container-highest: #31353e;
-    --color-background: #0f131c;
-    --color-on-secondary: #3c0091;
-    --color-on-background: #dfe2ee;
+    --color-surface-legacy: #F5F6FA;
+    --color-error: #B91C1C;
+    --color-tertiary-container: #D1FAE5;
+    --color-on-surface-variant: #5A6478;
+    --color-secondary: #7C3AED;
+    --color-inverse-on-surface: #FFFFFF;
+    --color-surface-container-high: #E7EAF3;
+    --color-surface-container-highest: #DDE3EE;
+    --color-background: #F5F6FA;
+    --color-on-secondary: #FFFFFF;
+    --color-on-background: #0D1220;
     --color-on-primary-fixed-variant: #2f2ebe;
 
     --spacing-space-xs: 0.25rem;
@@ -257,13 +264,21 @@
 
 /* Kinetic Obsidian Glassmorphism */
 .glass-panel {
-    background: rgba(17, 22, 37, 0.72);
+    background: var(--color-surface);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--color-border);
+}
+.dark .glass-panel {
+    background: rgba(17, 22, 37, 0.72);
     border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .glass-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+}
+.dark .glass-card {
     background: linear-gradient(180deg, rgba(23, 29, 46, 0.78) 0%, rgba(15, 19, 31, 0.9) 100%);
     border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -282,12 +297,19 @@
     fill: #3b82f6;
 }
 .muscle-cold {
-    fill: #273148;
+    fill: #94A3B8;
 }
 .muscle-base {
+    fill: #E2E8F0;
+    stroke: #CBD5E1;
+    stroke-width: 0.65;
+}
+.dark .muscle-cold {
+    fill: #273148;
+}
+.dark .muscle-base {
     fill: #1e2638;
     stroke: #313d59;
-    stroke-width: 0.65;
 }
 
 :root {
@@ -324,6 +346,81 @@ body {
     --color-danger: #F87171;
     --color-focus: #A5B4FC;
     --color-shadow: rgba(0, 0, 0, 0.5);
+
+    /* === Paleta Obsidian / Telemetry en dark ===
+       Espejo exacto de los valores que antes vivían (hardcodeados) en @theme.
+       Sin esto, todo el dashboard diseñado en "Kinetic Obsidian" se queda
+       claro al activar el modo oscuro. */
+    --color-background: #0f131c;
+    --color-on-background: #dfe2ee;
+    --color-on-surface: #dfe2ee;
+    --color-on-surface-variant: #c7c4d7;
+    --color-outline: #908fa0;
+    --color-outline-variant: #464554;
+    --color-surface-variant: #31353e;
+    --color-surface-dim: #0f131c;
+    --color-surface-bright: #353942;
+    --color-surface-container-lowest: #0a0e16;
+    --color-surface-container-low: #181c24;
+    --color-surface-container: #1c2028;
+    --color-surface-container-high: #262a33;
+    --color-surface-container-highest: #31353e;
+    --color-surface-legacy: #0f131c;
+    --color-surface-tint: #c0c1ff;
+    --color-primary: #c0c1ff;
+    --color-on-primary: #1000a9;
+    --color-primary-container: #8083ff;
+    --color-on-primary-container: #0d0096;
+    --color-secondary: #d0bcff;
+    --color-on-secondary: #3c0091;
+    --color-secondary-container: #571bc1;
+    --color-on-secondary-container: #c4abff;
+    --color-tertiary: #4edea3;
+    --color-on-tertiary: #003824;
+    --color-tertiary-container: #00885d;
+    --color-on-tertiary-container: #000703;
+    --color-tertiary-fixed-dim: #4edea3;
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+    --color-inverse-surface: #dfe2ee;
+    --color-inverse-on-surface: #2c3039;
+    --color-inverse-primary: #494bd6;
+
+    --color-obsidian-base: #090D16;
+    --color-obsidian-surface: #111726;
+    --color-obsidian-elevated: #161F36;
+    --color-obsidian-overlay: rgba(255, 255, 255, 0.04);
+    --color-obsidian-border: #232F4D;
+    --color-obsidian-border-strong: rgba(255, 255, 255, 0.12);
+    --color-obsidian-text: #F1F5F9;
+    --color-obsidian-canvas: #0a0e18;
+    --color-obsidian-card: #151926;
+    --color-obsidian-input: #121622;
+    --color-obsidian-950: #07090e;
+    --color-obsidian-900: #0b0f19;
+    --color-obsidian-850: #111625;
+    --color-obsidian-800: #171d2e;
+    --color-obsidian-700: #232b40;
+    --color-obsidian-600: #343e5c;
+    --color-violet-soft: rgba(139, 92, 246, 0.15);
+    --color-emerald-accent: #10B981;
+    --color-emerald-soft: rgba(16, 185, 129, 0.15);
+    --color-streak-orange: #F59E0B;
+    --color-streak-soft: rgba(245, 158, 11, 0.15);
+    --color-neon-indigo: #6366f1;
+    --color-neon-violet: #8b5cf6;
+    --color-neon-purple: #a855f7;
+    --color-neon-emerald: #10b981;
+    --color-neon-amber: #f59e0b;
+    --color-neon-cyan: #06b6d4;
+    --color-accent-indigo: #6366f1;
+    --color-accent-violet: #8b5cf6;
+    --color-accent-cyan: #06b6d4;
+    --color-accent-emerald: #10b981;
+    --color-accent-amber: #f59e0b;
+    --color-accent-fuchsia: #d946ef;
 
     background-color: var(--color-bg);
     color: var(--color-text);

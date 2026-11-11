@@ -191,7 +191,7 @@ const chart2Telemetry = computed(() => {
     >
         <!-- Telemetry Chart 1: Press de Banca 30d -->
         <div
-            class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
+            class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/60 flex flex-col justify-between shadow-xs"
         >
             <div class="flex items-start justify-between gap-space-md mb-space-md">
                 <div class="flex flex-col">
@@ -237,19 +237,19 @@ const chart2Telemetry = computed(() => {
                         >
                             <stop
                                 offset="0%"
-                                stop-color="#8083ff"
-                                stop-opacity="0.35"
+                                stop-color="var(--color-primary)"
+                                stop-opacity="0.25"
                             ></stop>
                             <stop
                                 offset="100%"
-                                stop-color="#8083ff"
+                                stop-color="var(--color-primary)"
                                 stop-opacity="0.0"
                             ></stop>
                         </linearGradient>
                     </defs>
                     <!-- Grid Lines -->
                     <line
-                        stroke="#31353e"
+                        stroke="var(--color-outline-variant)"
                         stroke-dasharray="4 4"
                         stroke-width="1"
                         x1="0"
@@ -258,7 +258,7 @@ const chart2Telemetry = computed(() => {
                         y2="40"
                     ></line>
                     <line
-                        stroke="#31353e"
+                        stroke="var(--color-outline-variant)"
                         stroke-dasharray="4 4"
                         stroke-width="1"
                         x1="0"
@@ -267,7 +267,7 @@ const chart2Telemetry = computed(() => {
                         y2="90"
                     ></line>
                     <line
-                        stroke="#31353e"
+                        stroke="var(--color-outline-variant)"
                         stroke-dasharray="4 4"
                         stroke-width="1"
                         x1="0"
@@ -280,7 +280,7 @@ const chart2Telemetry = computed(() => {
                     <!-- Smooth spline path -->
                     <path
                         :d="chart1Telemetry.line"
-                        stroke="#c0c1ff"
+                        stroke="var(--color-primary)"
                         stroke-linecap="round"
                         stroke-width="3"
                     ></path>
@@ -294,13 +294,14 @@ const chart2Telemetry = computed(() => {
                                 class="animate-pulse"
                                 :cx="node.x"
                                 :cy="node.y"
-                                fill="#8083ff"
+                                fill="var(--color-primary)"
+                                fill-opacity="0.3"
                                 r="7"
                             ></circle>
                             <circle
                                 :cx="node.x"
                                 :cy="node.y"
-                                fill="#dfe2ee"
+                                fill="var(--color-primary)"
                                 r="4"
                             ></circle>
                         </template>
@@ -308,9 +309,9 @@ const chart2Telemetry = computed(() => {
                             v-else
                             :cx="node.x"
                             :cy="node.y"
-                            fill="#0f131c"
+                            fill="var(--color-surface)"
                             :r="node.muted ? 3 : 4"
-                            :stroke="node.muted ? '#908fa0' : '#c0c1ff'"
+                            stroke="var(--color-primary)"
                             stroke-width="2"
                         ></circle>
                     </template>
@@ -330,7 +331,7 @@ const chart2Telemetry = computed(() => {
 
         <!-- Telemetry Chart 2: Global PR History 30d -->
         <div
-            class="p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between shadow-xl"
+            class="p-space-lg rounded-xl bg-surface-container-low border border-outline-variant/60 flex flex-col justify-between shadow-xs"
         >
             <div class="flex items-start justify-between gap-space-md mb-space-md">
                 <div class="flex flex-col">
@@ -378,19 +379,19 @@ const chart2Telemetry = computed(() => {
                         >
                             <stop
                                 offset="0%"
-                                stop-color="#571bc1"
-                                stop-opacity="0.4"
+                                stop-color="var(--color-secondary)"
+                                stop-opacity="0.25"
                             ></stop>
                             <stop
                                 offset="100%"
-                                stop-color="#571bc1"
+                                stop-color="var(--color-secondary)"
                                 stop-opacity="0.0"
                             ></stop>
                         </linearGradient>
                     </defs>
                     <!-- Guide markers horizontal -->
                     <line
-                        stroke="#262a33"
+                        stroke="var(--color-outline-variant)"
                         stroke-width="1"
                         x1="0"
                         x2="500"
@@ -398,7 +399,7 @@ const chart2Telemetry = computed(() => {
                         y2="20"
                     ></line>
                     <line
-                        stroke="#262a33"
+                        stroke="var(--color-outline-variant)"
                         stroke-width="1"
                         x1="0"
                         x2="500"
@@ -406,7 +407,7 @@ const chart2Telemetry = computed(() => {
                         y2="60"
                     ></line>
                     <line
-                        stroke="#262a33"
+                        stroke="var(--color-outline-variant)"
                         stroke-width="1"
                         x1="0"
                         x2="500"
@@ -414,7 +415,7 @@ const chart2Telemetry = computed(() => {
                         y2="100"
                     ></line>
                     <line
-                        stroke="#262a33"
+                        stroke="var(--color-outline-variant)"
                         stroke-width="1"
                         x1="0"
                         x2="500"
@@ -426,7 +427,7 @@ const chart2Telemetry = computed(() => {
                     <!-- Smooth spline path -->
                     <path
                         :d="chart2Telemetry.line"
-                        stroke="#d0bcff"
+                        stroke="var(--color-secondary)"
                         stroke-linecap="round"
                         stroke-width="3"
                     ></path>
@@ -438,13 +439,13 @@ const chart2Telemetry = computed(() => {
                         :cy="node.y"
                         :fill="
                             node.isPeak
-                                ? '#4edea3'
+                                ? 'var(--color-tertiary)'
                                 : node.isAccent
-                                  ? '#571bc1'
-                                  : '#0f131c'
+                                  ? 'var(--color-secondary)'
+                                  : 'var(--color-surface)'
                         "
                         :r="node.isPeak ? 6 : node.isAccent ? 5 : 4"
-                        :stroke="node.isPeak ? '#dfe2ee' : '#d0bcff'"
+                        :stroke="node.isPeak ? 'var(--color-tertiary)' : 'var(--color-secondary)'"
                         stroke-width="2"
                     ></circle>
                 </svg>

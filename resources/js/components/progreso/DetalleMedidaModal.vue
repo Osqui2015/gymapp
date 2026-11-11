@@ -6,21 +6,21 @@
             @click.self="$emit('cerrar')"
         >
             <div
-                class="bg-obsidian-card border border-obsidian-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scaleIn text-white shadow-glow"
+                class="bg-surface border border-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scaleIn text-text shadow-glow"
             >
                 <div class="p-6">
                     <div
-                        class="flex items-center justify-between mb-6 pb-4 border-b border-obsidian-border/70"
+                        class="flex items-center justify-between mb-6 pb-4 border-b border-border"
                     >
                         <h3
-                            class="text-base font-bold font-display text-white flex items-center gap-2"
+                            class="text-base font-bold font-display text-text flex items-center gap-2"
                         >
                             <span>📋</span> Detalle de Progreso:
                             {{ formatFecha(modal.progreso.fecha) }}
                         </h3>
                         <button
                             @click="$emit('cerrar')"
-                            class="p-2 hover:bg-obsidian-elevated text-slate-400 hover:text-white rounded-xl transition-colors cursor-pointer"
+                            class="p-2 hover:bg-surface-2 text-text-3 hover:text-text rounded-xl transition-colors cursor-pointer"
                         >
                             <svg
                                 class="w-5 h-5"
@@ -47,21 +47,21 @@
                                 modal.progreso.edad ||
                                 modal.progreso.sexo
                             "
-                            class="border-b border-obsidian-border/70 pb-4"
+                            class="border-b border-border pb-4"
                         >
                             <h4
-                                class="font-bold text-sm text-slate-300 mb-3 flex items-center gap-2"
+                                class="font-bold text-sm text-text-2 mb-3 flex items-center gap-2"
                             >
                                 <span>👤</span> Datos Generales
                             </h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                                 <div
                                     v-if="modal.progreso.peso"
-                                    class="flex justify-between items-center p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border/60"
+                                    class="flex justify-between items-center p-2.5 rounded-xl bg-surface-2 border border-border"
                                 >
-                                    <span class="text-slate-400 text-xs">Peso:</span>
+                                    <span class="text-text-3 text-xs">Peso:</span>
                                     <div class="flex items-center gap-2">
-                                        <span class="font-bold font-mono text-white"
+                                        <span class="font-bold font-mono text-text"
                                             >{{ modal.progreso.peso }} kg</span
                                         >
                                         <span
@@ -78,11 +78,11 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.grasa_corporal"
-                                    class="flex justify-between items-center p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border/60"
+                                    class="flex justify-between items-center p-2.5 rounded-xl bg-surface-2 border border-border"
                                 >
-                                    <span class="text-slate-400 text-xs">% Grasa:</span>
+                                    <span class="text-text-3 text-xs">% Grasa:</span>
                                     <div class="flex items-center gap-2">
-                                        <span class="font-bold font-mono text-white"
+                                        <span class="font-bold font-mono text-text"
                                             >{{ modal.progreso.grasa_corporal }}%</span
                                         >
                                         <span
@@ -106,28 +106,28 @@
                                 </div>
                                 <div
                                     v-if="modal.progreso.altura"
-                                    class="flex justify-between items-center p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border/60"
+                                    class="flex justify-between items-center p-2.5 rounded-xl bg-surface-2 border border-border"
                                 >
-                                    <span class="text-slate-400 text-xs">Altura:</span>
-                                    <span class="font-bold font-mono text-white"
+                                    <span class="text-text-3 text-xs">Altura:</span>
+                                    <span class="font-bold font-mono text-text"
                                         >{{ modal.progreso.altura }} cm</span
                                     >
                                 </div>
                                 <div
                                     v-if="modal.progreso.edad"
-                                    class="flex justify-between items-center p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border/60"
+                                    class="flex justify-between items-center p-2.5 rounded-xl bg-surface-2 border border-border"
                                 >
-                                    <span class="text-slate-400 text-xs">Edad:</span>
-                                    <span class="font-bold font-mono text-white"
+                                    <span class="text-text-3 text-xs">Edad:</span>
+                                    <span class="font-bold font-mono text-text"
                                         >{{ modal.progreso.edad }} años</span
                                     >
                                 </div>
                                 <div
                                     v-if="modal.progreso.sexo"
-                                    class="flex justify-between items-center p-2.5 rounded-xl bg-obsidian-surface border border-obsidian-border/60"
+                                    class="flex justify-between items-center p-2.5 rounded-xl bg-surface-2 border border-border"
                                 >
-                                    <span class="text-slate-400 text-xs">Sexo:</span>
-                                    <span class="font-bold capitalize text-white">{{
+                                    <span class="text-text-3 text-xs">Sexo:</span>
+                                    <span class="font-bold capitalize text-text">{{
                                         modal.progreso.sexo
                                     }}</span>
                                 </div>
@@ -137,7 +137,7 @@
                         <!-- Medidas -->
                         <div>
                             <h4
-                                class="font-bold text-sm text-slate-300 mb-3 flex items-center gap-2"
+                                class="font-bold text-sm text-text-2 mb-3 flex items-center gap-2"
                             >
                                 <span>📏</span> Medidas Corporales
                             </h4>

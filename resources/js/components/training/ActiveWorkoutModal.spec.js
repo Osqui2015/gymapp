@@ -80,8 +80,13 @@ describe('ActiveWorkoutModal', () => {
 
         expect(wrapper.text()).toContain('Press Banca');
         expect(wrapper.text()).toContain('Torso Pierna');
-        expect(wrapper.text()).toContain('Día 1');
-        expect(wrapper.text()).toContain('COMPLETAR SERIE #1');
+        expect(wrapper.text()).toContain('DÍA 1');
+        // La única acción primaria es la CTA fija (una sola, en la zona del pulgar).
+        expect(wrapper.text()).toContain('Registrar serie');
+        // ...y el objetivo de la serie en curso vive en la tarjeta de objetivo.
+        expect(wrapper.find('[data-testid="set-target-hero-card"]').text()).toContain(
+            'Serie 1 de 3'
+        );
         // Pill con el total de series del ejercicio (Press Banca tiene 3).
         expect(wrapper.text()).toContain('3 series');
     });
@@ -145,7 +150,9 @@ describe('ActiveWorkoutModal', () => {
             props: { open: true },
         });
 
-        const btnFinalizar = wrapper.findAll('button').find((b) => b.text() === 'Finalizar');
+        const btnFinalizar = wrapper
+            .findAll('button')
+            .find((b) => b.text() === 'Finalizar sesión');
         expect(btnFinalizar).toBeDefined();
         await btnFinalizar.trigger('click');
 
@@ -160,10 +167,10 @@ describe('ActiveWorkoutModal', () => {
             props: { open: true },
         });
 
-        // Kinetic Obsidian: el botón COMPLETAR SERIE ahora usa shadow-violet-glow
-        const btnCompletar = wrapper.findAll('button').find((b) =>
-            b.text().includes('COMPLETAR SERIE')
-        );
+        // Kinetic Obsidian: la CTA primaria es única y fija al pie
+        const btnCompletar = wrapper
+            .findAll('button')
+            .find((b) => b.text().includes('Registrar serie'));
         expect(btnCompletar).toBeDefined();
 
         await btnCompletar.trigger('click');
@@ -171,6 +178,86 @@ describe('ActiveWorkoutModal', () => {
         expect(store.totalSeriesCompletadas).toBe(1);
         expect(store.session.currentSerieNumero).toBe(2);
         expect(startSpy).toHaveBeenCalledWith(120, 'Press Banca'); // 2 min = 120s
+    });
+
+    it('la tira de series muestra el peso y las reps de cada serie (hechas y pendientes)', async () => {
+        const wrapper = mount(ActiveWorkoutModal, {
+            props: { open: true },
+        });
+
+        const tracker = wrapper.find('[data-testid="sets-progress-tracker"]');
+        expect(tracker.exists()).toBe(true);
+
+        // 1) Registrar la primera serie con un peso concreto.
+        const inputPeso = wrapper.find('input[type="number"][inputmode="decimal"]');
+        expect(inputPeso.exists()).toBe(true);
+        await inputPeso.setValue('62.5');
+
+        const btnCompletar = wrapper.findAll('button').find((b) =>
+            b.text().includes('Registrar serie')
+        );
+        expect(btnCompletar).toBeDefined();
+        await btnCompletar.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        // 2) La serie 1 (hecha) debe mostrar el peso registrado y las reps.
+        const trackerAfter = wrapper.find('[data-testid="sets-progress-tracker"]');
+        const textoTracker = trackerAfter.text();
+        expect(textoTracker).toContain('62.5 kg');
+
+        // 3) Las series pendientes muestran el peso sugerido (el de la última
+        //    serie registrada) en gris, NO ceros.
+        expect(textoTracker).not.toContain('— × —');
+    });
+
+    it('la barra sticky (mobile) registra la serie usando el payload de la card', async () => {
+        const wrapper = mount(ActiveWorkoutModal, {
+            props: { open: true },
+        });
+
+        const sticky = wrapper.find('[data-testid="sticky-cta-completar"]');
+        expect(sticky.exists()).toBe(true);
+        // La copy de la CTA es fija ("una sola acción"); el número de serie en
+        // curso vive en la tarjeta de objetivo de la card.
+        expect(sticky.text()).toContain('Registrar serie');
+        expect(wrapper.find('[data-testid="set-target-hero-card"]').text()).toContain(
+            'Serie 1 de 3'
+        );
+
+        // Editar el peso en la card y registrar desde la barra sticky:
+        // el peso editado tiene que llegar al store.
+        const inputPeso = wrapper.find('input[type="number"][inputmode="decimal"]');
+        await inputPeso.setValue('77.5');
+
+        await sticky.trigger('click');
+
+        expect(store.totalSeriesCompletadas).toBe(1);
+        const sets = store.currentEjercicio.sets || [];
+        expect(sets.length).toBe(1);
+        expect(Number(sets[0].peso)).toBe(77.5);
+
+        // Tras registrar, la tarjeta avanza a la serie 2.
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find('[data-testid="set-target-hero-card"]').text()).toContain(
+            'Serie 2 de 3'
+        );
+    });
+
+    it('la tarjeta de objetivo cambia a CALENTAMIENTO cuando se selecciona ese tipo de serie', async () => {
+        const wrapper = mount(ActiveWorkoutModal, {
+            props: { open: true },
+        });
+
+        const btnCalentamiento = wrapper
+            .findAll('button')
+            .find((b) => b.text().trim() === 'Calent.');
+        expect(btnCalentamiento).toBeDefined();
+        await btnCalentamiento.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find('[data-testid="set-target-hero-card"]').text()).toContain(
+            'Calentamiento 1'
+        );
     });
 
     it('las series de calentamiento son separadas y no cuentan para el progreso', async () => {
@@ -181,20 +268,18 @@ describe('ActiveWorkoutModal', () => {
         // 1) Cambiar tipo a calentamiento.
         const btnCalentamiento = wrapper
             .findAll('button')
-            .find((b) => b.text().trim() === 'Calentamiento');
+            .find((b) => b.text().trim() === 'Calent.');
         expect(btnCalentamiento).toBeDefined();
         await btnCalentamiento.trigger('click');
 
-        // Header de la card y boton ahora deben mostrar Calentamiento #1.
-        // (Con el refactor a SetConfigCard, el texto "Configurar Calentamiento"
-        // lo emite la card directamente como "Calentamiento #N".)
-        expect(wrapper.text()).toContain('Calentamiento #1');
-        expect(wrapper.text()).toContain('COMPLETAR CALENTAMIENTO #1');
+        // El encabezado de la tarjeta identifica el calentamiento en curso.
+        expect(wrapper.find('[data-testid="set-target-hero-card"]').text()).toContain(
+            'Calentamiento 1'
+        );
 
-        // 2) Completar la primera serie de calentamiento.
-        const btnCompletarWarmup = wrapper
-            .findAll('button')
-            .find((b) => b.text().includes('COMPLETAR CALENTAMIENTO'));
+        // 2) Completar la primera serie de calentamiento (CTA única).
+        const btnCompletarWarmup = wrapper.find('[data-testid="sticky-cta-completar"]');
+        expect(btnCompletarWarmup.exists()).toBe(true);
         await btnCompletarWarmup.trigger('click');
 
         // Progreso global sigue en 0/6 (3 series por ejercicio × 2 ejercicios)
@@ -214,9 +299,7 @@ describe('ActiveWorkoutModal', () => {
             .find((b) => b.text().trim() === 'Efectiva');
         await btnEfectiva.trigger('click');
 
-        const btnCompletarEfectiva = wrapper
-            .findAll('button')
-            .find((b) => b.text().includes('COMPLETAR SERIE'));
+        const btnCompletarEfectiva = wrapper.find('[data-testid="sticky-cta-completar"]');
         await btnCompletarEfectiva.trigger('click');
 
         // Ahora si avanza el progreso y el contador de calentamiento se reseteo.
@@ -264,20 +347,18 @@ describe('ActiveWorkoutModal', () => {
         });
 
         // El bloque no muestra "Serie #X de Y" sino que se identifica como bloque.
-        expect(wrapper.text()).toContain('BLOQUE DE CALENTAMIENTO');
+        expect(wrapper.text()).toContain('Bloque de calentamiento');
 
         // Registrar el calentamiento cierra el bloque y pasa al siguiente
         // ejercicio (no queda trabado en un ejercicio que nunca "termina").
         const btnCalentamiento = wrapper
             .findAll('button')
-            .find((b) => b.text().trim() === 'Calentamiento');
+            .find((b) => b.text().trim() === 'Calent.');
         expect(btnCalentamiento).toBeDefined();
         await btnCalentamiento.trigger('click');
 
-        const btnCompletarWarmup = wrapper
-            .findAll('button')
-            .find((b) => b.text().includes('COMPLETAR CALENTAMIENTO'));
-        expect(btnCompletarWarmup).toBeDefined();
+        const btnCompletarWarmup = wrapper.find('[data-testid="sticky-cta-completar"]');
+        expect(btnCompletarWarmup.exists()).toBe(true);
         await btnCompletarWarmup.trigger('click');
 
         expect(store.session.currentEjercicioIndex).toBe(1);
@@ -300,21 +381,21 @@ describe('ActiveWorkoutModal', () => {
             props: { open: true },
         });
 
-        // Mientras no este todo completo, debe verse COMPLETAR SERIE y NO
-        // el boton de finalizar.
-        expect(wrapper.text()).toContain('COMPLETAR SERIE #1');
+        // Mientras no este todo completo, debe verse la CTA Registrar serie y
+        // NO el boton de finalizar.
+        expect(wrapper.text()).toContain('Registrar serie');
         expect(wrapper.find('[data-testid="btn-finalizar-sesion"]').exists()).toBe(false);
 
         // Completar las dos series del unico ejercicio.
         const completar = () =>
-            wrapper.findAll('button').find((b) => b.text().includes('COMPLETAR SERIE'));
+            wrapper.findAll('button').find((b) => b.text().includes('Registrar serie'));
         await completar().trigger('click');
         await completar().trigger('click');
 
         // Ahora la sesion esta completa y debe aparecer el boton verde.
         expect(store.isSessionComplete).toBe(true);
         expect(wrapper.text()).toContain('FINALIZAR SESIÓN');
-        expect(wrapper.text()).not.toContain('COMPLETAR SERIE #');
+        expect(wrapper.find('[data-testid="sticky-cta-completar"]').exists()).toBe(false);
         const btnFinalizar = wrapper.find('[data-testid="btn-finalizar-sesion"]');
         expect(btnFinalizar.exists()).toBe(true);
 
@@ -366,17 +447,6 @@ describe('ActiveWorkoutModal', () => {
             expect(wrapper.find('[data-testid="superset-banner"]').exists()).toBe(true);
             // Grid con dos cards
             expect(wrapper.find('[data-testid="superset-grid"]').exists()).toBe(true);
-            // Bloque de superserie en la columna izquierda con los DOS nombres
-            // en orden primero (current) → segundo (partner)
-            expect(
-                wrapper.find('[data-testid="superset-left-block"]').exists()
-            ).toBe(true);
-            expect(
-                wrapper.find('[data-testid="superset-left-first-0"]').exists()
-            ).toBe(true);
-            expect(
-                wrapper.find('[data-testid="superset-left-second-1"]').exists()
-            ).toBe(true);
             // Banner debe indicar el orden correcto cuando estamos en el PRIMERO
             expect(wrapper.text()).toContain(
                 'Hacé'
@@ -384,11 +454,11 @@ describe('ActiveWorkoutModal', () => {
             expect(wrapper.text()).toContain(
                 'y seguí directo con'
             );
-            // Ambos nombres presentes en pantalla (banner + bloque izq + headers de cards)
+            // Ambos nombres presentes en pantalla (banner + headers de cards)
             expect(wrapper.text()).toContain('Press de banca');
             expect(wrapper.text()).toContain('Aperturas en polea');
             // Headers de nombre en AMBAS cards (clave para no perder de vista
-            // qué ejercicio se está registrando sin mirar la columna izq)
+            // qué ejercicio se está registrando)
             expect(
                 wrapper.find('[data-testid="set-card-name-0"]').exists()
             ).toBe(true);
@@ -399,11 +469,9 @@ describe('ActiveWorkoutModal', () => {
             expect(
                 wrapper.find('[data-testid="btn-completar-superset"]').exists()
             ).toBe(true);
+            // ...y la CTA fija normal no aparece duplicada.
             expect(
-                wrapper.find('[data-testid="btn-completar-0"]').exists()
-            ).toBe(false);
-            expect(
-                wrapper.find('[data-testid="btn-completar-1"]').exists()
+                wrapper.find('[data-testid="sticky-cta-completar"]').exists()
             ).toBe(false);
         });
 
@@ -415,11 +483,6 @@ describe('ActiveWorkoutModal', () => {
             await Promise.resolve();
 
             const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
-
-            // El bloque izq ahora debe mostrar el primero como "Ya hiciste"
-            // (con tachado) y el segundo como "Ahora" (resaltado).
-            expect(wrapper.text()).toContain('Ya hiciste');
-            expect(wrapper.text()).toContain('Ahora');
 
             // El banner debe decir algo tipo "Hacé Aperturas — ya hiciste Press
             // de banca antes, seguí sin descansar".
@@ -550,18 +613,12 @@ describe('ActiveWorkoutModal', () => {
 
             expect(wrapper.find('[data-testid="superset-banner"]').exists()).toBe(false);
             expect(wrapper.find('[data-testid="superset-grid"]').exists()).toBe(false);
+            // La CTA fija única del modo normal sí está.
             expect(
-                wrapper.find('[data-testid="superset-left-block"]').exists()
-            ).toBe(false);
-            // Solo hay un card de completar serie
-            expect(
-                wrapper.find('[data-testid="btn-completar-2"]').exists()
+                wrapper.find('[data-testid="sticky-cta-completar"]').exists()
             ).toBe(true);
-            expect(
-                wrapper.find('[data-testid="btn-completar-1"]').exists()
-            ).toBe(false);
             // Y como hay una sola card (no superset), NO debe mostrar el
-            // header de nombre adentro (ya está en la columna izquierda).
+            // header de nombre adentro (ya está arriba, junto a la imagen).
             expect(
                 wrapper.find('[data-testid="set-card-name-2"]').exists()
             ).toBe(false);
@@ -572,7 +629,7 @@ describe('ActiveWorkoutModal', () => {
     });
 
     describe('Prescripción y notas de esfuerzo (RIR / series)', () => {
-        it('muestra el desglose de prescripción en la columna izquierda y en SetConfigCard', async () => {
+        it('muestra el desglose de prescripción en los ajustes y en SetConfigCard', async () => {
             store.start({
                 rutina_nombre: 'Personalizada 3 Días',
                 dia: 'Día 1 (Torso)',
@@ -590,7 +647,8 @@ describe('ActiveWorkoutModal', () => {
 
             const wrapper = mount(ActiveWorkoutModal, { props: { open: true } });
 
-            // 1. En la columna izquierda debe existir el box de prescripción
+            // 1. El desglose completo vive dentro de "Ajustes de la serie"
+            // (colapsado: no empuja la acción principal fuera de pantalla).
             const prescripcionBox = wrapper.find('[data-testid="ejercicio-prescripcion-box"]');
             expect(prescripcionBox.exists()).toBe(true);
             expect(prescripcionBox.text()).toContain('2 series × 6 reps');
@@ -604,7 +662,17 @@ describe('ActiveWorkoutModal', () => {
             // El banner usa el resumen ESTRUCTURADO del plan (no el texto crudo
             // de `notas`): "2×6 RIR 1 → 2×4 RIR 0".
             expect(planBanner.text()).toContain('2×6 RIR 1 → 2×4 RIR 0');
-            expect(planBanner.text()).toContain('Serie #1: 6 reps');
+
+            // 2b. El objetivo de la serie YA NO se duplica en un pill dentro
+            // del banner: se muestra en grande en el "target hero card"
+            // (data-testid="set-target-hero-card"), que es el bloque con los
+            // números grandes de reps + RIR/RPE/FALLO.
+            const targetHero = wrapper.find('[data-testid="set-target-hero-card"]');
+            expect(targetHero.exists()).toBe(true);
+            expect(targetHero.text()).toContain('6 reps');
+            expect(targetHero.text()).toContain('RIR 1');
+            // Y el pill duplicado NO debe existir.
+            expect(planBanner.text()).not.toContain('Serie #1: 6 reps');
 
             // 3. El banner de esfuerzo target debe indicar el objetivo para la Serie #1
             const esfuerzoBanner = wrapper.find('[data-testid="esfuerzo-target-banner"]');
@@ -645,11 +713,12 @@ describe('ActiveWorkoutModal', () => {
             expect(card.exists()).toBe(true);
             const minBox = wrapper.find('[data-testid="last-exercise-min"]');
             expect(minBox.text()).toContain('40 kg');
-            expect(minBox.text()).toContain('8 reps');
+            expect(minBox.text()).toContain('× 8');
             const maxBox = wrapper.find('[data-testid="last-exercise-max"]');
             expect(maxBox.text()).toContain('60 kg');
-            expect(maxBox.text()).toContain('6 reps');
-            expect(maxBox.text()).toContain('RIR 1');
+            expect(maxBox.text()).toContain('× 6');
+            // El esfuerzo de la última sesión acompaña al historial.
+            expect(card.text()).toContain('rir 1');
         });
     });
 });

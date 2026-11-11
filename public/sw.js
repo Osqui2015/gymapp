@@ -19,7 +19,7 @@
 // `/icons/*` NO lo tienen (URLs estables) y se cachean con CacheFirst:
 // sin bumpear la versión, los usuarios con la PWA instalada siguen
 // viendo los iconos viejos.
-const VERSION = 'v17';
+const VERSION = 'v20';
 const STATIC_CACHE = `gymapp-static-${VERSION}`;
 const RUNTIME_CACHE = `gymapp-runtime-${VERSION}`;
 const API_CACHE = `gymapp-api-${VERSION}`;

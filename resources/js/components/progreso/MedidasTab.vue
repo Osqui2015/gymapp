@@ -89,10 +89,10 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold font-display tracking-tight text-white">
+                        <h2 class="text-lg font-bold font-display tracking-tight text-text">
                             Registrar Medidas
                         </h2>
-                        <p class="text-[11px] text-slate-400">
+                        <p class="text-[11px] text-text-3">
                             Actualiza tus registros corporales semanales
                         </p>
                     </div>
@@ -105,7 +105,7 @@
                     >
                         <div class="flex items-center space-x-2 border-b border-obsidian-border/70 pb-3">
                             <span class="text-base">📋</span>
-                            <h3 class="text-sm font-semibold text-white tracking-wide">
+                            <h3 class="text-sm font-semibold text-text tracking-wide">
                                 Datos Personales
                             </h3>
                         </div>
@@ -114,10 +114,10 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1.5">
                                 <label
-                                    class="block text-[11px] font-medium text-slate-300"
+                                    class="block text-[11px] font-medium text-text-2"
                                     for="peso"
                                 >
-                                    Peso <span class="text-slate-400 font-normal">(kg)</span>
+                                    Peso <span class="text-text-3 font-normal">(kg)</span>
                                 </label>
                                 <input
                                     id="peso"
@@ -126,15 +126,15 @@
                                     step="0.01"
                                     placeholder="Ej: 75.5"
                                     :required="progresos.length === 0"
-                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
+                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-text placeholder-text-3 font-medium transition-all outline-none"
                                 />
                             </div>
                             <div class="space-y-1.5">
                                 <label
-                                    class="block text-[11px] font-medium text-slate-300 truncate"
+                                    class="block text-[11px] font-medium text-text-2 truncate"
                                     for="grasa"
                                 >
-                                    % Grasa <span class="text-slate-400 font-normal">(opcional)</span>
+                                    % Grasa <span class="text-text-3 font-normal">(opcional)</span>
                                 </label>
                                 <input
                                     id="grasa"
@@ -144,7 +144,7 @@
                                     min="3"
                                     max="65"
                                     placeholder="Ej: 15.2"
-                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
+                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-text placeholder-text-3 font-medium transition-all outline-none"
                                 />
                             </div>
                         </div>
@@ -153,10 +153,10 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1.5">
                                 <label
-                                    class="block text-[11px] font-medium text-slate-300"
+                                    class="block text-[11px] font-medium text-text-2"
                                     for="altura"
                                 >
-                                    Altura <span class="text-slate-400 font-normal">(cm)</span>
+                                    Altura <span class="text-text-3 font-normal">(cm)</span>
                                 </label>
                                 <input
                                     id="altura"
@@ -165,12 +165,12 @@
                                     step="0.01"
                                     placeholder="Ej: 178"
                                     :required="progresos.length === 0"
-                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
+                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-text placeholder-text-3 font-medium transition-all outline-none"
                                 />
                             </div>
                             <div class="space-y-1.5">
                                 <label
-                                    class="block text-[11px] font-medium text-slate-300"
+                                    class="block text-[11px] font-medium text-text-2"
                                     for="edad"
                                 >
                                     Edad
@@ -181,7 +181,7 @@
                                     type="number"
                                     placeholder="Ej: 25"
                                     :required="progresos.length === 0"
-                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-medium transition-all outline-none"
+                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-text placeholder-text-3 font-medium transition-all outline-none"
                                 />
                             </div>
                         </div>
@@ -189,7 +189,7 @@
                         <!-- Field: Sexo -->
                         <div class="space-y-1.5">
                             <label
-                                class="block text-[11px] font-medium text-slate-300"
+                                class="block text-[11px] font-medium text-text-2"
                                 for="sexo"
                             >
                                 Sexo Biológico
@@ -199,18 +199,18 @@
                                     id="sexo"
                                     v-model="formLocal.sexo"
                                     :required="progresos.length === 0"
-                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-white font-medium transition-all appearance-none cursor-pointer pr-10 outline-none"
+                                    class="w-full bg-obsidian-input border border-obsidian-border focus:border-accent-indigo focus:ring-1 focus:ring-accent-indigo rounded-xl px-3.5 py-2.5 text-sm text-text font-medium transition-all appearance-none cursor-pointer pr-10 outline-none"
                                 >
-                                    <option class="bg-obsidian-card text-slate-400" value="">
+                                    <option class="bg-surface text-text-3" value="">
                                         Seleccionar
                                     </option>
-                                    <option class="bg-obsidian-card text-white" value="masculino">
+                                    <option class="bg-surface text-text" value="masculino">
                                         Masculino
                                     </option>
-                                    <option class="bg-obsidian-card text-white" value="femenino">
+                                    <option class="bg-surface text-text" value="femenino">
                                         Femenino
                                     </option>
-                                    <option class="bg-obsidian-card text-white" value="otro">
+                                    <option class="bg-surface text-text" value="otro">
                                         Otro / Prefiero no decir
                                     </option>
                                 </select>
@@ -667,10 +667,10 @@
 
                 <!-- Tips para tomar tus medidas -->
                 <section
-                    class="bg-gradient-to-br from-obsidian-card via-obsidian-card to-indigo-950/25 border border-indigo-900/40 rounded-2xl p-5 shadow-card-border space-y-3.5"
+                    class="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-3.5"
                     data-purpose="tips-card"
                 >
-                    <div class="flex items-center space-x-2 text-indigo-400">
+                    <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400">
                         <svg
                             class="w-5 h-5"
                             fill="none"
@@ -684,11 +684,11 @@
                                 stroke-linejoin="round"
                             />
                         </svg>
-                        <h3 class="text-sm font-bold font-display text-white tracking-wide">
+                        <h3 class="text-sm font-bold font-display text-text tracking-wide">
                             Tips para tomar tus medidas
                         </h3>
                     </div>
-                    <ol class="space-y-2.5 text-xs text-slate-300 leading-relaxed pl-1">
+                    <ol class="space-y-2.5 text-xs text-text-2 leading-relaxed pl-1">
                         <li
                             v-for="(tip, idx) in tips"
                             :key="idx"

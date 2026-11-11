@@ -17,7 +17,7 @@
 
         <!-- Badges -->
         <div class="space-y-4">
-            <h3 class="text-base font-bold font-display text-white flex items-center gap-2">
+            <h3 class="text-base font-bold font-display text-text flex items-center gap-2">
                 <span>🏆</span> Vitrina de Medallas
             </h3>
             <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -59,11 +59,11 @@
                         </div>
                     </div>
 
-                    <h4 class="font-extrabold text-sm text-white mb-1 font-display">
+                    <h4 class="font-extrabold text-sm text-text mb-1 font-display">
                         {{ logro.nombre }}
                     </h4>
                     <p
-                        class="text-xs text-slate-400 mb-4 h-10 flex items-center justify-center text-center"
+                        class="text-xs text-text-3 mb-4 h-10 flex items-center justify-center text-center"
                     >
                         {{ logro.descripcion }}
                     </p>

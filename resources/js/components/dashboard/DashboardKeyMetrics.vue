@@ -60,7 +60,7 @@ defineProps({
     >
         <!-- Sets 30 Días -->
         <div
-            class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <div
                 class="flex items-center justify-between gap-space-xs mb-space-sm"
@@ -95,7 +95,7 @@ defineProps({
 
         <!-- Último Entreno -->
         <div
-            class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <div
                 class="flex items-center justify-between gap-space-xs mb-space-sm"
@@ -128,7 +128,7 @@ defineProps({
 
         <!-- Racha Actual -->
         <div
-            class="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <div
                 class="flex items-center justify-between gap-space-xs mb-space-sm"
@@ -169,7 +169,7 @@ defineProps({
 
         <!-- Series del Día -->
         <div
-            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <span
                 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
@@ -189,7 +189,7 @@ defineProps({
 
         <!-- Peso Registrado -->
         <div
-            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <span
                 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
@@ -212,7 +212,7 @@ defineProps({
 
         <!-- Peso Promedio -->
         <div
-            class="col-span-1 md:col-span-1 lg:col-span-1 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-1 lg:col-span-1 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <span
                 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"
@@ -235,7 +235,7 @@ defineProps({
 
         <!-- Reps Realizadas -->
         <div
-            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm"
+            class="col-span-1 md:col-span-1 lg:col-span-2 flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low border border-outline-variant/60 shadow-xs"
         >
             <span
                 class="font-label-sm text-label-sm uppercase tracking-wider text-outline mb-space-xs"

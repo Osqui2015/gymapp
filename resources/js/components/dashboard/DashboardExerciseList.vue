@@ -119,7 +119,7 @@ const updateField = (campo, valor) => {
              hay que hacerlos antes de la barra. -->
         <div
             v-if="bloquesDelDia.length"
-            class="flex flex-col gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-space-md py-space-sm"
+            class="flex flex-col gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-space-md py-space-sm"
             data-testid="bloques-del-dia"
         >
             <div
@@ -127,9 +127,9 @@ const updateField = (campo, valor) => {
                 :key="bloque.id"
                 class="flex items-start gap-2"
             >
-                <span class="material-symbols-outlined text-[16px] text-amber-400 mt-px">timer</span>
+                <span class="material-symbols-outlined text-[16px] text-amber-600 dark:text-amber-400 mt-px">timer</span>
                 <div class="min-w-0">
-                    <span class="text-label-sm text-label-sm font-bold text-amber-300 uppercase tracking-wide">
+                    <span class="text-label-sm text-label-sm font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide">
                         {{ bloque.nombre }}
                     </span>
                     <p class="text-[11px] leading-relaxed text-on-surface-variant mt-0.5">
@@ -150,7 +150,7 @@ const updateField = (campo, valor) => {
             <article
                 v-for="(ej, idx) in ejerciciosDelDia"
                 :key="ej.nombre"
-                class="p-space-md md:p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors shadow-sm"
+                class="p-space-md md:p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/60 transition-colors shadow-xs"
             >
                 <div
                     class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md"

@@ -3,18 +3,18 @@
     <div
         v-if="!open"
         @click="$emit('toggle')"
-        class="p-3.5 rounded-xl bg-obsidian-900 border border-slate-800/80 flex items-center justify-between hover:border-slate-700 transition-colors cursor-pointer select-none"
+        class="p-3.5 rounded-xl bg-surface border border-border flex items-center justify-between hover:border-border-strong transition-colors cursor-pointer select-none"
     >
         <div class="flex items-center gap-3">
-            <h3 class="text-sm sm:text-base font-bold text-white">{{ modalidad.nombre }}</h3>
+            <h3 class="text-sm sm:text-base font-bold text-text">{{ modalidad.nombre }}</h3>
             <span
-                class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30"
             >
                 {{ displayDiasBadge }}
             </span>
             <span
                 v-if="modalidad.dias && modalidad.dias.length"
-                class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 font-medium"
+                class="hidden sm:inline-flex items-center gap-1.5 text-xs text-text-3 font-medium"
             >
                 <span>• {{ totalEjerciciosModalidad }} ejercicios</span>
                 <span class="hidden md:inline">• {{ modalidad.dias.map(d => d.nombre).join(', ') }}</span>
@@ -28,11 +28,11 @@
                 @click.stop="$emit('toggle-favorite', { nivel, modalidad: modalidad.nombre })"
                 :aria-label="esFavorita ? 'Quitar de favoritos' : 'Marcar como favorita'"
                 class="transition-colors p-1"
-                :class="esFavorita ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'"
+                :class="esFavorita ? 'text-amber-500' : 'text-text-3 hover:text-amber-500'"
             >
                 <svg
                     class="w-4 h-4"
-                    :class="{ 'fill-amber-400': esFavorita }"
+                    :class="{ 'fill-amber-500': esFavorita }"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
@@ -46,7 +46,7 @@
                 </svg>
             </button>
             <div
-                class="h-6 w-6 rounded-md bg-obsidian-800 flex items-center justify-center text-slate-400"
+                class="h-6 w-6 rounded-md bg-surface-2 border border-border flex items-center justify-center text-text-3"
             >
                 <svg
                     class="w-4 h-4"
@@ -68,23 +68,23 @@
     <!-- Expanded Routine Card -->
     <div
         v-else
-        class="rounded-2xl bg-obsidian-900 border border-indigo-900/40 overflow-hidden shadow-xl shadow-black/40 transition-all"
+        class="rounded-2xl bg-surface border border-border overflow-hidden shadow-md transition-all"
     >
         <!-- Card Accordion Header (Expanded) -->
         <div
             @click="$emit('toggle')"
-            class="p-3.5 sm:p-4 bg-obsidian-850 border-b border-slate-800 flex items-center justify-between cursor-pointer select-none"
+            class="p-3.5 sm:p-4 bg-surface-2 border-b border-border flex items-center justify-between cursor-pointer select-none"
         >
             <div class="flex items-center gap-3">
-                <h3 class="text-base sm:text-lg font-bold text-white">{{ modalidad.nombre }}</h3>
+                <h3 class="text-base sm:text-lg font-bold text-text">{{ modalidad.nombre }}</h3>
                 <span
-                    class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                    class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30"
                 >
                     {{ displayDiasBadge }}
                 </span>
                 <span
                     v-if="modalidad.dias && modalidad.dias.length"
-                    class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-400 font-medium"
+                    class="hidden sm:inline-flex items-center gap-1.5 text-xs text-text-3 font-medium"
                 >
                     <span>• {{ totalEjerciciosModalidad }} ejercicios</span>
                 </span>
@@ -96,11 +96,11 @@
                     type="button"
                     @click.stop="$emit('toggle-favorite', { nivel, modalidad: modalidad.nombre })"
                     :aria-label="esFavorita ? 'Quitar de favoritos' : 'Marcar como favorita'"
-                    class="text-amber-400 hover:text-amber-300 transition-colors p-1"
+                    class="text-amber-500 hover:text-amber-400 transition-colors p-1"
                 >
                     <svg
                         class="w-4 h-4"
-                        :class="esFavorita ? 'fill-amber-400' : 'fill-none'"
+                        :class="esFavorita ? 'fill-amber-500' : 'fill-none'"
                         stroke="currentColor"
                         stroke-width="1.8"
                         viewBox="0 0 24 24"
@@ -112,7 +112,7 @@
                 </button>
                 <!-- Chevron up (Expanded indicator) -->
                 <div
-                    class="h-6 w-6 rounded-md bg-obsidian-800 flex items-center justify-center text-slate-400"
+                    class="h-6 w-6 rounded-md bg-surface border border-border flex items-center justify-center text-text-3"
                 >
                     <svg
                         class="w-4 h-4"
@@ -140,10 +140,10 @@
                     <button
                         type="button"
                         @click="$emit('toggle-dia', dia.nombre)"
-                        class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-obsidian-800/80 border border-slate-700/60 text-left transition-colors hover:border-slate-600"
+                        class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-surface-2 border border-border text-left transition-colors hover:border-border-strong"
                     >
                         <div
-                            class="flex items-center gap-2 text-indigo-300 text-xs sm:text-sm font-semibold"
+                            class="flex items-center gap-2 text-indigo-600 dark:text-indigo-300 text-xs sm:text-sm font-semibold"
                         >
                             <svg
                                 class="w-4 h-4 text-indigo-400 shrink-0"
@@ -187,7 +187,7 @@
                     <div class="space-y-2">
                         <!-- List Header Columns -->
                         <div
-                            class="grid grid-cols-12 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 pb-1"
+                            class="grid grid-cols-12 px-3 text-[11px] font-semibold uppercase tracking-wider text-text-3 pb-1"
                         >
                             <span class="col-span-5">Ejercicio</span>
                             <span class="col-span-2 text-center">Series</span>
@@ -199,30 +199,30 @@
                         <div
                             v-for="ejercicio in dia.ejercicios"
                             :key="ejercicio.id"
-                            class="grid grid-cols-12 items-center p-2.5 rounded-xl bg-obsidian-850/90 border border-slate-800/70 hover:border-slate-700 transition-colors"
+                            class="grid grid-cols-12 items-center p-2.5 rounded-xl bg-surface border border-border hover:border-border-strong transition-colors"
                             :class="getSuperserieClass(ejercicio)"
                         >
                             <div class="col-span-5 pr-1 min-w-0">
-                                <span class="text-xs sm:text-sm font-semibold text-white block truncate">
+                                <span class="text-xs sm:text-sm font-bold text-text block truncate">
                                     {{ ejercicio.ejercicio_nombre }}
                                 </span>
-                                <span class="text-[10px] text-slate-400 truncate block">
+                                <span class="text-[10px] text-text-3 truncate block">
                                     {{ getMuscleSubtitle(ejercicio) }}
                                 </span>
                                 <span
                                     v-if="ejercicio.superserie_grupo"
-                                    class="mt-0.5 inline-flex items-center rounded-md bg-indigo-500/20 px-1.5 py-0.5 text-[9px] font-bold text-indigo-300 border border-indigo-500/30"
+                                    class="mt-0.5 inline-flex items-center rounded-md bg-indigo-500/15 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 dark:text-indigo-300 border border-indigo-500/30"
                                 >
                                     Superserie {{ ejercicio.superserie_grupo }}
                                 </span>
                                 <!-- Plan de series estructurado (RIR / RPE / FALLO + rest-pause) -->
-                                <PlanSeriesChips :ejercicio="ejercicio" tema="dark" />
+                                <PlanSeriesChips :ejercicio="ejercicio" tema="auto" />
 
                                 <!-- Notas crudas cuando el ejercicio no tiene plan
                                      (ej. "1x40 (Pull-up australiana, completar todas las reps)") -->
                                 <p
                                     v-if="!tienePlan(ejercicio) && ejercicio.notas"
-                                    class="mt-1 text-[9px] text-gray-400 italic line-clamp-2"
+                                    class="mt-1 text-[9px] text-text-3 italic line-clamp-2"
                                     :title="ejercicio.notas"
                                 >
                                     💡 {{ ejercicio.notas }}
@@ -233,8 +233,8 @@
                                     class="h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold"
                                     :class="
                                         Number(ejercicio.series) === 0
-                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                                            : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                                     "
                                     :title="
                                         Number(ejercicio.series) === 0
@@ -245,14 +245,14 @@
                                     {{ Number(ejercicio.series) === 0 ? '⏱' : ejercicio.series }}
                                 </span>
                             </div>
-                            <div class="col-span-2 text-center text-xs text-slate-200 font-medium">
+                            <div class="col-span-2 text-center text-xs text-text-2 font-medium">
                                 {{
                                     Number(ejercicio.series) === 0
                                         ? 'a tu ritmo'
                                         : formatReps(ejercicio.reps_min, ejercicio.reps_max)
                                 }}
                             </div>
-                            <div class="col-span-3 text-right text-xs font-semibold text-amber-400">
+                            <div class="col-span-3 text-right text-xs font-semibold text-amber-600 dark:text-amber-400">
                                 {{ formatDescanso(ejercicio.descanso_min) }}
                             </div>
                         </div>
@@ -266,10 +266,10 @@
                         v-if="showQuickInput"
                         type="button"
                         @click="$emit('quick-input', dia)"
-                        class="w-full py-2.5 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                        class="w-full py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                         :aria-label="`Carga rápida de series para ${dia.nombre}`"
                     >
-                        <span class="text-emerald-300 text-sm">⚡</span>
+                        <span class="text-emerald-500 text-sm">⚡</span>
                         <span>Carga rápida de {{ dia.nombre }}</span>
                     </button>
                 </template>
@@ -279,13 +279,13 @@
                     v-else
                     type="button"
                     @click="$emit('toggle-dia', dia.nombre)"
-                    class="w-full flex items-center justify-between p-3 rounded-xl bg-obsidian-850 border border-slate-800 text-left hover:border-slate-700 transition-colors"
+                    class="w-full flex items-center justify-between p-3 rounded-xl bg-surface-2 border border-border text-left hover:border-border-strong transition-colors"
                 >
                     <div
-                        class="flex items-center gap-2 text-slate-300 text-xs sm:text-sm font-semibold"
+                        class="flex items-center gap-2 text-text text-xs sm:text-sm font-semibold"
                     >
                         <svg
-                            class="w-4 h-4 text-slate-400 shrink-0"
+                            class="w-4 h-4 text-text-3 shrink-0"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
@@ -299,15 +299,15 @@
                         </svg>
                         <span>
                             {{ dia.nombre }}
-                            <span class="text-slate-400 font-normal">({{ dia.ejercicios.length }} ejercicios)</span>
+                            <span class="text-text-3 font-normal">({{ dia.ejercicios.length }} ejercicios)</span>
                         </span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-medium text-slate-500">
+                        <span class="text-[11px] font-medium text-text-3">
                             {{ getDiaFocus(dia, modalidad.nombre) }}
                         </span>
                         <svg
-                            class="w-4 h-4 text-slate-400 shrink-0"
+                            class="w-4 h-4 text-text-3 shrink-0"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
@@ -349,7 +349,7 @@ const props = defineProps({
     nivel: { type: String, required: true },
     open: { type: Boolean, required: true },
     openDias: { type: Array, required: true },
-    titleClass: { type: String, default: 'text-white' },
+    titleClass: { type: String, default: 'text-text' },
     showSelectButton: { type: Boolean, default: false },
     selectLabel: { type: String, default: '' },
     showQuickInput: { type: Boolean, default: false },

@@ -38,11 +38,11 @@
         >
             <div
                 v-show="menuOpen"
-                class="fixed bottom-0 left-0 right-0 bg-[#131924] rounded-t-3xl shadow-2xl border-t border-[#232D42] max-h-[85vh] overflow-y-auto text-slate-200"
+                class="fixed bottom-0 left-0 right-0 bg-surface dark:bg-[#131924] rounded-t-3xl shadow-2xl border-t border-border dark:border-[#232D42] max-h-[85vh] overflow-y-auto text-text dark:text-slate-200"
             >
                 <!-- Handle visual -->
                 <div class="flex justify-center pt-3 pb-1">
-                    <div class="w-10 h-1.5 bg-[#232D42] rounded-full"></div>
+                    <div class="w-10 h-1.5 bg-border-strong dark:bg-[#232D42] rounded-full"></div>
                 </div>
 
                 <div class="px-4 pt-2 pb-24">
@@ -179,7 +179,7 @@
 
         <!-- Barra inferior persistente (GymApp Telemetry Pro) -->
         <nav
-            class="bg-[#0B0F17]/95 backdrop-blur-xl border-t border-[#232D42] pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
+            class="bg-surface/95 dark:bg-[#0B0F17]/95 backdrop-blur-xl border-t border-border dark:border-[#232D42] pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
             data-purpose="bottom-persistent-navigation"
         >
             <div class="max-w-md mx-auto px-3 py-1.5">
@@ -188,22 +188,22 @@
                         <a
                             v-if="item.active"
                             :href="item.href"
-                            class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-white relative group w-full"
+                            class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-text dark:text-white relative group w-full"
                         >
                             <div
                                 class="absolute -top-1.5 w-8 h-1 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.8)]"
                             ></div>
                             <div
-                                class="w-9 h-7 rounded-lg bg-indigo-600/25 border border-indigo-500/40 flex items-center justify-center text-indigo-300 mb-0.5"
+                                class="w-9 h-7 rounded-lg bg-indigo-600/15 dark:bg-indigo-600/25 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 mb-0.5"
                             >
                                 <span class="material-symbols-outlined text-[19px]" v-text="item.icon" />
                             </div>
-                            <span class="text-[10px] font-bold tracking-tight text-white" v-text="item.label" />
+                            <span class="text-[10px] font-bold tracking-tight text-text dark:text-white" v-text="item.label" />
                         </a>
                         <a
                             v-else
                             :href="item.href"
-                            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-400 hover:text-slate-200 transition-colors group w-full"
+                            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-text-3 dark:text-slate-400 hover:text-text dark:hover:text-slate-200 transition-colors group w-full"
                         >
                             <div class="w-9 h-7 flex items-center justify-center">
                                 <span

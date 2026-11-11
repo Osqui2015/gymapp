@@ -1,24 +1,24 @@
 <template>
-    <div class="min-h-screen bg-[#0B0F17] text-slate-200 font-sans antialiased selection:bg-neon-indigo selection:text-white pb-32 md:pb-16">
+    <div class="min-h-screen bg-bg text-text font-sans antialiased selection:bg-neon-indigo selection:text-white pb-32 md:pb-16">
         <!-- ============================================================ -->
         <!-- HEADER MOBILE (Breadcrumbs & Heading)                        -->
         <!-- ============================================================ -->
-        <header class="md:hidden border-b border-[#232D42]/80 bg-[#0B0F17]/90">
+        <header class="md:hidden border-b border-border bg-surface/90 backdrop-blur-md">
             <div class="max-w-md mx-auto px-4 py-3">
                 <div class="pb-1">
-                    <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mb-1">
+                    <div class="flex items-center gap-1.5 text-[11px] font-medium text-text-3 mb-1">
                         <a class="hover:text-neon-indigo transition-colors" href="/dashboard">Inicio</a>
-                        <i class="ph ph-caret-right text-[10px] text-slate-600"></i>
+                        <i class="ph ph-caret-right text-[10px] text-text-3"></i>
                         <span class="text-neon-indigo font-semibold">Ejercicios</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <h1 class="font-display text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <h1 class="font-display text-2xl font-bold text-text tracking-tight flex items-center gap-2">
                             Biblioteca de Ejercicios
                         </h1>
                         <button
                             v-if="userRole === 'trainer' || userRole === 'administrador'"
                             @click="mostrarModal = true"
-                            class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all active:scale-95"
+                            class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all active:scale-95"
                         >
                             <i class="ph ph-plus-circle text-sm"></i>
                             <span>Nuevo</span>
@@ -31,18 +31,18 @@
         <!-- ============================================================ -->
         <!-- HEADER DESKTOP (Widescreen layout with Breadcrumbs & Title)  -->
         <!-- ============================================================ -->
-        <header class="hidden md:block border-b border-white/[0.06] bg-obsidian-950/40 backdrop-blur-md">
+        <header class="hidden md:block border-b border-border bg-surface/80 backdrop-blur-md">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
                 <div class="flex items-center justify-between">
                     <div>
                         <!-- Breadcrumbs -->
-                        <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                        <div class="flex items-center gap-1.5 text-xs font-medium text-text-3 mb-1.5">
                             <a class="hover:text-neon-indigo transition-colors" href="/dashboard">Inicio</a>
-                            <i class="ph ph-caret-right text-[10px] text-slate-600"></i>
+                            <i class="ph ph-caret-right text-[10px] text-text-3"></i>
                             <span class="text-neon-indigo font-semibold">Ejercicios</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <h1 class="font-display text-2xl lg:text-3xl font-bold text-white tracking-tight">
+                            <h1 class="font-display text-2xl lg:text-3xl font-bold text-text tracking-tight">
                                 Biblioteca de Ejercicios
                             </h1>
                             <span class="px-2.5 py-0.5 rounded-full bg-neon-indigo/15 border border-neon-indigo/30 text-neon-indigo text-xs font-semibold">
@@ -90,11 +90,11 @@
                         <!-- Card Top: Title & Front/Back Switch Tabs -->
                         <div class="flex items-center justify-between mb-3 relative z-10">
                             <div>
-                                <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400">Mapa Muscular</span>
-                                <p class="text-xs text-slate-200 font-medium">Toca un grupo para filtrar</p>
+                                <span class="text-[10px] font-bold tracking-wider uppercase text-text-3">Mapa Muscular</span>
+                                <p class="text-xs text-text font-medium">Toca un grupo para filtrar</p>
                             </div>
                             <!-- Pills Toggle: Frente / Espalda -->
-                            <div class="flex items-center bg-obsidian-950/80 p-1 rounded-xl border border-white/[0.08]">
+                            <div class="flex items-center bg-surface-2 p-1 rounded-xl border border-border">
                                 <button
                                     type="button"
                                     @click="vistaAnatomia = 'front'"
@@ -102,7 +102,7 @@
                                         'px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                                         vistaAnatomia === 'front'
                                             ? 'bg-neon-indigo text-white shadow-glow-indigo'
-                                            : 'text-slate-400 hover:text-white font-medium'
+                                            : 'text-text-3 hover:text-text font-medium'
                                     ]"
                                 >
                                     Frente
@@ -114,7 +114,7 @@
                                         'px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                                         vistaAnatomia === 'back'
                                             ? 'bg-neon-indigo text-white shadow-glow-indigo'
-                                            : 'text-slate-400 hover:text-white font-medium'
+                                            : 'text-text-3 hover:text-text font-medium'
                                     ]"
                                 >
                                     Espalda
@@ -231,20 +231,20 @@
                         <!-- Search Input Bar & CTA (Mobile: stacked | Desktop: inline row) -->
                         <div class="flex flex-col sm:flex-row gap-2.5">
                             <div class="relative flex-1">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-3">
                                     <i class="ph ph-magnifying-glass text-lg"></i>
                                 </div>
                                 <input
                                     v-model="busqueda"
                                     @keyup.enter="buscar"
-                                    class="w-full bg-obsidian-850/90 border border-white/[0.09] focus:border-neon-indigo focus:ring-1 focus:ring-neon-indigo text-slate-100 placeholder-slate-500 text-sm rounded-xl pl-10 pr-10 py-3 shadow-inner-subtle transition-all outline-none"
+                                    class="w-full bg-surface-2 border border-border focus:border-neon-indigo focus:ring-1 focus:ring-neon-indigo text-text placeholder-text-3 text-sm rounded-xl pl-10 pr-10 py-3 shadow-inner-subtle transition-all outline-none"
                                     placeholder="Buscar por nombre, equipamiento o músculo..."
                                     type="text"
                                 />
                                 <button
                                     type="button"
                                     @click="toggleAdvancedFilters"
-                                    class="md:hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300"
+                                    class="md:hidden absolute inset-y-0 right-0 pr-3 flex items-center text-text-3 hover:text-text"
                                     title="Filtros avanzados"
                                 >
                                     <i class="ph ph-sliders-horizontal text-base" :class="{ 'text-neon-indigo': showAdvancedFilters }"></i>
@@ -253,7 +253,7 @@
                                     v-if="busqueda"
                                     type="button"
                                     @click="busqueda = ''; buscar();"
-                                    class="hidden md:flex absolute inset-y-0 right-0 pr-3 items-center text-slate-400 hover:text-white"
+                                    class="hidden md:flex absolute inset-y-0 right-0 pr-3 items-center text-text-3 hover:text-text"
                                     title="Limpiar texto"
                                 >
                                     <i class="ph ph-x text-sm"></i>
@@ -275,10 +275,10 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1" :class="{ 'hidden sm:grid': !showAdvancedFilters }">
                             <!-- Grupo Muscular Selector -->
                             <div class="relative" ref="grupoDropdownRef">
-                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 pl-1">Grupo Muscular</label>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1 pl-1">Grupo Muscular</label>
                                 <div
                                     @click="toggleGrupoDropdown"
-                                    class="flex items-center justify-between bg-obsidian-850 border border-white/[0.08] hover:border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white cursor-pointer transition-colors"
+                                    class="flex items-center justify-between bg-surface-2 border border-border hover:border-border-strong rounded-xl px-3.5 py-2.5 text-xs text-text cursor-pointer transition-colors"
                                 >
                                     <div class="flex items-center gap-2 truncate">
                                         <i class="ph-bold ph-barbell text-neon-indigo"></i>
@@ -288,32 +288,32 @@
                                         <span
                                             v-if="grupoMuscularFiltro"
                                             @click.stop="seleccionarGrupo('')"
-                                            class="text-slate-400 hover:text-rose-400 font-bold px-1 text-xs"
+                                            class="text-text-3 hover:text-rose-500 font-bold px-1 text-xs"
                                             title="Quitar filtro"
                                         >✕</span>
-                                        <i class="ph ph-caret-down text-slate-400 text-xs transition-transform" :class="{ 'rotate-180': grupoSelectOpen }"></i>
+                                        <i class="ph ph-caret-down text-text-3 text-xs transition-transform" :class="{ 'rotate-180': grupoSelectOpen }"></i>
                                     </div>
                                 </div>
 
                                 <!-- Dropdown modal popup -->
                                 <div
                                     v-if="grupoSelectOpen"
-                                    class="absolute z-50 left-0 right-0 mt-1 bg-obsidian-900 rounded-xl shadow-2xl border border-white/[0.12] overflow-hidden"
+                                    class="absolute z-50 left-0 right-0 mt-1 bg-surface rounded-xl shadow-2xl border border-border overflow-hidden"
                                 >
-                                    <div class="p-2 border-b border-white/[0.06] bg-obsidian-950">
+                                    <div class="p-2 border-b border-border bg-surface-2">
                                         <input
                                             ref="grupoSearchInputRef"
                                             v-model="grupoSearchText"
                                             type="text"
                                             placeholder="Buscar grupo muscular..."
-                                            class="w-full px-3 py-1.5 text-xs bg-obsidian-850 border border-white/[0.1] rounded-lg text-white outline-none focus:border-neon-indigo"
+                                            class="w-full px-3 py-1.5 text-xs bg-surface border border-border rounded-lg text-text outline-none focus:border-neon-indigo"
                                         />
                                     </div>
-                                    <div class="max-h-52 overflow-y-auto divide-y divide-white/[0.04]">
+                                    <div class="max-h-52 overflow-y-auto divide-y divide-border">
                                         <button
                                             type="button"
                                             @click="seleccionarGrupo('')"
-                                            class="w-full px-3.5 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-slate-300"
+                                            class="w-full px-3.5 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-text-2"
                                             :class="{ 'font-bold text-neon-indigo bg-neon-indigo/15': !grupoMuscularFiltro }"
                                         >
                                             <span>Todos los grupos musculares</span>
@@ -336,39 +336,39 @@
 
                             <!-- Equipamiento -->
                             <div class="relative" ref="equipoDropdownRef">
-                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 pl-1">Equipo</label>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1 pl-1">Equipo</label>
                                 <div
                                     @click="toggleEquipoDropdown"
-                                    class="flex items-center justify-between bg-obsidian-850 border border-white/[0.08] hover:border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white cursor-pointer transition-colors"
+                                    class="flex items-center justify-between bg-surface-2 border border-border hover:border-border-strong rounded-xl px-3.5 py-2.5 text-xs text-text cursor-pointer transition-colors"
                                 >
                                     <span class="font-medium truncate">{{ equipamientoFiltro || 'Todo el equipo' }}</span>
                                     <div class="flex items-center gap-1 ml-1 shrink-0">
                                         <span
                                             v-if="equipamientoFiltro"
                                             @click.stop="seleccionarEquipamiento('')"
-                                            class="text-slate-400 hover:text-rose-400 font-bold px-0.5 text-xs"
+                                            class="text-text-3 hover:text-rose-500 font-bold px-0.5 text-xs"
                                         >✕</span>
-                                        <i class="ph ph-caret-down text-slate-400 text-xs transition-transform" :class="{ 'rotate-180': equipoSelectOpen }"></i>
+                                        <i class="ph ph-caret-down text-text-3 text-xs transition-transform" :class="{ 'rotate-180': equipoSelectOpen }"></i>
                                     </div>
                                 </div>
                                 <div
                                     v-if="equipoSelectOpen"
-                                    class="absolute z-50 left-0 right-0 mt-1 bg-obsidian-900 rounded-xl shadow-2xl border border-white/[0.12] overflow-hidden"
+                                    class="absolute z-50 left-0 right-0 mt-1 bg-surface rounded-xl shadow-2xl border border-border overflow-hidden"
                                 >
-                                    <div class="p-2 border-b border-white/[0.06] bg-obsidian-950">
+                                    <div class="p-2 border-b border-border bg-surface-2">
                                         <input
                                             ref="equipoSearchInputRef"
                                             v-model="equipoSearchText"
                                             type="text"
                                             placeholder="Buscar equipo..."
-                                            class="w-full px-2.5 py-1 text-xs bg-obsidian-850 border border-white/[0.1] rounded-lg text-white outline-none focus:border-neon-indigo"
+                                            class="w-full px-2.5 py-1 text-xs bg-surface border border-border rounded-lg text-text outline-none focus:border-neon-indigo"
                                         />
                                     </div>
-                                    <div class="max-h-48 overflow-y-auto divide-y divide-white/[0.04]">
+                                    <div class="max-h-48 overflow-y-auto divide-y divide-border">
                                         <button
                                             type="button"
                                             @click="seleccionarEquipamiento('')"
-                                            class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 text-slate-300"
+                                            class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 text-text-2"
                                             :class="{ 'font-bold text-neon-indigo bg-neon-indigo/15': !equipamientoFiltro }"
                                         >
                                             Todo el equipo
@@ -378,7 +378,7 @@
                                             :key="eq"
                                             type="button"
                                             @click="seleccionarEquipamiento(eq)"
-                                            class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-slate-300"
+                                            class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-text-2"
                                             :class="{ 'font-bold text-neon-indigo bg-neon-indigo/15': equipamientoFiltro === eq }"
                                         >
                                             <span class="truncate">{{ eq }}</span>
@@ -390,10 +390,10 @@
 
                             <!-- Dificultad -->
                             <div class="relative" ref="dificultadDropdownRef">
-                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 pl-1">Dificultad</label>
+                                <label class="block text-[10px] font-bold uppercase tracking-wider text-text-3 mb-1 pl-1">Dificultad</label>
                                 <div
                                     @click="toggleDificultadDropdown"
-                                    class="flex items-center justify-between bg-obsidian-850 border border-white/[0.08] hover:border-white/20 rounded-xl px-3.5 py-2.5 text-xs text-white cursor-pointer transition-colors"
+                                    class="flex items-center justify-between bg-surface-2 border border-border hover:border-border-strong rounded-xl px-3.5 py-2.5 text-xs text-text cursor-pointer transition-colors"
                                 >
                                     <div class="flex items-center gap-1.5 truncate">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
@@ -403,19 +403,19 @@
                                         <span
                                             v-if="dificultadFiltro"
                                             @click.stop="seleccionarDificultad('')"
-                                            class="text-slate-400 hover:text-rose-400 font-bold px-0.5 text-xs"
+                                            class="text-text-3 hover:text-rose-500 font-bold px-0.5 text-xs"
                                         >✕</span>
-                                        <i class="ph ph-caret-down text-slate-400 text-xs transition-transform" :class="{ 'rotate-180': dificultadSelectOpen }"></i>
+                                        <i class="ph ph-caret-down text-text-3 text-xs transition-transform" :class="{ 'rotate-180': dificultadSelectOpen }"></i>
                                     </div>
                                 </div>
                                 <div
                                     v-if="dificultadSelectOpen"
-                                    class="absolute z-50 left-0 right-0 mt-1 bg-obsidian-900 rounded-xl shadow-2xl border border-white/[0.12] overflow-hidden divide-y divide-white/[0.04]"
+                                    class="absolute z-50 left-0 right-0 mt-1 bg-surface rounded-xl shadow-2xl border border-border overflow-hidden divide-y divide-border"
                                 >
                                     <button
                                         type="button"
                                         @click="seleccionarDificultad('')"
-                                        class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 text-slate-300"
+                                        class="w-full px-3 py-2 text-left text-xs transition-colors hover:bg-neon-indigo/10 text-text-2"
                                         :class="{ 'font-bold text-neon-indigo bg-neon-indigo/15': !dificultadFiltro }"
                                     >
                                         Todas
@@ -425,7 +425,7 @@
                                         :key="dif"
                                         type="button"
                                         @click="seleccionarDificultad(dif)"
-                                        class="w-full px-3 py-2 text-left text-xs capitalize transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-slate-300"
+                                        class="w-full px-3 py-2 text-left text-xs capitalize transition-colors hover:bg-neon-indigo/10 flex items-center justify-between text-text-2"
                                         :class="{ 'font-bold text-neon-indigo bg-neon-indigo/15': dificultadFiltro === dif }"
                                     >
                                         <span>{{ dif }}</span>
@@ -443,8 +443,8 @@
                                 class="shrink-0 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer"
                                 :class="[
                                     !grupoMuscularFiltro && !musculoFiltroBodyMap
-                                        ? 'bg-white/10 text-white border border-white/15 shadow-glow-indigo'
-                                        : 'bg-obsidian-850 text-slate-300 hover:text-white border border-white/[0.06]'
+                                        ? 'bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30 font-bold'
+                                        : 'bg-surface-2 text-text-3 hover:text-text border border-border'
                                 ]"
                             >
                                 Todos ({{ total.toLocaleString() }})
@@ -458,7 +458,7 @@
                                 :class="[
                                     grupoMuscularFiltro === chip
                                         ? 'bg-neon-indigo text-white border border-neon-indigo/40 shadow-glow-indigo'
-                                        : 'bg-obsidian-850 text-slate-300 hover:text-white border border-white/[0.06]'
+                                        : 'bg-surface-2 text-text-3 hover:text-text border border-border'
                                 ]"
                             >
                                 {{ chip }}
@@ -470,11 +470,11 @@
                     <!-- Active Filter Bar Banner (if muscle filter selected from body map) -->
                     <div
                         v-if="musculoFiltroBodyMap || grupoMuscularFiltro"
-                        class="flex items-center justify-between bg-neon-indigo/10 border border-neon-indigo/30 rounded-xl px-4 py-2.5 text-xs text-indigo-200"
+                        class="flex items-center justify-between bg-neon-indigo/10 border border-neon-indigo/30 rounded-xl px-4 py-2.5 text-xs text-indigo-700 dark:text-indigo-200"
                     >
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-neon-indigo animate-pulse"></span>
-                            <span>Filtrando por: <strong class="text-white">{{ grupoMuscularFiltro || muscleLabels[musculoFiltroBodyMap] || musculoFiltroBodyMap }}</strong></span>
+                            <span>Filtrando por: <strong class="text-text font-bold">{{ grupoMuscularFiltro || muscleLabels[musculoFiltroBodyMap] || musculoFiltroBodyMap }}</strong></span>
                         </div>
                         <button
                             type="button"
@@ -530,10 +530,10 @@
                                                 class="transition-colors text-base flex-shrink-0 cursor-pointer"
                                                 :title="ejercicio.is_favorite ? 'Quitar de favoritos' : 'Marcar favorito'"
                                             >
-                                                <i v-if="ejercicio.is_favorite" class="ph-fill ph-star text-amber-400"></i>
-                                                <i v-else class="ph ph-star text-slate-500 hover:text-amber-400"></i>
+                                                <i v-if="ejercicio.is_favorite" class="ph-fill ph-star text-amber-500"></i>
+                                                <i v-else class="ph ph-star text-text-3 hover:text-amber-500"></i>
                                             </button>
-                                            <h3 class="font-display font-bold text-sm text-white truncate tracking-tight" :title="ejercicio.nombre">
+                                            <h3 class="font-display font-bold text-sm text-text truncate tracking-tight" :title="ejercicio.nombre">
                                                 {{ ejercicio.nombre }}
                                             </h3>
                                         </div>
@@ -542,13 +542,13 @@
                                         <div class="flex flex-wrap items-center gap-1.5 mb-2">
                                             <span
                                                 v-if="ejercicio.equipamiento"
-                                                class="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-medium"
+                                                class="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-blue-300 text-[10px] font-medium"
                                             >
                                                 {{ ejercicio.equipamiento }}
                                             </span>
                                             <span
                                                 v-if="ejercicio.grupo_muscular"
-                                                class="px-2 py-0.5 rounded-md bg-neon-violet/15 border border-neon-violet/30 text-indigo-200 text-[10px] font-medium"
+                                                class="px-2 py-0.5 rounded-md bg-neon-violet/15 border border-neon-violet/30 text-violet-700 dark:text-indigo-200 text-[10px] font-medium"
                                             >
                                                 {{ ejercicio.grupo_muscular }}
                                             </span>
@@ -562,14 +562,14 @@
                                         </div>
 
                                         <!-- Last Trained Info -->
-                                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                        <div class="flex items-center gap-1.5 text-[11px] text-text-3">
                                             <template v-if="isRecent(ejercicio.last_trained_at)">
-                                                <i class="ph ph-calendar-check text-neon-emerald"></i>
-                                                <span>Entrenado: <span class="text-emerald-400 font-semibold">{{ relativeTime(ejercicio.last_trained_at).text }}</span></span>
+                                                <i class="ph ph-calendar-check text-emerald-600 dark:text-neon-emerald"></i>
+                                                <span>Entrenado: <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ relativeTime(ejercicio.last_trained_at).text }}</span></span>
                                             </template>
                                             <template v-else>
-                                                <i class="ph ph-clock text-slate-500"></i>
-                                                <span>Última vez: <span class="text-slate-300 font-medium">{{ relativeTime(ejercicio.last_trained_at).text }}</span></span>
+                                                <i class="ph ph-clock text-text-3"></i>
+                                                <span>Última vez: <span class="text-text-2 font-medium">{{ relativeTime(ejercicio.last_trained_at).text }}</span></span>
                                             </template>
                                         </div>
                                     </div>

@@ -1,6 +1,6 @@
 <template>
     <div
-        class="min-h-screen bg-[#0B0F17] text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-300"
+        class="min-h-screen bg-bg text-text antialiased selection:bg-indigo-500/30 selection:text-indigo-300"
     >
         <!-- Main Container (Responsive max-w-7xl) -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-20 md:py-6">
@@ -128,20 +128,20 @@
                         </div>
                     </div>
                     <div>
-                        <div class="text-3xl font-display font-extrabold text-white tracking-tight">
+                        <div class="text-3xl font-display font-extrabold text-text tracking-tight">
                             {{ progressStats.series30d }}
                         </div>
                         <p
-                            class="text-[10px] text-slate-400 mt-1 font-medium flex items-center gap-1"
+                            class="text-[10px] text-text-3 mt-1 font-medium flex items-center gap-1"
                         >
                             <span
                                 v-if="progressStats.series30d > 0"
-                                class="text-accent-violet font-semibold"
+                                class="text-indigo-600 dark:text-accent-violet font-semibold"
                             >
                                 +este mes
                             </span>
                             <span v-else class="flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block" />
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 inline-block" />
                                 Sin sesiones registradas
                             </span>
                         </p>
@@ -225,11 +225,11 @@
                         </div>
                     </div>
                     <div>
-                        <div class="text-3xl font-display font-extrabold text-white tracking-tight">
+                        <div class="text-3xl font-display font-extrabold text-text tracking-tight">
                             {{ progressStats.diasEntrenados7d }}
                         </div>
                         <p
-                            class="text-[10px] text-accent-cyan mt-1 font-medium flex items-center gap-1"
+                            class="text-[10px] text-cyan-600 dark:text-accent-cyan mt-1 font-medium flex items-center gap-1"
                         >
                             <span>
                                 {{
@@ -240,7 +240,7 @@
                                     )
                                 }}%
                             </span>
-                            <span class="text-slate-400">del objetivo</span>
+                            <span class="text-text-3">del objetivo</span>
                         </p>
                     </div>
                 </div>
@@ -350,21 +350,21 @@
             <!-- Segmented Nav Tabs -->
             <section class="overflow-x-auto no-scrollbar py-1 mb-5 md:mb-7" data-purpose="segmented-tabs">
                 <nav
-                    class="flex items-center space-x-1.5 p-1 bg-obsidian-surface/90 border border-obsidian-border rounded-xl backdrop-blur-md min-w-max"
+                    class="flex items-center space-x-1.5 p-1 bg-surface border border-border rounded-xl shadow-xs min-w-max"
                 >
                     <!-- Medidas -->
                     <button
                         @click="activeTab = 'medidas'"
                         :class="[
                             activeTab === 'medidas'
-                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                                ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 shadow-sm font-semibold'
+                                : 'text-text-3 hover:text-text hover:bg-surface-2 font-medium',
                         ]"
                         class="flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs transition-all cursor-pointer"
                         type="button"
                     >
                         <svg
-                            class="w-3.5 h-3.5 text-accent-indigo"
+                            class="w-3.5 h-3.5 text-indigo-500"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
@@ -384,8 +384,8 @@
                         @click="activeTab = 'metas'"
                         :class="[
                             activeTab === 'metas'
-                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                                ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 shadow-sm font-semibold'
+                                : 'text-text-3 hover:text-text hover:bg-surface-2 font-medium',
                         ]"
                         class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
                         type="button"
@@ -394,7 +394,7 @@
                         <span>Metas</span>
                         <span
                             v-if="metas.length > 0"
-                            class="text-[10px] px-1.5 py-0.2 rounded-full bg-obsidian-elevated text-slate-300 border border-obsidian-border"
+                            class="text-[10px] px-1.5 py-0.2 rounded-full bg-surface-2 text-text-2 border border-border"
                         >
                             {{ metas.length }}
                         </span>
@@ -405,8 +405,8 @@
                         @click="activeTab = 'fotos'"
                         :class="[
                             activeTab === 'fotos'
-                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                                ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 shadow-sm font-semibold'
+                                : 'text-text-3 hover:text-text hover:bg-surface-2 font-medium',
                         ]"
                         class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
                         type="button"
@@ -414,7 +414,7 @@
                         <span class="text-xs">📷</span>
                         <span>Galería</span>
                         <span
-                            class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/30"
+                            class="bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-indigo-500/30"
                         >
                             Pronto
                         </span>
@@ -425,8 +425,8 @@
                         @click="activeTab = 'logros'"
                         :class="[
                             activeTab === 'logros'
-                                ? 'bg-gradient-to-r from-accent-indigo/25 to-accent-violet/25 text-indigo-300 border border-indigo-500/40 shadow-sm font-semibold'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-elevated font-medium',
+                                ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 shadow-sm font-semibold'
+                                : 'text-text-3 hover:text-text hover:bg-surface-2 font-medium',
                         ]"
                         class="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer"
                         type="button"

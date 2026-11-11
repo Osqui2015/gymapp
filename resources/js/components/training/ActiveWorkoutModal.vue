@@ -1,799 +1,499 @@
 <template>
     <div
         v-if="open"
-        class="fixed inset-0 z-50 flex flex-col bg-bg text-text select-none overflow-hidden"
+        class="fixed inset-0 z-[70] flex flex-col bg-bg text-text select-none overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Modo Entrenamiento Activo"
     >
-        <!-- Top Bar: Cronómetro, Rutina y Controles (Tokens Semánticos) -->
-        <header
-            class="px-3 py-2 sm:px-4 sm:py-2.5 bg-surface/95 border-b border-border flex items-center justify-between gap-2.5 backdrop-blur-xl shrink-0"
-        >
-            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <!-- ============================ CHROME ============================ -->
+        <header class="shrink-0">
+            <div class="mx-auto w-full max-w-lg px-4 pt-3 pb-1.5 flex items-center gap-2">
+                <!-- Volver / minimizar -->
                 <button
                     type="button"
                     @click="$emit('minimize')"
-                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-2 hover:bg-surface-3 text-text-2 hover:text-text transition-colors cursor-pointer border border-border flex items-center justify-center shrink-0"
+                    class="w-10 h-10 shrink-0 rounded-full bg-surface border border-border text-text-2 hover:text-text transition-colors cursor-pointer flex items-center justify-center"
                     aria-label="Minimizar sesión"
                     title="Volver / Minimizar (continúa en segundo plano)"
                 >
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M15 19l-7-7 7-7"
-                        />
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
 
-                <div class="min-w-0">
-                    <p
-                        class="text-[10px] font-black uppercase tracking-[0.16em] text-brand truncate flex items-center gap-1.5"
-                    >
-                        <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
-                        {{ store.session.dia }} · {{ store.session.rutina_nombre }}
-                    </p>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-xl sm:text-2xl font-mono font-black tracking-tight tabular-nums text-text">
-                            {{ formattedTime }}
-                        </span>
-                        <span v-if="store.isPaused" class="px-2 py-0.5 rounded-full bg-warning/15 text-warning text-[10px] font-bold border border-warning/30">
-                            ⏸ Pausa
-                        </span>
-                    </div>
+                <!-- Cronómetro + estado -->
+                <div class="flex-1 flex items-center justify-center gap-2 min-w-0">
+                    <span
+                        class="w-1.5 h-1.5 rounded-full shrink-0"
+                        :class="store.isPaused ? 'bg-warning' : 'bg-danger animate-pulse'"
+                    ></span>
+                    <span class="text-[17px] font-black tabular-nums tracking-tight text-text">
+                        {{ formattedTime }}
+                    </span>
+                    <span
+                        v-if="store.isPaused"
+                        class="text-[9px] font-black uppercase tracking-wider text-warning"
+                    >pausa</span>
                 </div>
-            </div>
 
-            <div class="flex items-center gap-2">
-                <!-- Botón Pausa / Reanudar -->
+                <!-- Pausa / reanudar -->
                 <button
                     type="button"
                     @click="togglePause"
-                    class="p-2 sm:p-2.5 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 text-text-2 transition-all cursor-pointer"
+                    class="w-10 h-10 shrink-0 rounded-full bg-surface border border-border text-text-2 hover:text-text transition-colors cursor-pointer flex items-center justify-center"
                     :title="store.isPaused ? 'Reanudar cronómetro' : 'Pausar cronómetro'"
                     :aria-label="store.isPaused ? 'Reanudar' : 'Pausar'"
                 >
-                    <svg
-                        v-if="!store.isPaused"
-                        class="w-4 h-4 sm:w-5 sm:h-5 text-warning"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    <svg v-if="!store.isPaused" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="5" width="4" height="14" rx="1.2" />
+                        <rect x="14" y="5" width="4" height="14" rx="1.2" />
                     </svg>
-                    <svg
-                        v-else
-                        class="w-4 h-4 sm:w-5 sm:h-5 text-success"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                    >
+                    <svg v-else class="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                     </svg>
                 </button>
 
-                <!-- Menú ⋮ de Acciones secundarias -->
-                <div class="relative" ref="headerMenuRef">
+                <!-- Menú de acciones secundarias -->
+                <div class="relative shrink-0" ref="headerMenuRef">
                     <button
                         type="button"
                         @click="headerMenuOpen = !headerMenuOpen"
-                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-border bg-surface-2 hover:bg-surface-3 text-text flex items-center justify-center cursor-pointer font-bold text-lg"
+                        class="w-10 h-10 rounded-full bg-surface border border-border text-text hover:bg-surface-2 transition-colors cursor-pointer flex items-center justify-center"
                         aria-label="Más opciones"
                     >
-                        <span>⋮</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="12" cy="19" r="1.8" />
+                        </svg>
                     </button>
 
                     <div
                         v-show="headerMenuOpen"
-                        class="absolute right-0 mt-1.5 w-44 rounded-xl bg-surface border border-border shadow-2xl py-1.5 z-50 text-xs"
+                        class="absolute right-0 mt-2 w-48 rounded-2xl bg-surface border border-border shadow-2xl py-1.5 z-50 text-xs overflow-hidden"
                     >
                         <button
                             type="button"
                             @click="handleFinalizar(); headerMenuOpen = false;"
-                            class="w-full px-3 py-2 text-left text-text hover:bg-surface-2 font-semibold transition-colors"
-                        >Finalizar</button>
+                            class="w-full px-3.5 py-2.5 text-left text-text hover:bg-surface-2 font-semibold transition-colors cursor-pointer"
+                        >Finalizar sesión</button>
                         <button
                             type="button"
                             @click="descartarSesion"
-                            class="w-full px-3 py-2 text-left text-danger hover:bg-danger/10 flex items-center gap-2 font-semibold transition-colors"
-                        >
-                            <span>🗑</span>
-                            <span>Descartar sesión</span>
-                        </button>
+                            class="w-full px-3.5 py-2.5 text-left text-danger hover:bg-danger/10 font-semibold transition-colors cursor-pointer"
+                        >Descartar sesión</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Progreso global: una línea fina, sin caja -->
+            <div class="mx-auto w-full max-w-lg px-4 pb-2">
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 h-1 rounded-full bg-surface-3 overflow-hidden">
+                        <div
+                            class="h-full rounded-full bg-brand transition-all duration-300"
+                            :style="{ width: `${store.progresoPorcentaje}%` }"
+                        ></div>
+                    </div>
+                    <span class="text-[10px] font-black text-text-3 tabular-nums shrink-0">
+                        {{ store.totalSeriesCompletadas }}/{{ store.totalSeriesObjetivo }}
+                    </span>
                 </div>
             </div>
         </header>
 
-        <!-- Barra de Progreso Global (slim, sin labels: chrome mínimo) -->
-        <div
-            class="w-full bg-surface-2 border-b border-border px-3 sm:px-4 py-1.5 shrink-0"
-            role="progressbar"
-            :aria-valuenow="store.progresoPorcentaje"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            :aria-label="`Progreso: ${store.totalSeriesCompletadas} de ${store.totalSeriesObjetivo} series`"
-            data-testid="progreso-global"
-        >
-            <div class="w-full h-1 bg-surface-3 rounded-full overflow-hidden">
-                <div
-                    class="h-full bg-brand transition-all duration-300"
-                    :style="{ width: `${store.progresoPorcentaje}%` }"
-                ></div>
-            </div>
-        </div>
-
-        <!-- Contenedor Principal Adaptable (Mobile + Web Responsive 2 Columnas) -->
-        <main class="flex-1 overflow-y-auto px-2.5 sm:px-4 py-2.5 sm:py-3.5 pb-28 md:pb-6 overscroll-contain">
+        <!-- =========================== CONTENIDO =========================== -->
+        <main class="flex-1 overflow-y-auto overscroll-contain">
             <div
                 v-if="store.currentEjercicio"
-                class="max-w-6xl xl:max-w-7xl mx-auto w-full flex flex-col md:grid md:grid-cols-12 gap-2.5 sm:gap-3 lg:gap-4 items-start"
+                class="mx-auto w-full max-w-lg px-4 pt-1 pb-6 space-y-4"
             >
-                <!-- COLUMNA IZQUIERDA (Desktop: col-span-5) -->
-                <div class="w-full md:col-span-5 lg:col-span-5 flex flex-col gap-2.5 sm:gap-3">
-                    <!-- CARD HERO UNIFICADA DEL EJERCICIO (Frente B2 & B3: Focus Mode) -->
-                    <section
-                        class="rounded-2xl border border-border bg-surface p-3 sm:p-4 shadow-lg relative space-y-2.5"
-                        data-testid="exercise-media"
-                    >
-                        <!-- Metadata invisible para accesibilidad y tests -->
-                        <span class="sr-only" data-testid="ejercicio-progress-pill">
+                <!-- Eyebrow: rutina + día, y navegación entre ejercicios -->
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-[0.16em] text-brand truncate leading-tight flex items-center gap-1.5" data-testid="ejercicio-progress-pill">
                             EJERCICIO {{ store.unidadProgreso.actual }} DE {{ store.unidadProgreso.total }}
-                        </span>
-                        <span class="sr-only">
-                            {{ store.currentEjercicio.series_objetivo }} series
-                        </span>
-
-                        <!-- Fila Superior: Eyebrow + Badge Serie + Navegación entre ejercicios -->
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <p class="text-[10px] font-black uppercase tracking-wider text-text-3 truncate">
-                                    {{ (store.currentEjercicio?.grupo_muscular || 'FUERZA').toUpperCase() }} · {{ store.session.dia.toUpperCase() }}
-                                </p>
-                                <span
-                                    class="px-2 py-0.5 rounded-full bg-brand/15 border border-brand/30 text-brand text-[10px] font-bold uppercase tracking-wider shrink-0"
-                                >
-                                    <template v-if="currentEsBloque">
-                                        BLOQUE DE CALENTAMIENTO
-                                    </template>
-                                    <template v-else>
-                                        SERIE #{{ activeSerieNumero }} DE {{ store.currentEjercicio?.series_objetivo || 1 }}
-                                    </template>
-                                </span>
-                            </div>
-
-                            <!-- Controles de Navegación de Ejercicio (Anterior / Contador / Siguiente / Ojo) -->
-                            <div class="flex items-center gap-1 bg-surface-2 border border-border rounded-xl p-0.5 shadow-sm shrink-0">
-                                <button
-                                    type="button"
-                                    @click="store.prevEjercicio"
-                                    :disabled="store.session.currentEjercicioIndex === 0"
-                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-3 hover:bg-border text-text-2 hover:text-text disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
-                                    title="Ejercicio anterior"
-                                    aria-label="Ejercicio anterior"
-                                >
-                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-
-                                <span class="px-1.5 text-[11px] sm:text-xs font-black text-text tabular-nums tracking-wide">
-                                    {{ store.unidadProgreso.actual }}/{{ store.unidadProgreso.total }}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    @click="store.nextEjercicio"
-                                    :disabled="store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1"
-                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand/20 hover:bg-brand/30 border border-brand/30 text-brand disabled:opacity-20 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer"
-                                    title="Siguiente ejercicio"
-                                    aria-label="Siguiente ejercicio"
-                                >
-                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    @click="vistaVisible = !vistaVisible"
-                                    :aria-pressed="!vistaVisible"
-                                    :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
-                                    :title="vistaVisible ? 'Ocultar vista' : 'Mostrar vista'"
-                                    data-testid="toggle-exercise-view"
-                                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-text-3 hover:text-text hover:bg-surface-3 transition-colors cursor-pointer"
-                                >
-                                    <svg v-if="vistaVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Fila del Nombre (Bloque 1: 21px, line-clamp-2, jerarquizado) -->
-                        <div v-if="!superserieOrder">
-                            <h2
-                                class="text-xl sm:text-2xl font-black text-text leading-tight line-clamp-2"
-                                :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre"
-                            >
-                                {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
-                            </h2>
-                        </div>
-                        <div v-else class="min-w-0">
-                            <div class="flex items-center gap-1.5 min-w-0">
-                                <span class="px-1.5 py-0.5 rounded-md bg-warning/20 text-warning text-[9px] font-black uppercase tracking-wider shrink-0 border border-warning/40">
-                                    ⚡ SUPERSERIE
-                                </span>
-                                <h2
-                                    class="text-base sm:text-lg font-black text-text leading-tight line-clamp-2"
-                                    :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`"
-                                >
-                                    {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
-                                </h2>
-                            </div>
-                        </div>
-
-                        <!-- Fila Media (Thumbnail 64px) + Historial (1 línea compacta ~28px) -->
-                        <div class="flex items-center gap-3">
-                            <!-- Thumbnail (Bloque 4: 64px, placeholder intencional, zoom tap) -->
-                            <div
-                                class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-surface-2 border border-border p-1 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer group shadow-sm"
-                                @click="openMediaZoomOrToggleGif"
-                                :title="gifHovered ? 'Animación activa (tocá para pausar / zoom)' : 'Tocá para animar / zoom'"
-                            >
-                                <img
-                                    v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
-                                    :key="mediaEjercicio?.nombre"
-                                    :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
-                                    :alt="`Demostración de ${mediaEjercicio?.nombre}`"
-                                    class="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105 select-none"
-                                    loading="lazy"
-                                />
-                                <div
-                                    v-else-if="!vistaVisible"
-                                    class="flex flex-col items-center justify-center text-text-3 text-[10px] text-center p-1"
-                                >
-                                    <span class="text-sm">👁️</span>
-                                    <span class="text-[9px]">Oculto</span>
-                                </div>
-                                <!-- Placeholder temático intencional cuando no hay imagen cargada -->
-                                <div
-                                    v-else
-                                    class="flex flex-col items-center justify-center text-text-3 p-1"
-                                >
-                                    <span class="text-lg">🏋️</span>
-                                    <span class="text-[8px] font-black text-brand uppercase tracking-tighter truncate max-w-[50px]">
-                                        {{ (mediaEjercicio?.nombre || store.currentEjercicio?.nombre || '').slice(0, 4) }}
-                                    </span>
-                                </div>
-
-                                <!-- Badge zoom ⤢ -->
-                                <span
-                                    v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
-                                    class="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/60 text-white text-[8px] font-bold pointer-events-none"
-                                >⤢</span>
-
-                                <!-- Flechas para alternar media en superset -->
-                                <button
-                                    v-if="superseriePartner && mediaEjercicioIndex !== store.session.currentEjercicioIndex"
-                                    type="button"
-                                    @click.stop="mediaEjercicioIndex = store.session.currentEjercicioIndex"
-                                    data-testid="media-prev"
-                                    :title="`Ver ${store.currentEjercicio.nombre}`"
-                                    aria-label="Ver imagen del ejercicio actual"
-                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-on-brand shadow transition-all cursor-pointer"
-                                >
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-                                <button
-                                    v-if="superseriePartner && mediaEjercicioIndex === store.session.currentEjercicioIndex"
-                                    type="button"
-                                    @click.stop="mediaEjercicioIndex = superseriePartner.index"
-                                    data-testid="media-next"
-                                    :title="`Ver ${superseriePartner.ejercicio.nombre}`"
-                                    aria-label="Ver imagen del compañero de superset"
-                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-on-brand shadow transition-all cursor-pointer"
-                                >
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <!-- Bloque 2: Historial (1 línea compacta ~28px en vez de múltiples cajas) -->
-                            <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                <div v-if="!superserieOrder">
-                                    <div
-                                        class="h-8 px-2.5 rounded-xl bg-surface-2 border border-border flex items-center justify-between text-xs tabular-nums"
-                                        data-testid="last-exercise-card"
-                                    >
-                                        <template v-if="tieneHistorial">
-                                            <span class="text-[9px] font-black uppercase text-text-3 tracking-wider mr-2 shrink-0">Historial</span>
-                                            <div class="flex items-center gap-1.5 overflow-hidden text-[11px] sm:text-xs">
-                                                <span data-testid="last-exercise-min" class="flex items-center gap-0.5 text-text-2 shrink-0">
-                                                    <span class="font-bold">{{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg</span>
-                                                    <span class="text-[9px] text-text-3">({{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                                </span>
-                                                <span
-                                                    v-if="(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top) !== (lastExerciseData?.peso_min ?? lastExerciseData?.peso_top)"
-                                                    class="text-text-3 text-[10px]"
-                                                >→</span>
-                                                <span data-testid="last-exercise-max" class="flex items-center gap-1 font-black text-text shrink-0">
-                                                    <span>{{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg</span>
-                                                    <span class="text-[9px] text-text-3 font-normal">({{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                                    <span v-if="lastExerciseData?.ultimo_esfuerzo" class="px-1 py-0.2 rounded bg-surface-3 text-text text-[8px] font-black border border-border">
-                                                        {{ lastExerciseData.ultimo_esfuerzo.tipo.toUpperCase() }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
-                                                    </span>
-                                                </span>
-                                            </div>
-                                        </template>
-                                        <template v-else>
-                                            <span class="text-xs text-text-3 italic">Primera vez con este ejercicio</span>
-                                        </template>
-                                    </div>
-                                </div>
-                                <div v-else>
-                                    <!-- Superserie compacta: una fila por ejercicio -->
-                                    <div
-                                        class="space-y-1"
-                                        data-testid="superset-dual-history"
-                                    >
-                                        <div
-                                            class="h-7 px-2 rounded-lg bg-surface-2 border border-border flex items-center justify-between text-[11px] tabular-nums"
-                                            data-testid="superset-history-card-1"
-                                        >
-                                            <span class="text-[9px] font-black text-brand uppercase truncate max-w-[120px]">
-                                                1. {{ superserieOrder.first.ejercicio.nombre }}
-                                            </span>
-                                            <div class="flex items-center gap-1 text-[10px] text-text-2">
-                                                <span>{{ formatPeso(lastExerciseDataFirst?.peso_min ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg ({{ (lastExerciseDataFirst?.reps_en_peso_min ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                                <span>→</span>
-                                                <span class="font-bold text-text">{{ formatPeso(lastExerciseDataFirst?.peso_max ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg ({{ (lastExerciseDataFirst?.reps_en_peso_max ?? lastExerciseDataFirst?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                            </div>
-                                        </div>
-                                        <div
-                                            class="h-7 px-2 rounded-lg bg-surface-2 border border-border flex items-center justify-between text-[11px] tabular-nums"
-                                            data-testid="superset-history-card-2"
-                                        >
-                                            <span class="text-[9px] font-black text-brand uppercase truncate max-w-[120px]">
-                                                2. {{ superserieOrder.second.ejercicio.nombre }}
-                                            </span>
-                                            <div class="flex items-center gap-1 text-[10px] text-text-2">
-                                                <span>{{ formatPeso(lastExerciseDataSecond?.peso_min ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg ({{ (lastExerciseDataSecond?.reps_en_peso_min ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                                <span>→</span>
-                                                <span class="font-bold text-text">{{ formatPeso(lastExerciseDataSecond?.peso_max ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg ({{ (lastExerciseDataSecond?.reps_en_peso_max ?? lastExerciseDataSecond?.reps_en_peso_top) ?? 0 }} reps)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Modal Zoom Fullscreen de Demostración Visual -->
-                        <div
-                            v-if="showMediaZoom"
-                            class="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-md"
-                            @click="showMediaZoom = false"
+                            <span class="text-text-3 font-medium">·</span>
+                            <span class="text-text-3">{{ (store.currentEjercicio?.grupo_muscular || 'Fuerza').toUpperCase() }}</span>
+                        </p>
+                        <p
+                            v-if="store.session.rutina_nombre"
+                            class="text-[11px] font-bold text-text-2 truncate leading-tight mt-0.5"
                         >
-                            <div class="relative max-w-lg w-full max-h-[85vh] flex flex-col items-center" @click.stop>
-                                <button
-                                    type="button"
-                                    @click="showMediaZoom = false"
-                                    class="absolute top-2 right-2 p-2 rounded-full bg-surface-2 text-text border border-border cursor-pointer shadow-lg z-10"
-                                    aria-label="Cerrar vista ampliada"
-                                >
-                                    ✕
-                                </button>
-                                <img
-                                    v-if="ejercicioMedia?.gif_url || ejercicioMedia?.image_url"
-                                    :src="ejercicioMedia.gif_url || ejercicioMedia.image_url"
-                                    :alt="`Demostración ampliada de ${mediaEjercicio?.nombre}`"
-                                    class="max-h-[75vh] w-auto object-contain rounded-2xl select-none shadow-2xl"
-                                />
-                                <p class="text-sm font-bold text-text mt-3 text-center">
-                                    {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Sugerencia -->
-                        <div
-                            v-if="!superserieOrder && recomendacion"
-                            class="flex items-start gap-1.5 text-[10px] sm:text-[11px] text-success leading-tight font-medium"
-                        >
-                            <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                            <span>
-                                <strong class="font-bold">Sugerencia:</strong>
-                                {{ recomendacion.mensaje }}
-                                <span
-                                    v-if="recomendacion.pesoSugerido != null && recomendacion.pesoSugerido !== (lastExerciseData?.peso_max ?? lastExerciseData?.peso_top)"
-                                    class="font-black tabular-nums"
-                                >
-                                    ({{ formatPeso(recomendacion.pesoSugerido) }} kg)
-                                </span>
-                            </span>
-                        </div>
-                        <div
-                            v-else-if="superserieOrder && (recomendacionFirst || recomendacionSecond)"
-                            class="flex flex-col gap-1 text-[10px] sm:text-[11px] text-success leading-tight font-medium"
-                        >
-                            <div v-if="recomendacionFirst" class="flex items-start gap-1.5">
-                                <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                                <span>
-                                    <strong class="font-bold">Sugerencia {{ superserieOrder.first.ejercicio.nombre }}:</strong>
-                                    {{ recomendacionFirst.mensaje }}
-                                </span>
-                            </div>
-                            <div v-if="recomendacionSecond" class="flex items-start gap-1.5">
-                                <svg class="w-3.5 h-3.5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1.414 1.414 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                                <span>
-                                    <strong class="font-bold">Sugerencia {{ superserieOrder.second.ejercicio.nombre }}:</strong>
-                                    {{ recomendacionSecond.mensaje }}
-                                </span>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (visible en pantallas grandes o complementario) -->
-                    <div
-                        v-if="store.currentEjercicio.notas || store.currentEjercicio.prescripcion"
-                        class="hidden md:block p-2.5 sm:p-3 rounded-xl bg-surface-2 border border-border text-left space-y-2"
-                        data-testid="ejercicio-prescripcion-box"
-                    >
-                        <div class="flex items-center justify-between gap-2 border-b border-border pb-1.5">
-                            <span class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-text-2">
-                                <span>📋</span>
-                                <span>Plan de series y esfuerzo</span>
-                            </span>
-                        </div>
-
-                        <!-- Prescripción estructurada: bloques, rest-pause, progresión y consejo -->
-                        <PrescripcionCard
-                            :ejercicio="store.currentEjercicio"
-                            :serie-actual="activeSerieNumero"
-                        />
-                    </div>
-
-                    <!-- Bloque "Superserie" en la columna izquierda -->
-                    <div
-                        v-if="superseriePartner && superserieOrder"
-                        class="p-3 rounded-xl border border-border bg-surface-2"
-                        data-testid="superset-left-block"
-                    >
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-base">⚡</span>
-                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-text-2">
-                                Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
-                            </p>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <!-- PRIMERO del par -->
-                            <div
-                                class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
-                                :class="
-                                    superserieOrder.currentRole === 'first'
-                                        ? 'bg-brand/15 border-brand/35'
-                                        : 'bg-surface border-border'
-                                "
-                                :data-testid="`superset-left-first-${superserieOrder.first.index}`"
-                            >
-                                <span
-                                    class="w-1.5 h-1.5 rounded-full shrink-0"
-                                    :class="
-                                        superserieOrder.currentRole === 'first'
-                                            ? 'bg-success'
-                                            : 'bg-success/60'
-                                    "
-                                ></span>
-                                <span
-                                    class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
-                                    :class="
-                                        superserieOrder.currentRole === 'first'
-                                            ? 'text-success'
-                                            : 'text-success/70'
-                                    "
-                                >
-                                    {{ superserieOrder.currentRole === 'first' ? 'Ahora' : 'Ya hiciste' }}
-                                </span>
-                                <span
-                                    class="text-xs sm:text-sm font-bold truncate"
-                                    :class="
-                                        superserieOrder.currentRole === 'first'
-                                            ? 'text-text'
-                                            : 'text-text-3 line-through'
-                                    "
-                                >
-                                    {{ superserieOrder.first.ejercicio.nombre }}
-                                </span>
-                            </div>
-
-                            <!-- Conector visual entre los dos -->
-                            <div class="flex items-center gap-2 px-2.5">
-                                <span class="text-brand text-[10px] font-black">↓</span>
-                                <span class="text-[10px] text-text-3 font-bold uppercase tracking-wider">
-                                    {{ superserieOrder.currentRole === 'first' ? 'Seguí directo con' : 'Ahora' }}
-                                </span>
-                            </div>
-
-                            <!-- SEGUNDO del par -->
-                            <div
-                                class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
-                                :class="
-                                    superserieOrder.currentRole === 'second'
-                                        ? 'bg-brand/15 border-brand/35'
-                                        : 'bg-surface border-border'
-                                "
-                                :data-testid="`superset-left-second-${superserieOrder.second.index}`"
-                            >
-                                <span
-                                    class="w-1.5 h-1.5 rounded-full shrink-0"
-                                    :class="
-                                        superserieOrder.currentRole === 'second'
-                                            ? 'bg-success'
-                                            : 'bg-brand/60'
-                                    "
-                                ></span>
-                                <span
-                                    class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
-                                    :class="
-                                        superserieOrder.currentRole === 'second'
-                                            ? 'text-success'
-                                            : 'text-brand'
-                                    "
-                                >
-                                    {{ superserieOrder.currentRole === 'second' ? 'Ahora' : 'Después' }}
-                                </span>
-                                <span
-                                    class="text-xs sm:text-sm font-bold truncate text-text"
-                                >
-                                    {{ superserieOrder.second.ejercicio.nombre }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <p class="mt-2 text-[10px] text-text-3 italic">
-                            <template v-if="superserieOrder.currentRole === 'first'">
-                                Sin descanso entre ambos. Registrá una serie en cada uno antes de la próxima pausa.
-                            </template>
-                            <template v-else>
-                                Último del par. Después de esta serie arranca el descanso.
-                            </template>
+                            {{ store.session.rutina_nombre }} · {{ (store.session.dia || '').toUpperCase() }}
                         </p>
                     </div>
 
-                    <!-- Lista de Series ya completadas en este ejercicio (Desktop) -->
-                    <section
-                        v-if="store.currentEjercicio?.sets?.length"
-                        class="bg-surface rounded-2xl border border-border p-3 space-y-2 max-h-48 overflow-y-auto hidden md:block"
-                    >
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-[11px] font-black uppercase tracking-wider text-text-2">
-                                Series registradas ({{ store.currentEjercicio.sets.length }})
-                            </h3>
-                            <span class="text-[10px] text-brand font-semibold truncate max-w-[160px]">
-                                {{ store.currentEjercicio.nombre }}
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button
+                            type="button"
+                            @click="vistaVisible = !vistaVisible"
+                            :aria-pressed="!vistaVisible"
+                            :aria-label="vistaVisible ? 'Ocultar vista del ejercicio' : 'Mostrar vista del ejercicio'"
+                            :title="vistaVisible ? 'Ocultar imagen' : 'Mostrar imagen'"
+                            data-testid="toggle-exercise-view"
+                            class="w-8 h-8 rounded-[11px] text-text-3 hover:text-text hover:bg-surface-2 transition-colors cursor-pointer flex items-center justify-center"
+                        >
+                            <svg v-if="vistaVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
+                            </svg>
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="store.prevEjercicio"
+                            :disabled="store.session.currentEjercicioIndex === 0"
+                            class="w-8 h-8 rounded-[11px] text-text-2 hover:text-text hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                            title="Ejercicio anterior"
+                            aria-label="Ejercicio anterior"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="store.nextEjercicio"
+                            :disabled="store.session.currentEjercicioIndex >= store.session.ejercicios.length - 1"
+                            class="w-8 h-8 rounded-[11px] text-text-2 hover:text-text hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center"
+                            title="Siguiente ejercicio"
+                            aria-label="Siguiente ejercicio"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+
+                <!--
+                    BLOQUE 1 · NOMBRE DEL EJERCICIO
+                    El texto más grande de la pantalla. A la derecha, el total
+                    de series programadas (dato de contexto, no una caja).
+                -->
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2
+                            v-if="!superserieOrder"
+                            class="text-[26px] leading-[1.12] font-black text-text tracking-[-0.025em] line-clamp-2"
+                            :title="mediaEjercicio?.nombre || store.currentEjercicio.nombre"
+                        >
+                            {{ mediaEjercicio?.nombre || store.currentEjercicio.nombre }}
+                        </h2>
+                        <p
+                            v-if="!superserieOrder"
+                            class="mt-1 text-[12px] font-semibold text-text-3 truncate"
+                        >
+                            {{ resumenEjercicio }}
+                        </p>
+                        <template v-else>
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning/15 text-warning text-[9px] font-black uppercase tracking-wider border border-warning/30">
+                                ⚡ Superserie
                             </span>
-                        </div>
-                        <div class="space-y-1">
-                            <div
-                                v-for="(s, idx) in store.currentEjercicio.sets"
-                                :key="idx"
-                                class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-2 border border-border text-xs"
+                            <h2
+                                class="mt-1 text-[17px] leading-[1.2] font-black text-text tracking-[-0.02em] line-clamp-2"
+                                :title="`${superserieOrder.first.ejercicio.nombre} + ${superserieOrder.second.ejercicio.nombre}`"
                             >
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span
-                                        class="font-black tabular-nums"
-                                        :class="
-                                            s.tipo_serie === 'calentamiento'
-                                                ? 'text-brand'
-                                                : 'text-success'
-                                        "
-                                    >
-                                        <template v-if="s.tipo_serie === 'calentamiento'">
-                                            Calentamiento {{ numeroSerieParaDisplay(s.series_numero) }}
-                                        </template>
-                                        <template v-else>
-                                            #{{ s.series_numero }}
-                                        </template>
+                                {{ superserieOrder.first.ejercicio.nombre }} + {{ superserieOrder.second.ejercicio.nombre }}
+                            </h2>
+                        </template>
+                    </div>
+
+                    <span
+                        v-if="!superserieOrder"
+                        class="shrink-0 pt-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-text-3"
+                    >
+                        {{ store.currentEjercicio.series_objetivo }} series
+                    </span>
+                </div>
+
+                <!--
+                    BLOQUES 2 + 4 · IMAGEN DE REFERENCIA + HISTORIAL
+                    Imagen a la izquierda; a la derecha, la última vez (mín → máx)
+                    y el esfuerzo de esa sesión. Sin cajas: solo tipografía.
+                -->
+                <div class="flex items-center gap-3.5" data-testid="exercise-media">
+                    <div class="relative shrink-0">
+                        <div
+                            class="w-[88px] h-[88px] sm:w-24 sm:h-24 rounded-2xl bg-surface-2 border border-border overflow-hidden cursor-pointer group flex items-center justify-center"
+                            @click="openMediaZoomOrToggleGif"
+                            :title="gifHovered ? 'Animación activa (tocá para pausar / zoom)' : 'Tocá para animar / zoom'"
+                        >
+                            <img
+                                v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
+                                :key="mediaEjercicio?.nombre"
+                                :src="gifHovered && ejercicioMedia.gif_url ? ejercicioMedia.gif_url : (ejercicioMedia.image_url || ejercicioMedia.gif_url)"
+                                :alt="`Demostración de ${mediaEjercicio?.nombre}`"
+                                class="h-full w-full object-contain bg-white transition-transform duration-200 group-hover:scale-105 select-none"
+                                loading="lazy"
+                            />
+                            <div v-else-if="!vistaVisible" class="text-text-3 flex flex-col items-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.575-2.706M6.223 6.223A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.272 2.61M9.88 9.88a3 3 0 104.243 4.243M3 3l18 18" />
+                                </svg>
+                            </div>
+                            <div v-else class="text-text-3 flex flex-col items-center gap-0.5">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.5 6.5v11M3.5 9v5M17.5 6.5v11M20.5 9v5M6.5 12h11" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Badge de zoom -->
+                        <span
+                            v-if="vistaVisible && (ejercicioMedia?.gif_url || ejercicioMedia?.image_url)"
+                            class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/55 text-white text-[8px] font-black uppercase tracking-wider pointer-events-none"
+                        >
+                            GIF
+                        </span>
+
+                        <!-- Flechas para alternar media en superset -->
+                        <button
+                            v-if="superseriePartner && mediaEjercicioIndex !== store.session.currentEjercicioIndex"
+                            type="button"
+                            @click.stop="mediaEjercicioIndex = store.session.currentEjercicioIndex"
+                            data-testid="media-prev"
+                            :title="`Ver ${store.currentEjercicio.nombre}`"
+                            aria-label="Ver imagen del ejercicio actual"
+                            class="absolute left-0.5 top-1/2 -translate-y-1/2 z-10 w-5 h-5 rounded-full bg-brand text-white shadow flex items-center justify-center cursor-pointer"
+                        >
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button
+                            v-if="superseriePartner && mediaEjercicioIndex === store.session.currentEjercicioIndex"
+                            type="button"
+                            @click.stop="mediaEjercicioIndex = superseriePartner.index"
+                            data-testid="media-next"
+                            :title="`Ver ${superseriePartner.ejercicio.nombre}`"
+                            aria-label="Ver imagen del compañero de superset"
+                            class="absolute right-0.5 top-1/2 -translate-y-1/2 z-10 w-5 h-5 rounded-full bg-brand text-white shadow flex items-center justify-center cursor-pointer"
+                        >
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div v-if="!superserieOrder" data-testid="last-exercise-card">
+                            <template v-if="tieneHistorial">
+                                <p class="text-[10px] font-black uppercase tracking-[0.14em] text-text-3">
+                                    Última vez
+                                </p>
+                                <div class="mt-1 flex items-baseline gap-2 text-[15px] font-black tabular-nums tracking-[-0.01em]">
+                                    <span data-testid="last-exercise-min" class="text-text-2 font-bold">
+                                        {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }} kg<span class="text-[11px] font-bold text-text-3"> × {{ (lastExerciseData?.reps_en_peso_min ?? lastExerciseData?.reps_en_peso_top) ?? 0 }}</span>
                                     </span>
-                                    <span class="font-black text-text tabular-nums">{{ s.peso }} kg</span>
-                                    <span class="text-text-3">×</span>
-                                    <span class="font-black text-text tabular-nums">{{ s.reps }} reps</span>
-                                    <span
-                                        v-if="s.tipo_serie && s.tipo_serie !== 'efectiva'"
-                                        class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-warning/15 text-warning border border-warning/30"
-                                    >
-                                        {{ s.tipo_serie }}
-                                    </span>
-                                    <span
-                                        v-if="s.esfuerzo_valor != null"
-                                        class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-3 text-text-2"
-                                    >
-                                        {{ s.esfuerzo_tipo?.toUpperCase() }} {{ s.esfuerzo_valor }}
+                                    <span class="text-text-3 text-[12px]">→</span>
+                                    <span data-testid="last-exercise-max" class="text-text">
+                                        {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }} kg<span class="text-[11px] font-bold text-text-3"> × {{ (lastExerciseData?.reps_en_peso_max ?? lastExerciseData?.reps_en_peso_top) ?? 0 }}</span>
                                     </span>
                                 </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- COLUMNA DERECHA (Desktop: col-span-7) Focus Card: Configurar Serie -->
-                <div class="w-full md:col-span-7 lg:col-span-7 flex flex-col gap-2.5 sm:gap-3">
-                    <!-- Header explicativo cuando es superset -->
-                    <div
-                        v-if="superseriePartner && superserieOrder"
-                        class="p-2.5 sm:p-3 flex items-center gap-2 rounded-xl border border-border bg-surface-2"
-                        data-testid="superset-banner"
-                    >
-                        <span class="text-base">⚡</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">
-                                Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
-                            </p>
-                            <p class="text-[11px] text-text-2">
-                                <template v-if="superserieOrder.currentRole === 'first'">
-                                    Hacé
-                                    <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong>
-                                    y seguí directo con
-                                    <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
-                                    sin descansar entre ellos.
-                                </template>
-                                <template v-else>
-                                    Hacé
-                                    <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
-                                    — ya hiciste
-                                    <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong>
-                                    antes, seguí sin descansar.
-                                </template>
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Cuando NO es superserie: una sola card -->
-                    <template v-if="!superseriePartner">
-                        <SetConfigCard
-                            :ejercicio="store.currentEjercicio"
-                            :ejercicio-index="store.session.currentEjercicioIndex"
-                            :last-data="lastExerciseData"
-                            @complete="onSetComplete"
-                        />
-                    </template>
-
-                    <!-- Cuando ES superset: 2 cards lado a lado (desktop) / stacked (mobile) + 1 solo botón de completar -->
-                    <div
-                        v-else-if="superserieOrder"
-                        class="space-y-3"
-                    >
-                        <div
-                            class="grid grid-cols-1 lg:grid-cols-2 gap-3"
-                            data-testid="superset-grid"
-                        >
-                            <SetConfigCard
-                                ref="cardFirstRef"
-                                :ejercicio="superserieOrder.first.ejercicio"
-                                :ejercicio-index="superserieOrder.first.index"
-                                :show-exercise-name="true"
-                                :hide-submit-button="true"
-                                :last-data="lastExerciseDataFirst"
-                                @complete="onSetComplete"
-                            />
-                            <SetConfigCard
-                                ref="cardSecondRef"
-                                :ejercicio="superserieOrder.second.ejercicio"
-                                :ejercicio-index="superserieOrder.second.index"
-                                :show-exercise-name="true"
-                                :hide-submit-button="true"
-                                :last-data="lastExerciseDataSecond"
-                                @complete="onSetComplete"
-                            />
-                        </div>
-
-                        <!-- Botón Único para completar la ronda de la Superserie -->
-                        <div class="pt-1">
-                            <button
-                                v-if="!isSupersetComplete"
-                                type="button"
-                                @click="completarRondaSuperserie"
-                                data-testid="btn-completar-superset"
-                                class="w-full py-4 sm:py-5 rounded-2xl bg-brand hover:brightness-110 active:scale-[0.98] text-on-brand text-sm sm:text-base md:text-lg font-black tracking-wider shadow-[0_8px_24px_var(--color-shadow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-brand/40"
-                            >
-                                <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="3"
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                                <span>
-                                    ⚡ COMPLETAR RONDA #{{ supersetRondaNumero }} DE SUPERSERIE
+                                <p class="mt-1 text-[10px] font-bold text-text-3 tabular-nums">
+                                    Mínimo {{ formatPeso(lastExerciseData?.peso_min ?? lastExerciseData?.peso_top ?? 0) }}
+                                    · Máximo {{ formatPeso(lastExerciseData?.peso_max ?? lastExerciseData?.peso_top ?? 0) }}
+                                    <template v-if="lastExerciseData?.ultimo_esfuerzo">
+                                        · {{ lastExerciseData.ultimo_esfuerzo.tipo }} {{ lastExerciseData.ultimo_esfuerzo.valor }}
+                                    </template>
+                                </p>
+                            </template>
+                            <p v-else class="text-[13px] font-semibold text-text-3 italic leading-snug">
+                                Primera vez con este ejercicio.
+                                <span class="not-italic block text-[11px] font-bold mt-0.5">
+                                    Arrancá liviano y registrá cómo te sentís.
                                 </span>
-                            </button>
-                            <div
-                                v-else
-                                class="w-full py-4 sm:py-4.5 rounded-2xl bg-success/15 border border-success/40 text-success text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2.5"
-                            >
-                                ✓ Superserie completa
+                            </p>
+                        </div>
+
+                        <!-- Historial de superserie: una fila por ejercicio -->
+                        <div v-else class="space-y-1" data-testid="superset-dual-history">
+                            <div class="flex items-baseline justify-between gap-2 text-[12px] tabular-nums" data-testid="superset-history-card-1">
+                                <span class="text-[9px] font-black uppercase tracking-wider text-brand truncate max-w-[120px]">
+                                    1. {{ superserieOrder.first.ejercicio.nombre }}
+                                </span>
+                                <span class="text-text-2 shrink-0">
+                                    {{ formatPeso(lastExerciseDataFirst?.peso_min ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg
+                                    <span class="text-text-3">→</span>
+                                    <strong class="text-text">{{ formatPeso(lastExerciseDataFirst?.peso_max ?? lastExerciseDataFirst?.peso_top ?? 0) }} kg</strong>
+                                </span>
+                            </div>
+                            <div class="flex items-baseline justify-between gap-2 text-[12px] tabular-nums" data-testid="superset-history-card-2">
+                                <span class="text-[9px] font-black uppercase tracking-wider text-brand truncate max-w-[120px]">
+                                    2. {{ superserieOrder.second.ejercicio.nombre }}
+                                </span>
+                                <span class="text-text-2 shrink-0">
+                                    {{ formatPeso(lastExerciseDataSecond?.peso_min ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg
+                                    <span class="text-text-3">→</span>
+                                    <strong class="text-text">{{ formatPeso(lastExerciseDataSecond?.peso_max ?? lastExerciseDataSecond?.peso_top ?? 0) }} kg</strong>
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- CTA Bottom Container (Sticky en mobile con safe-area) -->
-                    <div
-                        v-if="store.isSessionComplete"
-                        class="sticky bottom-0 z-30 -mx-2.5 sm:-mx-4 px-2.5 sm:px-4 py-2.5 bg-gradient-to-t from-bg via-bg/95 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
-                    >
-                        <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
-                        <button
-                            v-if="store.isSessionComplete"
-                            type="button"
-                            @click="handleFinalizar"
-                            data-testid="btn-finalizar-sesion"
-                            class="w-full h-14 sm:h-16 rounded-2xl bg-success hover:brightness-110 active:scale-[0.98] text-on-brand text-base sm:text-lg font-black tracking-wider shadow-[0_8px_24px_var(--color-shadow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-success/40"
-                        >
-                            <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M5 13l4 4L19 7"
-                                />
-                            </svg>
-                            <span>FINALIZAR SESIÓN</span>
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2.5"
-                                    d="M9 5l7 7-7 7"
-                                />
-                            </svg>
-                        </button>
-
-                    </div>
-
-                    <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
-                    <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-1">
+                <!-- Zoom fullscreen de la demostración -->
+                <div
+                    v-if="showMediaZoom"
+                    class="fixed inset-0 z-[60] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-md"
+                    @click="showMediaZoom = false"
+                >
+                    <div class="relative max-w-lg w-full max-h-[85vh] flex flex-col items-center" @click.stop>
                         <button
                             type="button"
-                            @click="deshacer"
-                            class="text-xs font-bold text-danger hover:underline cursor-pointer"
+                            @click="showMediaZoom = false"
+                            class="absolute top-2 right-2 p-2 rounded-full bg-surface-2 text-text border border-border cursor-pointer shadow-lg z-10"
+                            aria-label="Cerrar vista ampliada"
                         >
-                            ↩ Deshacer última serie completada
+                            ✕
                         </button>
+                        <img
+                            v-if="ejercicioMedia?.gif_url || ejercicioMedia?.image_url"
+                            :src="ejercicioMedia.gif_url || ejercicioMedia.image_url"
+                            :alt="`Demostración ampliada de ${mediaEjercicio?.nombre}`"
+                            class="max-h-[75vh] w-auto object-contain rounded-2xl select-none shadow-2xl"
+                        />
+                        <p class="text-sm font-bold text-text mt-3 text-center">
+                            {{ mediaEjercicio?.nombre || store.currentEjercicio?.nombre }}
+                        </p>
                     </div>
                 </div>
+
+                <!-- Banner de superserie -->
+                <div
+                    v-if="superseriePartner && superserieOrder"
+                    class="rounded-2xl border border-warning/30 bg-warning/[0.06] px-3.5 py-2.5"
+                    data-testid="superset-banner"
+                >
+                    <p class="text-[10px] font-black uppercase tracking-[0.14em] text-warning">
+                        Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
+                    </p>
+                    <p class="mt-1 text-[12px] leading-snug text-text-2">
+                        <template v-if="superserieOrder.currentRole === 'first'">
+                            Hacé <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong>
+                            y seguí directo con
+                            <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                            sin descansar.
+                        </template>
+                        <template v-else>
+                            Hacé <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                            — ya hiciste
+                            <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong> antes,
+                            seguí sin descansar.
+                        </template>
+                    </p>
+                </div>
+
+                <!-- Card(s) de la serie -->
+                <template v-if="!superseriePartner">
+                    <SetConfigCard
+                        ref="cardSingleRef"
+                        :ejercicio="store.currentEjercicio"
+                        :ejercicio-index="store.session.currentEjercicioIndex"
+                        :last-data="lastExerciseData"
+                        @complete="onSetComplete"
+                    />
+                </template>
+
+                <div v-else-if="superserieOrder" class="space-y-4" data-testid="superset-grid">
+                    <SetConfigCard
+                        ref="cardFirstRef"
+                        :ejercicio="superserieOrder.first.ejercicio"
+                        :ejercicio-index="superserieOrder.first.index"
+                        :show-exercise-name="true"
+                        :hide-submit-button="true"
+                        :last-data="lastExerciseDataFirst"
+                        @complete="onSetComplete"
+                    />
+                    <SetConfigCard
+                        ref="cardSecondRef"
+                        :ejercicio="superserieOrder.second.ejercicio"
+                        :ejercicio-index="superserieOrder.second.index"
+                        :show-exercise-name="true"
+                        :hide-submit-button="true"
+                        :last-data="lastExerciseDataSecond"
+                        @complete="onSetComplete"
+                    />
+                </div>
+
+                <!-- Ejercicios de hoy (contexto, colapsado) -->
+                <details
+                    v-if="store.session.ejercicios?.length"
+                    class="rounded-2xl border border-border bg-surface overflow-hidden"
+                >
+                    <summary class="flex items-center justify-between gap-2 px-3.5 py-2.5 cursor-pointer list-none select-none">
+                        <span class="text-[10px] font-black uppercase tracking-[0.14em] text-text-3">
+                            Ejercicios de hoy
+                        </span>
+                        <span class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-text-2 tabular-nums">
+                                {{ ejerciciosCompletados }}/{{ store.session.ejercicios.length }}
+                            </span>
+                            <svg class="w-3.5 h-3.5 text-text-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </summary>
+                    <ul class="border-t border-border divide-y divide-border">
+                        <li
+                            v-for="(ej, i) in store.session.ejercicios"
+                            :key="i"
+                            class="flex items-center gap-2.5 px-3.5 py-2"
+                        >
+                            <span
+                                class="w-5 h-5 rounded-full grid place-items-center text-[9px] font-black shrink-0"
+                                :class="
+                                    ej.completed
+                                        ? 'bg-success/15 text-success'
+                                        : i === store.session.currentEjercicioIndex
+                                            ? 'bg-brand/15 text-brand'
+                                            : 'bg-surface-2 text-text-3'
+                                "
+                            >
+                                <svg v-if="ej.completed" class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <template v-else>{{ i + 1 }}</template>
+                            </span>
+                            <span
+                                class="text-[12px] font-semibold truncate"
+                                :class="
+                                    i === store.session.currentEjercicioIndex
+                                        ? 'text-text font-black'
+                                        : 'text-text-2'
+                                "
+                            >
+                                {{ ej.nombre }}
+                            </span>
+                        </li>
+                    </ul>
+                </details>
             </div>
 
-            <!-- Estado de recuperación si por algún motivo no hay ejercicios activos cargados -->
+            <!-- Estado de recuperación: sesión sin ejercicios -->
             <div
                 v-else
-                class="max-w-md mx-auto my-12 text-center p-6 rounded-2xl bg-surface border border-border"
+                class="mx-auto max-w-sm my-12 text-center px-6"
             >
-                <div class="text-4xl mb-3">🏋️</div>
-                <h3 class="text-lg font-black text-text mb-2">No hay ejercicios activos en esta sesión</h3>
-                <p class="text-xs text-text-2 mb-5">
+                <div class="text-3xl mb-3">🏋️</div>
+                <h3 class="text-base font-black text-text mb-2">No hay ejercicios activos en esta sesión</h3>
+                <p class="text-xs text-text-3 mb-5 leading-relaxed">
                     La sesión se inició antes de sincronizar los ejercicios del día.
                 </p>
-                <div class="flex items-center justify-center gap-3">
+                <div class="flex items-center justify-center gap-2">
                     <button
                         type="button"
                         @click="store.refreshNotasActuales"
-                        class="px-4 py-2.5 rounded-xl bg-brand hover:brightness-110 text-on-brand text-xs font-bold transition-colors cursor-pointer"
+                        class="px-4 py-2.5 rounded-xl bg-brand hover:brightness-110 text-white text-xs font-bold transition-colors cursor-pointer"
                     >
-                        🔄 Sincronizar ejercicios
+                        Sincronizar ejercicios
                     </button>
                     <button
                         type="button"
@@ -805,6 +505,83 @@
                 </div>
             </div>
         </main>
+
+        <!--
+            ======================= ACCIÓN PRIMARIA =======================
+            Una sola CTA, fija abajo, en la zona del pulgar. Es un ESPEJO de la
+            card activa: toma su payload real (peso/reps/tipo/esfuerzo ya
+            editados) para que el estado no se duplique.
+        -->
+        <div
+            v-if="store.currentEjercicio"
+            class="shrink-0 bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+        >
+            <div class="mx-auto w-full max-w-lg space-y-1.5">
+                <!-- Todo completo -->
+                <button
+                    v-if="store.isSessionComplete"
+                    type="button"
+                    @click="handleFinalizar"
+                    data-testid="btn-finalizar-sesion"
+                    class="w-full h-[54px] rounded-2xl bg-success hover:brightness-110 active:scale-[0.99] text-white text-[15px] font-black tracking-[0.02em] shadow-[0_12px_28px_-10px_rgba(4,120,87,0.65)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                    FINALIZAR SESIÓN
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+
+                <!-- Superserie: ronda -->
+                <template v-else-if="superseriePartner">
+                    <button
+                        v-if="!isSupersetComplete"
+                        type="button"
+                        @click="completarRondaSuperserie"
+                        data-testid="btn-completar-superset"
+                        class="w-full h-[54px] rounded-2xl bg-gradient-to-br from-[var(--color-violet-primary)] to-[var(--color-violet-secondary)] active:scale-[0.99] text-white text-[15px] font-black shadow-[0_12px_28px_-10px_var(--color-violet-glow-strong)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                        ⚡ Completar ronda {{ supersetRondaNumero }}
+                    </button>
+                    <div
+                        v-else
+                        class="w-full h-[54px] rounded-2xl bg-success/15 border border-success/40 text-success text-[15px] font-black flex items-center justify-center gap-2"
+                    >
+                        ✓ Superserie completa
+                    </div>
+                </template>
+
+                <!-- Serie normal -->
+                <button
+                    v-else-if="!ejercicioActualCompleto"
+                    type="button"
+                    data-testid="sticky-cta-completar"
+                    @click="completarDesdeSticky"
+                    class="w-full h-[54px] rounded-2xl bg-gradient-to-br from-[var(--color-violet-primary)] to-[var(--color-violet-secondary)] active:scale-[0.99] text-white text-[15px] font-black tracking-[0.02em] shadow-[0_12px_28px_-10px_var(--color-violet-glow-strong)] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Registrar serie
+                </button>
+                <div
+                    v-else
+                    class="w-full h-[54px] rounded-2xl bg-success/15 border border-success/40 text-success text-[15px] font-black flex items-center justify-center gap-2"
+                >
+                    ✓ Ejercicio completo
+                </div>
+
+                <!-- Deshacer -->
+                <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-0.5">
+                    <button
+                        type="button"
+                        @click="deshacer"
+                        class="text-[11px] font-bold text-text-3 hover:text-danger transition-colors cursor-pointer"
+                    >
+                        ↩ Deshacer última serie
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -817,10 +594,9 @@ import { useOfflineSeries } from '@/composables/useOfflineSeries';
 import { useToast } from '@/composables/useToast';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useClickOutside } from '@/composables/useClickOutside';
-import { numeroCalentamientoPersisted, numeroSerieParaDisplay } from '@/utils/seriesNumero';
+import { numeroCalentamientoPersisted } from '@/utils/seriesNumero';
 import { hoyLocal } from '@/utils/fecha';
 import SetConfigCard from './SetConfigCard.vue';
-import PrescripcionCard from './PrescripcionCard.vue';
 
 const props = defineProps({
     open: {
@@ -953,6 +729,7 @@ const tieneHistorial = computed(() => {
 
 const cardFirstRef = ref(null);
 const cardSecondRef = ref(null);
+const cardSingleRef = ref(null);
 
 // Formateo del cronómetro de la sesión
 const formattedTime = computed(() => {
@@ -1089,89 +866,6 @@ const formatPeso = (val) => {
     return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '');
 };
 
-// Recomendación basada en el esfuerzo percibido del set top de la última vez.
-const computeRecomendacion = (data) => {
-    if (!data || !data.encontrado || data.peso_top == null) return null;
-
-    const esf = data.ultimo_esfuerzo;
-    const pesoBase = Number(data.peso_top) || 0;
-    const repsBase = Number(data.reps_en_peso_top) || 0;
-
-    if (!esf) {
-        return {
-            icon: '🔁',
-            colorClass: 'text-gray-300',
-            pesoSugerido: pesoBase,
-            mensaje: `mantenés ${formatPeso(pesoBase)} kg × ${repsBase || '?'} reps como en la última sesión.`,
-        };
-    }
-
-    const tipo = (esf.tipo || '').toLowerCase();
-    const valor = Number(esf.valor);
-
-    if (tipo === 'rir') {
-        if (valor >= 3) {
-            return {
-                icon: '⬆️',
-                colorClass: 'text-emerald-300',
-                pesoSugerido: pesoBase + 2.5,
-                mensaje: `te quedaron ${valor} reps en reserva. Probá subir un poco para progresar.`,
-            };
-        }
-        if (valor === 0) {
-            return {
-                icon: '⚠️',
-                colorClass: 'text-amber-300',
-                pesoSugerido: Math.max(0, pesoBase - 2.5),
-                mensaje: 'la última vez llegaste al fallo. Bajá un poco o repetí el peso con mejor técnica.',
-            };
-        }
-        // RIR 1-2 → óptimo
-        return {
-            icon: '✅',
-            colorClass: 'text-emerald-300',
-            pesoSugerido: pesoBase,
-            mensaje: `estabas en la zona óptima (RIR ${valor}). Mantené el peso y buscá mejorar la técnica.`,
-        };
-    }
-
-    if (tipo === 'rpe') {
-        if (valor <= 7) {
-            return {
-                icon: '⬆️',
-                colorClass: 'text-emerald-300',
-                pesoSugerido: pesoBase + 2.5,
-                mensaje: `fue muy fácil (RPE ${valor}). Probá subir peso para desafiarte.`,
-            };
-        }
-        if (valor >= 10) {
-            return {
-                icon: '⚠️',
-                colorClass: 'text-amber-300',
-                pesoSugerido: Math.max(0, pesoBase - 2.5),
-                mensaje: 'la última vez fue al fallo absoluto (RPE 10). Bajá o repetí el peso.',
-            };
-        }
-        // RPE 8-9 → óptimo
-        return {
-            icon: '✅',
-            colorClass: 'text-emerald-300',
-            pesoSugerido: pesoBase,
-            mensaje: `rendimiento óptimo (RPE ${valor}). Mantené el peso.`,
-        };
-    }
-
-    return {
-        icon: '🔁',
-        colorClass: 'text-gray-300',
-        pesoSugerido: pesoBase,
-        mensaje: `repetí ${formatPeso(pesoBase)} kg × ${repsBase || '?'} reps como en la última sesión.`,
-    };
-};
-
-const recomendacion = computed(() => computeRecomendacion(lastExerciseData.value));
-const recomendacionFirst = computed(() => computeRecomendacion(lastExerciseDataFirst.value));
-const recomendacionSecond = computed(() => computeRecomendacion(lastExerciseDataSecond.value));
 
 const isSupersetComplete = computed(() => {
     if (!superserieOrder.value) return false;
@@ -1327,14 +1021,76 @@ const activeSetsEfectivos = computed(() => {
     return (store.currentEjercicio?.sets || []).filter((s) => s.tipo_serie !== 'calentamiento').length;
 });
 
-const activeSerieNumero = computed(() => {
-    return activeSetsEfectivos.value + 1;
-});
-
 // Bloque sin series efectivas (ej. movilidad / calentamiento del día).
 const currentEsBloque = computed(() => {
     return Number(store.currentEjercicio?.series_objetivo || 0) === 0;
 });
+
+/**
+ * El ejercicio activo ya tiene todas sus series efectivas registradas.
+ * Se usa para el estado del CTA fijo (verde "Ejercicio completo").
+ */
+const ejercicioActualCompleto = computed(() => {
+    if (store.currentEjercicio?.completed) return true;
+    if (currentEsBloque.value) return false;
+    return (
+        activeSetsEfectivos.value >= Number(store.currentEjercicio?.series_objetivo || 0)
+    );
+});
+
+/**
+ * Ejercicios de la sesión ya completados (para el resumen del acordeón).
+ */
+const ejerciciosCompletados = computed(() => {
+    return (store.session.ejercicios || []).filter((ej) => ej.completed).length;
+});
+
+/**
+ * Resumen de una línea debajo del nombre del ejercicio:
+ * "4 series · 6–8 reps · descanso 2 min".
+ */
+const resumenEjercicio = computed(() => {
+    const ej = store.currentEjercicio;
+    if (!ej) return '';
+
+    const partes = [];
+    const series = Number(ej.series_objetivo || 0);
+    if (series > 0) {
+        partes.push(`${series} ${series === 1 ? 'serie' : 'series'}`);
+    } else {
+        partes.push('bloque sin series');
+    }
+
+    const min = ej.reps_min;
+    const max = ej.reps_max;
+    if (min != null && min !== '' && max != null && max !== '') {
+        partes.push(String(min) === String(max) ? `${min} reps` : `${min}–${max} reps`);
+    } else if (min != null && min !== '') {
+        partes.push(`${min} reps`);
+    }
+
+    const descanso = Number(ej.descanso_min || 0);
+    if (descanso > 0) {
+        partes.push(`descanso ${formatPeso(descanso)} min`);
+    }
+
+    return partes.join(' · ');
+});
+
+/**
+ * Registra la serie en curso desde la barra fija usando el payload real de la
+ * card (peso/reps/tipo/esfuerzo tal como los editó el usuario). La card sigue
+ * siendo la única fuente de verdad: acá sólo la puenteamos al store.
+ */
+const completarDesdeSticky = async () => {
+    if (superseriePartner.value) {
+        await completarRondaSuperserie();
+        return;
+    }
+    const payload = cardSingleRef.value?.getPayload();
+    if (!payload) return;
+    await onSetComplete(payload);
+};
 
 onMounted(() => {
     if (props.open) {
@@ -1352,13 +1108,23 @@ watch(
         if (isOpen) {
             wakeLock.requestWakeLock();
             store.refreshNotasActuales();
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = 'hidden';
+            }
         } else {
             wakeLock.releaseWakeLock();
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
         }
-    }
+    },
+    { immediate: true }
 );
 
 onUnmounted(() => {
     wakeLock.releaseWakeLock();
+    if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+    }
 });
 </script>

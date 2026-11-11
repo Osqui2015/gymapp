@@ -1348,20 +1348,22 @@ const iniciarTemporizador = (fila) => {
         <OnboardingTour :tour="onboarding" />
 
         <!-- Modales de Modo Entrenamiento Activo -->
-        <ActiveWorkoutModal
-            :open="showActiveWorkoutModal"
-            @minimize="showActiveWorkoutModal = false"
-            @finish="onFinishActiveWorkout"
-        />
+        <Teleport to="body">
+            <ActiveWorkoutModal
+                :open="showActiveWorkoutModal"
+                @minimize="showActiveWorkoutModal = false"
+                @finish="onFinishActiveWorkout"
+            />
 
-        <WorkoutSummaryModal
-            :open="showWorkoutSummaryModal"
-            @cancel="
-                showWorkoutSummaryModal = false;
-                showActiveWorkoutModal = true;
-            "
-            @saved="onWorkoutSummarySaved"
-        />
+            <WorkoutSummaryModal
+                :open="showWorkoutSummaryModal"
+                @cancel="
+                    showWorkoutSummaryModal = false;
+                    showActiveWorkoutModal = true;
+                "
+                @saved="onWorkoutSummarySaved"
+            />
+        </Teleport>
 
         <!-- Bottom sheet: resumen al cambiar de día -->
         <DashboardDaySummarySheet

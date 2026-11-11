@@ -1,6 +1,6 @@
 <template>
     <div
-        class="bg-[#0B0F17] text-slate-100 min-h-screen pb-28 antialiased selection:bg-indigo-500/30 selection:text-white"
+        class="bg-bg text-text min-h-screen pb-28 antialiased selection:bg-brand/20 selection:text-brand"
     >
         <SyncBadge
         :pending="offlinePending"
@@ -19,9 +19,9 @@
             aria-live="polite"
             role="status"
         >
-            <div class="flex flex-col items-center gap-1 text-xs font-semibold text-slate-400">
+            <div class="flex flex-col items-center gap-1 text-xs font-semibold text-text-3">
                 <svg
-                    class="w-5 h-5 animate-spin text-indigo-500"
+                    class="w-5 h-5 animate-spin text-brand"
                     v-if="isRefreshing"
                     fill="none"
                     stroke="currentColor"
@@ -42,7 +42,7 @@
                     ></path>
                 </svg>
                 <svg
-                    class="w-5 h-5 text-indigo-500"
+                    class="w-5 h-5 text-brand"
                     v-else
                     fill="none"
                     stroke="currentColor"
@@ -68,9 +68,9 @@
                 <section class="flex flex-col md:flex-row md:items-end md:justify-between gap-4" data-purpose="page-title-actions">
                     <div class="space-y-1.5">
                         <!-- Breadcrumb indicator -->
-                        <div class="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1">
-                            <a class="hover:text-slate-200 transition-colors" href="/dashboard">Inicio</a>
-                            <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex items-center gap-2 text-xs font-medium text-text-3 mb-1">
+                            <a class="hover:text-text transition-colors" href="/dashboard">Inicio</a>
+                            <svg class="w-3 h-3 text-text-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path
                                     d="M9 5l7 7-7 7"
                                     stroke-linecap="round"
@@ -78,14 +78,14 @@
                                     stroke-width="2"
                                 ></path>
                             </svg>
-                            <span class="text-indigo-400 font-semibold">Rutinas</span>
+                            <span class="text-brand font-semibold">Rutinas</span>
                         </div>
 
                         <!-- Main Title -->
-                        <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+                        <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-text">
                             Explorar Rutinas
                         </h1>
-                        <p class="text-xs sm:text-sm text-slate-400 max-w-xl">
+                        <p class="text-xs sm:text-sm text-text-2 max-w-xl">
                             Selecciona, comparte o importa planes de entrenamiento estructurados.
                         </p>
                     </div>
@@ -103,7 +103,7 @@
                 </section>
 
                 <!-- Filters and Search Section -->
-                <section class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-obsidian-900/60 p-2 sm:p-2.5 rounded-2xl border border-slate-800/80" data-purpose="navigation-tabs-and-search">
+                <section class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-surface p-2 sm:p-2.5 rounded-2xl border border-border shadow-xs" data-purpose="navigation-tabs-and-search">
                     <!-- Horizontal Pills Tabs -->
                     <nav aria-label="Filtros de catálogo" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                         <button
@@ -111,8 +111,8 @@
                             @click="catalogoTab = 'predeterminadas'"
                             :class="catalogoTab === 'predeterminadas'
                                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
-                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                                : 'bg-surface-2 hover:bg-surface-3 border border-border text-text-2 hover:text-text'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                         >
                             📋 Rutinas Oficiales
                         </button>
@@ -121,8 +121,8 @@
                             @click="catalogoTab = 'personalizadas'"
                             :class="catalogoTab === 'personalizadas'
                                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
-                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                                : 'bg-surface-2 hover:bg-surface-3 border border-border text-text-2 hover:text-text'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                         >
                             👤 Mis Rutinas (Personalizadas)
                         </button>
@@ -131,8 +131,8 @@
                             @click="catalogoTab = 'comunitarias'"
                             :class="catalogoTab === 'comunitarias'
                                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                                : 'bg-obsidian-850 hover:bg-obsidian-800 border border-slate-800 text-slate-300'"
-                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                                : 'bg-surface-2 hover:bg-surface-3 border border-border text-text-2 hover:text-text'"
+                            class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                         >
                             🌎 Catálogo Comunitario
                         </button>
@@ -140,7 +140,7 @@
 
                     <!-- Search Input -->
                     <div class="relative w-full md:w-80 lg:w-96">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-3">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path
                                     d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
@@ -151,7 +151,7 @@
                         </div>
                         <input
                             v-model="searchQuery"
-                            class="w-full pl-10 pr-4 py-2 bg-obsidian-950/80 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            class="w-full pl-10 pr-4 py-2 bg-surface-2 border border-border rounded-xl text-xs sm:text-sm text-text placeholder-text-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                             placeholder="Buscar rutina, músculo o ejercicio..."
                             type="text"
                         />
@@ -162,12 +162,12 @@
                 <div v-show="catalogoTab === 'predeterminadas'" class="space-y-5">
                     <div
                         v-if="rutinasLoaded && Object.keys(defaultRutinas).length === 0"
-                        class="p-8 rounded-2xl bg-obsidian-900 border border-slate-800 text-center space-y-2"
+                        class="p-8 rounded-2xl bg-surface border border-border text-center space-y-2"
                         data-purpose="no-oficiales"
                     >
                         <span class="text-4xl block mb-2">📋</span>
-                        <h3 class="font-bold text-white text-base">No hay rutinas oficiales disponibles</h3>
-                        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                        <h3 class="font-bold text-text text-base">No hay rutinas oficiales disponibles</h3>
+                        <p class="text-xs text-text-3 max-w-sm mx-auto">
                             Si acabás de instalar la app, corré los seeders oficiales o contactá al administrador.
                         </p>
                     </div>
@@ -187,7 +187,7 @@
                                 class="w-1.5 h-5 rounded-full"
                                 :class="getNivelMeta(nivelNombre).colorBar"
                             ></div>
-                            <h2 class="text-lg font-display font-bold text-white tracking-wide">
+                            <h2 class="text-lg font-display font-bold text-text tracking-wide">
                                 {{ nivelNombre }}
                             </h2>
                             <span

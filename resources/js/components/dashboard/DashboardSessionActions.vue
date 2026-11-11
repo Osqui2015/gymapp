@@ -39,7 +39,7 @@ defineEmits(['previous-day', 'save-session', 'next-day', 'finish-routine']);
             <button
                 type="button"
                 @click="$emit('save-session')"
-                class="w-full sm:flex-1 px-space-xl py-space-md rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,131,255,0.35)] transition-all"
+                class="w-full sm:flex-1 px-space-xl py-space-md rounded-xl bg-brand hover:brightness-110 active:scale-[0.98] text-white font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(79,70,229,0.35)] transition-all cursor-pointer"
             >
                 <span class="material-symbols-outlined text-[20px]"
                     >bookmark</span

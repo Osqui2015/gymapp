@@ -22,7 +22,7 @@
   - dashboardHref, historialHref, rutinasHref, ejerciciosHref, progresoHref
 -->
 <template>
-    <nav class="bg-[#0B0F17]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.2)] border-b border-[#232D42]/80 sticky top-0 z-50 font-body-md">
+    <nav class="bg-surface/90 dark:bg-[#0B0F17]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_8px_rgba(0,0,0,0.3)] border-b border-border dark:border-[#232D42]/80 sticky top-0 z-50 font-body-md transition-colors">
         <div
             class="h-14 md:h-20 max-w-[1280px] mx-auto px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-space-md md:gap-space-lg"
         >
@@ -55,7 +55,7 @@
                         :class="
                             activeRoute === 'historial'
                                 ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                                : 'bg-[#131924] text-slate-300 border border-[#232D42] hover:text-white'
+                                : 'bg-surface-container-high text-on-surface-variant border border-outline-variant hover:text-on-surface dark:bg-[#131924] dark:text-slate-300 dark:border-[#232D42] dark:hover:text-white'
                         "
                     >
                         <span class="material-symbols-outlined text-[15px]">history</span>

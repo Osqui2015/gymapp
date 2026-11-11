@@ -12,8 +12,7 @@
     - name:       string (nombre del ejercicio)
     - meta:       string (info secundaria, ej "Pectoral · Barra plana")
     - target:     string opcional (objetivo, ej "Último: 60 kg")
-    - seriesLabel: string (ej "0/4 series")
-    - completed:  number (series completadas, color del badge)
+    - completed:  number (series completadas, se muestran como dots)
     - total:      number (total de series)
     - series:     Array<{ label: string, done: boolean }> (las pills de cada serie)
     - expanded:   boolean (controla si se muestran las pills)
@@ -48,15 +47,37 @@
                 </p>
             </div>
 
+            <!--
+                Progreso de series como DOTS en vez de un badge de texto.
+
+                Motivo: el texto "0/4 series" se repetía en cada fila y era
+                ruido (el header de la sección ya dice "3/8 completados"). Los
+                dots comunican lo mismo en 20px de ancho en lugar de ~60px.
+
+                Se mantiene un label accesible (sr-only) con el conteo real.
+            -->
             <span
-                :class="[
-                    'shrink-0 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-full tabular-nums',
-                    isComplete
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                        : 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300',
-                ]"
+                class="shrink-0 flex items-center gap-1"
+                :aria-label="`${completed} de ${total} series completadas`"
+                role="img"
             >
-                {{ seriesLabel || `${completed}/${total} series` }}
+                <span
+                    v-for="i in Math.min(total, 8)"
+                    :key="i"
+                    class="w-2 h-2 rounded-full transition-colors"
+                    :class="
+                        i <= completed
+                            ? 'bg-success'
+                            : 'bg-surface-3 border border-border'
+                    "
+                ></span>
+                <span
+                    v-if="total > 8"
+                    class="text-[10px] font-bold obs-text-tertiary tabular-nums"
+                >
+                    +{{ total - 8 }}
+                </span>
+                <span class="sr-only">{{ completed }}/{{ total }} series</span>
             </span>
 
             <svg
@@ -110,7 +131,6 @@ const props = defineProps({
     name: { type: String, required: true },
     meta: { type: String, default: '' },
     target: { type: String, default: '' },
-    seriesLabel: { type: String, default: '' },
     completed: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
     series: { type: Array, default: () => [] },

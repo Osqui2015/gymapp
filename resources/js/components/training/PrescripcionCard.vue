@@ -46,7 +46,7 @@
                     class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] font-black leading-none"
                     :class="[
                         clasesBloque(bloque),
-                        esBloqueActual(bloque) ? 'ring-2 ring-white/30' : '',
+                        esBloqueActual(bloque) ? 'ring-2 ring-brand/40 dark:ring-white/30' : '',
                     ]"
                     :data-testid="`prescripcion-bloque-${i}`"
                     :title="`${bloque.series} ${bloque.series === 1 ? 'serie' : 'series'} × ${bloque.reps} reps con ${etiquetaEsfuerzo(bloque.tipo, bloque.valor)}`"
@@ -64,7 +64,7 @@
 
             <span
                 v-if="prescripcion.etiqueta"
-                class="px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-violet-300 text-[9px] font-black uppercase tracking-wider"
+                class="px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 text-[9px] font-black uppercase tracking-wider"
             >
                 {{ prescripcion.etiqueta }}
             </span>
@@ -77,11 +77,11 @@
             data-testid="prescripcion-rest-pause"
         >
             <div class="flex items-center justify-between gap-2 flex-wrap">
-                <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] text-amber-300">
+                <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
                     <span>⏱</span>
                     <span>Rest-pause</span>
                 </span>
-                <span class="text-[10px] font-bold text-amber-200/90 tabular-nums">
+                <span class="text-[10px] font-bold text-amber-900 dark:text-amber-200/90 tabular-nums">
                     {{ resumenRestPause }}
                 </span>
             </div>
@@ -89,7 +89,7 @@
             <!-- Cadena: set principal → descanso → mini-set → descanso → mini-set -->
             <div class="flex flex-wrap items-center gap-1 text-[10px] font-bold">
                 <span
-                    class="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                    class="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                     :title="`Set principal: ${prescripcion.bloques[0]?.reps ?? 0} reps`"
                 >
                     {{ prescripcion.bloques[0]?.reps ?? 0 }} reps
@@ -99,13 +99,13 @@
                 </span>
 
                 <template v-for="(mini, i) in prescripcion.restPause.minisets" :key="`mini-${i}`">
-                    <span class="text-amber-400/80 shrink-0">→</span>
-                    <span class="text-amber-300/90 tabular-nums shrink-0" :title="`Descanso ${mini.descansoSeg} segundos`">
+                    <span class="text-amber-600 dark:text-amber-400/80 shrink-0">→</span>
+                    <span class="text-amber-800 dark:text-amber-300/90 tabular-nums shrink-0" :title="`Descanso ${mini.descansoSeg} segundos`">
                         {{ mini.descansoSeg }}"
                     </span>
-                    <span class="text-amber-400/80 shrink-0">→</span>
+                    <span class="text-amber-600 dark:text-amber-400/80 shrink-0">→</span>
                     <span
-                        class="px-1.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                        class="px-1.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300"
                         :title="`Mini-set: ${mini.reps} reps al fallo`"
                     >
                         {{ mini.reps }} reps · FALLO
@@ -113,7 +113,7 @@
                 </template>
             </div>
 
-            <p class="text-[10px] text-amber-200/70 leading-snug">
+            <p class="text-[10px] text-amber-800/80 dark:text-amber-200/70 leading-snug">
                 Cada serie son {{ setsEfectivos }} sets: el principal + {{ prescripcion.restPause.minisets.length }} mini-sets al fallo.
             </p>
         </div>
@@ -121,27 +121,27 @@
         <!-- PROGRESIÓN -->
         <div
             v-if="prescripcion.progresion"
-            class="flex items-start gap-1.5 text-[11px] text-teal-200"
+            class="flex items-start gap-1.5 text-[11px] text-teal-800 dark:text-teal-200"
             data-testid="prescripcion-progresion"
         >
-            <span class="text-teal-400 font-bold shrink-0">↗</span>
+            <span class="text-teal-600 dark:text-teal-400 font-bold shrink-0">↗</span>
             <span class="font-semibold leading-snug">{{ prescripcion.progresion }}</span>
         </div>
 
         <!-- CONSEJO -->
         <div
             v-if="prescripcion.consejo"
-            class="flex items-start gap-1.5 text-[11px] text-gray-300"
+            class="flex items-start gap-1.5 text-[11px] text-text-2 dark:text-gray-300"
             data-testid="prescripcion-consejo"
         >
-            <span class="text-amber-400 font-bold shrink-0">ℹ</span>
+            <span class="text-amber-600 dark:text-amber-400 font-bold shrink-0">ℹ</span>
             <span class="font-medium leading-snug">{{ prescripcion.consejo }}</span>
         </div>
 
         <!-- NOTAS CRUDAS (opcional) -->
         <p
             v-if="mostrarNotas && ejercicio?.notas"
-            class="text-[10px] text-gray-500 leading-snug border-t border-white/5 pt-1.5"
+            class="text-[10px] text-text-3 dark:text-gray-500 leading-snug border-t border-border dark:border-white/5 pt-1.5"
         >
             {{ ejercicio.notas }}
         </p>
@@ -204,14 +204,14 @@ const esBloqueActual = (bloque) => {
  */
 const clasesBloque = (bloque) => {
     if (bloque.tipo === 'fallo' || (bloque.tipo === 'rir' && Number(bloque.valor) === 0)) {
-        return 'bg-rose-500/15 border-rose-500/40 text-rose-300';
+        return 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300';
     }
     if (bloque.tipo === 'rir' && Number(bloque.valor) === 1) {
-        return 'bg-amber-500/15 border-amber-500/40 text-amber-300';
+        return 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300';
     }
     if (bloque.tipo === 'rpe' && Number(bloque.valor) >= 9) {
-        return 'bg-amber-500/15 border-amber-500/40 text-amber-300';
+        return 'bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-300';
     }
-    return 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300';
+    return 'bg-emerald-500/15 border-emerald-500/35 text-emerald-700 dark:text-emerald-300';
 };
 </script>
