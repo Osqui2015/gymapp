@@ -105,26 +105,22 @@
             </div>
         </header>
 
-        <!-- Barra de Progreso Global -->
+        <!-- Barra de Progreso Global (slim, sin labels: chrome mínimo) -->
         <div
-            class="w-full bg-surface-2 border-b border-border px-3 py-1.5 sm:px-4 sm:py-2 shrink-0 flex items-center justify-between gap-3 text-xs"
+            class="w-full bg-surface-2 border-b border-border px-3 sm:px-4 py-1.5 shrink-0"
+            role="progressbar"
+            :aria-valuenow="store.progresoPorcentaje"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-label="`Progreso: ${store.totalSeriesCompletadas} de ${store.totalSeriesObjetivo} series`"
+            data-testid="progreso-global"
         >
-            <span class="text-text-2 font-semibold whitespace-nowrap">
-                Progreso:
-                <strong class="text-success tabular-nums">{{ store.totalSeriesCompletadas }}</strong>
-                /
-                <span class="text-text-3">{{ store.totalSeriesObjetivo }}</span>
-                series
-            </span>
-            <div class="flex-1 h-1.5 sm:h-2 bg-surface-3 rounded-full overflow-hidden mx-1 border border-border">
+            <div class="w-full h-1 bg-surface-3 rounded-full overflow-hidden">
                 <div
-                    class="h-full bg-gradient-to-r from-brand to-success transition-all duration-300"
+                    class="h-full bg-brand transition-all duration-300"
                     :style="{ width: `${store.progresoPorcentaje}%` }"
                 ></div>
             </div>
-            <span class="font-black text-brand tabular-nums whitespace-nowrap">
-                {{ store.progresoPorcentaje }}%
-            </span>
         </div>
 
         <!-- Contenedor Principal Adaptable (Mobile + Web Responsive 2 Columnas) -->
@@ -288,7 +284,7 @@
                                     data-testid="media-prev"
                                     :title="`Ver ${store.currentEjercicio.nombre}`"
                                     aria-label="Ver imagen del ejercicio actual"
-                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-white shadow transition-all cursor-pointer"
+                                    class="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-on-brand shadow transition-all cursor-pointer"
                                 >
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -301,7 +297,7 @@
                                     data-testid="media-next"
                                     :title="`Ver ${superseriePartner.ejercicio.nombre}`"
                                     aria-label="Ver imagen del compañero de superset"
-                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-white shadow transition-all cursor-pointer"
+                                    class="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-brand text-on-brand shadow transition-all cursor-pointer"
                                 >
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -452,11 +448,11 @@
                     <!-- Panel destacado: Plan de series y esfuerzo / Prescripción (visible en pantallas grandes o complementario) -->
                     <div
                         v-if="store.currentEjercicio.notas || store.currentEjercicio.prescripcion"
-                        class="hidden md:block p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-violet-950/40 via-[var(--color-obsidian-elevated)] to-[var(--color-obsidian-surface)] border border-violet-500/30 text-left space-y-2 shadow-inner"
+                        class="hidden md:block p-2.5 sm:p-3 rounded-xl bg-surface-2 border border-border text-left space-y-2"
                         data-testid="ejercicio-prescripcion-box"
                     >
-                        <div class="flex items-center justify-between gap-2 border-b border-violet-500/20 pb-1.5">
-                            <span class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-violet-300">
+                        <div class="flex items-center justify-between gap-2 border-b border-border pb-1.5">
+                            <span class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-text-2">
                                 <span>📋</span>
                                 <span>Plan de series y esfuerzo</span>
                             </span>
@@ -472,12 +468,12 @@
                     <!-- Bloque "Superserie" en la columna izquierda -->
                     <div
                         v-if="superseriePartner && superserieOrder"
-                        class="obs-card p-3 border-violet-500/30 bg-violet-500/5"
+                        class="p-3 rounded-xl border border-border bg-surface-2"
                         data-testid="superset-left-block"
                     >
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-base">⚡</span>
-                            <p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-200">
+                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-text-2">
                                 Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
                             </p>
                         </div>
@@ -488,8 +484,8 @@
                                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
                                 :class="
                                     superserieOrder.currentRole === 'first'
-                                        ? 'bg-violet-500/15 border-violet-500/35'
-                                        : 'bg-emerald-900/15 border-emerald-500/25'
+                                        ? 'bg-brand/15 border-brand/35'
+                                        : 'bg-surface border-border'
                                 "
                                 :data-testid="`superset-left-first-${superserieOrder.first.index}`"
                             >
@@ -497,16 +493,16 @@
                                     class="w-1.5 h-1.5 rounded-full shrink-0"
                                     :class="
                                         superserieOrder.currentRole === 'first'
-                                            ? 'bg-emerald-400'
-                                            : 'bg-emerald-500/70'
+                                            ? 'bg-success'
+                                            : 'bg-success/60'
                                     "
                                 ></span>
                                 <span
                                     class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
                                     :class="
                                         superserieOrder.currentRole === 'first'
-                                            ? 'text-emerald-300'
-                                            : 'text-emerald-400/70'
+                                            ? 'text-success'
+                                            : 'text-success/70'
                                     "
                                 >
                                     {{ superserieOrder.currentRole === 'first' ? 'Ahora' : 'Ya hiciste' }}
@@ -515,8 +511,8 @@
                                     class="text-xs sm:text-sm font-bold truncate"
                                     :class="
                                         superserieOrder.currentRole === 'first'
-                                            ? 'text-white'
-                                            : 'text-gray-300 line-through decoration-emerald-500/40'
+                                            ? 'text-text'
+                                            : 'text-text-3 line-through'
                                     "
                                 >
                                     {{ superserieOrder.first.ejercicio.nombre }}
@@ -525,8 +521,8 @@
 
                             <!-- Conector visual entre los dos -->
                             <div class="flex items-center gap-2 px-2.5">
-                                <span class="text-violet-400 text-[10px] font-black">↓</span>
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                <span class="text-brand text-[10px] font-black">↓</span>
+                                <span class="text-[10px] text-text-3 font-bold uppercase tracking-wider">
                                     {{ superserieOrder.currentRole === 'first' ? 'Seguí directo con' : 'Ahora' }}
                                 </span>
                             </div>
@@ -536,8 +532,8 @@
                                 class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
                                 :class="
                                     superserieOrder.currentRole === 'second'
-                                        ? 'bg-violet-500/15 border-violet-500/35'
-                                        : 'bg-[var(--color-obsidian-surface)] border-[var(--color-obsidian-border)]'
+                                        ? 'bg-brand/15 border-brand/35'
+                                        : 'bg-surface border-border'
                                 "
                                 :data-testid="`superset-left-second-${superserieOrder.second.index}`"
                             >
@@ -545,29 +541,29 @@
                                     class="w-1.5 h-1.5 rounded-full shrink-0"
                                     :class="
                                         superserieOrder.currentRole === 'second'
-                                            ? 'bg-emerald-400'
-                                            : 'bg-violet-400'
+                                            ? 'bg-success'
+                                            : 'bg-brand/60'
                                     "
                                 ></span>
                                 <span
                                     class="text-[10px] font-black uppercase tracking-wider w-16 shrink-0"
                                     :class="
                                         superserieOrder.currentRole === 'second'
-                                            ? 'text-emerald-300'
-                                            : 'text-violet-300'
+                                            ? 'text-success'
+                                            : 'text-brand'
                                     "
                                 >
                                     {{ superserieOrder.currentRole === 'second' ? 'Ahora' : 'Después' }}
                                 </span>
                                 <span
-                                    class="text-xs sm:text-sm font-bold truncate text-white"
+                                    class="text-xs sm:text-sm font-bold truncate text-text"
                                 >
                                     {{ superserieOrder.second.ejercicio.nombre }}
                                 </span>
                             </div>
                         </div>
 
-                        <p class="mt-2 text-[10px] text-gray-400 italic">
+                        <p class="mt-2 text-[10px] text-text-3 italic">
                             <template v-if="superserieOrder.currentRole === 'first'">
                                 Sin descanso entre ambos. Registrá una serie en cada uno antes de la próxima pausa.
                             </template>
@@ -638,27 +634,27 @@
                     <!-- Header explicativo cuando es superset -->
                     <div
                         v-if="superseriePartner && superserieOrder"
-                        class="obs-card p-2.5 sm:p-3 flex items-center gap-2 border-violet-500/30 bg-violet-500/5"
+                        class="p-2.5 sm:p-3 flex items-center gap-2 rounded-xl border border-border bg-surface-2"
                         data-testid="superset-banner"
                     >
                         <span class="text-base">⚡</span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-200">
+                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">
                                 Superserie {{ superseriePartner.ejercicio.superserie_grupo }}
                             </p>
-                            <p class="text-[11px] text-gray-400">
+                            <p class="text-[11px] text-text-2">
                                 <template v-if="superserieOrder.currentRole === 'first'">
                                     Hacé
-                                    <strong class="text-white">{{ superserieOrder.first.ejercicio.nombre }}</strong>
+                                    <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong>
                                     y seguí directo con
-                                    <strong class="text-white">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                                    <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
                                     sin descansar entre ellos.
                                 </template>
                                 <template v-else>
                                     Hacé
-                                    <strong class="text-white">{{ superserieOrder.second.ejercicio.nombre }}</strong>
+                                    <strong class="text-text">{{ superserieOrder.second.ejercicio.nombre }}</strong>
                                     — ya hiciste
-                                    <strong class="text-white">{{ superserieOrder.first.ejercicio.nombre }}</strong>
+                                    <strong class="text-text">{{ superserieOrder.first.ejercicio.nombre }}</strong>
                                     antes, seguí sin descansar.
                                 </template>
                             </p>
@@ -711,7 +707,7 @@
                                 type="button"
                                 @click="completarRondaSuperserie"
                                 data-testid="btn-completar-superset"
-                                class="w-full py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base md:text-lg font-black tracking-wider shadow-[0_12px_32px_var(--color-violet-glow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/10"
+                                class="w-full py-4 sm:py-5 rounded-2xl bg-brand hover:brightness-110 active:scale-[0.98] text-on-brand text-sm sm:text-base md:text-lg font-black tracking-wider shadow-[0_8px_24px_var(--color-shadow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-brand/40"
                             >
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -727,7 +723,7 @@
                             </button>
                             <div
                                 v-else
-                                class="w-full py-4 sm:py-4.5 rounded-2xl bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2.5"
+                                class="w-full py-4 sm:py-4.5 rounded-2xl bg-success/15 border border-success/40 text-success text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2.5"
                             >
                                 ✓ Superserie completa
                             </div>
@@ -736,7 +732,7 @@
 
                     <!-- CTA Bottom Container (Sticky en mobile con safe-area) -->
                     <div
-                        v-if="store.isSessionComplete || (store.canUndo && !store.isSessionComplete)"
+                        v-if="store.isSessionComplete"
                         class="sticky bottom-0 z-30 -mx-2.5 sm:-mx-4 px-2.5 sm:px-4 py-2.5 bg-gradient-to-t from-bg via-bg/95 to-transparent pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
                     >
                         <!-- CTA Finalizar Sesión (solo cuando todo está completo) -->
@@ -745,7 +741,7 @@
                             type="button"
                             @click="handleFinalizar"
                             data-testid="btn-finalizar-sesion"
-                            class="w-full h-14 sm:h-16 rounded-2xl bg-gradient-to-r from-success to-emerald-500 hover:brightness-110 active:scale-[0.98] text-white text-base sm:text-lg font-black tracking-wider shadow-[0_8px_30px_rgba(4,120,87,0.35)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/20"
+                            class="w-full h-14 sm:h-16 rounded-2xl bg-success hover:brightness-110 active:scale-[0.98] text-on-brand text-base sm:text-lg font-black tracking-wider shadow-[0_8px_24px_var(--color-shadow)] flex items-center justify-center gap-3 transition-all cursor-pointer border border-success/40"
                         >
                             <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path
@@ -766,16 +762,17 @@
                             </svg>
                         </button>
 
-                        <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
-                        <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-1">
-                            <button
-                                type="button"
-                                @click="deshacer"
-                                class="text-xs font-bold text-danger hover:underline cursor-pointer"
-                            >
-                                ↩ Deshacer última serie completada
-                            </button>
-                        </div>
+                    </div>
+
+                    <!-- Botón Deshacer (solo sobre series del current ejercicio) -->
+                    <div v-if="store.canUndo && !store.isSessionComplete" class="text-center pt-1">
+                        <button
+                            type="button"
+                            @click="deshacer"
+                            class="text-xs font-bold text-danger hover:underline cursor-pointer"
+                        >
+                            ↩ Deshacer última serie completada
+                        </button>
                     </div>
                 </div>
             </div>
@@ -783,25 +780,25 @@
             <!-- Estado de recuperación si por algún motivo no hay ejercicios activos cargados -->
             <div
                 v-else
-                class="max-w-md mx-auto my-12 text-center p-6 rounded-2xl bg-[var(--color-obsidian-surface)] border border-[var(--color-obsidian-border)]"
+                class="max-w-md mx-auto my-12 text-center p-6 rounded-2xl bg-surface border border-border"
             >
                 <div class="text-4xl mb-3">🏋️</div>
-                <h3 class="text-lg font-black text-white mb-2">No hay ejercicios activos en esta sesión</h3>
-                <p class="text-xs text-gray-400 mb-5">
+                <h3 class="text-lg font-black text-text mb-2">No hay ejercicios activos en esta sesión</h3>
+                <p class="text-xs text-text-2 mb-5">
                     La sesión se inició antes de sincronizar los ejercicios del día.
                 </p>
                 <div class="flex items-center justify-center gap-3">
                     <button
                         type="button"
                         @click="store.refreshNotasActuales"
-                        class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                        class="px-4 py-2.5 rounded-xl bg-brand hover:brightness-110 text-on-brand text-xs font-bold transition-colors cursor-pointer"
                     >
                         🔄 Sincronizar ejercicios
                     </button>
                     <button
                         type="button"
                         @click="store.discard(); $emit('minimize')"
-                        class="px-4 py-2.5 rounded-xl bg-[var(--color-obsidian-elevated)] hover:bg-[var(--color-obsidian-overlay)] border border-[var(--color-obsidian-border)] text-gray-300 text-xs font-bold transition-colors cursor-pointer"
+                        class="px-4 py-2.5 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-text-2 text-xs font-bold transition-colors cursor-pointer"
                     >
                         Reiniciar sesión
                     </button>

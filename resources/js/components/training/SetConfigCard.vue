@@ -18,11 +18,11 @@
 -->
 <template>
     <section
-        class="bg-surface rounded-3xl border border-border p-3.5 sm:p-5 space-y-3 sm:space-y-4 shadow-sm relative"
+        class="bg-surface rounded-3xl border border-border p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4 shadow-sm relative"
         :data-testid="`set-config-card-${ejercicioIndex}`"
     >
         <!-- Header: label + selector de tipo de serie -->
-        <div class="flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
+        <div class="order-1 flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
             <span class="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-text-2 min-w-0">
                 <span
                     class="w-2 h-2 rounded-full shrink-0"
@@ -70,7 +70,7 @@
         <!-- Bloque 3: Target per-set prominente -->
         <div
             v-if="!esBloque"
-            class="p-3 sm:p-4 rounded-2xl border transition-all"
+            class="order-2 p-3 sm:p-4 rounded-2xl border transition-all"
             :class="[
                 targetEsfuerzo?.tipo === 'fallo' || (form.tipo_serie === 'al_fallo') || (form.esfuerzo_tipo === 'fallo') || (form.esfuerzo_tipo === 'rir' && form.esfuerzo_valor === 0)
                     ? 'bg-danger/10 border-danger/30 text-danger'
@@ -133,11 +133,11 @@
         <!-- Tira de series horizontal snap (Bloque 5) -->
         <div
             v-if="Number(ejercicio.series_objetivo) > 0"
-            class="space-y-1.5"
+            class="order-5 sm:order-6 space-y-1.5"
             data-testid="sets-progress-tracker"
         >
             <div class="flex items-center justify-between text-[11px] font-bold text-text-3 uppercase tracking-wider px-0.5">
-                <span>Tira de series</span>
+                <span>Series de hoy</span>
                 <span class="tabular-nums font-mono">{{ setsEfectivos.length }}/{{ ejercicio.series_objetivo }} hechas</span>
             </div>
 
@@ -180,7 +180,7 @@
              en superseries para identificar cada card sin mirar la col izq) -->
         <div
             v-if="showExerciseName"
-            class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-brand/10 border border-brand/25"
+            class="order-0 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-brand/10 border border-brand/25"
             :data-testid="`set-card-name-${ejercicioIndex}`"
         >
             <div class="flex items-center gap-2 min-w-0">
@@ -201,7 +201,7 @@
         <!-- Prescripción o plan del ejercicio (solo si hay notas personalizadas o target de esfuerzo) -->
         <div
             v-if="ejercicio.notas || ejercicio.prescripcion || targetEsfuerzo"
-            class="px-3 py-2 rounded-xl bg-surface-2 border border-border text-left space-y-2"
+            class="order-8 sm:order-3 hidden sm:block px-3 py-2 rounded-xl bg-surface-2 border border-border text-left space-y-2"
             data-testid="set-plan-banner"
         >
             <div class="flex items-center justify-between gap-2.5">
@@ -246,7 +246,7 @@
         <!-- Historial última vez (Mínimo / Máximo) del ejercicio: solo se muestra en superseries para no duplicar el hero card -->
         <div
             v-if="showExerciseName && lastData && lastData.encontrado"
-            class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-surface-2 border border-border text-left"
+            class="order-9 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-surface-2 border border-border text-left"
             :data-testid="`set-card-last-history-${ejercicioIndex}`"
         >
             <div class="flex items-center gap-1.5 text-text-3 font-bold uppercase text-[9px] sm:text-[10px] tracking-wider shrink-0">
@@ -267,7 +267,7 @@
         </div>
 
         <!-- CARGA / PESO -->
-        <div class="space-y-1.5">
+        <div class="order-3 sm:order-4 space-y-1.5">
             <div class="flex items-center justify-between flex-wrap gap-1">
                 <label class="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-text-2 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -289,76 +289,69 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-1.5 sm:gap-2">
-                <div class="grid grid-cols-3 gap-1 shrink-0">
-                    <button
-                        type="button"
-                        @click="ajustarPeso(-5)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        -5
-                    </button>
-                    <button
-                        type="button"
-                        @click="ajustarPeso(-2.5)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        -2.5
-                    </button>
-                    <button
-                        type="button"
-                        @click="ajustarPeso(-1)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        -1
-                    </button>
-                </div>
+            <div class="relative flex items-center justify-center bg-surface-2 border-2 border-border focus-within:border-brand rounded-2xl h-16 sm:h-20 shadow-sm">
+                <input
+                    v-model.number="form.peso"
+                    type="number"
+                    inputmode="decimal"
+                    step="0.5"
+                    min="0"
+                    class="w-full bg-transparent text-center text-3xl sm:text-4xl font-black text-text outline-none tabular-nums"
+                    placeholder="0"
+                />
+                <span
+                    class="absolute right-3 sm:right-4 text-xs sm:text-sm font-black text-brand uppercase tracking-wider"
+                >kg</span>
+            </div>
 
-                <div
-                    class="flex-1 relative flex items-center justify-center bg-surface-2 border-2 border-border focus-within:border-brand rounded-2xl h-16 sm:h-20 shadow-sm"
+            <div class="grid grid-cols-6 gap-1">
+                <button
+                    type="button"
+                    @click="ajustarPeso(-5)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
                 >
-                    <input
-                        v-model.number="form.peso"
-                        type="number"
-                        inputmode="decimal"
-                        step="0.5"
-                        min="0"
-                        class="w-full bg-transparent text-center text-3xl sm:text-4xl font-black text-text outline-none tabular-nums"
-                        placeholder="0"
-                    />
-                    <span
-                        class="absolute right-3 sm:right-4 text-xs sm:text-sm font-black text-brand uppercase tracking-wider"
-                    >kg</span>
-                </div>
-
-                <div class="grid grid-cols-3 gap-1 shrink-0">
-                    <button
-                        type="button"
-                        @click="ajustarPeso(1)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        +1
-                    </button>
-                    <button
-                        type="button"
-                        @click="ajustarPeso(2.5)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        +2.5
-                    </button>
-                    <button
-                        type="button"
-                        @click="ajustarPeso(5)"
-                        class="min-w-[44px] min-h-[44px] sm:w-11 sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
-                    >
-                        +5
-                    </button>
-                </div>
+                    -5
+                </button>
+                <button
+                    type="button"
+                    @click="ajustarPeso(-2.5)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
+                >
+                    -2.5
+                </button>
+                <button
+                    type="button"
+                    @click="ajustarPeso(-1)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-danger/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-danger cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
+                >
+                    -1
+                </button>
+                <button
+                    type="button"
+                    @click="ajustarPeso(1)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
+                >
+                    +1
+                </button>
+                <button
+                    type="button"
+                    @click="ajustarPeso(2.5)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
+                >
+                    +2.5
+                </button>
+                <button
+                    type="button"
+                    @click="ajustarPeso(5)"
+                    class="min-h-[44px] sm:h-12 bg-surface-2 hover:bg-success/20 active:scale-95 rounded-xl font-black text-xs sm:text-sm text-success cursor-pointer border border-border transition-colors flex items-center justify-center select-none"
+                >
+                    +5
+                </button>
             </div>
         </div>
 
         <!-- REPETICIONES -->
-        <div class="space-y-1.5">
+        <div class="order-4 sm:order-5 space-y-1.5">
             <div class="flex items-center justify-between">
                 <label class="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] text-text-2 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -369,7 +362,7 @@
                 <span class="px-2 py-0.5 rounded-md bg-success/15 border border-success/30 text-[10px] sm:text-xs text-success font-black tabular-nums">
                     <template v-if="esBloque"> Objetivo: a tu ritmo </template>
                     <template v-else-if="targetEsfuerzo?.bloque?.reps">
-                        Objetivo Serie #{{ serieNumero }}: {{ targetEsfuerzo.bloque.reps }} reps{{ targetEsfuerzo.tipo === 'fallo' ? ' (AL FALLO)' : ' (RIR ' + targetEsfuerzo.valor + ')' }}
+                        Objetivo: {{ targetEsfuerzo.bloque.reps }} reps
                     </template>
                     <template v-else>
                         Objetivo: {{ repsObjetivoTexto }}
@@ -431,7 +424,7 @@
         </div>
 
         <!-- Esfuerzo (RIR / RPE / AL FALLO) -->
-        <div class="bg-surface rounded-2xl p-2.5 sm:p-3.5 border border-border space-y-2 sm:space-y-2.5">
+        <div class="order-6 sm:order-7 bg-surface-2 rounded-2xl p-2.5 sm:p-3.5 border border-border space-y-2 sm:space-y-2.5">
             <div class="flex items-center justify-between">
                 <span class="text-xs sm:text-sm font-bold text-text-2 flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -473,7 +466,7 @@
                         @click="selectEsfuerzoTipo('fallo')"
                         :class="
                             form.esfuerzo_tipo === 'fallo'
-                                ? 'bg-danger text-white shadow-sm'
+                                ? 'bg-danger text-on-brand shadow-sm'
                                 : 'text-text-2 hover:text-text'
                         "
                         class="px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
@@ -490,7 +483,7 @@
             <div
                 v-if="targetLabel"
                 :class="[
-                    'flex items-center justify-between px-2.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider border gap-2',
+                    'hidden sm:flex items-center justify-between px-2.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider border gap-2',
                     targetEsfuerzo?.tipo === 'fallo'
                         ? 'bg-danger/15 border-danger/35 text-danger'
                         : 'bg-warning/15 border-warning/35 text-warning',
@@ -580,7 +573,7 @@
                 type="button"
                 @click="onCompletar"
                 :data-testid="`btn-completar-${ejercicioIndex}`"
-                class="w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-gradient-to-br from-[var(--color-violet-deep)] via-[var(--color-violet-primary)] to-[var(--color-violet-light)] hover:brightness-110 active:scale-[0.98] text-white text-sm sm:text-base font-black tracking-wider shadow-[0_8px_24px_var(--color-violet-glow)] flex items-center justify-center gap-2 transition-all cursor-pointer border border-white/10"
+                class="order-7 sm:order-8 w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-brand hover:brightness-110 active:scale-[0.98] text-on-brand text-sm sm:text-base font-black tracking-wider shadow-[0_8px_24px_var(--color-shadow)] flex items-center justify-center gap-2 transition-all cursor-pointer border border-brand/40"
             >
                 <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -601,7 +594,7 @@
 
             <div
                 v-else
-                class="w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2"
+                class="order-7 sm:order-8 w-full py-3 sm:py-3.5 mt-1 rounded-2xl bg-success/15 border border-success/40 text-success text-sm sm:text-base font-black tracking-wider flex items-center justify-center gap-2"
             >
                 ✓ Ejercicio completo
             </div>
@@ -646,10 +639,10 @@ const formatPeso = (val) => {
 const emit = defineEmits(['complete', 'deshacer']);
 
 const tiposSerie = [
-    { id: 'efectiva', label: 'Efectiva', activeClass: 'bg-emerald-500 text-white' },
-    { id: 'calentamiento', label: 'Calentamiento', activeClass: 'bg-indigo-500 text-white' },
-    { id: 'dropset', label: 'Drop Set', activeClass: 'bg-amber-500 text-white' },
-    { id: 'al_fallo', label: 'Al Fallo', activeClass: 'bg-rose-500 text-white' },
+    { id: 'efectiva', label: 'Efectiva', activeClass: 'bg-success text-on-brand' },
+    { id: 'calentamiento', label: 'Calentamiento', activeClass: 'bg-brand text-on-brand' },
+    { id: 'dropset', label: 'Drop Set', activeClass: 'bg-warning text-on-brand' },
+    { id: 'al_fallo', label: 'Al Fallo', activeClass: 'bg-danger text-on-brand' },
 ];
 
 const form = ref({
